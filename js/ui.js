@@ -170,8 +170,70 @@ var UI = (function () {
     px(0, 2, 1, 3);
   }
 
+  /* The on-screen controls. Their geometry is Input's, not ours, so what
+     the player sees and what the game listens to are the same rectangles.
+     Kept faint: they sit over a run in progress and must not compete with
+     the pillars for attention. */
+  function pads(ctx) {
+    var list = Input.pads();
+    for (var i = 0; i < list.length; i++) {
+      var z = list[i];
+      if (z.rest) continue;
+      var on = Input.padHeld(z.a);
+      var a = ctx.globalAlpha;
+      ctx.globalAlpha = a * (on ? 0.85 : 0.42);
+
+      ctx.fillStyle = C.shadow;
+      ctx.fillRect(z.x + 1, z.y + 2, z.w, z.h);
+      ctx.fillStyle = on ? C.boardHi : C.board;
+      ctx.fillRect(z.x, z.y, z.w, z.h);
+      ctx.fillStyle = on ? C.gold : C.boardTop;
+      ctx.fillRect(z.x, z.y, z.w, 2);
+      ctx.fillStyle = C.boardLo;
+      ctx.fillRect(z.x, z.y + z.h - 2, z.w, 2);
+      ctx.fillStyle = on ? C.gold : C.inkFaint;
+      ctx.fillRect(z.x, z.y, z.w, 1); ctx.fillRect(z.x, z.y + z.h - 1, z.w, 1);
+      ctx.fillRect(z.x, z.y, 1, z.h); ctx.fillRect(z.x + z.w - 1, z.y, 1, z.h);
+
+      var cx = z.x + z.w / 2, cy = z.y + z.h / 2;
+      if (z.label) {
+        text(ctx, z.label, cx, Math.round(cy - 3), { align: 'center',
+             colour: on ? C.ink : C.inkDim, shadow: C.shadow });
+      } else if (z.icon === 'II') {
+        ctx.fillStyle = on ? C.ink : C.inkDim;
+        ctx.fillRect(Math.round(cx) - 4, Math.round(cy) - 5, 3, 10);
+        ctx.fillRect(Math.round(cx) + 2, Math.round(cy) - 5, 3, 10);
+      } else {
+        text(ctx, z.icon, cx, Math.round(cy - (z.small ? 3 : 6)),
+             { align: 'center', scale: z.small ? 1 : 2,
+               colour: on ? C.ink : C.inkDim, shadow: C.shadow });
+      }
+      ctx.globalAlpha = a;
+    }
+  }
+
+  /* 480x270 is a landscape shape and a phone held upright cannot show it
+     at any useful size, so say so rather than rendering a stamp */
+  function rotateNotice(ctx, t) {
+    ctx.fillStyle = '#0b0805';
+    ctx.fillRect(0, 0, VW, VH);
+    var bob = Math.round(Math.sin(t * 2.2) * 2);
+    var cx = VW / 2, cy = VH / 2 - 14 + bob;
+    /* a little handset turning on its side */
+    ctx.fillStyle = C.shadow;  ctx.fillRect(cx - 15, cy - 25, 30, 50);
+    ctx.fillStyle = C.board;   ctx.fillRect(cx - 14, cy - 24, 28, 48);
+    ctx.fillStyle = C.darker;  ctx.fillRect(cx - 11, cy - 20, 22, 38);
+    ctx.fillStyle = C.boardTop; ctx.fillRect(cx - 4, cy + 19, 8, 2);
+    chevron(ctx, cx + 30, cy, 1, 6, C.gold);
+    chevron(ctx, cx - 30, cy, -1, 6, C.gold);
+    heading(ctx, 'TURN IT SIDEWAYS', cx, VH / 2 + 30, 2, { colour: C.gold });
+    text(ctx, 'LAND OF DOODADS IS A WIDE GAME', cx, VH / 2 + 52,
+         { align: 'center', colour: C.inkDim });
+  }
+
   return {
     C: C, scrim: scrim, board: board, panel: panel, nail: nail,
+    pads: pads, rotateNotice: rotateNotice,
     chevron: chevron, chevronV: chevronV, marker: marker,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };

@@ -101,6 +101,12 @@ var Input = (function () {
     if (downCodes[e.code]) return;
     downCodes[e.code] = action;
     held[action] = true;
+    pressAction(action);
+    Audio3.unlock();
+  }
+
+  /* everything that has to happen when an action fires, whoever fired it */
+  function pressAction(action) {
     pressed[action] = true;
     var prev = lastTap[action];
     if (prev !== undefined && clock - prev <= DOUBLE_TAP) {
@@ -111,7 +117,105 @@ var Input = (function () {
     }
     anyPressed = true;
     repeatTimer[action] = REPEAT_DELAY;
+  }
+
+  /* ------------------------------------------------------------- touch
+
+     Touch does not get its own path through the game. It produces the same
+     actions the keys do - 'up', 'left', 'confirm' and the rest - so every
+     scene reads Input exactly as it always has and none of them had to
+     learn what a finger is.
+
+     Which part of the screen means what depends on the mode, because a tap
+     in the middle means "flap" in a run and "choose this" in a menu. Scenes
+     set the mode; the pads are drawn from this same table, so what is drawn
+     and what is listened to can never drift apart.                      */
+
+  var PAD = 44, PAD_Y = 216, EDGE = 8;
+
+  var ZONES = {
+    play: [
+      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'pause', x: VW - 38,       y: 6,     w: 32, h: 26,   icon: 'II', small: true },
+      { a: 'up',    rest: true }
+    ],
+    menu: [
+      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'back',  x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'BACK' },
+      { a: 'confirm', rest: true }
+    ],
+    text: [
+      { a: 'left',  x: EDGE,           y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'up',    x: 196,            y: PAD_Y, w: PAD, h: PAD, icon: '\u25B2' },
+      { a: 'down',  x: 196 + PAD + 6,  y: PAD_Y, w: PAD, h: PAD, icon: '\u25BC' },
+      { a: 'confirm', x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'SAVE' }
+    ]
+  };
+
+  var touchMode = 'menu';
+  var touchSeen = false;          /* has this player used touch at all */
+  var points = {};                /* touch id -> the action it is holding */
+  var touchHeld = {};             /* action -> held by at least one finger */
+
+  function zoneAt(x, y) {
+    var list = ZONES[touchMode] || ZONES.menu;
+    var rest = null;
+    for (var i = 0; i < list.length; i++) {
+      var z = list[i];
+      if (z.rest) { rest = z; continue; }
+      if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return z;
+    }
+    return rest;
+  }
+
+  function rebuildTouchHeld() {
+    touchHeld = {};
+    for (var id in points) if (points[id]) touchHeld[points[id]] = true;
+  }
+
+  function onTouchStart(e) {
+    touchSeen = true;
     Audio3.unlock();
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      var t = e.changedTouches[i];
+      var v = Screen.toVirtual(t.clientX, t.clientY);
+      if (!v) continue;
+      var z = zoneAt(v.x, v.y);
+      if (!z) continue;
+      points[t.identifier] = z.a;
+      pressAction(z.a);
+    }
+    rebuildTouchHeld();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  /* sliding off a pad releases it and sliding onto another takes it, so a
+     thumb can travel from left to right without lifting */
+  function onTouchMove(e) {
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      var t = e.changedTouches[i];
+      if (!(t.identifier in points)) continue;
+      var v = Screen.toVirtual(t.clientX, t.clientY);
+      if (!v) continue;
+      var z = zoneAt(v.x, v.y);
+      var now = z ? z.a : null;
+      /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
+      if (now !== points[t.identifier]) {
+        points[t.identifier] = now;
+        if (now && (now === 'left' || now === 'right')) pressAction(now);
+      }
+    }
+    rebuildTouchHeld();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onTouchEnd(e) {
+    for (var i = 0; i < e.changedTouches.length; i++) delete points[e.changedTouches[i].identifier];
+    rebuildTouchHeld();
+    if (e.cancelable) e.preventDefault();
   }
 
   function onKeyUp(e) {
@@ -126,8 +230,14 @@ var Input = (function () {
   function init() {
     window.addEventListener('keydown', onKeyDown, { passive: false });
     window.addEventListener('keyup', onKeyUp);
+    var opt = { passive: false };
+    window.addEventListener('touchstart', onTouchStart, opt);
+    window.addEventListener('touchmove', onTouchMove, opt);
+    window.addEventListener('touchend', onTouchEnd, opt);
+    window.addEventListener('touchcancel', onTouchEnd, opt);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {}; lastTap = {};
+      points = {}; touchHeld = {};
     });
   }
 
@@ -164,7 +274,7 @@ var Input = (function () {
     init: init,
     update: update,
     endFrame: endFrame,
-    down: function (a) { return !!held[a]; },
+    down: function (a) { return !!held[a] || !!touchHeld[a]; },
     /* fresh press only - used for flying and for confirming */
     hit: function (a) { return pressed[a] === true; },
     /* fresh press or auto-repeat - used for menu movement */
@@ -176,6 +286,15 @@ var Input = (function () {
     setTextMode: setTextMode,
     typed: function () { return typed.slice(); },
     /* watch for a sequence typed anywhere; fn fires the moment it lands */
-    watchCode: function (seq, fn) { codes.push({ seq: seq, fn: fn, buf: '' }); }
+    watchCode: function (seq, fn) { codes.push({ seq: seq, fn: fn, buf: '' }); },
+
+    /* ---- touch ---- */
+    setTouchMode: function (m) { if (ZONES[m]) touchMode = m; },
+    touchMode: function () { return touchMode; },
+    /* true once a finger has touched the screen: the on-screen pads stay
+       out of the way until there is a reason to believe in them */
+    usingTouch: function () { return touchSeen; },
+    pads: function () { return ZONES[touchMode] || ZONES.menu; },
+    padHeld: function (a) { return !!touchHeld[a]; }
   };
 })();

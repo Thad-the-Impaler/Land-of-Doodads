@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0805">
 <title>Land of Doodads</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%231a120c'/%3E%3Crect x='1' y='2' width='5' height='4' fill='%23c9873c'/%3E%3Crect x='1' y='1' width='3' height='1' fill='%23c9873c'/%3E%3Crect x='2' y='4' width='3' height='1' fill='%237a4a1c'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23000000'/%3E%3Crect x='6' y='3' width='2' height='1' fill='%23f3cc84'/%3E%3C/svg%3E">
 <style>
@@ -10,8 +14,12 @@
 
 html,body{
   width:100%;height:100%;
+  height:100dvh;                      /* phones: ignore the browser chrome */
   background:#0b0805;
   overflow:hidden;
+  /* a tap is a game input, never a scroll, a zoom or a pull-to-refresh */
+  touch-action:none;
+  overscroll-behavior:none;
   /* the letterbox around the stage: a dim, warm bezel */
   background-image:radial-gradient(circle at 50% 45%,#1a1109 0%,#0b0805 70%);
 }
@@ -21,6 +29,10 @@ body{
   cursor:default;
   -webkit-user-select:none;user-select:none;
   -webkit-tap-highlight-color:transparent;
+  /* long-pressing a canvas must not offer to save or share it */
+  -webkit-touch-callout:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 #stage{
@@ -34,6 +46,8 @@ body{
   position:absolute;inset:0;
   width:100%;height:100%;
   display:block;
+  touch-action:none;
+  -webkit-user-drag:none;user-drag:none;
 }
 
 #bgCanvas,#fgCanvas{
@@ -470,6 +484,12 @@ var Input = (function () {
     if (downCodes[e.code]) return;
     downCodes[e.code] = action;
     held[action] = true;
+    pressAction(action);
+    Audio3.unlock();
+  }
+
+  /* everything that has to happen when an action fires, whoever fired it */
+  function pressAction(action) {
     pressed[action] = true;
     var prev = lastTap[action];
     if (prev !== undefined && clock - prev <= DOUBLE_TAP) {
@@ -480,7 +500,105 @@ var Input = (function () {
     }
     anyPressed = true;
     repeatTimer[action] = REPEAT_DELAY;
+  }
+
+  /* ------------------------------------------------------------- touch
+
+     Touch does not get its own path through the game. It produces the same
+     actions the keys do - 'up', 'left', 'confirm' and the rest - so every
+     scene reads Input exactly as it always has and none of them had to
+     learn what a finger is.
+
+     Which part of the screen means what depends on the mode, because a tap
+     in the middle means "flap" in a run and "choose this" in a menu. Scenes
+     set the mode; the pads are drawn from this same table, so what is drawn
+     and what is listened to can never drift apart.                      */
+
+  var PAD = 44, PAD_Y = 216, EDGE = 8;
+
+  var ZONES = {
+    play: [
+      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'pause', x: VW - 38,       y: 6,     w: 32, h: 26,   icon: 'II', small: true },
+      { a: 'up',    rest: true }
+    ],
+    menu: [
+      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'back',  x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'BACK' },
+      { a: 'confirm', rest: true }
+    ],
+    text: [
+      { a: 'left',  x: EDGE,           y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'up',    x: 196,            y: PAD_Y, w: PAD, h: PAD, icon: '\u25B2' },
+      { a: 'down',  x: 196 + PAD + 6,  y: PAD_Y, w: PAD, h: PAD, icon: '\u25BC' },
+      { a: 'confirm', x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'SAVE' }
+    ]
+  };
+
+  var touchMode = 'menu';
+  var touchSeen = false;          /* has this player used touch at all */
+  var points = {};                /* touch id -> the action it is holding */
+  var touchHeld = {};             /* action -> held by at least one finger */
+
+  function zoneAt(x, y) {
+    var list = ZONES[touchMode] || ZONES.menu;
+    var rest = null;
+    for (var i = 0; i < list.length; i++) {
+      var z = list[i];
+      if (z.rest) { rest = z; continue; }
+      if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return z;
+    }
+    return rest;
+  }
+
+  function rebuildTouchHeld() {
+    touchHeld = {};
+    for (var id in points) if (points[id]) touchHeld[points[id]] = true;
+  }
+
+  function onTouchStart(e) {
+    touchSeen = true;
     Audio3.unlock();
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      var t = e.changedTouches[i];
+      var v = Screen.toVirtual(t.clientX, t.clientY);
+      if (!v) continue;
+      var z = zoneAt(v.x, v.y);
+      if (!z) continue;
+      points[t.identifier] = z.a;
+      pressAction(z.a);
+    }
+    rebuildTouchHeld();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  /* sliding off a pad releases it and sliding onto another takes it, so a
+     thumb can travel from left to right without lifting */
+  function onTouchMove(e) {
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      var t = e.changedTouches[i];
+      if (!(t.identifier in points)) continue;
+      var v = Screen.toVirtual(t.clientX, t.clientY);
+      if (!v) continue;
+      var z = zoneAt(v.x, v.y);
+      var now = z ? z.a : null;
+      /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
+      if (now !== points[t.identifier]) {
+        points[t.identifier] = now;
+        if (now && (now === 'left' || now === 'right')) pressAction(now);
+      }
+    }
+    rebuildTouchHeld();
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function onTouchEnd(e) {
+    for (var i = 0; i < e.changedTouches.length; i++) delete points[e.changedTouches[i].identifier];
+    rebuildTouchHeld();
+    if (e.cancelable) e.preventDefault();
   }
 
   function onKeyUp(e) {
@@ -495,8 +613,14 @@ var Input = (function () {
   function init() {
     window.addEventListener('keydown', onKeyDown, { passive: false });
     window.addEventListener('keyup', onKeyUp);
+    var opt = { passive: false };
+    window.addEventListener('touchstart', onTouchStart, opt);
+    window.addEventListener('touchmove', onTouchMove, opt);
+    window.addEventListener('touchend', onTouchEnd, opt);
+    window.addEventListener('touchcancel', onTouchEnd, opt);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {}; lastTap = {};
+      points = {}; touchHeld = {};
     });
   }
 
@@ -533,7 +657,7 @@ var Input = (function () {
     init: init,
     update: update,
     endFrame: endFrame,
-    down: function (a) { return !!held[a]; },
+    down: function (a) { return !!held[a] || !!touchHeld[a]; },
     /* fresh press only - used for flying and for confirming */
     hit: function (a) { return pressed[a] === true; },
     /* fresh press or auto-repeat - used for menu movement */
@@ -545,7 +669,16 @@ var Input = (function () {
     setTextMode: setTextMode,
     typed: function () { return typed.slice(); },
     /* watch for a sequence typed anywhere; fn fires the moment it lands */
-    watchCode: function (seq, fn) { codes.push({ seq: seq, fn: fn, buf: '' }); }
+    watchCode: function (seq, fn) { codes.push({ seq: seq, fn: fn, buf: '' }); },
+
+    /* ---- touch ---- */
+    setTouchMode: function (m) { if (ZONES[m]) touchMode = m; },
+    touchMode: function () { return touchMode; },
+    /* true once a finger has touched the screen: the on-screen pads stay
+       out of the way until there is a reason to believe in them */
+    usingTouch: function () { return touchSeen; },
+    pads: function () { return ZONES[touchMode] || ZONES.menu; },
+    padHeld: function (a) { return !!touchHeld[a]; }
   };
 })();
 </script>
@@ -718,7 +851,7 @@ var Screen = (function () {
 
   var stage, bg, ch, fg;
   var ctxBg, ctxCh, ctxFg;
-  var scale = 1, dpr = 1;
+  var scale = 1, dpr = 1, portrait = false;
   var shakeX = 0, shakeY = 0, shakeTime = 0, shakeAmount = 0;
 
   function init() {
@@ -739,9 +872,13 @@ var Screen = (function () {
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     var s = Math.min(window.innerWidth / VW, window.innerHeight / VH);
-    scale = Math.max(1, Math.floor(s));
-    /* on very small windows fall back to a fractional fit rather than crop */
-    if (VW * scale > window.innerWidth || VH * scale > window.innerHeight) scale = s;
+    /* Whole-number scaling keeps every pixel square, which is the whole look
+       of the game - but only once there is room for 2x. Below that, rounding
+       down means a phone in landscape renders a 480x270 postage stamp in the
+       middle of the screen, so take the fractional fit and fill it instead.
+       At phone pixel ratios the uneven pixel edges that costs are invisible. */
+    scale = s >= 2 ? Math.floor(s) : Math.max(1, s);
+    portrait = window.innerHeight > window.innerWidth;
 
     var w = Math.round(VW * scale), h = Math.round(VH * scale);
     stage.style.width = w + 'px';
@@ -750,6 +887,15 @@ var Screen = (function () {
     var cw = Math.round(w * dpr), chh = Math.round(h * dpr);
     if (ch.width !== cw || ch.height !== chh) { ch.width = cw; ch.height = chh; }
     API.scale = scale;
+    API.portrait = portrait;
+  }
+
+  /* a point from a touch or a click, in the 480x270 the game thinks in */
+  function toVirtual(clientX, clientY) {
+    var r = stage.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    return { x: (clientX - r.left) / r.width * VW,
+             y: (clientY - r.top) / r.height * VH };
   }
 
   function shake(amount, time) {
@@ -789,9 +935,9 @@ var Screen = (function () {
   }
 
   var API = {
-    init: init, resize: resize, beginFrame: beginFrame,
+    init: init, resize: resize, beginFrame: beginFrame, toVirtual: toVirtual,
     shake: shake, updateShake: updateShake, toggleFullscreen: toggleFullscreen,
-    ctxBg: null, ctxCh: null, ctxFg: null, scale: 1
+    ctxBg: null, ctxCh: null, ctxFg: null, scale: 1, portrait: false
   };
   return API;
 })();
@@ -3685,8 +3831,70 @@ var UI = (function () {
     px(0, 2, 1, 3);
   }
 
+  /* The on-screen controls. Their geometry is Input's, not ours, so what
+     the player sees and what the game listens to are the same rectangles.
+     Kept faint: they sit over a run in progress and must not compete with
+     the pillars for attention. */
+  function pads(ctx) {
+    var list = Input.pads();
+    for (var i = 0; i < list.length; i++) {
+      var z = list[i];
+      if (z.rest) continue;
+      var on = Input.padHeld(z.a);
+      var a = ctx.globalAlpha;
+      ctx.globalAlpha = a * (on ? 0.85 : 0.42);
+
+      ctx.fillStyle = C.shadow;
+      ctx.fillRect(z.x + 1, z.y + 2, z.w, z.h);
+      ctx.fillStyle = on ? C.boardHi : C.board;
+      ctx.fillRect(z.x, z.y, z.w, z.h);
+      ctx.fillStyle = on ? C.gold : C.boardTop;
+      ctx.fillRect(z.x, z.y, z.w, 2);
+      ctx.fillStyle = C.boardLo;
+      ctx.fillRect(z.x, z.y + z.h - 2, z.w, 2);
+      ctx.fillStyle = on ? C.gold : C.inkFaint;
+      ctx.fillRect(z.x, z.y, z.w, 1); ctx.fillRect(z.x, z.y + z.h - 1, z.w, 1);
+      ctx.fillRect(z.x, z.y, 1, z.h); ctx.fillRect(z.x + z.w - 1, z.y, 1, z.h);
+
+      var cx = z.x + z.w / 2, cy = z.y + z.h / 2;
+      if (z.label) {
+        text(ctx, z.label, cx, Math.round(cy - 3), { align: 'center',
+             colour: on ? C.ink : C.inkDim, shadow: C.shadow });
+      } else if (z.icon === 'II') {
+        ctx.fillStyle = on ? C.ink : C.inkDim;
+        ctx.fillRect(Math.round(cx) - 4, Math.round(cy) - 5, 3, 10);
+        ctx.fillRect(Math.round(cx) + 2, Math.round(cy) - 5, 3, 10);
+      } else {
+        text(ctx, z.icon, cx, Math.round(cy - (z.small ? 3 : 6)),
+             { align: 'center', scale: z.small ? 1 : 2,
+               colour: on ? C.ink : C.inkDim, shadow: C.shadow });
+      }
+      ctx.globalAlpha = a;
+    }
+  }
+
+  /* 480x270 is a landscape shape and a phone held upright cannot show it
+     at any useful size, so say so rather than rendering a stamp */
+  function rotateNotice(ctx, t) {
+    ctx.fillStyle = '#0b0805';
+    ctx.fillRect(0, 0, VW, VH);
+    var bob = Math.round(Math.sin(t * 2.2) * 2);
+    var cx = VW / 2, cy = VH / 2 - 14 + bob;
+    /* a little handset turning on its side */
+    ctx.fillStyle = C.shadow;  ctx.fillRect(cx - 15, cy - 25, 30, 50);
+    ctx.fillStyle = C.board;   ctx.fillRect(cx - 14, cy - 24, 28, 48);
+    ctx.fillStyle = C.darker;  ctx.fillRect(cx - 11, cy - 20, 22, 38);
+    ctx.fillStyle = C.boardTop; ctx.fillRect(cx - 4, cy + 19, 8, 2);
+    chevron(ctx, cx + 30, cy, 1, 6, C.gold);
+    chevron(ctx, cx - 30, cy, -1, 6, C.gold);
+    heading(ctx, 'TURN IT SIDEWAYS', cx, VH / 2 + 30, 2, { colour: C.gold });
+    text(ctx, 'LAND OF DOODADS IS A WIDE GAME', cx, VH / 2 + 52,
+         { align: 'center', colour: C.inkDim });
+  }
+
   return {
     C: C, scrim: scrim, board: board, panel: panel, nail: nail,
+    pads: pads, rotateNotice: rotateNotice,
     chevron: chevron, chevronV: chevronV, marker: marker,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };
@@ -4262,8 +4470,9 @@ var TitleScene = (function () {
     Tint.rect(ctx, 0, VH - 16, VW, 3, UI.C.darker, 8);
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, '◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN', VW / 2, VH - 10,
-            { align: 'center', colour: UI.C.inkDim });
+    UI.text(ctx, Input.usingTouch() ? '◀ ▶ MOVE    TAP TO SELECT'
+                                    : '◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
+            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
   }
 
   function drawLogo(ctx) {
@@ -4462,12 +4671,14 @@ var LevelSelectScene = (function () {
 
     var hintY = VH - 13;
     if (focus === 'room') {
-      UI.text(ctx, '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK', VW / 2, hintY,
-              { align: 'center', colour: UI.C.inkDim });
+      UI.text(ctx, Input.usingTouch() ? '◀ ▶ ROOM    TAP TO PICK    BACK'
+                                      : '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK',
+              VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
     } else {
-      UI.text(ctx, (lv.locked || !Levels.isUnlocked(lv))
-                     ? '◀ ▶ LEVEL    LOCKED    ESC ROOMS'
-                     : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS',
+      var shut = lv.locked || !Levels.isUnlocked(lv);
+      var touch = Input.usingTouch();
+      UI.text(ctx, shut ? (touch ? '◀ ▶ LEVEL    LOCKED    BACK' : '◀ ▶ LEVEL    LOCKED    ESC ROOMS')
+                        : (touch ? '◀ ▶ LEVEL    TAP TO PLAY    BACK' : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS'),
               VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
     }
   }
@@ -5003,8 +5214,9 @@ var CharSelectScene = (function () {
     ctx.fillRect(0, VH - 13, VW, 13);
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, open ? '◀ ▶ PICK    ENTER FLY    ESC LEVELS'
-                      : '◀ ▶ PICK    LOCKED    ESC LEVELS',
+    var touch = Input.usingTouch();
+    UI.text(ctx, open ? (touch ? '◀ ▶ PICK    TAP TO FLY    BACK' : '◀ ▶ PICK    ENTER FLY    ESC LEVELS')
+                      : (touch ? '◀ ▶ PICK    LOCKED    BACK' : '◀ ▶ PICK    LOCKED    ESC LEVELS'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
   }
 
@@ -5225,6 +5437,7 @@ var PlayScene = (function () {
 
   function start() {
     state = 'ready';
+    Input.setTouchMode('play');
     t = 0; runTime = 0;
     scroll = 0;
     speed = tune.speedStart;
@@ -5674,6 +5887,7 @@ var PlayScene = (function () {
 
   function land() {
     state = 'dead';
+    Input.setTouchMode('menu');
     deadTimer = 0;
     player.y = FLOOR - BODY_R;
     Audio3.play('thud');
@@ -5757,6 +5971,7 @@ var PlayScene = (function () {
     entryPending = false;
     state = 'entry';
     Input.setTextMode(true);
+    Input.setTouchMode('text');
     Audio3.play(rank === 0 ? 'start' : 'select');
   }
 
@@ -5784,6 +5999,7 @@ var PlayScene = (function () {
     if (!name.trim()) name = 'AAA';
     savedRow = Scores.submit(roomRef, level, name, score, doodad.id);
     Input.setTextMode(false);
+    Input.setTouchMode('menu');
     state = 'dead';
     menuIndex = 0;
     Audio3.play('select');
@@ -6271,13 +6487,14 @@ var PlayScene = (function () {
     var y = 168;
     UI.heading(ctx, 'GET READY', VW / 2, 74, 2, { colour: UI.C.gold });
     UI.panel(ctx, VW / 2 - 92, y, 184, 44, { fill: UI.C.darker, dither: 13, edge: UI.C.inkFaint });
-    UI.text(ctx, 'SPACE / UP / W', VW / 2 - 84, y + 7, { colour: UI.C.ink });
+    var touch = Input.usingTouch();
+    UI.text(ctx, touch ? 'TAP THE SCREEN' : 'SPACE / UP / W', VW / 2 - 84, y + 7, { colour: UI.C.ink });
     UI.text(ctx, 'FLY', VW / 2 + 84, y + 7, { align: 'right', colour: UI.C.inkDim });
-    UI.text(ctx, '◀ ▶ / A D', VW / 2 - 84, y + 18, { colour: UI.C.ink });
+    UI.text(ctx, touch ? 'THE ◀ ▶ PADS' : '◀ ▶ / A D', VW / 2 - 84, y + 18, { colour: UI.C.ink });
     UI.text(ctx, 'MOVE', VW / 2 + 84, y + 18, { align: 'right', colour: UI.C.inkDim });
-    UI.text(ctx, 'P', VW / 2 - 84, y + 29, { colour: UI.C.ink });
+    UI.text(ctx, touch ? 'II TOP RIGHT' : 'P', VW / 2 - 84, y + 29, { colour: UI.C.ink });
     UI.text(ctx, 'PAUSE', VW / 2 + 84, y + 29, { align: 'right', colour: UI.C.inkDim });
-    UI.hint(ctx, 'PRESS UP TO FLY', 132, t);
+    UI.hint(ctx, touch ? 'TAP TO FLY' : 'PRESS UP TO FLY', 132, t);
     /* a chevron bouncing above the doodad */
     UI.chevronV(ctx, player.x, player.y - 26 + Math.round(Math.sin(t * 6) * 2), -1, 4, UI.C.gold);
   }
@@ -6289,7 +6506,12 @@ var PlayScene = (function () {
     UI.text(ctx, 'PAUSED', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
     UI.rule(ctx, x + 12, y + 28, w - 24, UI.C.boardLo);
 
-    var rows = [
+    var rows = Input.usingTouch() ? [
+      ['FLY', 'TAP THE SCREEN'],
+      ['MOVE', 'THE ◀ ▶ PADS'],
+      ['PAUSE', 'II TOP RIGHT'],
+      ['RESUME', 'TAP II AGAIN']
+    ] : [
       ['FLY', 'SPACE / UP / W'],
       ['MOVE', '◀ ▶  /  A  D'],
       ['PAUSE', 'P'],
@@ -6302,7 +6524,7 @@ var PlayScene = (function () {
       UI.text(ctx, rows[i][0], x + 16, ry, { colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, rows[i][1], x + w - 16, ry, { align: 'right', colour: '#e8c98a', shadow: UI.C.shadow });
     }
-    UI.hint(ctx, 'PRESS P TO RESUME', y + h + 8, t);
+    UI.hint(ctx, Input.usingTouch() ? 'TAP II TO RESUME' : 'PRESS P TO RESUME', y + h + 8, t);
   }
 
   /* results (or initials entry) on the left, the table on the right */
@@ -6372,8 +6594,10 @@ var PlayScene = (function () {
         UI.chevronV(ctx, x + gw / 2, ly + 31 + bob, 1, 3, UI.C.gold);
       }
     }
-    UI.text(ctx, 'TYPE, OR \u25B2\u25BC \u25C0\u25B6', cx, y + 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, 'ENTER TO SAVE', cx, y + 139, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+    UI.text(ctx, Input.usingTouch() ? 'USE THE PADS BELOW' : 'TYPE, OR \u25B2\u25BC \u25C0\u25B6',
+            cx, y + 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    UI.text(ctx, Input.usingTouch() ? 'THEN SAVE' : 'ENTER TO SAVE',
+            cx, y + 139, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
   }
 
   /* the top ten, with this run slotted in live while initials are typed */
@@ -6596,8 +6820,8 @@ var ScoresScene = (function () {
       }
     }
 
-    UI.text(ctx, '◀ ▶ LEVEL    X RESET TABLE    ESC BACK', VW / 2, VH - 10,
-            { align: 'center', colour: UI.C.inkDim });
+    UI.text(ctx, Input.usingTouch() ? '◀ ▶ LEVEL    BACK' : '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
 
     if (confirming && c) {
       UI.scrim(ctx, 10);
@@ -6606,7 +6830,8 @@ var ScoresScene = (function () {
       UI.text(ctx, 'RESET ' + c.level.name + '?', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'BACK TO THE DOODADS\' OWN SCORES.', VW / 2, y + 31, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 46, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-      UI.text(ctx, 'ENTER RESET    ESC KEEP', VW / 2, y + 62, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+      UI.text(ctx, Input.usingTouch() ? 'TAP RESET    BACK KEEPS' : 'ENTER RESET    ESC KEEP',
+              VW / 2, y + 62, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
     }
   }
 
@@ -6632,6 +6857,7 @@ var Game = (function () {
   var loadFade = 1;
 
   var toastText = '', toastTime = 0;
+  var rotateT = 0;
 
   var selection = {
     room: Levels.startRoom,
@@ -6656,12 +6882,15 @@ var Game = (function () {
 
   function go(next, params) {
     if (pending) return;
+    /* every scene is a menu until it says otherwise; PlayScene does */
+    Input.setTouchMode('menu');
     pending = next;
     pendingParams = params || {};
     wipeDir = 1;
   }
 
   function goInstant(next, params) {
+    Input.setTouchMode('menu');
     if (scene && scene.exit) scene.exit();
     scene = next;
     if (scene.enter) scene.enter(params || {});
@@ -6697,6 +6926,7 @@ var Game = (function () {
       if (!m) Audio3.play('move');
     }
     if (toastTime > 0) toastTime -= dt;
+    rotateT += dt;
 
     if (wipeDir === 1) {
       wipe += WIPE_SPEED * dt;
@@ -6725,6 +6955,10 @@ var Game = (function () {
       if (scene.drawFg) scene.drawFg(fg);
     }
 
+    /* the on-screen controls belong to every scene, so they are drawn
+       here once rather than remembered in five different places */
+    if (Input.usingTouch()) UI.pads(fg);
+
     if (toastTime > 0) {
       var a = Math.min(1, toastTime * 3);
       if (a > 0.2) {
@@ -6735,6 +6969,9 @@ var Game = (function () {
         UI.text(fg, toastText, VW - tw / 2 - 6, 10, { align: 'center', colour: UI.C.inkDim });
       }
     }
+
+    /* nothing below this point is worth showing if the phone is upright */
+    if (Input.usingTouch() && Screen.portrait) UI.rotateNotice(fg, rotateT);
 
     if (wipe > 0) Dither.wipe(fg, wipe, '#0b0805');
 

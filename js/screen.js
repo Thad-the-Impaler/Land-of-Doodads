@@ -11,7 +11,7 @@ var Screen = (function () {
 
   var stage, bg, ch, fg;
   var ctxBg, ctxCh, ctxFg;
-  var scale = 1, dpr = 1;
+  var scale = 1, dpr = 1, portrait = false;
   var shakeX = 0, shakeY = 0, shakeTime = 0, shakeAmount = 0;
 
   function init() {
@@ -32,9 +32,13 @@ var Screen = (function () {
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     var s = Math.min(window.innerWidth / VW, window.innerHeight / VH);
-    scale = Math.max(1, Math.floor(s));
-    /* on very small windows fall back to a fractional fit rather than crop */
-    if (VW * scale > window.innerWidth || VH * scale > window.innerHeight) scale = s;
+    /* Whole-number scaling keeps every pixel square, which is the whole look
+       of the game - but only once there is room for 2x. Below that, rounding
+       down means a phone in landscape renders a 480x270 postage stamp in the
+       middle of the screen, so take the fractional fit and fill it instead.
+       At phone pixel ratios the uneven pixel edges that costs are invisible. */
+    scale = s >= 2 ? Math.floor(s) : Math.max(1, s);
+    portrait = window.innerHeight > window.innerWidth;
 
     var w = Math.round(VW * scale), h = Math.round(VH * scale);
     stage.style.width = w + 'px';
@@ -43,6 +47,15 @@ var Screen = (function () {
     var cw = Math.round(w * dpr), chh = Math.round(h * dpr);
     if (ch.width !== cw || ch.height !== chh) { ch.width = cw; ch.height = chh; }
     API.scale = scale;
+    API.portrait = portrait;
+  }
+
+  /* a point from a touch or a click, in the 480x270 the game thinks in */
+  function toVirtual(clientX, clientY) {
+    var r = stage.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    return { x: (clientX - r.left) / r.width * VW,
+             y: (clientY - r.top) / r.height * VH };
   }
 
   function shake(amount, time) {
@@ -82,9 +95,9 @@ var Screen = (function () {
   }
 
   var API = {
-    init: init, resize: resize, beginFrame: beginFrame,
+    init: init, resize: resize, beginFrame: beginFrame, toVirtual: toVirtual,
     shake: shake, updateShake: updateShake, toggleFullscreen: toggleFullscreen,
-    ctxBg: null, ctxCh: null, ctxFg: null, scale: 1
+    ctxBg: null, ctxCh: null, ctxFg: null, scale: 1, portrait: false
   };
   return API;
 })();

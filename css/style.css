@@ -2,8 +2,12 @@
 
 html,body{
   width:100%;height:100%;
+  height:100dvh;                      /* phones: ignore the browser chrome */
   background:#0b0805;
   overflow:hidden;
+  /* a tap is a game input, never a scroll, a zoom or a pull-to-refresh */
+  touch-action:none;
+  overscroll-behavior:none;
   /* the letterbox around the stage: a dim, warm bezel */
   background-image:radial-gradient(circle at 50% 45%,#1a1109 0%,#0b0805 70%);
 }
@@ -13,6 +17,10 @@ body{
   cursor:default;
   -webkit-user-select:none;user-select:none;
   -webkit-tap-highlight-color:transparent;
+  /* long-pressing a canvas must not offer to save or share it */
+  -webkit-touch-callout:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 #stage{
@@ -26,6 +34,8 @@ body{
   position:absolute;inset:0;
   width:100%;height:100%;
   display:block;
+  touch-action:none;
+  -webkit-user-drag:none;user-drag:none;
 }
 
 #bgCanvas,#fgCanvas{

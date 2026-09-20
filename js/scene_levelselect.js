@@ -145,12 +145,14 @@ var LevelSelectScene = (function () {
 
     var hintY = VH - 13;
     if (focus === 'room') {
-      UI.text(ctx, '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK', VW / 2, hintY,
-              { align: 'center', colour: UI.C.inkDim });
+      UI.text(ctx, Input.usingTouch() ? '◀ ▶ ROOM    TAP TO PICK    BACK'
+                                      : '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK',
+              VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
     } else {
-      UI.text(ctx, (lv.locked || !Levels.isUnlocked(lv))
-                     ? '◀ ▶ LEVEL    LOCKED    ESC ROOMS'
-                     : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS',
+      var shut = lv.locked || !Levels.isUnlocked(lv);
+      var touch = Input.usingTouch();
+      UI.text(ctx, shut ? (touch ? '◀ ▶ LEVEL    LOCKED    BACK' : '◀ ▶ LEVEL    LOCKED    ESC ROOMS')
+                        : (touch ? '◀ ▶ LEVEL    TAP TO PLAY    BACK' : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS'),
               VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
     }
   }

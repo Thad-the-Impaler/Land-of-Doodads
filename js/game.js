@@ -15,6 +15,7 @@ var Game = (function () {
   var loadFade = 1;
 
   var toastText = '', toastTime = 0;
+  var rotateT = 0;
 
   var selection = {
     room: Levels.startRoom,
@@ -39,12 +40,15 @@ var Game = (function () {
 
   function go(next, params) {
     if (pending) return;
+    /* every scene is a menu until it says otherwise; PlayScene does */
+    Input.setTouchMode('menu');
     pending = next;
     pendingParams = params || {};
     wipeDir = 1;
   }
 
   function goInstant(next, params) {
+    Input.setTouchMode('menu');
     if (scene && scene.exit) scene.exit();
     scene = next;
     if (scene.enter) scene.enter(params || {});
@@ -80,6 +84,7 @@ var Game = (function () {
       if (!m) Audio3.play('move');
     }
     if (toastTime > 0) toastTime -= dt;
+    rotateT += dt;
 
     if (wipeDir === 1) {
       wipe += WIPE_SPEED * dt;
@@ -108,6 +113,10 @@ var Game = (function () {
       if (scene.drawFg) scene.drawFg(fg);
     }
 
+    /* the on-screen controls belong to every scene, so they are drawn
+       here once rather than remembered in five different places */
+    if (Input.usingTouch()) UI.pads(fg);
+
     if (toastTime > 0) {
       var a = Math.min(1, toastTime * 3);
       if (a > 0.2) {
@@ -118,6 +127,9 @@ var Game = (function () {
         UI.text(fg, toastText, VW - tw / 2 - 6, 10, { align: 'center', colour: UI.C.inkDim });
       }
     }
+
+    /* nothing below this point is worth showing if the phone is upright */
+    if (Input.usingTouch() && Screen.portrait) UI.rotateNotice(fg, rotateT);
 
     if (wipe > 0) Dither.wipe(fg, wipe, '#0b0805');
 

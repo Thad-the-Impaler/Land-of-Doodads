@@ -36,6 +36,27 @@ single file with:
 python3 tools/build_single_file.py
 ```
 
+## On a phone
+
+Open the [play link](https://thad-the-impaler.github.io/Land-of-Doodads/) and
+turn the phone sideways - 480x270 is a landscape shape and the game says so if
+you are holding it upright.
+
+Touch does not have its own path through the game. A finger produces the same
+actions the keys do, so every screen behaves as it always has and the on-screen
+pads are drawn from the very same table the game listens to, which is why what
+you see and what it responds to cannot drift apart.
+
+| | |
+|---|---|
+| In a run | **tap anywhere** to fly; the `◀ ▶` pads bottom-left to move; `II` top-right to pause |
+| In a menu | `◀ ▶` to move, **tap anywhere else** to choose, `BACK` bottom-right |
+| Entering initials | `◀ ▶` to pick a letter, `▲ ▼` to change it, `SAVE` |
+
+The pads stay hidden until a finger actually touches the screen, so nothing
+changes on a desktop. Pepper's dash works by double-tapping the `▶` pad, the
+same gesture as double-tapping the key.
+
 ## Controls
 
 | | |
