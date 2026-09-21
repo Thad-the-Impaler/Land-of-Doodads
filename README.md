@@ -54,8 +54,8 @@ you see and what it responds to cannot drift apart.
 | Entering initials | `◀ ▶` to pick a letter, `▲ ▼` to change it, `SAVE` |
 
 The pads stay hidden until a finger actually touches the screen, so nothing
-changes on a desktop. Pepper's dash works by double-tapping the `▶` pad, the
-same gesture as double-tapping the key.
+changes on a desktop. Every doodad's ability is passive, so there is no gesture
+to learn and nothing extra to reach for on a phone.
 
 ## Controls
 
@@ -101,6 +101,8 @@ The score that matters is the highest you have ever reached, with any doodad, on
 any level. It is kept separately from the high score tables, so resetting a table
 with `X` never takes a doodad away again.
 
+Each of the five flies differently - see [Abilities](#abilities).
+
 ### The master passkey
 
 Type **`IMP11`** on any screen and every doodad opens at once. It takes effect
@@ -139,31 +141,6 @@ kinds of thing, themed differently:
 | dressing | feed, feathers, bedding | bark chips, fallen leaves, a paver |
 | the rare one | - | **a succulent in a pot** |
 
-### Pepper's dash
-
-Double-tap `RIGHT` or `D` and Pepper throws herself forward. Anything **falling**
-that she meets is knocked out of the air, the same way the spicy power-up cooks
-one - but pillars and mint are not, and since the world comes at her from the
-right, a dash carries her *into* whatever is coming. Meeting a pillar sooner is
-what the move costs.
-
-There is no sprite for it; she just beats her wings hard. A gauge in the top
-left says whether it is back yet - it takes a second and a half.
-
-Only a **fresh** press counts toward the double-tap, so holding a direction can
-never trigger it.
-
-### Gerald's hunger
-
-Gerald has a **hunger**:
-power-ups within 110 pixels drift to him, faster the closer they get, and he
-holds his mouth open while he has hold of one. Only power-ups - the hot drop
-and the succulent. Ordinary eggs and tomatoes are left well alone, because a
-magnet that drags hazards into you is a curse rather than a gift.
-
-A succulent pulled this way lifts clean out of its pot and comes to him,
-trailing soil, leaving the empty pot standing on the bed.
-
 ### The succulent
 
 A potted succulent occasionally sits on the ground in the Garden, glowing a cool
@@ -176,6 +153,71 @@ the world around it instead, so you are never revived into the pillar that just 
 you. You can hold two at a time; taking a third when the pot is full pays out points.
 They are deliberately rare - roughly one bay in thirty-five, and never two close
 together.
+
+## Abilities
+
+Every doodad has one, and **every one of them is passive**. An earlier version
+gave Pepper a dash on a double-tapped `▶`, and it was a mistake worth
+recording: it asked for a gesture mid-flight, with the same hand already busy
+flapping, and it mostly fired late and drove her into a pillar. Nothing here
+asks for an input of its own. Each one sits on a different axis, so no two
+doodads are the same doodad with a different coat of paint.
+
+| doodad | ability | what it does |
+|---|---|---|
+| COOKIE | **NERVE** | a plank threaded close scores **double** |
+| PEPPER | **WATCHFUL** | she sees the gap coming and where the sky will land |
+| GERALD | **HUNGER** | power-ups within 110 pixels drift to him |
+| MAXIMUS | **TROT** | the ground cannot end him |
+| BILLY | **PAPER-LIGHT** | he falls slow and flies soft |
+
+### Cookie's nerve
+
+Every frame Cookie is inside a plank's width, the clearance between her and the
+nearer edge of the gap is measured; the smallest of the whole pass is what
+counts, so one brave frame is enough. Come within **7 pixels** and the plank is
+worth two - four while the run is hot, because nerve and spicy stack. `NERVE +1`
+is thrown where she took it, along with a spray off the edge she shaved.
+
+Getting *inside* a plank disqualifies it instead. That is reachable - the grace
+after a succulent save waves you straight through one - and a pass-through is
+the opposite of a thread, so it must not read as the tightest one possible.
+
+### Pepper's watchfulness
+
+Two sight lines nobody else gets. Anything **falling** is drawn a dotted column
+down to a bracket on the ground, so its landing spot is known the moment it
+lets go - and the bracket goes hot for a spicy one. And the gap of the next
+plank *still off the right of the screen* is held against the edge as a bracket,
+brightening as it closes, so she can be at the right height before it arrives.
+It eases out rather than blinking off in the stretch where the furthest plank is
+already on screen and there is nothing left to foresee.
+
+### Gerald's hunger
+
+Power-ups within 110 pixels drift to him, faster the closer they get, and he
+holds his mouth open while he has hold of one. Only power-ups - the hot drop
+and the succulent. Ordinary eggs and tomatoes are left well alone, because a
+magnet that drags hazards into you is a curse rather than a gift.
+
+A succulent pulled this way lifts clean out of its pot and comes to him,
+trailing soil, leaving the empty pot standing on the bed.
+
+### Maximus's trot
+
+He was never really flying. The floor stops him the way the rafters stop
+everyone - he lands, kicks up bedding and can take off again - so the mistake
+that ends every other run costs him a second instead. It is forgiveness, not
+immunity: floor spikes still kill him, and a plank's lower half reaches the
+ground, so he cannot simply run the level.
+
+### Billy's paper
+
+A biro drawing weighs nothing. His gravity, terminal speed and flap are all
+scaled down together, so a beat still lifts him about as far as anyone (45
+pixels against the standard 48) - it just takes longer. Measured: **0.66
+seconds** of hang against everyone else's 0.59. Gentler arcs, and more time to
+change your mind halfway through one.
 
 ## Eggs
 
@@ -299,15 +341,17 @@ so they stay smooth against the pixelated world.
   `walk` stomps the hay and keeps trying to fly. The select screen lays itself
   out from `LIST`, but its five bays are sized to fit 480 pixels: a sixth
   doodad needs new numbers at the top of `js/scene_charselect.js`.
-* **Traits and abilities** - `ability` is the name shown on the select card.
-  A doodad whose ability actually does something sets `abilityLive: true` (the
-  card then shows a star instead of a padlock) and `abilityAbout`, two lines
-  that replace its flavour text. The ability itself is a *field* PlayScene
-  reads, not a check on the doodad's id - Gerald's is `pull`, his reach in
-  pixels - so the next one is another field rather than another branch.
-  Abilities so far: Gerald's `pull` (a radius) and Pepper's
-  `dash: { speed, time, cool }`. `Input.doubleTap(action)` is there for any
-  ability that wants a gesture rather than a key.
+* **Traits and abilities** - `ability` is the name shown on the select card and
+  on the GET READY panel. A doodad whose ability actually does something sets
+  `abilityLive: true` (the card then shows a star instead of a padlock) and
+  `abilityAbout`, two lines that replace its flavour text. The ability itself is
+  a *field* PlayScene reads, not a check on the doodad's id, so the next one is
+  another field rather than another branch: `nerve` (a clearance in pixels),
+  `watch` (a flag), `pull` (a radius), `trot` (a flag) and
+  `light: { gravity, flap, fall }` (scales on the three numbers a doodad's
+  flight is made of - ask `grav()`, `maxFall()` and `flapV()`, never the
+  constants). Keep new ones **passive**: the one ability that needed a gesture
+  during play was cut for fighting the hand that was already flapping.
   A doodad may also have extra sprite frames: add the artwork, list it in
   `DOODADS` in `tools/trim_sprites.py` under a frame name, re-run the script
   (it crops every frame of a doodad with one shared box, so **adding a frame

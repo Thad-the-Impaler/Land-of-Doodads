@@ -98,14 +98,6 @@ var Audio3 = (function () {
                            tone({ from: 1318, dur: 0.34, type: 'square', vol: 0.10, delay: 0.50 });
                            noise({ freq: 2600, dur: 0.5, vol: 0.05, q: 0.6, delay: 0.5 }); },
 
-    /* a hard beat of wings and the air getting out of the way */
-    dash:    function () { noise({ freq: 1500, dur: 0.16, vol: 0.2, q: 0.9 });
-                           tone({ from: 320, to: 760, dur: 0.14, type: 'square', vol: 0.12 });
-                           tone({ from: 180, to: 120, dur: 0.1, type: 'triangle', vol: 0.1 });
-                           noise({ freq: 2600, dur: 0.1, vol: 0.08, q: 1.4, delay: 0.05 }); },
-    /* the cooldown finishing: a quiet all-clear you can hear under play */
-    ready:   function () { tone({ from: 660, dur: 0.05, type: 'triangle', vol: 0.07 });
-                           tone({ from: 990, dur: 0.07, type: 'triangle', vol: 0.06, delay: 0.045 }); },
 
     /* ---- the succulent ---- */
     life:    function () { tone({ from: 523, dur: 0.07, type: 'triangle', vol: 0.13 });
@@ -137,6 +129,10 @@ var Audio3 = (function () {
                            tone({ from: 1318, dur: 0.26, type: 'square', vol: 0.10, delay: 0.24 }); },
     scoreHot:function () { tone({ from: 880, dur: 0.06, type: 'square', vol: 0.13 });
                            tone({ from: 1318, dur: 0.10, type: 'square', vol: 0.12, delay: 0.055 }); },
+    /* a plank shaved close: a thin zip past the ear, not another point */
+    nerve:   function () { tone({ from: 990, to: 1480, dur: 0.06, type: 'square', vol: 0.09 });
+                           tone({ from: 1480, to: 1980, dur: 0.07, type: 'triangle', vol: 0.07, delay: 0.05 });
+                           noise({ freq: 3200, dur: 0.08, vol: 0.05, q: 1.6 }); },
     cooldown:function () { tone({ from: 784, to: 330, dur: 0.3, type: 'triangle', vol: 0.11 });
                            noise({ freq: 900, dur: 0.3, vol: 0.06, q: 0.5 }); },
     start:   function () { tone({ from: 392, to: 392, dur: 0.08, type: 'square', vol: 0.12 });

@@ -10,6 +10,14 @@
    unlockAt is the score the player has to have reached before a doodad
    can be flown. No unlockAt means it was always there.
    title says how the doodad behaves in the coop on the title screen.
+
+   Every doodad has an ability, and every one of them is PASSIVE: it needs
+   no button of its own. The one that did (a dash on a double-tap) was cut,
+   because asking for a gesture mid-flight fights the hand already flapping.
+   Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
+   `trot`, `light` - so a new one is a new field rather than a new branch on
+   an id, and each sits on its own axis: points, sight, pickups, survival,
+   handling.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -21,7 +29,14 @@ var Doodads = (function () {
       name: 'COOKIE',
       tagline: 'FIRST TO THE FEEDER',
       about: ['SOFT, ROUND AND FULL OF NERVE.', 'FLIES LIKE A THROWN BISCUIT.'],
-      ability: 'STILL HATCHING',
+      /* she is the one with the nerve, so threading a plank close is
+         what she is paid for. `nerve` is the clearance, in pixels, that
+         counts as a skim - measured from the hitbox to the nearer edge
+         of the gap, so 7 is about a quarter of the room in a tight gap. */
+      ability: 'NERVE',
+      abilityLive: true,
+      abilityAbout: ['THREAD A PLANK CLOSE', 'AND IT SCORES DOUBLE.'],
+      nerve: 7,
       accent: '#c9873c', accentDark: '#7a4a1c', accentLight: '#eab873',
       sprite: { w: 381, h: 384, pivotX: 219.6, pivotY: 222.8, bodyR: 161.1, footOffset: 1.00 },
       title: { role: 'perch', r: 19 }
@@ -31,13 +46,14 @@ var Doodads = (function () {
       name: 'PEPPER',
       tagline: 'HOLDS A GRUDGE',
       about: ['OILY GREEN SHINE, SHORT TEMPER.', 'ALWAYS WATCHING THE DOOR.'],
-      /* double-tap right and she throws herself forward. `dash` is the
-         whole ability: how fast, for how long, and how long until the
-         next one. */
-      ability: 'DASH',
+      /* always watching the door, so she is the one who sees what is
+         coming: the gap of the plank still off the right of the screen,
+         and the column anything falling is going to come down. `watch`
+         is a flag - the sight lines are PlayScene's business. */
+      ability: 'WATCHFUL',
       abilityLive: true,
-      abilityAbout: ['DOUBLE-TAP \u25B6 TO CHARGE.', 'SHE GOES THROUGH WHAT FALLS.'],
-      dash: { speed: 360, time: 0.26, cool: 1.5 },
+      abilityAbout: ['SHE SEES THE NEXT GAP COMING', 'AND WHERE THE SKY WILL FALL.'],
+      watch: true,
       accent: '#3f6b52', accentDark: '#1d3325', accentLight: '#7fb28d',
       sprite: { w: 384, h: 349, pivotX: 228.4, pivotY: 193.7, bodyR: 155.3, footOffset: 1.00 },
       title: { role: 'patrol', r: 18, homeX: 340, homeY: 124 }
@@ -68,7 +84,15 @@ var Doodads = (function () {
       tagline: 'WINGS SOLD SEPARATELY',
       about: ['A PUG WITH TWO SMALL WINGS', 'AND ENORMOUS CONFIDENCE.'],
       lockedAbout: ['SOMETHING HEAVY IS ASLEEP', 'BEHIND THESE BOARDS.'],
-      ability: 'STILL HATCHING',
+      /* two small wings and a lot of dog: he was never really flying, so
+         the ground does not end him. `trot` turns the floor from the
+         thing that kills you into a thing you can stand on - planks and
+         floor spikes still do, and a plank's lower half reaches the
+         floor, so he cannot simply run the whole level. */
+      ability: 'TROT',
+      abilityLive: true,
+      abilityAbout: ['THE GROUND CANNOT END HIM.', 'HE JUST TROTS IT OFF.'],
+      trot: true,
       unlockAt: 20,
       accent: '#c2a072', accentDark: '#6a4c25', accentLight: '#e8d2aa',
       sprite: { w: 361, h: 384, pivotX: 180.7, pivotY: 192.0, bodyR: 180.7, footOffset: 1.06 },
@@ -80,7 +104,16 @@ var Doodads = (function () {
       tagline: 'DRAWN ANGRY, STAYED ANGRY',
       about: ['BIRO ON RULED PAPER.', 'ESCAPED THE MARGIN. FURIOUS.'],
       lockedAbout: ['SOMETHING IN HERE HAS CLAWS', 'AND A GRUDGE ABOUT IT.'],
-      ability: 'STILL HATCHING',
+      /* he is a drawing, and drawings weigh nothing. `light` scales the
+         three numbers his flight is made of. The flap is softened along
+         with the gravity so a beat still lifts him about as far (45px
+         against the standard 48) - what changes is the time it takes,
+         which is the whole point: longer hang, gentler arcs, more room
+         to change your mind. */
+      ability: 'PAPER-LIGHT',
+      abilityLive: true,
+      abilityAbout: ['BIRO ON PAPER WEIGHS NOTHING.', 'HE FALLS SLOW AND FLIES SOFT.'],
+      light: { gravity: 0.72, flap: 0.82, fall: 0.78 },
       unlockAt: 30,
       /* the biro, not the paper: every other doodad is warm brown or green
          against a dim brown coop, and giving him the near-white paper as an

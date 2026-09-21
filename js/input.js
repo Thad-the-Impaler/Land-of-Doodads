@@ -28,14 +28,6 @@ var Input = (function () {
 
   var REPEAT_DELAY = 0.34, REPEAT_RATE = 0.10;
 
-  /* Double taps, for abilities that want a gesture rather than a key.
-     Only a FRESH press counts, so holding a direction never produces one
-     and the menus' auto-repeat cannot fake it. */
-  var DOUBLE_TAP = 0.28;
-  var clock = 0;
-  var lastTap = {};       // action -> clock at its last fresh press
-  var doubled = {};       // action -> true for exactly one frame
-
   /* while typing initials, letter and number keys type instead of acting:
      otherwise spelling "MAF" would mute, go fullscreen, then walk left */
   var textMode = false;
@@ -108,13 +100,6 @@ var Input = (function () {
   /* everything that has to happen when an action fires, whoever fired it */
   function pressAction(action) {
     pressed[action] = true;
-    var prev = lastTap[action];
-    if (prev !== undefined && clock - prev <= DOUBLE_TAP) {
-      doubled[action] = true;
-      lastTap[action] = undefined;   /* a third tap starts a fresh pair */
-    } else {
-      lastTap[action] = clock;
-    }
     anyPressed = true;
     repeatTimer[action] = REPEAT_DELAY;
   }
@@ -236,14 +221,13 @@ var Input = (function () {
     window.addEventListener('touchend', onTouchEnd, opt);
     window.addEventListener('touchcancel', onTouchEnd, opt);
     window.addEventListener('blur', function () {
-      held = {}; downCodes = {}; lastTap = {};
+      held = {}; downCodes = {};
       points = {}; touchHeld = {};
     });
   }
 
   /* called once per frame, before scene updates */
   function update(dt) {
-    clock += dt;
     for (var action in repeatTimer) {
       if (!held[action]) continue;
       repeatTimer[action] -= dt;
@@ -260,7 +244,6 @@ var Input = (function () {
   /* called once per frame, after scene updates */
   function endFrame() {
     pressed = {};
-    doubled = {};
     anyPressed = false;
     typed.length = 0;
   }
@@ -279,8 +262,6 @@ var Input = (function () {
     hit: function (a) { return pressed[a] === true; },
     /* fresh press or auto-repeat - used for menu movement */
     nav: function (a) { return !!pressed[a]; },
-    /* two fresh presses inside DOUBLE_TAP seconds; true for one frame */
-    doubleTap: function (a) { return !!doubled[a]; },
     anyHit: function () { return anyPressed; },
     /* text entry: letters/digits typed this frame, '\b' for backspace */
     setTextMode: setTextMode,

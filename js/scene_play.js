@@ -45,11 +45,6 @@ var PlayScene = (function () {
      his name, so the next ability can be another field rather than
      another branch. */
   var PULL_MIN = 34, PULL_MAX = 330;   /* px/sec at the rim, and up close */
-
-  /* Pepper's DASH. She throws herself forward - which is INTO the oncoming
-     obstacles, since the world comes at her from the right - and anything
-     falling that she meets is knocked out of the air. Pillars and spikes
-     are not: meeting one sooner is what the move costs. */
   var PULL_EAT = 26;                   /* inside this he is mid-swallow   */
 
   var SPICY_TIME  = 6.5;
@@ -86,9 +81,12 @@ var PlayScene = (function () {
   var saveFlash = 0, saveBanner = 0;
   var lifePop = 0, boonBanner = 0, boonGap = 0, boonBonus = false;
   var spikeArmed = false;
-  var dashLeft = 0, dashCool = 0, dashT = 0, dashWasCool = false;
   var hungry = 0;              /* things his hunger has hold of this frame */
   var nearestPull = 0;         /* how close the closest of them is, 0..1   */
+  var nervePop = 0;            /* the shout for a plank taken close        */
+  var nerveX = 0, nerveY = 0, nerveGain = 1;
+  var watchY0 = 0, watchY1 = 0, watchA = 0;   /* the gap she can see coming */
+  var trotting = 0;            /* seconds of floor under a doodad that can */
   var tune, level, roomRef, doodad;
   var readyPulse = 0;
   var prePause = 'play';
@@ -138,7 +136,8 @@ var PlayScene = (function () {
     lives = 0; invuln = 0; saveFlash = 0; saveBanner = 0;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
     hungry = 0; nearestPull = 0;
-    dashLeft = 0; dashCool = 0; dashT = 0; dashWasCool = false;
+    nervePop = 0; trotting = 0;
+    watchY0 = watchY1 = watchA = 0;
     target = nextTarget(); passedTimer = 0;
     Input.setTextMode(false);
     menuIndex = 0;
@@ -266,39 +265,6 @@ var PlayScene = (function () {
     }
   }
 
-  /* ------------------------------------------------------------ dash */
-
-  function startDash() {
-    dashLeft = doodad.dash.time;
-    dashT = 0;
-    Audio3.play('dash');
-    Screen.shake(2.2, 0.16);
-    for (var i = 0; i < 18; i++) {
-      particles.push({ x: player.x - 7 + rand(-4, 4), y: player.y + rand(-9, 9),
-                       vx: rand(-170, -70) - speed * 0.2, vy: rand(-26, 26),
-                       life: rand(0.14, 0.38), g: 0,
-                       col: chance(0.5) ? doodad.accentLight : FX.motesHi });
-    }
-  }
-
-  function updateDash(dt) {
-    if (dashLeft > 0) {
-      dashLeft -= dt;
-      dashT += dt;
-      /* a wake behind her for as long as it lasts */
-      if (chance(dt * 60)) {
-        particles.push({ x: player.x - 9 + rand(-3, 3), y: player.y + rand(-7, 7),
-                         vx: rand(-200, -110) - speed * 0.3, vy: rand(-14, 14),
-                         life: rand(0.1, 0.28), g: 0,
-                         col: chance(0.45) ? doodad.accentLight : doodad.accent });
-      }
-      if (dashLeft <= 0) { dashLeft = 0; dashCool = doodad.dash.cool; dashWasCool = true; }
-    } else if (dashCool > 0) {
-      dashCool -= dt;
-      if (dashCool <= 0) { dashCool = 0; if (dashWasCool) { Audio3.play('ready'); dashWasCool = false; } }
-    }
-  }
-
   /* ---------------------------------------------------------- hunger */
 
   /* the point a power-up is grabbed by - for the succulent that is the
@@ -348,6 +314,147 @@ var PlayScene = (function () {
                          col: chance(0.5) ? doodad.accentLight : '#f3cc84' });
       }
     }
+  }
+
+  /* ------------------------------------------------------------- nerve
+
+     How close the doodad came to an edge of the gap, measured every frame
+     it is inside a plank's width. The smallest clearance of the whole pass
+     is what counts, so one brave frame is enough - and it is kept on the
+     plank rather than in a variable of its own, because the spacing
+     tightens far enough that two planks can straddle the doodad at once.
+
+     A pass that gets INSIDE the plank is not a skim, it is a pass-through.
+     It is reachable: hurt() returns false for the grace after a save, so
+     collide() waves the doodad straight through a plank, and the next one
+     arrives well inside those 1.7 seconds because save() only clears the
+     world out to SAVE_AHEAD. Treating that as a clearance of zero would
+     score it as the tightest thread possible - the exact opposite of what
+     the ability is paid for - so one overlapping frame disqualifies the
+     plank for the whole pass. */
+
+  var NO_NERVE = -1;
+
+  function updateNerve() {
+    if (!doodad.nerve) return;
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar' || ob.scored) continue;
+      if (player.x + HIT_R < ob.x || player.x - HIT_R > ob.x + ob.w) continue;
+      var over  = (player.y - HIT_R) - ob.gapY;
+      var under = (ob.gapY + ob.gapH) - (player.y + HIT_R);
+      if (ob.skim === NO_NERVE) continue;          /* already disqualified */
+      var c = Math.min(over, under);
+      if (c < 0) { ob.skim = NO_NERVE; continue; }
+      if (ob.skim === undefined || c < ob.skim) { ob.skim = c; ob.skimTop = over < under; }
+    }
+  }
+
+  /* the sparks off the plank she just shaved, on the side she shaved it */
+  function takeNerve(ob, gain) {
+    nerveGain = gain;
+    nervePop = 0.5;
+    nerveX = clamp(player.x, 30, VW - 30);
+    nerveY = Math.max(CEIL + 6, player.y - 20);
+    Audio3.play('nerve');
+    var edge = ob.skimTop ? ob.gapY : ob.gapY + ob.gapH;
+    for (var i = 0; i < 12; i++) {
+      particles.push({ x: player.x + rand(-6, 10), y: edge + rand(-1, 1),
+                       vx: rand(-40, 30) - speed * 0.2, vy: rand(-40, 40),
+                       life: rand(0.18, 0.5), g: 60,
+                       col: chance(0.5) ? doodad.accentLight : '#fff3d0' });
+    }
+  }
+
+  /* ---------------------------------------------------------- watchful
+
+     What she can see that nobody else can: the gap of the plank still off
+     the right of the screen, and the column anything falling is coming
+     down. Both are drawn as thin lines on the room layer, under the
+     doodad, so they read as sight rather than as scenery. */
+
+  var WATCH_LINE = '#cfe9dd', WATCH_HI = '#f2fff8';
+
+  /* the nearest plank that has not reached the screen yet */
+  function nextOffscreen() {
+    var best = null;
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar' || ob.x <= VW - 2) continue;
+      if (!best || ob.x < best.x) best = ob;
+    }
+    return best;
+  }
+
+  /* The marker brightens as the plank closes on the edge, and eases out
+     rather than blinking off in the stretch where the furthest plank is
+     already on screen and there is nothing left to foresee. */
+  function updateWatch(dt) {
+    if (!doodad.watch) return;
+    var p = nextOffscreen(), want = 0;
+    if (p) {
+      watchY0 = p.gapY;
+      watchY1 = p.gapY + p.gapH;
+      want = 0.35 + 0.55 * clamp(1 - (p.x - VW) / 120, 0, 1);
+    }
+    watchA = damp(watchA, want, 0.0009, dt);
+  }
+
+  /* The drops worth a line: the ones still ahead of her, nearest first,
+     and never more than a handful. A guide on something already behind
+     her is no use, and a level in the middle of a downpour would
+     otherwise curtain off the room it is meant to be showing. */
+  var WATCH_MAX = 4;
+
+  function watchList() {
+    var out = [];
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'drop' || ob.broken > 0) continue;
+      if (ob.x < player.x - 24) continue;
+      out.push(ob);
+    }
+    out.sort(function (a, b) { return a.x - b.x; });
+    return out.length > WATCH_MAX ? out.slice(0, WATCH_MAX) : out;
+  }
+
+  function drawWatch(ctx) {
+    var ga = ctx.globalAlpha, i, y;
+
+    /* where the sky is going to land */
+    var coming = watchList();
+    for (i = 0; i < coming.length; i++) {
+      var ob = coming[i];
+      var x = Math.round(ob.x);
+      ctx.globalAlpha = ga * 0.4;
+      ctx.fillStyle = WATCH_LINE;
+      /* stepped up from the ground, not down from the drop: anchoring the
+         dots to something that moves re-phases them every frame and the
+         whole line crawls, which is the same trap as dithering anything
+         that moves */
+      var stop = Math.round(ob.y) + 7;
+      for (y = FLOOR - 4; y > stop; y -= 4) ctx.fillRect(x, y, 1, 2);
+      ctx.globalAlpha = ga * 0.75;
+      ctx.fillStyle = ob.spicy ? FX.hotHi : WATCH_HI;
+      ctx.fillRect(x - 3, FLOOR - 2, 7, 1);
+      ctx.fillRect(x - 3, FLOOR - 4, 1, 2);
+      ctx.fillRect(x + 3, FLOOR - 4, 1, 2);
+    }
+
+    /* and the gap after this one, held against the right edge */
+    if (watchA > 0.03 && watchY1 > watchY0) {
+      var ex = VW - 4;
+      var top = Math.round(watchY0), bot = Math.round(watchY1);
+      ctx.globalAlpha = ga * watchA;
+      ctx.fillStyle = WATCH_LINE;
+      for (y = top + 3; y < bot - 3; y += 4) ctx.fillRect(ex, y, 1, 2);
+      ctx.fillStyle = WATCH_HI;
+      ctx.fillRect(ex - 3, top, 5, 1);
+      ctx.fillRect(ex - 3, bot - 1, 5, 1);
+      ctx.fillRect(ex - 3, top, 1, 3);
+      ctx.fillRect(ex - 3, bot - 3, 1, 3);
+    }
+    ctx.globalAlpha = ga;
   }
 
   /* ----------------------------------------------------- the succulent */
@@ -510,10 +617,19 @@ var PlayScene = (function () {
     }
   }
 
-  /* -------------------------------------------------------- physics */
+  /* -------------------------------------------------------- physics
+
+     The three numbers a doodad's flight is made of, each run through its
+     own `light` scale if it has one. Everything that moves the player asks
+     for them rather than reading the constants, so a doodad that weighs
+     less than the others is data and not a special case. */
+
+  function grav()    { return doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY; }
+  function maxFall() { return doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL; }
+  function flapV()   { return doodad.light ? FLAP * doodad.light.flap : FLAP; }
 
   function flap() {
-    player.vy = FLAP;
+    player.vy = flapV();
     player.flapTimer = 0.22;
     player.angle = -0.36;
     Audio3.play('flap');
@@ -525,21 +641,18 @@ var PlayScene = (function () {
   }
 
   function updatePlayer(dt) {
-    /* horizontal nudging - unless the dash has the wheel */
-    if (dashLeft > 0) {
-      player.vx = doodad.dash.speed;
-    } else {
-      var want = 0;
-      if (Input.down('left')) want -= 1;
-      if (Input.down('right')) want += 1;
-      player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
-    }
+    /* horizontal nudging */
+    var want = 0;
+    if (Input.down('left')) want -= 1;
+    if (Input.down('right')) want += 1;
+    player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
     player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
     if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
 
     /* gravity, integrated so a flap always reaches the same height */
-    player.y += player.vy * dt + 0.5 * GRAVITY * dt * dt;
-    player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL);
+    var g = grav();
+    player.y += player.vy * dt + 0.5 * g * dt * dt;
+    player.vy = Math.min(player.vy + g * dt, maxFall());
     player.flapTimer -= dt;
 
     /* the rafters are solid but survivable */
@@ -548,8 +661,32 @@ var PlayScene = (function () {
       if (player.vy < 0) player.vy *= -0.18;
     }
 
-    /* tilt follows the arc */
-    var target = player.vy < 0 ? -0.36 : clamp(player.vy / MAX_FALL * 1.25, -0.36, 1.05);
+    /* and for a doodad that can trot, so is the bedding. Done here rather
+       than in collide() so the floor simply stops him the way the rafters
+       do: by the time collide() looks he is already standing on it, and
+       its ground check cannot fire. Planks and floor spikes still can. */
+    if (doodad.trot && player.y + BODY_R > FLOOR) {
+      var landed = trotting <= 0;
+      player.y = FLOOR - BODY_R;
+      if (player.vy > 0) {
+        if (landed && player.vy > 140) { Audio3.play('thud'); Screen.shake(1.8, 0.12); }
+        player.vy = 0;
+      }
+      trotting += dt;
+      /* he is heavy and the bedding knows it */
+      if (chance(dt * (landed ? 40 : 16))) {
+        particles.push({ x: player.x + rand(-6, 2), y: FLOOR - 1,
+                         vx: rand(-70, -20) - speed * 0.25, vy: rand(-48, -8),
+                         life: rand(0.2, 0.5), g: 260,
+                         col: chance(0.5) ? FX.ground : FX.groundHi });
+      }
+    } else if (trotting > 0) {
+      trotting = 0;
+    }
+
+    /* tilt follows the arc - except with his feet down, where it is a stand */
+    var target = player.vy < 0 ? -0.36 : clamp(player.vy / maxFall() * 1.25, -0.36, 1.05);
+    if (trotting > 0) target = 0.06;
     player.angle = damp(player.angle, target, 0.0008, dt);
   }
 
@@ -710,8 +847,7 @@ var PlayScene = (function () {
       if (ob.type === 'boon') { takeBoon(ob); obstacles.splice(i, 1); continue; }
       if (ob.type !== 'drop') { if (hurt('obstacle')) return; continue; }
       if (ob.spicy) { grabSpicy(ob); obstacles.splice(i, 1); continue; }
-      /* spicy cooks a drop; a dash simply knocks it out of the air */
-      if (spicy > 0 || dashLeft > 0) { smashDrop(ob); obstacles.splice(i, 1); continue; }
+      if (spicy > 0) { smashDrop(ob); obstacles.splice(i, 1); continue; }
       if (hurt('drop')) return;
     }
     if (player.y + HIT_R >= FLOOR) hurt('ground');
@@ -739,6 +875,7 @@ var PlayScene = (function () {
     if (saveBanner > 0) saveBanner -= dt;
     if (boonBanner > 0) boonBanner -= dt;
     if (lifePop > 0) lifePop -= dt;
+    if (nervePop > 0) nervePop -= dt;
     /* the heat eases in and out, so nothing about it snaps on or off */
     heat = damp(heat, spicy > 0 ? 1 : 0, 0.0004, dt);
     updateParticles(dt);
@@ -763,7 +900,6 @@ var PlayScene = (function () {
       if (!Game.locked()) {
         if (Input.hit('pause')) { prePause = 'play'; state = 'paused'; Audio3.play('pause'); return; }
         if (Input.hit('up')) flap();
-        if (doodad.dash && dashLeft <= 0 && dashCool <= 0 && Input.doubleTap('right')) startDash();
       }
       runTime += dt;
       var d = difficulty();
@@ -777,9 +913,10 @@ var PlayScene = (function () {
       moveObstacles(dt, speed);
       spawnAhead();
       spawnDrops(dt, d);
-      updateDash(dt);
       updatePlayer(dt);
       updateHunger(dt);
+      updateNerve();
+      updateWatch(dt);
       collide();
       emberTrail(dt);
       if (scorePop > 0) scorePop -= dt;
@@ -788,7 +925,7 @@ var PlayScene = (function () {
     }
 
     if (state === 'dying') {
-      player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL);
+      player.vy = Math.min(player.vy + grav() * dt, maxFall());
       player.y += player.vy * dt;
       player.x -= 24 * dt;
       player.angle += player.spin * dt;
@@ -830,9 +967,16 @@ var PlayScene = (function () {
       }
       if (ob.type === 'pillar' && !ob.scored && ob.x + ob.w < player.x) {
         ob.scored = true;
-        score += spicy > 0 ? SPICY_MULT : 1;
-        scorePop = spicy > 0 ? 0.42 : 0.32;
+        var base = spicy > 0 ? SPICY_MULT : 1;
+        /* a plank threaded close is worth two of itself, and the heat still
+           doubles on top of that - nerve and spicy stack, which is exactly
+           the run you want to be having */
+        var tight = doodad.nerve && ob.skim !== undefined &&
+                    ob.skim >= 0 && ob.skim <= doodad.nerve;
+        score += tight ? base * 2 : base;
+        scorePop = (spicy > 0 || tight) ? 0.42 : 0.32;
         Audio3.play(spicy > 0 ? 'scoreHot' : 'score');
+        if (tight) takeNerve(ob, base);
         checkPassed();
         checkUnlocks();
       }
@@ -902,6 +1046,9 @@ var PlayScene = (function () {
       ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1);
     }
 
+    /* only while she is flying: the sight lines go out with her */
+    if (doodad.watch && state === 'play') drawWatch(ctx);
+
     if (heat > 0.02) drawHeat(ctx);
   }
 
@@ -941,8 +1088,6 @@ var PlayScene = (function () {
     /* mouth open while his hunger has hold of something, and only if he
        actually has that frame - Doodads.draw falls back on its own */
     var frame = player.flapTimer > 0;
-    /* the dash has no sprite of its own - she just beats her wings hard */
-    if (dashLeft > 0) frame = Math.floor(dashT * 30) % 2 === 0;
     if (hungry > 0 && nearestPull > 0.12) frame = 'eat';
     /* a slight throb while it is lit up, as though the heat is getting to it */
     var o = null;
@@ -990,8 +1135,8 @@ var PlayScene = (function () {
       });
       drawChase(ctx, 34 + s * 7 + 4);
       drawLives(ctx);
-      drawDashGauge(ctx);
       drawSpicy(ctx);
+      if (nervePop > 0) drawNerve(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
       else if (hazardWarn > 0) drawHazardWarning(ctx);
@@ -1027,35 +1172,16 @@ var PlayScene = (function () {
     }
   }
 
-  /* Whether the dash is back yet, top left under the lives. A cooldown
-     you cannot see is just an ability that randomly refuses. */
-  function drawDashGauge(ctx) {
-    if (!doodad.dash) return;
-    var x = 9, y = lives > 0 ? 22 : 9, w = 30;
-    var ready = dashCool <= 0 && dashLeft <= 0;
-    var k = dashLeft > 0 ? 1 : (dashCool > 0 ? 1 - dashCool / doodad.dash.cool : 1);
-
-    ctx.fillStyle = UI.C.shadow;
-    ctx.fillRect(x - 1, y - 1, w + 2, 7);
-    ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(x, y, w, 5);
-    var fw = Math.max(0, Math.round(w * clamp(k, 0, 1)));
-    if (fw > 0) {
-      /* Pepper's accent is a dark green, so a gauge painted in it vanishes
-         into the HUD. Ready reads bright; cooling reads as her own colour
-         filling back up. */
-      ctx.fillStyle = ready ? doodad.accentLight : doodad.accent;
-      ctx.fillRect(x, y, fw, 5);
-      ctx.fillStyle = ready ? '#e8f4ec' : doodad.accentLight;
-      ctx.fillRect(x, y, fw, 2);
-    }
-    ctx.fillStyle = ready ? doodad.accentLight : UI.C.inkFaint;
-    ctx.fillRect(x, y, 1, 5);
-    /* when it is back, a chevron pulses on the end of the bar */
-    if (ready) {
-      var bob = Math.round((Math.sin(t * 5) + 1) * 0.5);
-      UI.chevron(ctx, x + w + 4 + bob, y + 2, 1, 3, doodad.accentLight);
-    }
+  /* the shout for a plank taken close enough to count, thrown where she
+     took it rather than into the middle of the screen */
+  function drawNerve(ctx) {
+    if (state === 'entry') return;
+    var k = clamp(nervePop / 0.5, 0, 1);
+    var ga = ctx.globalAlpha;
+    ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
+    UI.text(ctx, 'NERVE +' + nerveGain, nerveX, nerveY - (1 - k) * 15,
+            { align: 'center', colour: doodad.accentLight, shadow: UI.C.shadow });
+    ctx.globalAlpha = ga;
   }
 
   /* the shout when a succulent is taken, and when one is spent */
@@ -1171,6 +1297,10 @@ var PlayScene = (function () {
   function drawReady(ctx) {
     var y = 168;
     UI.heading(ctx, 'GET READY', VW / 2, 74, 2, { colour: UI.C.gold });
+    /* every doodad has one now, and every one of them is passive - so this
+       is a reminder of what you are flying with, not a control to learn */
+    UI.text(ctx, '\u2605 ' + doodad.ability, VW / 2, 156,
+            { align: 'center', colour: doodad.accentLight, spacing: 2 });
     UI.panel(ctx, VW / 2 - 92, y, 184, 44, { fill: UI.C.darker, dither: 13, edge: UI.C.inkFaint });
     var touch = Input.usingTouch();
     UI.text(ctx, touch ? 'TAP THE SCREEN' : 'SPACE / UP / W', VW / 2 - 84, y + 7, { colour: UI.C.ink });
@@ -1329,7 +1459,9 @@ var PlayScene = (function () {
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
                                     lives: lives, invuln: invuln,
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
-                                    dashLeft: dashLeft, dashCool: dashCool,
+                                    trotting: trotting, watchA: watchA,
+                                    nervePop: nervePop, nerveGain: nerveGain,
+                                    ability: doodad ? doodad.ability : null,
                                     difficulty: tune ? difficulty() : null }; }
   };
 })();
