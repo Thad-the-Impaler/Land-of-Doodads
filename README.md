@@ -36,26 +36,36 @@ single file with:
 python3 tools/build_single_file.py
 ```
 
-## On a phone
+## Pointing at it
 
-Open the [play link](https://thad-the-impaler.github.io/Land-of-Doodads/) and
-turn the phone sideways - 480x270 is a landscape shape and the game says so if
-you are holding it upright.
-
-Touch does not have its own path through the game. A finger produces the same
-actions the keys do, so every screen behaves as it always has and the on-screen
-pads are drawn from the very same table the game listens to, which is why what
-you see and what it responds to cannot drift apart.
+Neither touch nor the mouse has its own path through the game. A finger and a
+cursor both produce the same actions the keys do, so every screen behaves as it
+always has, and the on-screen pads are drawn from the very same table the game
+listens to - which is why what you see and what it responds to cannot drift
+apart. **A click is simply a one-fingered tap that can also hover**, so a mouse
+plays the game exactly the way a phone does:
 
 | | |
 |---|---|
-| In a run | **tap anywhere** to fly; the `◀ ▶` pads bottom-left to move; `II` top-right to pause |
-| In a menu | `◀ ▶` to move, **tap anywhere else** to choose, `BACK` bottom-right |
+| In a run | **tap or click anywhere** to fly; the `◀ ▶` pads bottom-left to move; `II` top-right to pause |
+| In a menu | `◀ ▶` to move, **tap or click anywhere else** to choose, `BACK` bottom-right |
 | Entering initials | `◀ ▶` to pick a letter, `▲ ▼` to change it, `SAVE` |
 
-The pads stay hidden until a finger actually touches the screen, so nothing
-changes on a desktop. Every doodad's ability is passive, so there is no gesture
-to learn and nothing extra to reach for on a phone.
+Holding the button down works like a thumb: slide off a pad and it lets go,
+slide onto another and it takes over. A pad under the cursor lights up, which
+is the one thing a finger cannot do.
+
+The pads follow whatever you used last. They stay hidden until you actually tap
+or click, and a keypress puts them away again - so a desktop visitor who never
+touches the mouse sees exactly what they always did, and every hint is worded
+for the thing in your hand. On a phone that replaces the key list, because
+there are no keys; on a desktop it sits beside it, because both work.
+
+**On a phone**, open the
+[play link](https://thad-the-impaler.github.io/Land-of-Doodads/) and turn the
+phone sideways - 480x270 is a landscape shape and the game says so if you are
+holding it upright. Every doodad's ability is passive, so there is no gesture
+to learn and nothing extra to reach for.
 
 ## Controls
 
@@ -69,7 +79,8 @@ to learn and nothing extra to reach for on a phone.
 | Fullscreen | `F` |
 | Reset a level's table | `X` on the High Scores screen (asks first) |
 
-The doodad you picked last is remembered.
+The keys never go away: clicking is an addition, not a mode. The doodad you
+picked last is remembered.
 
 ## The doodads
 

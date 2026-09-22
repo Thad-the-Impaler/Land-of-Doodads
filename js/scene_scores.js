@@ -167,7 +167,9 @@ var ScoresScene = (function () {
       }
     }
 
-    UI.text(ctx, Input.usingTouch() ? '◀ ▶ LEVEL    BACK' : '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+    UI.text(ctx, UI.forInput('◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                             '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                             '◀ ▶ LEVEL    BACK'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
 
     if (confirming && c) {
@@ -177,7 +179,8 @@ var ScoresScene = (function () {
       UI.text(ctx, 'RESET ' + c.level.name + '?', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'BACK TO THE DOODADS\' OWN SCORES.', VW / 2, y + 31, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 46, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-      UI.text(ctx, Input.usingTouch() ? 'TAP RESET    BACK KEEPS' : 'ENTER RESET    ESC KEEP',
+      UI.text(ctx, UI.forInput('ENTER RESET    ESC KEEP', 'CLICK RESET    ESC KEEPS',
+                               'TAP RESET    BACK KEEPS'),
               VW / 2, y + 62, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
     }
   }

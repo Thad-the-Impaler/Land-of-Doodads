@@ -115,7 +115,7 @@ var Game = (function () {
 
     /* the on-screen controls belong to every scene, so they are drawn
        here once rather than remembered in five different places */
-    if (Input.usingTouch()) UI.pads(fg);
+    if (Input.pointing()) UI.pads(fg);
 
     if (toastTime > 0) {
       var a = Math.min(1, toastTime * 3);
@@ -129,7 +129,7 @@ var Game = (function () {
     }
 
     /* nothing below this point is worth showing if the phone is upright */
-    if (Input.usingTouch() && Screen.portrait) UI.rotateNotice(fg, rotateT);
+    if (Input.pointerKind() === 'touch' && Screen.portrait) UI.rotateNotice(fg, rotateT);
 
     if (wipe > 0) Dither.wipe(fg, wipe, '#0b0805');
 

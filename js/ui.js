@@ -180,8 +180,11 @@ var UI = (function () {
       var z = list[i];
       if (z.rest) continue;
       var on = Input.padHeld(z.a);
+      /* a cursor can sit on a pad without pressing it, which a finger
+         cannot - so it gets a step between resting and held */
+      var over = !on && Input.padHover(z.a);
       var a = ctx.globalAlpha;
-      ctx.globalAlpha = a * (on ? 0.85 : 0.42);
+      ctx.globalAlpha = a * (on ? 0.85 : (over ? 0.62 : 0.42));
 
       ctx.fillStyle = C.shadow;
       ctx.fillRect(z.x + 1, z.y + 2, z.w, z.h);
@@ -212,6 +215,15 @@ var UI = (function () {
     }
   }
 
+  /* One hint line, worded for what the player is actually holding. A phone
+     has no keys, so touch REPLACES the key list; a mouse sits beside the
+     keyboard rather than replacing it, because on a desktop both work and
+     hiding either one would be a lie. */
+  function forInput(keys, mouse, touch) {
+    var k = Input.pointerKind();
+    return k === 'touch' ? touch : (k === 'mouse' ? mouse : keys);
+  }
+
   /* 480x270 is a landscape shape and a phone held upright cannot show it
      at any useful size, so say so rather than rendering a stamp */
   function rotateNotice(ctx, t) {
@@ -233,7 +245,7 @@ var UI = (function () {
 
   return {
     C: C, scrim: scrim, board: board, panel: panel, nail: nail,
-    pads: pads, rotateNotice: rotateNotice,
+    pads: pads, rotateNotice: rotateNotice, forInput: forInput,
     chevron: chevron, chevronV: chevronV, marker: marker,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };

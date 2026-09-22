@@ -94,6 +94,8 @@ var Input = (function () {
     downCodes[e.code] = action;
     held[action] = true;
     pressAction(action);
+    /* a key means the pads are in the way rather than in use */
+    pointerSeen = false; pointerKind = null; hoverAction = null;
     Audio3.unlock();
   }
 
@@ -104,12 +106,15 @@ var Input = (function () {
     repeatTimer[action] = REPEAT_DELAY;
   }
 
-  /* ------------------------------------------------------------- touch
+  /* ----------------------------------------------------------- pointers
 
-     Touch does not get its own path through the game. It produces the same
-     actions the keys do - 'up', 'left', 'confirm' and the rest - so every
-     scene reads Input exactly as it always has and none of them had to
-     learn what a finger is.
+     Touch does not get its own path through the game, and neither does the
+     mouse. Both produce the same actions the keys do - 'up', 'left',
+     'confirm' and the rest - so every scene reads Input exactly as it
+     always has and none of them had to learn what a finger or a cursor is.
+     A click is simply a one-fingered touch that can also hover, so it runs
+     through the very same begin/move/end below: there is one zone map and
+     one set of rules, and a desktop cannot drift away from a phone.
 
      Which part of the screen means what depends on the mode, because a tap
      in the middle means "flap" in a run and "choose this" in a menu. Scenes
@@ -141,9 +146,27 @@ var Input = (function () {
   };
 
   var touchMode = 'menu';
-  var touchSeen = false;          /* has this player used touch at all */
-  var points = {};                /* touch id -> the action it is holding */
-  var touchHeld = {};             /* action -> held by at least one finger */
+  var pointerSeen = false;        /* is anything pointing, so draw the pads  */
+  var pointerKind = null;         /* 'touch' | 'mouse' | null, for wording   */
+  var points = {};                /* point id -> the action it is holding    */
+  var touchHeld = {};             /* action -> held by at least one point    */
+  var hoverAction = null;         /* what the cursor is over; a mouse only   */
+
+  var MOUSE = 'mouse';            /* the cursor's id in `points`. Touch ids
+                                     are numbers, so they cannot collide.    */
+
+  /* A phone fires a synthetic mousedown a moment after a tap, which would
+     otherwise flap twice and turn the pads into a mouse. preventDefault on
+     the touch usually suppresses it, but not on a non-cancelable listener,
+     so this swallows it outright. It decays in update() rather than reading
+     a clock, because a frame is the only time this file believes in. */
+  var TOUCH_GUARD = 0.5;
+  var touchGuard = 0;
+
+  /* The pads follow whatever you used last: click and they appear, press a
+     key and they get out of the way again. A phone never presses a key, so
+     nothing about touch changes. */
+  function usePointer(kind) { pointerSeen = true; pointerKind = kind; }
 
   function zoneAt(x, y) {
     var list = ZONES[touchMode] || ZONES.menu;
@@ -161,46 +184,102 @@ var Input = (function () {
     for (var id in points) if (points[id]) touchHeld[points[id]] = true;
   }
 
+  /* one point going down, whatever put it there */
+  function beginPoint(id, clientX, clientY) {
+    var v = Screen.toVirtual(clientX, clientY);
+    if (!v) return false;
+    var z = zoneAt(v.x, v.y);
+    if (!z) return false;
+    points[id] = z.a;
+    pressAction(z.a);
+    return true;
+  }
+
+  /* sliding off a pad releases it and sliding onto another takes it, so a
+     thumb - or a held mouse button - can travel from left to right without
+     lifting */
+  function movePoint(id, clientX, clientY) {
+    if (!(id in points)) return;
+    var v = Screen.toVirtual(clientX, clientY);
+    if (!v) return;
+    var z = zoneAt(v.x, v.y);
+    var now = z ? z.a : null;
+    if (now === points[id]) return;
+    points[id] = now;
+    /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
+    if (now === 'left' || now === 'right') pressAction(now);
+  }
+
   function onTouchStart(e) {
-    touchSeen = true;
+    usePointer('touch');
+    touchGuard = TOUCH_GUARD;
     Audio3.unlock();
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
-      var v = Screen.toVirtual(t.clientX, t.clientY);
-      if (!v) continue;
-      var z = zoneAt(v.x, v.y);
-      if (!z) continue;
-      points[t.identifier] = z.a;
-      pressAction(z.a);
+      beginPoint(t.identifier, t.clientX, t.clientY);
     }
     rebuildTouchHeld();
     if (e.cancelable) e.preventDefault();
   }
 
-  /* sliding off a pad releases it and sliding onto another takes it, so a
-     thumb can travel from left to right without lifting */
   function onTouchMove(e) {
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
-      if (!(t.identifier in points)) continue;
-      var v = Screen.toVirtual(t.clientX, t.clientY);
-      if (!v) continue;
-      var z = zoneAt(v.x, v.y);
-      var now = z ? z.a : null;
-      /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
-      if (now !== points[t.identifier]) {
-        points[t.identifier] = now;
-        if (now && (now === 'left' || now === 'right')) pressAction(now);
-      }
+      movePoint(t.identifier, t.clientX, t.clientY);
     }
     rebuildTouchHeld();
     if (e.cancelable) e.preventDefault();
   }
 
   function onTouchEnd(e) {
+    touchGuard = TOUCH_GUARD;
     for (var i = 0; i < e.changedTouches.length; i++) delete points[e.changedTouches[i].identifier];
     rebuildTouchHeld();
     if (e.cancelable) e.preventDefault();
+  }
+
+  /* ------------------------------------------------------------- mouse
+
+     The left button is the finger. Everything else here exists because a
+     cursor can do two things a finger cannot: hover over a pad without
+     pressing it, and leave the window still holding the button down. */
+
+  function onMouseDown(e) {
+    if (e.button !== 0 || touchGuard > 0) return;
+    usePointer('mouse');
+    Audio3.unlock();
+    if (!beginPoint(MOUSE, e.clientX, e.clientY)) return;
+    rebuildTouchHeld();
+    /* so a click-and-drag across the game does not turn into a text
+       selection of the page underneath it */
+    e.preventDefault();
+  }
+
+  function onMouseMove(e) {
+    if (touchGuard > 0) return;
+    var v = Screen.toVirtual(e.clientX, e.clientY);
+    var z = v ? zoneAt(v.x, v.y) : null;
+    /* only the drawn pads light up - the rest-of-screen zone is the whole
+       playfield, and lighting that up would mean lighting up everything */
+    hoverAction = (z && !z.rest) ? z.a : null;
+    if (!(MOUSE in points)) return;
+    movePoint(MOUSE, e.clientX, e.clientY);
+    rebuildTouchHeld();
+  }
+
+  function onMouseUp(e) {
+    if (e.button !== 0) return;
+    delete points[MOUSE];
+    rebuildTouchHeld();
+  }
+
+  /* the cursor leaving the window is a release: otherwise a button let go
+     out there would leave a pad held down for ever */
+  function onMouseOut(e) {
+    if (e.relatedTarget || e.toElement) return;    // still inside the page
+    delete points[MOUSE];
+    hoverAction = null;
+    rebuildTouchHeld();
   }
 
   function onKeyUp(e) {
@@ -220,14 +299,19 @@ var Input = (function () {
     window.addEventListener('touchmove', onTouchMove, opt);
     window.addEventListener('touchend', onTouchEnd, opt);
     window.addEventListener('touchcancel', onTouchEnd, opt);
+    window.addEventListener('mousedown', onMouseDown, opt);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mouseout', onMouseOut);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {};
-      points = {}; touchHeld = {};
+      points = {}; touchHeld = {}; hoverAction = null;
     });
   }
 
   /* called once per frame, before scene updates */
   function update(dt) {
+    if (touchGuard > 0) touchGuard -= dt;
     for (var action in repeatTimer) {
       if (!held[action]) continue;
       repeatTimer[action] -= dt;
@@ -272,10 +356,17 @@ var Input = (function () {
     /* ---- touch ---- */
     setTouchMode: function (m) { if (ZONES[m]) touchMode = m; },
     touchMode: function () { return touchMode; },
-    /* true once a finger has touched the screen: the on-screen pads stay
-       out of the way until there is a reason to believe in them */
-    usingTouch: function () { return touchSeen; },
+    /* true once a finger or a cursor has been used on the game: the
+       on-screen pads stay out of the way until there is a reason to
+       believe in them, and step back out of it at the next keypress */
+    pointing: function () { return pointerSeen; },
+    /* 'touch' | 'mouse' | null. Only for wording and for the turn-it-
+       sideways notice, which is a phone's problem and not a cursor's. */
+    pointerKind: function () { return pointerKind; },
+    /* the verb for whatever is pointing, so a hint reads right either way */
+    tapWord: function () { return pointerKind === 'mouse' ? 'CLICK' : 'TAP'; },
     pads: function () { return ZONES[touchMode] || ZONES.menu; },
-    padHeld: function (a) { return !!touchHeld[a]; }
+    padHeld: function (a) { return !!touchHeld[a]; },
+    padHover: function (a) { return hoverAction === a; }
   };
 })();

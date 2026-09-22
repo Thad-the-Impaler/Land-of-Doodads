@@ -344,9 +344,12 @@ var CharSelectScene = (function () {
     ctx.fillRect(0, VH - 13, VW, 13);
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - 13, VW, 1);
-    var touch = Input.usingTouch();
-    UI.text(ctx, open ? (touch ? '◀ ▶ PICK    TAP TO FLY    BACK' : '◀ ▶ PICK    ENTER FLY    ESC LEVELS')
-                      : (touch ? '◀ ▶ PICK    LOCKED    BACK' : '◀ ▶ PICK    LOCKED    ESC LEVELS'),
+    UI.text(ctx, open ? UI.forInput('◀ ▶ PICK    ENTER FLY    ESC LEVELS',
+                                    '◀ ▶ PICK    CLICK FLY    ESC LEVELS',
+                                    '◀ ▶ PICK    TAP TO FLY    BACK')
+                      : UI.forInput('◀ ▶ PICK    LOCKED    ESC LEVELS',
+                                    '◀ ▶ PICK    LOCKED    ESC LEVELS',
+                                    '◀ ▶ PICK    LOCKED    BACK'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
   }
 

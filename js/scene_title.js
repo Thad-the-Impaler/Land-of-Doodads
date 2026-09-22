@@ -566,8 +566,9 @@ var TitleScene = (function () {
     Tint.rect(ctx, 0, VH - 16, VW, 3, UI.C.darker, 8);
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, Input.usingTouch() ? '◀ ▶ MOVE    TAP TO SELECT'
-                                    : '◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
+    UI.text(ctx, UI.forInput('◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
+                             '◀ ▶ MOVE   CLICK SELECT   M SOUND   F FULLSCREEN',
+                             '◀ ▶ MOVE    TAP TO SELECT'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
   }
 

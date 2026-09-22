@@ -477,6 +477,8 @@ var Input = (function () {
     downCodes[e.code] = action;
     held[action] = true;
     pressAction(action);
+    /* a key means the pads are in the way rather than in use */
+    pointerSeen = false; pointerKind = null; hoverAction = null;
     Audio3.unlock();
   }
 
@@ -487,12 +489,15 @@ var Input = (function () {
     repeatTimer[action] = REPEAT_DELAY;
   }
 
-  /* ------------------------------------------------------------- touch
+  /* ----------------------------------------------------------- pointers
 
-     Touch does not get its own path through the game. It produces the same
-     actions the keys do - 'up', 'left', 'confirm' and the rest - so every
-     scene reads Input exactly as it always has and none of them had to
-     learn what a finger is.
+     Touch does not get its own path through the game, and neither does the
+     mouse. Both produce the same actions the keys do - 'up', 'left',
+     'confirm' and the rest - so every scene reads Input exactly as it
+     always has and none of them had to learn what a finger or a cursor is.
+     A click is simply a one-fingered touch that can also hover, so it runs
+     through the very same begin/move/end below: there is one zone map and
+     one set of rules, and a desktop cannot drift away from a phone.
 
      Which part of the screen means what depends on the mode, because a tap
      in the middle means "flap" in a run and "choose this" in a menu. Scenes
@@ -524,9 +529,27 @@ var Input = (function () {
   };
 
   var touchMode = 'menu';
-  var touchSeen = false;          /* has this player used touch at all */
-  var points = {};                /* touch id -> the action it is holding */
-  var touchHeld = {};             /* action -> held by at least one finger */
+  var pointerSeen = false;        /* is anything pointing, so draw the pads  */
+  var pointerKind = null;         /* 'touch' | 'mouse' | null, for wording   */
+  var points = {};                /* point id -> the action it is holding    */
+  var touchHeld = {};             /* action -> held by at least one point    */
+  var hoverAction = null;         /* what the cursor is over; a mouse only   */
+
+  var MOUSE = 'mouse';            /* the cursor's id in `points`. Touch ids
+                                     are numbers, so they cannot collide.    */
+
+  /* A phone fires a synthetic mousedown a moment after a tap, which would
+     otherwise flap twice and turn the pads into a mouse. preventDefault on
+     the touch usually suppresses it, but not on a non-cancelable listener,
+     so this swallows it outright. It decays in update() rather than reading
+     a clock, because a frame is the only time this file believes in. */
+  var TOUCH_GUARD = 0.5;
+  var touchGuard = 0;
+
+  /* The pads follow whatever you used last: click and they appear, press a
+     key and they get out of the way again. A phone never presses a key, so
+     nothing about touch changes. */
+  function usePointer(kind) { pointerSeen = true; pointerKind = kind; }
 
   function zoneAt(x, y) {
     var list = ZONES[touchMode] || ZONES.menu;
@@ -544,46 +567,102 @@ var Input = (function () {
     for (var id in points) if (points[id]) touchHeld[points[id]] = true;
   }
 
+  /* one point going down, whatever put it there */
+  function beginPoint(id, clientX, clientY) {
+    var v = Screen.toVirtual(clientX, clientY);
+    if (!v) return false;
+    var z = zoneAt(v.x, v.y);
+    if (!z) return false;
+    points[id] = z.a;
+    pressAction(z.a);
+    return true;
+  }
+
+  /* sliding off a pad releases it and sliding onto another takes it, so a
+     thumb - or a held mouse button - can travel from left to right without
+     lifting */
+  function movePoint(id, clientX, clientY) {
+    if (!(id in points)) return;
+    var v = Screen.toVirtual(clientX, clientY);
+    if (!v) return;
+    var z = zoneAt(v.x, v.y);
+    var now = z ? z.a : null;
+    if (now === points[id]) return;
+    points[id] = now;
+    /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
+    if (now === 'left' || now === 'right') pressAction(now);
+  }
+
   function onTouchStart(e) {
-    touchSeen = true;
+    usePointer('touch');
+    touchGuard = TOUCH_GUARD;
     Audio3.unlock();
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
-      var v = Screen.toVirtual(t.clientX, t.clientY);
-      if (!v) continue;
-      var z = zoneAt(v.x, v.y);
-      if (!z) continue;
-      points[t.identifier] = z.a;
-      pressAction(z.a);
+      beginPoint(t.identifier, t.clientX, t.clientY);
     }
     rebuildTouchHeld();
     if (e.cancelable) e.preventDefault();
   }
 
-  /* sliding off a pad releases it and sliding onto another takes it, so a
-     thumb can travel from left to right without lifting */
   function onTouchMove(e) {
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
-      if (!(t.identifier in points)) continue;
-      var v = Screen.toVirtual(t.clientX, t.clientY);
-      if (!v) continue;
-      var z = zoneAt(v.x, v.y);
-      var now = z ? z.a : null;
-      /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
-      if (now !== points[t.identifier]) {
-        points[t.identifier] = now;
-        if (now && (now === 'left' || now === 'right')) pressAction(now);
-      }
+      movePoint(t.identifier, t.clientX, t.clientY);
     }
     rebuildTouchHeld();
     if (e.cancelable) e.preventDefault();
   }
 
   function onTouchEnd(e) {
+    touchGuard = TOUCH_GUARD;
     for (var i = 0; i < e.changedTouches.length; i++) delete points[e.changedTouches[i].identifier];
     rebuildTouchHeld();
     if (e.cancelable) e.preventDefault();
+  }
+
+  /* ------------------------------------------------------------- mouse
+
+     The left button is the finger. Everything else here exists because a
+     cursor can do two things a finger cannot: hover over a pad without
+     pressing it, and leave the window still holding the button down. */
+
+  function onMouseDown(e) {
+    if (e.button !== 0 || touchGuard > 0) return;
+    usePointer('mouse');
+    Audio3.unlock();
+    if (!beginPoint(MOUSE, e.clientX, e.clientY)) return;
+    rebuildTouchHeld();
+    /* so a click-and-drag across the game does not turn into a text
+       selection of the page underneath it */
+    e.preventDefault();
+  }
+
+  function onMouseMove(e) {
+    if (touchGuard > 0) return;
+    var v = Screen.toVirtual(e.clientX, e.clientY);
+    var z = v ? zoneAt(v.x, v.y) : null;
+    /* only the drawn pads light up - the rest-of-screen zone is the whole
+       playfield, and lighting that up would mean lighting up everything */
+    hoverAction = (z && !z.rest) ? z.a : null;
+    if (!(MOUSE in points)) return;
+    movePoint(MOUSE, e.clientX, e.clientY);
+    rebuildTouchHeld();
+  }
+
+  function onMouseUp(e) {
+    if (e.button !== 0) return;
+    delete points[MOUSE];
+    rebuildTouchHeld();
+  }
+
+  /* the cursor leaving the window is a release: otherwise a button let go
+     out there would leave a pad held down for ever */
+  function onMouseOut(e) {
+    if (e.relatedTarget || e.toElement) return;    // still inside the page
+    delete points[MOUSE];
+    hoverAction = null;
+    rebuildTouchHeld();
   }
 
   function onKeyUp(e) {
@@ -603,14 +682,19 @@ var Input = (function () {
     window.addEventListener('touchmove', onTouchMove, opt);
     window.addEventListener('touchend', onTouchEnd, opt);
     window.addEventListener('touchcancel', onTouchEnd, opt);
+    window.addEventListener('mousedown', onMouseDown, opt);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mouseout', onMouseOut);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {};
-      points = {}; touchHeld = {};
+      points = {}; touchHeld = {}; hoverAction = null;
     });
   }
 
   /* called once per frame, before scene updates */
   function update(dt) {
+    if (touchGuard > 0) touchGuard -= dt;
     for (var action in repeatTimer) {
       if (!held[action]) continue;
       repeatTimer[action] -= dt;
@@ -655,11 +739,18 @@ var Input = (function () {
     /* ---- touch ---- */
     setTouchMode: function (m) { if (ZONES[m]) touchMode = m; },
     touchMode: function () { return touchMode; },
-    /* true once a finger has touched the screen: the on-screen pads stay
-       out of the way until there is a reason to believe in them */
-    usingTouch: function () { return touchSeen; },
+    /* true once a finger or a cursor has been used on the game: the
+       on-screen pads stay out of the way until there is a reason to
+       believe in them, and step back out of it at the next keypress */
+    pointing: function () { return pointerSeen; },
+    /* 'touch' | 'mouse' | null. Only for wording and for the turn-it-
+       sideways notice, which is a phone's problem and not a cursor's. */
+    pointerKind: function () { return pointerKind; },
+    /* the verb for whatever is pointing, so a hint reads right either way */
+    tapWord: function () { return pointerKind === 'mouse' ? 'CLICK' : 'TAP'; },
     pads: function () { return ZONES[touchMode] || ZONES.menu; },
-    padHeld: function (a) { return !!touchHeld[a]; }
+    padHeld: function (a) { return !!touchHeld[a]; },
+    padHover: function (a) { return hoverAction === a; }
   };
 })();
 </script>
@@ -3851,8 +3942,11 @@ var UI = (function () {
       var z = list[i];
       if (z.rest) continue;
       var on = Input.padHeld(z.a);
+      /* a cursor can sit on a pad without pressing it, which a finger
+         cannot - so it gets a step between resting and held */
+      var over = !on && Input.padHover(z.a);
       var a = ctx.globalAlpha;
-      ctx.globalAlpha = a * (on ? 0.85 : 0.42);
+      ctx.globalAlpha = a * (on ? 0.85 : (over ? 0.62 : 0.42));
 
       ctx.fillStyle = C.shadow;
       ctx.fillRect(z.x + 1, z.y + 2, z.w, z.h);
@@ -3883,6 +3977,15 @@ var UI = (function () {
     }
   }
 
+  /* One hint line, worded for what the player is actually holding. A phone
+     has no keys, so touch REPLACES the key list; a mouse sits beside the
+     keyboard rather than replacing it, because on a desktop both work and
+     hiding either one would be a lie. */
+  function forInput(keys, mouse, touch) {
+    var k = Input.pointerKind();
+    return k === 'touch' ? touch : (k === 'mouse' ? mouse : keys);
+  }
+
   /* 480x270 is a landscape shape and a phone held upright cannot show it
      at any useful size, so say so rather than rendering a stamp */
   function rotateNotice(ctx, t) {
@@ -3904,7 +4007,7 @@ var UI = (function () {
 
   return {
     C: C, scrim: scrim, board: board, panel: panel, nail: nail,
-    pads: pads, rotateNotice: rotateNotice,
+    pads: pads, rotateNotice: rotateNotice, forInput: forInput,
     chevron: chevron, chevronV: chevronV, marker: marker,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };
@@ -4480,8 +4583,9 @@ var TitleScene = (function () {
     Tint.rect(ctx, 0, VH - 16, VW, 3, UI.C.darker, 8);
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, Input.usingTouch() ? '◀ ▶ MOVE    TAP TO SELECT'
-                                    : '◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
+    UI.text(ctx, UI.forInput('◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
+                             '◀ ▶ MOVE   CLICK SELECT   M SOUND   F FULLSCREEN',
+                             '◀ ▶ MOVE    TAP TO SELECT'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
   }
 
@@ -4681,14 +4785,18 @@ var LevelSelectScene = (function () {
 
     var hintY = VH - 13;
     if (focus === 'room') {
-      UI.text(ctx, Input.usingTouch() ? '◀ ▶ ROOM    TAP TO PICK    BACK'
-                                      : '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK',
+      UI.text(ctx, UI.forInput('◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK',
+                               '◀ ▶ ROOM    CLICK PICK ROOM    ESC BACK',
+                               '◀ ▶ ROOM    TAP TO PICK    BACK'),
               VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
     } else {
       var shut = lv.locked || !Levels.isUnlocked(lv);
-      var touch = Input.usingTouch();
-      UI.text(ctx, shut ? (touch ? '◀ ▶ LEVEL    LOCKED    BACK' : '◀ ▶ LEVEL    LOCKED    ESC ROOMS')
-                        : (touch ? '◀ ▶ LEVEL    TAP TO PLAY    BACK' : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS'),
+      UI.text(ctx, shut ? UI.forInput('◀ ▶ LEVEL    LOCKED    ESC ROOMS',
+                                      '◀ ▶ LEVEL    LOCKED    ESC ROOMS',
+                                      '◀ ▶ LEVEL    LOCKED    BACK')
+                        : UI.forInput('◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS',
+                                      '◀ ▶ LEVEL    CLICK PLAY    ESC ROOMS',
+                                      '◀ ▶ LEVEL    TAP TO PLAY    BACK'),
               VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
     }
   }
@@ -5224,9 +5332,12 @@ var CharSelectScene = (function () {
     ctx.fillRect(0, VH - 13, VW, 13);
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - 13, VW, 1);
-    var touch = Input.usingTouch();
-    UI.text(ctx, open ? (touch ? '◀ ▶ PICK    TAP TO FLY    BACK' : '◀ ▶ PICK    ENTER FLY    ESC LEVELS')
-                      : (touch ? '◀ ▶ PICK    LOCKED    BACK' : '◀ ▶ PICK    LOCKED    ESC LEVELS'),
+    UI.text(ctx, open ? UI.forInput('◀ ▶ PICK    ENTER FLY    ESC LEVELS',
+                                    '◀ ▶ PICK    CLICK FLY    ESC LEVELS',
+                                    '◀ ▶ PICK    TAP TO FLY    BACK')
+                      : UI.forInput('◀ ▶ PICK    LOCKED    ESC LEVELS',
+                                    '◀ ▶ PICK    LOCKED    ESC LEVELS',
+                                    '◀ ▶ PICK    LOCKED    BACK'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
   }
 
@@ -6627,14 +6738,16 @@ var PlayScene = (function () {
     UI.text(ctx, '\u2605 ' + doodad.ability, VW / 2, 156,
             { align: 'center', colour: doodad.accentLight, spacing: 2 });
     UI.panel(ctx, VW / 2 - 92, y, 184, 44, { fill: UI.C.darker, dither: 13, edge: UI.C.inkFaint });
-    var touch = Input.usingTouch();
-    UI.text(ctx, touch ? 'TAP THE SCREEN' : 'SPACE / UP / W', VW / 2 - 84, y + 7, { colour: UI.C.ink });
-    UI.text(ctx, 'FLY', VW / 2 + 84, y + 7, { align: 'right', colour: UI.C.inkDim });
-    UI.text(ctx, touch ? 'THE ◀ ▶ PADS' : '◀ ▶ / A D', VW / 2 - 84, y + 18, { colour: UI.C.ink });
-    UI.text(ctx, 'MOVE', VW / 2 + 84, y + 18, { align: 'right', colour: UI.C.inkDim });
-    UI.text(ctx, touch ? 'II TOP RIGHT' : 'P', VW / 2 - 84, y + 29, { colour: UI.C.ink });
-    UI.text(ctx, 'PAUSE', VW / 2 + 84, y + 29, { align: 'right', colour: UI.C.inkDim });
-    UI.hint(ctx, touch ? 'TAP TO FLY' : 'PRESS UP TO FLY', 132, t);
+    var rows = [
+      ['FLY',   UI.forInput('SPACE / UP / W', 'SPACE / CLICK',  'TAP THE SCREEN')],
+      ['MOVE',  UI.forInput('◀ ▶ / A D',      '◀ ▶ / THE PADS', 'THE ◀ ▶ PADS')],
+      ['PAUSE', UI.forInput('P',              'P / II',         'II TOP RIGHT')]
+    ];
+    for (var i = 0; i < rows.length; i++) {
+      UI.text(ctx, rows[i][1], VW / 2 - 84, y + 7 + i * 11, { colour: UI.C.ink });
+      UI.text(ctx, rows[i][0], VW / 2 + 84, y + 7 + i * 11, { align: 'right', colour: UI.C.inkDim });
+    }
+    UI.hint(ctx, UI.forInput('PRESS UP TO FLY', 'CLICK OR PRESS UP TO FLY', 'TAP TO FLY'), 132, t);
     /* a chevron bouncing above the doodad */
     UI.chevronV(ctx, player.x, player.y - 26 + Math.round(Math.sin(t * 6) * 2), -1, 4, UI.C.gold);
   }
@@ -6646,25 +6759,35 @@ var PlayScene = (function () {
     UI.text(ctx, 'PAUSED', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
     UI.rule(ctx, x + 12, y + 28, w - 24, UI.C.boardLo);
 
-    var rows = Input.usingTouch() ? [
-      ['FLY', 'TAP THE SCREEN'],
-      ['MOVE', 'THE ◀ ▶ PADS'],
-      ['PAUSE', 'II TOP RIGHT'],
-      ['RESUME', 'TAP II AGAIN']
-    ] : [
+    /* a finger has no keys, so touch replaces the list; a cursor has the
+       whole keyboard beside it, so it shares each line instead */
+    var rows = UI.forInput([
       ['FLY', 'SPACE / UP / W'],
       ['MOVE', '◀ ▶  /  A  D'],
       ['PAUSE', 'P'],
       ['SOUND', 'M'],
       ['FULLSCREEN', 'F'],
       ['QUIT TO LEVELS', 'ESC']
-    ];
+    ], [
+      ['FLY', 'SPACE / CLICK'],
+      ['MOVE', '◀ ▶ / THE PADS'],
+      ['PAUSE', 'P / II'],
+      ['SOUND', 'M'],
+      ['FULLSCREEN', 'F'],
+      ['QUIT TO LEVELS', 'ESC']
+    ], [
+      ['FLY', 'TAP THE SCREEN'],
+      ['MOVE', 'THE ◀ ▶ PADS'],
+      ['PAUSE', 'II TOP RIGHT'],
+      ['RESUME', 'TAP II AGAIN']
+    ]);
     for (var i = 0; i < rows.length; i++) {
       var ry = y + 36 + i * 11;
       UI.text(ctx, rows[i][0], x + 16, ry, { colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, rows[i][1], x + w - 16, ry, { align: 'right', colour: '#e8c98a', shadow: UI.C.shadow });
     }
-    UI.hint(ctx, Input.usingTouch() ? 'TAP II TO RESUME' : 'PRESS P TO RESUME', y + h + 8, t);
+    UI.hint(ctx, UI.forInput('PRESS P TO RESUME', 'PRESS P OR CLICK II', 'TAP II TO RESUME'),
+            y + h + 8, t);
   }
 
   /* results (or initials entry) on the left, the table on the right */
@@ -6734,9 +6857,10 @@ var PlayScene = (function () {
         UI.chevronV(ctx, x + gw / 2, ly + 31 + bob, 1, 3, UI.C.gold);
       }
     }
-    UI.text(ctx, Input.usingTouch() ? 'USE THE PADS BELOW' : 'TYPE, OR \u25B2\u25BC \u25C0\u25B6',
+    UI.text(ctx, UI.forInput('TYPE, OR \u25B2\u25BC \u25C0\u25B6', 'TYPE, OR USE THE PADS',
+                             'USE THE PADS BELOW'),
             cx, y + 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, Input.usingTouch() ? 'THEN SAVE' : 'ENTER TO SAVE',
+    UI.text(ctx, UI.forInput('ENTER TO SAVE', 'ENTER OR SAVE', 'THEN SAVE'),
             cx, y + 139, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
   }
 
@@ -6962,7 +7086,9 @@ var ScoresScene = (function () {
       }
     }
 
-    UI.text(ctx, Input.usingTouch() ? '◀ ▶ LEVEL    BACK' : '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+    UI.text(ctx, UI.forInput('◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                             '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                             '◀ ▶ LEVEL    BACK'),
             VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
 
     if (confirming && c) {
@@ -6972,7 +7098,8 @@ var ScoresScene = (function () {
       UI.text(ctx, 'RESET ' + c.level.name + '?', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'BACK TO THE DOODADS\' OWN SCORES.', VW / 2, y + 31, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 46, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-      UI.text(ctx, Input.usingTouch() ? 'TAP RESET    BACK KEEPS' : 'ENTER RESET    ESC KEEP',
+      UI.text(ctx, UI.forInput('ENTER RESET    ESC KEEP', 'CLICK RESET    ESC KEEPS',
+                               'TAP RESET    BACK KEEPS'),
               VW / 2, y + 62, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
     }
   }
@@ -7099,7 +7226,7 @@ var Game = (function () {
 
     /* the on-screen controls belong to every scene, so they are drawn
        here once rather than remembered in five different places */
-    if (Input.usingTouch()) UI.pads(fg);
+    if (Input.pointing()) UI.pads(fg);
 
     if (toastTime > 0) {
       var a = Math.min(1, toastTime * 3);
@@ -7113,7 +7240,7 @@ var Game = (function () {
     }
 
     /* nothing below this point is worth showing if the phone is upright */
-    if (Input.usingTouch() && Screen.portrait) UI.rotateNotice(fg, rotateT);
+    if (Input.pointerKind() === 'touch' && Screen.portrait) UI.rotateNotice(fg, rotateT);
 
     if (wipe > 0) Dither.wipe(fg, wipe, '#0b0805');
 

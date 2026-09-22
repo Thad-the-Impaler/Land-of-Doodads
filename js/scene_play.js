@@ -1302,14 +1302,16 @@ var PlayScene = (function () {
     UI.text(ctx, '\u2605 ' + doodad.ability, VW / 2, 156,
             { align: 'center', colour: doodad.accentLight, spacing: 2 });
     UI.panel(ctx, VW / 2 - 92, y, 184, 44, { fill: UI.C.darker, dither: 13, edge: UI.C.inkFaint });
-    var touch = Input.usingTouch();
-    UI.text(ctx, touch ? 'TAP THE SCREEN' : 'SPACE / UP / W', VW / 2 - 84, y + 7, { colour: UI.C.ink });
-    UI.text(ctx, 'FLY', VW / 2 + 84, y + 7, { align: 'right', colour: UI.C.inkDim });
-    UI.text(ctx, touch ? 'THE ◀ ▶ PADS' : '◀ ▶ / A D', VW / 2 - 84, y + 18, { colour: UI.C.ink });
-    UI.text(ctx, 'MOVE', VW / 2 + 84, y + 18, { align: 'right', colour: UI.C.inkDim });
-    UI.text(ctx, touch ? 'II TOP RIGHT' : 'P', VW / 2 - 84, y + 29, { colour: UI.C.ink });
-    UI.text(ctx, 'PAUSE', VW / 2 + 84, y + 29, { align: 'right', colour: UI.C.inkDim });
-    UI.hint(ctx, touch ? 'TAP TO FLY' : 'PRESS UP TO FLY', 132, t);
+    var rows = [
+      ['FLY',   UI.forInput('SPACE / UP / W', 'SPACE / CLICK',  'TAP THE SCREEN')],
+      ['MOVE',  UI.forInput('◀ ▶ / A D',      '◀ ▶ / THE PADS', 'THE ◀ ▶ PADS')],
+      ['PAUSE', UI.forInput('P',              'P / II',         'II TOP RIGHT')]
+    ];
+    for (var i = 0; i < rows.length; i++) {
+      UI.text(ctx, rows[i][1], VW / 2 - 84, y + 7 + i * 11, { colour: UI.C.ink });
+      UI.text(ctx, rows[i][0], VW / 2 + 84, y + 7 + i * 11, { align: 'right', colour: UI.C.inkDim });
+    }
+    UI.hint(ctx, UI.forInput('PRESS UP TO FLY', 'CLICK OR PRESS UP TO FLY', 'TAP TO FLY'), 132, t);
     /* a chevron bouncing above the doodad */
     UI.chevronV(ctx, player.x, player.y - 26 + Math.round(Math.sin(t * 6) * 2), -1, 4, UI.C.gold);
   }
@@ -1321,25 +1323,35 @@ var PlayScene = (function () {
     UI.text(ctx, 'PAUSED', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
     UI.rule(ctx, x + 12, y + 28, w - 24, UI.C.boardLo);
 
-    var rows = Input.usingTouch() ? [
-      ['FLY', 'TAP THE SCREEN'],
-      ['MOVE', 'THE ◀ ▶ PADS'],
-      ['PAUSE', 'II TOP RIGHT'],
-      ['RESUME', 'TAP II AGAIN']
-    ] : [
+    /* a finger has no keys, so touch replaces the list; a cursor has the
+       whole keyboard beside it, so it shares each line instead */
+    var rows = UI.forInput([
       ['FLY', 'SPACE / UP / W'],
       ['MOVE', '◀ ▶  /  A  D'],
       ['PAUSE', 'P'],
       ['SOUND', 'M'],
       ['FULLSCREEN', 'F'],
       ['QUIT TO LEVELS', 'ESC']
-    ];
+    ], [
+      ['FLY', 'SPACE / CLICK'],
+      ['MOVE', '◀ ▶ / THE PADS'],
+      ['PAUSE', 'P / II'],
+      ['SOUND', 'M'],
+      ['FULLSCREEN', 'F'],
+      ['QUIT TO LEVELS', 'ESC']
+    ], [
+      ['FLY', 'TAP THE SCREEN'],
+      ['MOVE', 'THE ◀ ▶ PADS'],
+      ['PAUSE', 'II TOP RIGHT'],
+      ['RESUME', 'TAP II AGAIN']
+    ]);
     for (var i = 0; i < rows.length; i++) {
       var ry = y + 36 + i * 11;
       UI.text(ctx, rows[i][0], x + 16, ry, { colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, rows[i][1], x + w - 16, ry, { align: 'right', colour: '#e8c98a', shadow: UI.C.shadow });
     }
-    UI.hint(ctx, Input.usingTouch() ? 'TAP II TO RESUME' : 'PRESS P TO RESUME', y + h + 8, t);
+    UI.hint(ctx, UI.forInput('PRESS P TO RESUME', 'PRESS P OR CLICK II', 'TAP II TO RESUME'),
+            y + h + 8, t);
   }
 
   /* results (or initials entry) on the left, the table on the right */
@@ -1409,9 +1421,10 @@ var PlayScene = (function () {
         UI.chevronV(ctx, x + gw / 2, ly + 31 + bob, 1, 3, UI.C.gold);
       }
     }
-    UI.text(ctx, Input.usingTouch() ? 'USE THE PADS BELOW' : 'TYPE, OR \u25B2\u25BC \u25C0\u25B6',
+    UI.text(ctx, UI.forInput('TYPE, OR \u25B2\u25BC \u25C0\u25B6', 'TYPE, OR USE THE PADS',
+                             'USE THE PADS BELOW'),
             cx, y + 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, Input.usingTouch() ? 'THEN SAVE' : 'ENTER TO SAVE',
+    UI.text(ctx, UI.forInput('ENTER TO SAVE', 'ENTER OR SAVE', 'THEN SAVE'),
             cx, y + 139, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
   }
 
