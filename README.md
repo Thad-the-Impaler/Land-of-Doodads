@@ -6,7 +6,7 @@ ends when you hit something.
 
 Once you are past 8 the rafters start shedding eggs, and one in a handful of
 those is a deviled egg worth flying into. Get further and the coop fills up:
-there are five doodads, and two of them have to be earned.
+there are six doodads, and three of them have to be earned.
 
 ## Playing it
 
@@ -92,17 +92,32 @@ Three are standing in the coop from the start:
 | **Pepper** | holds a grudge | oily green shine, short temper |
 | **Gerald** | technically flightless | has not accepted this |
 
-Two more are boarded up in their stalls until you earn them:
+Three more are boarded up in their stalls until you earn them:
 
 | | | |
 |---|---|---|
 | **Maximus** | **score 20** | a pug with two small wings and enormous confidence |
 | **Billy** | **score 30** | a biro doodle on ruled paper that got out of the margin |
+| **Inari** | **nine succulents** | a grey cat, mildly disgusted, who let herself in |
 
-The doodad select screen shows all five from the first run, so you can see what
-is in there and what it costs: a locked stall is timbered over with the price on
+Not every price is a score. Inari costs **nine succulents**, the potted plant
+that only THE GARDEN grows, so she is earned by going and getting something
+rather than by surviving longer - and it is what she is worth, because what she
+brings is a spare life of her own.
+
+The select screen shows every stall from the first run, so you can see what is
+in there and what it costs: a locked stall is timbered over with the price on
 its plate, a padlock on the middle board, and the doodad itself asleep behind
-the boards. The card underneath carries a progress bar towards it.
+the boards. The card underneath carries a progress bar towards it, counting
+whatever that particular lock counts.
+
+The rail is longer than the screen. Five stalls are shown at a time and the row
+slides as the cursor reaches the end, with a sliver of the next stall bleeding
+in at each edge to say that it carries on - so the roster can grow without the
+screen being redesigned around its length. It **slides in whole 4px steps, and
+the stall pitch is a multiple of 4**, because the stalls are full of an ordered
+dither anchored in user space: move one by a part-cell and the Bayer grid
+re-phases against it and the timber boils.
 
 Unlocking happens **mid-run**, the moment the score ticks past - the run does not
 have to end for it to count. The doodad then moves into the coop on the title
@@ -112,7 +127,7 @@ The score that matters is the highest you have ever reached, with any doodad, on
 any level. It is kept separately from the high score tables, so resetting a table
 with `X` never takes a doodad away again.
 
-Each of the five flies differently - see [Abilities](#abilities).
+Every one of them flies differently - see [Abilities](#abilities).
 
 ### The master passkey
 
@@ -181,6 +196,7 @@ doodads are the same doodad with a different coat of paint.
 | GERALD | **HUNGER** | power-ups within 110 pixels drift to him |
 | MAXIMUS | **TROT** | the ground cannot end him |
 | BILLY | **PAPER-LIGHT** | he falls slow and flies soft |
+| INARI | **SPARE LIFE** | she brings her own; the first mistake is free |
 
 ### Cookie's nerve
 
@@ -221,6 +237,21 @@ everyone - he lands, kicks up bedding and can take off again - so the mistake
 that ends every other run costs him a second instead. It is forgiveness, not
 immunity: floor spikes still kill him, and a plank's lower half reaches the
 ground, so he cannot simply run the level.
+
+### Inari's spare life
+
+She starts every run already holding **one** succulent, in any level - including
+THE COOP, which grows none. There is no new machinery behind it: `lives: 1` is
+the whole ability, and the succulent system already knows how to spend one, draw
+it in the corner and shout about it. The caption is honest about which kind of
+life went, so a save she never picked up reads `ONE LIFE SPENT` rather than
+claiming a plant she never found.
+
+It is called SPARE LIFE and not NINE LIVES, which is what a cat is owed and
+would have had the player expecting eight more saves than the code hands out.
+
+It is deliberately the same shape as what she costs. Nine of them buys her out
+of the stall; she hands one back at the start of every run after that.
 
 ### Billy's paper
 
@@ -345,13 +376,20 @@ so they stay smooth against the pixelated world.
   frames in `js/assets.js` and add an entry to `LIST` in `js/doodads.js` with
   that metadata - `pivotX`/`pivotY`/`bodyR`/`footOffset` are measured from the
   art so every doodad is drawn, stood up and collided at the same size.
-  Add `unlockAt: <score>` and a `lockedAbout` pair to gate it; leave both out
-  and it is simply there from the start. `title: { role, r, homeX, homeY }`
+  Add `lockedAbout` and a price to gate it - `unlockAt: <score>`, or
+  `unlockBoons: <count>` for succulents; a doodad may state both and has to
+  satisfy all of it, and one that states nothing is simply there from the
+  start. `Doodads.requirement(d)` turns whichever lock it is into the price,
+  the plate, the progress and what to call it, so the select screen never has
+  to know which kind it is looking at - a third kind of price is a third branch
+  in that one function. `title: { role, r, homeX, homeY }`
   says how it behaves in the coop on the title screen - `perch` hops between
   the perches, `patrol` flies a figure of eight (`spanX`/`spanY` size it), and
-  `walk` stomps the hay and keeps trying to fly. The select screen lays itself
-  out from `LIST`, but its five bays are sized to fit 480 pixels: a sixth
-  doodad needs new numbers at the top of `js/scene_charselect.js`.
+  `walk` stomps the hay and keeps trying to fly (two doodads may share a role -
+  two perchers will not fight over one perch). The select screen lays itself out
+  from `LIST` and slides, so it needs nothing new for a seventh doodad; if you
+  do change `PITCH`, **keep it a multiple of 4** or every stall's dither will
+  boil as the row moves.
 * **Traits and abilities** - `ability` is the name shown on the select card and
   on the GET READY panel. A doodad whose ability actually does something sets
   `abilityLive: true` (the card then shows a star instead of a padlock) and
@@ -361,7 +399,7 @@ so they stay smooth against the pixelated world.
   `watch` (a flag), `pull` (a radius), `trot` (a flag) and
   `light: { gravity, flap, fall }` (scales on the three numbers a doodad's
   flight is made of - ask `grav()`, `maxFall()` and `flapV()`, never the
-  constants). Keep new ones **passive**: the one ability that needed a gesture
+  constants) and `lives` (spare succulents a run starts with). Keep new ones **passive**: the one ability that needed a gesture
   during play was cut for fighting the hand that was already flapping.
   A doodad may also have extra sprite frames: add the artwork, list it in
   `DOODADS` in `tools/trim_sprites.py` under a frame name, re-run the script

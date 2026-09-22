@@ -1,24 +1,37 @@
 /* ------------------------------------------------------------------
    Land of Doodads - doodad select
-   Five stalls in a row under one rail, standing on one floor plank.
-   The chosen one is lit up and showing off; the ones that have not been
+   A row of stalls under one rail, standing on one floor plank. The
+   chosen one is lit up and showing off; the ones that have not been
    earned yet are boarded over, with the price nailed to the plate and
    something large and asleep still visible between the boards.
-   Traits and abilities are still being hatched.
 
-   Nothing on the pixel layers moves. The old version slid the selected
-   panel sideways by 10px on every keypress, and that panel is filled
-   with a dither: Dither.rect paints with a pattern anchored in user
-   space, so moving the rect re-phases the Bayer grid against it and the
-   stall boils for a fifth of a second. Selection motion lives on the
-   smooth sprite layer instead, where it is free.
+   The rail is longer than the screen. BAYS of it are shown at a time and
+   the row slides along as the cursor reaches the end, so the roster can
+   grow without the layout being redesigned around its length - a sliver
+   of the next stall bleeds in at each edge, which is what says the row
+   carries on. An earlier version sized five bays to fill 480px exactly,
+   which was correct for five and wrong for the sixth.
+
+   THE ROW SLIDES IN WHOLE 4px STEPS, and PITCH is a multiple of 4.
+   Every stall is filled with an ordered dither, and Dither.rect paints
+   from a 4x4 pattern anchored in USER space: move a dithered rect by
+   anything that is not a whole cell and the Bayer grid re-phases against
+   it, so the timber boils. Quantising the slide keeps each stall's
+   texture nailed to the stall. Selection motion stays on the smooth
+   sprite layer, where it is free.
 ------------------------------------------------------------------ */
 'use strict';
 
 var CharSelectScene = (function () {
 
   var SW = 82, SH = 104;          /* an unselected stall               */
-  var SX0 = 11, PITCH = 94;       /* 5*82 + 4*12 = 458, 11px each side */
+  var BAYS = 5;                   /* how many of them the rail shows   */
+  var PITCH = 92;                 /* a multiple of 4; see the header   */
+  var SX0 = 15;                   /* 15 + 4*92 + 82 = 465, and the 5px
+                                     left over at each end is the next
+                                     stall showing past the edge      */
+  var STEP = 4;                   /* the dither cell: the slide quantum */
+  var POST_DX = SW + 3;           /* a dividing post, centred in the gap */
   var STALL_FLOOR = 158;          /* every stall's bottom edge         */
   var GROW_W = 8, GROW_H = 10;    /* the selected one, grown upward    */
   var CRATE_Y = 130;              /* crate lid: every doodad stands here */
@@ -30,6 +43,7 @@ var CharSelectScene = (function () {
 
   var t = 0, scroll = 0;
   var index = 0;
+  var view = 0;                   /* leftmost shown bay, eased          */
   var bob = [], flapTimer = [], flapCooldown = [], pop = [];
   var flashTimer = 0, denyFlash = 0;
   var best = 0;                   /* cached: never read the save in a draw call */
@@ -50,7 +64,6 @@ var CharSelectScene = (function () {
       Game.selection.doodad = Doodads.list[index].id;
       Save.set('doodad', Game.selection.doodad);
     }
-
     bob = []; flapTimer = []; flapCooldown = []; pop = [];
     for (var i = 0; i < Doodads.list.length; i++) {
       bob.push(rand(0, TAU));
@@ -65,6 +78,12 @@ var CharSelectScene = (function () {
       pop[index] = POP_T;
       Audio3.play('select');
     }
+    /* Arrive with the row already where it belongs rather than sliding into
+       place while the player is still reading the screen - and AFTER the
+       jump above, because a freshly earned doodad at the far end of the
+       rail is the one time this matters and the only time a player meets
+       it. Snapping before the jump aimed the row at the old cursor. */
+    view = viewTarget();
   }
 
   /* anything earned since the player last looked gets a NEW tab - without
@@ -77,8 +96,10 @@ var CharSelectScene = (function () {
     for (var k = 0; k < Doodads.list.length; k++) {
       var dd = Doodads.list[k];
       /* only something that had to be earned can be new - the starting
-         three were never unlocked, they were always standing here */
-      if (dd.unlockAt && unlocked(k) && seen.indexOf(dd.id) < 0) fresh.push(dd.id);
+         three were never unlocked, they were always standing here. Ask
+         for the requirement rather than for a score: not every lock is
+         a score. */
+      if (Doodads.requirement(dd) && unlocked(k) && seen.indexOf(dd.id) < 0) fresh.push(dd.id);
     }
   }
 
@@ -88,6 +109,7 @@ var CharSelectScene = (function () {
   function refresh() {
     best = Doodads.bestReached();
     markFresh();
+    view = viewTarget();
     for (var i = 0; i < fresh.length; i++) pop[Doodads.indexOf(fresh[i])] = POP_T;
   }
 
@@ -121,9 +143,19 @@ var CharSelectScene = (function () {
     Audio3.play('move');
   }
 
+  /* Which bay sits at the left end of the rail: the cursor is held in the
+     middle of the window wherever the roster allows it, so there is always
+     something either side of what you are looking at. */
+  function viewTarget() {
+    var last = Doodads.list.length - BAYS;
+    if (last <= 0) return 0;
+    return clamp(index - ((BAYS - 1) >> 1), 0, last);
+  }
+
   function update(dt) {
     t += dt;
     scroll += 7 * dt;
+    view = damp(view, viewTarget(), 0.0006, dt);
 
     for (var i = 0; i < Doodads.list.length; i++) {
       if (pop[i] > 0) pop[i] -= dt;
@@ -165,11 +197,25 @@ var CharSelectScene = (function () {
 
   /* -------------------------------------------------------- drawing */
 
+  /* How far the row has slid, in whole dither cells. Everything on the
+     rail is positioned from this one number, so no two parts of a stall
+     can disagree about where the stall is. */
+  /* is the rail longer than the window, i.e. does the row run off the edges */
+  function overflowing() { return Doodads.list.length > BAYS; }
+
+  function rowX() { return -Math.round(view * PITCH / STEP) * STEP; }
+
+  /* the bays with any part of themselves on screen, ends included, so the
+     sliver at each edge is drawn and the row visibly carries on */
+  function firstBay() { return Math.max(0, Math.floor(view) - 1); }
+  function lastBay() { return Math.min(Doodads.list.length - 1, Math.ceil(view) + BAYS); }
+
   /* the one layout function; drawBg, drawChars and drawFg all use it, so
      a sprite and its crate can never disagree about where the stall is */
   function stall(i) {
     var sel = i === index;
-    var x = SX0 + i * PITCH, w = SW, y = STALL_FLOOR - SH, h = SH;
+    var x = SX0 + i * PITCH + rowX(), w = SW, y = STALL_FLOOR - SH, h = SH;
+    /* GROW_W is even, so the grown stall keeps its dither phase */
     if (sel) { x -= GROW_W / 2; w += GROW_W; y -= GROW_H; h += GROW_H; }
     return { x: x, y: y, w: w, h: h, cx: x + (w >> 1), sel: sel };
   }
@@ -185,26 +231,35 @@ var CharSelectScene = (function () {
 
     var P = Coop.P, i, s;
 
-    /* the rail the whole row hangs from */
-    ctx.fillStyle = P.beamMid;   ctx.fillRect(6, RAIL_Y, 468, RAIL_H);
-    ctx.fillStyle = P.beamLight; ctx.fillRect(7, RAIL_Y + 1, 466, 1);
-    ctx.fillStyle = P.beamDark;  ctx.fillRect(7, RAIL_Y + 4, 466, 1);
+    /* The rail the whole row hangs from. Once the roster is longer than the
+       window the row runs off both edges, so the timber has to as well: a
+       finished end cap beside a stall that carries on off-screen reads as a
+       stall hanging off the end of nothing. */
+    var run = overflowing();
+    var bx = run ? -1 : 6, bw = run ? VW + 2 : 468;
+    ctx.fillStyle = P.beamMid;   ctx.fillRect(bx, RAIL_Y, bw, RAIL_H);
+    ctx.fillStyle = P.beamLight; ctx.fillRect(bx + 1, RAIL_Y + 1, bw - 2, 1);
+    ctx.fillStyle = P.beamDark;  ctx.fillRect(bx + 1, RAIL_Y + 4, bw - 2, 1);
     ctx.fillStyle = P.outline;
-    ctx.fillRect(6, RAIL_Y, 468, 1); ctx.fillRect(6, RAIL_Y + RAIL_H - 1, 468, 1);
-    ctx.fillRect(6, RAIL_Y, 1, RAIL_H); ctx.fillRect(473, RAIL_Y, 1, RAIL_H);
-    UI.nail(ctx, 10, RAIL_Y + 1); UI.nail(ctx, 468, RAIL_Y + 1);
+    ctx.fillRect(bx, RAIL_Y, bw, 1); ctx.fillRect(bx, RAIL_Y + RAIL_H - 1, bw, 1);
+    if (!run) {
+      ctx.fillRect(6, RAIL_Y, 1, RAIL_H); ctx.fillRect(473, RAIL_Y, 1, RAIL_H);
+      UI.nail(ctx, 10, RAIL_Y + 1); UI.nail(ctx, 468, RAIL_Y + 1);
+    }
 
-    /* the four dividing posts, behind the stalls so a grown one can sit
-       flush against the timber */
-    for (i = 0; i < 4; i++) {
-      var px = SX0 + 86 + i * PITCH;
+    /* the dividing posts, behind the stalls so a grown one can sit flush
+       against the timber. One per gap across the whole shown row, plus
+       the gaps the slivers hang off. */
+    for (i = firstBay() - 1; i <= lastBay(); i++) {
+      var px = SX0 + POST_DX + i * PITCH + rowX();
+      if (px + 4 < 0 || px > VW) continue;
       ctx.fillStyle = P.beamMid;   ctx.fillRect(px, 44, 4, 114);
       ctx.fillStyle = P.beamLight; ctx.fillRect(px, 44, 1, 114);
       ctx.fillStyle = P.outline;   ctx.fillRect(px + 3, 44, 1, 114);
       UI.nail(ctx, px, RAIL_Y + 1);
     }
 
-    for (i = 0; i < Doodads.list.length; i++) {
+    for (i = firstBay(); i <= lastBay(); i++) {
       var d = Doodads.list[i];
       s = stall(i);
       var open = unlocked(i);
@@ -213,7 +268,8 @@ var CharSelectScene = (function () {
          flat, not dithered: the backdrop scrolls underneath it */
       if (!s.sel) Tint.rect(ctx, s.x, 44, s.w, 10, UI.C.darker, 10);
 
-      /* stall panel. all five hold perfectly still, so dither is safe */
+      /* stall panel. it holds perfectly still between slides, and the
+         slide itself is in whole dither cells, so dither is safe */
       UI.panel(ctx, s.x, s.y, s.w, s.h, {
         fill: s.sel ? (open ? '#211710' : '#1a120b') : (open ? '#181008' : '#130c06'),
         dither: s.sel ? (open ? 3 : 5) : (open ? 8 : 10),
@@ -251,16 +307,20 @@ var CharSelectScene = (function () {
       ctx.fillRect(s.x + 1, PLATE_Y, s.w - 2, 1);
     }
 
-    /* the floor plank the whole row stands on */
-    ctx.fillStyle = P.beamMid;   ctx.fillRect(6, 158, 468, 7);
-    ctx.fillStyle = P.beamLight; ctx.fillRect(7, 159, 466, 1);
-    ctx.fillStyle = P.beamDark;  ctx.fillRect(7, 163, 466, 1);
+    /* the floor plank the whole row stands on, running off the same edges */
+    ctx.fillStyle = P.beamMid;   ctx.fillRect(bx, 158, bw, 7);
+    ctx.fillStyle = P.beamLight; ctx.fillRect(bx + 1, 159, bw - 2, 1);
+    ctx.fillStyle = P.beamDark;  ctx.fillRect(bx + 1, 163, bw - 2, 1);
     ctx.fillStyle = P.outline;
-    ctx.fillRect(6, 158, 468, 1); ctx.fillRect(6, 164, 468, 1);
-    ctx.fillRect(6, 158, 1, 7); ctx.fillRect(473, 158, 1, 7);
-    for (i = 0; i < 4; i++) { ctx.fillStyle = P.outline; ctx.fillRect(SX0 + 87 + i * PITCH, 159, 1, 5); }
+    ctx.fillRect(bx, 158, bw, 1); ctx.fillRect(bx, 164, bw, 1);
+    if (!run) { ctx.fillRect(6, 158, 1, 7); ctx.fillRect(473, 158, 1, 7); }
+    for (i = firstBay() - 1; i <= lastBay(); i++) {
+      var nx = SX0 + POST_DX + 1 + i * PITCH + rowX();
+      if (nx < 7 || nx > 472) continue;
+      ctx.fillStyle = P.outline; ctx.fillRect(nx, 159, 1, 5);
+    }
     /* flat: the menu floor scrolls under this one */
-    Tint.rect(ctx, 6, 165, 468, 2, UI.C.shadow, 9);
+    Tint.rect(ctx, bx, 165, bw, 2, UI.C.shadow, 9);
   }
 
   function crate(ctx, cx, y, w, lit) {
@@ -280,7 +340,7 @@ var CharSelectScene = (function () {
   }
 
   function drawChars(ctx) {
-    for (var i = 0; i < Doodads.list.length; i++) {
+    for (var i = firstBay(); i <= lastBay(); i++) {
       var d = Doodads.list[i];
       var s = stall(i);
       var open = unlocked(i);
@@ -315,7 +375,7 @@ var CharSelectScene = (function () {
     }
 
     /* per stall: the boards go on before the plate text, so nothing dims it */
-    for (var i = 0; i < Doodads.list.length; i++) {
+    for (var i = firstBay(); i <= lastBay(); i++) {
       var s = stall(i);
       var dd = Doodads.list[i];
       if (!unlocked(i)) drawBoards(ctx, s, dd);
@@ -323,9 +383,20 @@ var CharSelectScene = (function () {
       if (unlocked(i)) {
         UI.text(ctx, dd.name, s.cx, 147, { align: 'center', colour: s.sel ? UI.C.gold : UI.C.inkDim });
       } else {
-        UI.text(ctx, 'SCORE ' + dd.unlockAt, s.cx, 147,
+        /* the price nailed to the plate, in whatever currency it is */
+        UI.text(ctx, Doodads.requirement(dd).plate, s.cx, 147,
                 { align: 'center', colour: s.sel ? UI.C.inkDim : UI.C.inkFaint });
       }
+    }
+
+    /* the rail runs off both sides once the roster outgrows the window.
+       Drawn over the sliver it points at, so the clipped stall reads as
+       more row rather than as a mistake. */
+    if (Doodads.list.length > BAYS) {
+      var bump = arrowBob();
+      var lastView = Doodads.list.length - BAYS;
+      if (view > 0.02) UI.chevron(ctx, 6 - bump, 106, -1, 5, UI.C.gold);
+      if (view < lastView - 0.02) UI.chevron(ctx, 474 + bump, 106, 1, 5, UI.C.gold);
     }
 
     /* the card. flat tint: the menu backdrop scrolls behind it */
@@ -385,15 +456,17 @@ var CharSelectScene = (function () {
     var hot = denyFlash > 0;
     UI.padlock(ctx, 190, 184, 2, hot ? UI.C.red : UI.C.inkDim);
     UI.heading(ctx, '? ? ?', 257, 174, 3, { colour: UI.C.inkDim });
-    UI.text(ctx, 'SCORE ' + d.unlockAt + ' TO UNLOCK', VW / 2, 198,
+    var req = Doodads.requirement(d);
+    UI.text(ctx, req.price, VW / 2, 198,
             { align: 'center', spacing: 2, colour: hot ? UI.C.red : UI.C.gold });
     UI.text(ctx, d.lockedAbout[0], VW / 2, 210, { align: 'center', colour: UI.C.inkDim });
     UI.text(ctx, d.lockedAbout[1], VW / 2, 219, { align: 'center', colour: UI.C.inkDim });
 
     /* how far off it is. fixed x on every part, so the numbers growing a
-       digit can never shove the bar sideways */
-    var need = d.unlockAt, p = clamp(best / need, 0, 1);
-    UI.text(ctx, 'BEST ' + best, 154, 232, { align: 'right', colour: UI.C.inkDim });
+       digit can never shove the bar sideways. What is being counted is the
+       lock's business, not this screen's - see Doodads.requirement. */
+    var need = req.need, p = clamp(req.have / need, 0, 1);
+    UI.text(ctx, req.unit + ' ' + req.have, 154, 232, { align: 'right', colour: UI.C.inkDim });
     ctx.fillStyle = UI.C.inkFaint; ctx.fillRect(160, 232, 160, 7);
     ctx.fillStyle = UI.C.darker;   ctx.fillRect(161, 233, 158, 5);
     var fw = Math.round(158 * p);

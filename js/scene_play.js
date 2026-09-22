@@ -83,6 +83,8 @@ var PlayScene = (function () {
   var spikeArmed = false;
   var hungry = 0;              /* things his hunger has hold of this frame */
   var nearestPull = 0;         /* how close the closest of them is, 0..1   */
+  var pottedLives = 0;         /* how many lives in hand came from a pot   */
+  var spentPotted = false;     /* and whether the one just spent was one   */
   var nervePop = 0;            /* the shout for a plank taken close        */
   var nerveX = 0, nerveY = 0, nerveGain = 1;
   var watchY0 = 0, watchY1 = 0, watchA = 0;   /* the gap she can see coming */
@@ -131,9 +133,12 @@ var PlayScene = (function () {
     dropArmed = false; dropTimer = 0; hazardWarn = 0; spicyGap = 0; warnLines = null;
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
     unlocked.length = 0; unlockBanner = 0; wonLevels.length = 0;
-    /* lives never carry between runs: start() is what RETRY calls, so a
-       lucky run would otherwise hand every retry after it a free save */
-    lives = 0; invuln = 0; saveFlash = 0; saveBanner = 0;
+    /* Lives never carry between runs: start() is what RETRY calls, so a
+       lucky run would otherwise hand every retry after it a free save.
+       A doodad that brings its own spare starts with it every time -
+       that is the ability, not a carry-over. */
+    lives = doodad.lives || 0; invuln = 0; saveFlash = 0; saveBanner = 0;
+    pottedLives = 0; spentPotted = false;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
     hungry = 0; nearestPull = 0;
     nervePop = 0; trotting = 0;
@@ -474,6 +479,7 @@ var PlayScene = (function () {
     } else {
       boonBonus = false;
       lives++;
+      pottedLives++;
     }
     Audio3.play('life');
     for (var i = 0; i < 26; i++) {
@@ -481,6 +487,30 @@ var PlayScene = (function () {
       particles.push({ x: ob.x, y: FLOOR - 12, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 50,
                        life: rand(0.4, 1.0), g: -60,
                        col: chance(0.4) ? LIFE_PALE : (chance(0.5) ? LIFE_LEAF : LIFE_TIP) });
+    }
+    checkBoonUnlocks();
+  }
+
+  /* Some doodads are bought with succulents rather than with a score, so
+     taking one is its own unlock moment. It is banked even when the pot
+     was already full and the plant paid out points instead: the player
+     still went and got it, and a cap they could not see is no reason to
+     lose the credit. The extra-life shout stands down when this lands -
+     the two captions share the middle of the screen, and a doodad coming
+     out of its stall is the bigger news. */
+  function checkBoonUnlocks() {
+    var won = Doodads.noteBoon();
+    if (!won.length || Doodads.masterKey()) return;
+    for (var i = 0; i < won.length; i++) unlocked.push(won[i]);
+    boonBanner = 0;
+    unlockBanner = 3.2;
+    Audio3.play('unlock');
+    Screen.shake(2.5, 0.3);
+    for (var k = 0; k < 30; k++) {
+      var a = rand(0, TAU), sp = rand(40, 170);
+      particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.5, 1.2), g: -50,
+                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
     }
   }
 
@@ -501,6 +531,12 @@ var PlayScene = (function () {
      need to know nothing about any of this. */
   function save(cause) {
     lives--;
+    /* Spend the ones out of a pot first, and remember which kind went, so
+       the caption can say so. A doodad that brings its own spare can be
+       holding one of each at once, and "ONE SUCCULENT SPENT" over a life
+       she walked in with is a small lie the screen does not need to tell. */
+    spentPotted = pottedLives > 0;
+    if (spentPotted) pottedLives--;
     invuln = SAVE_GRACE;
     saveFlash = 0.13;
     saveBanner = 1.5;
@@ -1192,7 +1228,8 @@ var PlayScene = (function () {
       ctx.globalAlpha = ga * clamp(saveBanner / 0.6, 0, 1);
       UI.heading(ctx, 'SAVED!', VW / 2, 112 - (1.5 - saveBanner) * 9, 3,
                  { colour: LIFE_PALE, outline: '#123a30', wave: t * 11, waveAmp: 1.4 });
-      UI.text(ctx, 'ONE SUCCULENT SPENT', VW / 2, 140 - (1.5 - saveBanner) * 9,
+      UI.text(ctx, spentPotted ? 'ONE SUCCULENT SPENT' : 'ONE LIFE SPENT',
+              VW / 2, 140 - (1.5 - saveBanner) * 9,
               { align: 'center', colour: LIFE_LEAF, shadow: UI.C.shadow });
     } else if (boonBanner > 0) {
       ctx.globalAlpha = ga * clamp(boonBanner / 0.6, 0, 1);
@@ -1471,6 +1508,8 @@ var PlayScene = (function () {
                                     unlocked: unlocked.map(function (d) { return d.id; }),
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
                                     lives: lives, invuln: invuln,
+                                    pottedLives: pottedLives, spentPotted: spentPotted,
+                                    boonsTaken: Doodads.boonsTaken(),
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
                                     trotting: trotting, watchA: watchA,
                                     nervePop: nervePop, nerveGain: nerveGain,

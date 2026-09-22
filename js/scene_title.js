@@ -189,6 +189,12 @@ var TitleScene = (function () {
     }
   }
 
+  /* the first perch in `list` nobody else has a claim on */
+  function freePerch(list, self) {
+    for (var i = 0; i < list.length; i++) if (!perchTaken(list[i], self)) return list[i];
+    return null;
+  }
+
   /* somebody else is already sitting on it, or on their way to it */
   function perchTaken(p, self) {
     for (var i = 0; i < cast.length; i++) {
@@ -374,8 +380,20 @@ var TitleScene = (function () {
       for (q = 0; q < perches.length; q++) if (perches[q].y >= PERCH_TOP) want.push(perches[q]);
       if (!want.length) want = perches;
       a.state = 'perch';
-      /* one perch each: count the perchers already in, before this one */
-      a.perch = want[Math.min(withRole('perch').length, want.length - 1)];
+      /* One perch each - asked, not counted. Counting heads assumed the
+         perchers were seeded in order onto want[0], want[1], ...; that is
+         wrong on refresh(), where the ones already in the coop have long
+         since hopped elsewhere, and it collapses when fewer perches clear
+         PERCH_TOP than there are perchers, clamping the last ones onto a
+         perch somebody already has. perchTaken is what every other perch
+         choice in this file uses.
+
+         A high perch if one is free, otherwise ANY free perch - standing a
+         little lower is a far smaller price than standing inside another
+         doodad - and only share when every perch in the coop is spoken
+         for, which needs more perchers than the scenery has beams. */
+      a.perch = freePerch(want, a) || freePerch(perches, a)
+             || want[withRole('perch').length % want.length];
       a.x = a.perch.x + a.perch.w * 0.5;
       a.y = a.perch.y - a.r * a.foot;
     } else if (a.role === 'patrol') {

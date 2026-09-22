@@ -298,8 +298,8 @@ var LevelSelectScene = (function () {
       if (ox < x - 14 || ox > x + w + 2) continue;
       var gapH = Math.round(span * 0.34);
       var gapY = Math.round(ceil + 6 + ((k * 17) % Math.max(1, span - gapH - 12)));
-      planklet(ctx, ox, ceil, gapY - ceil);
-      planklet(ctx, ox, gapY + gapH, floor - gapY - gapH);
+      planklet(ctx, ox, ceil, gapY - ceil, P);
+      planklet(ctx, ox, gapY + gapH, floor - gapY - gapH, P);
     }
 
     /* nails poking out of the bedding */
@@ -332,10 +332,18 @@ var LevelSelectScene = (function () {
     ctx.restore();
   }
 
-  /* one little plank column inside a preview */
-  function planklet(ctx, x, y, h) {
+  /* One little plank column inside a preview, painted from the PREVIEW
+     palette it was handed.
+
+     This used to reach for `Coop.P` and ask it for `beam`, which the Coop's
+     pigment table does not have - it calls that colour `beamMid`, and only
+     PREVIEW publishes it as `beam`. Assigning undefined to fillStyle is a
+     no-op rather than an error, so the column kept whatever colour was set
+     last, which is the hay highlight two lines above the loop: the Coop's
+     planks came out near-white. Take the palette as an argument, so a
+     missing key is a missing key on the level that owns it. */
+  function planklet(ctx, x, y, h, P) {
     if (h <= 0) return;
-    var P = Coop.P;
     ctx.fillStyle = P.beam; ctx.fillRect(x, y, 10, h);
     ctx.fillStyle = P.beamLight; ctx.fillRect(x + 1, y, 2, h);
     ctx.fillStyle = P.beamDark; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 9, y, 1, h);

@@ -121,6 +121,30 @@ var Doodads = (function () {
       accent: '#4f8fd0', accentDark: '#2c5680', accentLight: '#9fc8ee',
       sprite: { w: 384, h: 360, pivotX: 192.0, pivotY: 178.2, bodyR: 178.2, footOffset: 1.00 },
       title: { role: 'patrol', r: 19, homeX: 96, homeY: 104, spanX: 54, spanY: 24 }
+    },
+    {
+      id: 'inari',
+      name: 'INARI',
+      tagline: 'LET HERSELF IN',
+      about: ['A GREY CAT, MILDLY DISGUSTED.', 'LANDED HERE ON PURPOSE.'],
+      lockedAbout: ['TWO GREEN EYES IN THE DARK,', 'IN NO HURRY WHATSOEVER.'],
+      /* the cat brings her own spare life, which is the whole ability:
+         `lives` is what a run starts with, and the succulent system
+         already knows how to spend one, draw it and shout about it.
+         Named for the one spare she actually has and not for the nine a
+         cat is supposed to: the joke was not worth the player expecting
+         eight more saves than the code gives them. */
+      ability: 'SPARE LIFE',
+      abilityLive: true,
+      abilityAbout: ['SHE BRINGS HER OWN SPARE.', 'THE FIRST MISTAKE IS FREE.'],
+      lives: 1,
+      /* not a score: nine succulents, which only the Garden grows */
+      unlockBoons: 9,
+      /* grey, because she is grey. Nothing else in the coop is cool and
+         desaturated, and Billy already owns the saturated blue. */
+      accent: '#8d95a6', accentDark: '#4a5263', accentLight: '#cdd6e6',
+      sprite: { w: 384, h: 358, pivotX: 195.4, pivotY: 179.0, bodyR: 179.0, footOffset: 1.00 },
+      title: { role: 'perch', r: 20 }
     }
   ];
 
@@ -179,6 +203,7 @@ var Doodads = (function () {
      runs.                                                             */
 
   var reached = null;                 /* cached; localStorage is not free */
+  var boons = null;
   var passkey = null;
 
   /* The master passkey opens every doodad at once. It is its own flag
@@ -212,6 +237,27 @@ var Doodads = (function () {
     return reached;
   }
 
+  /* Succulents ever collected, across every run. Its own key for the
+     same reasons as `reached`: a wiped score table must not take a
+     doodad away, and nothing else in the save can stand in for it -
+     a total is not recoverable from anything that is kept. */
+  function boonsTaken() {
+    if (boons !== null) return boons;
+    var stored = Save.get('succulents', 0);
+    boons = (typeof stored === 'number' && stored > 0) ? Math.floor(stored) : 0;
+    return boons;
+  }
+
+  /* one succulent taken. returns the doodads it just opened up. */
+  function noteBoon() {
+    var before = boonsTaken();
+    boons = before + 1;
+    Save.set('succulents', boons);
+    return LIST.filter(function (d) {
+      return d.unlockBoons && d.unlockBoons > before && d.unlockBoons <= boons;
+    });
+  }
+
   /* record a run. returns the doodads this score just opened up, in
      roster order - usually none, occasionally one, and both at once if
      somebody jumps straight from nothing to thirty. */
@@ -226,13 +272,36 @@ var Doodads = (function () {
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey()
-     caches, so this stays cheap enough to call from a draw loop. */
+     and boonsTaken() both cache, so this stays cheap enough to call from
+     a draw loop. A doodad states whatever it wants and has to satisfy all
+     of it; one that states nothing was always there. */
   function isUnlocked(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
-    if (!d.unlockAt) return true;
     if (masterKey()) return true;
-    return (best === undefined ? bestReached() : best) >= d.unlockAt;
+    if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
+    if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
+    return true;
+  }
+
+  /* What a locked doodad is still waiting for: the price to print, how far
+     along the player is and what to call it. Here rather than on the select
+     screen, so the card never has to know which kind of lock it is looking
+     at - and a third kind is a third branch in one place. */
+  function requirement(d) {
+    if (typeof d === 'string') d = BY_ID[d];
+    if (!d) return null;
+    if (d.unlockBoons) {
+      return { price: 'COLLECT ' + d.unlockBoons + ' SUCCULENTS', unit: 'TAKEN',
+               plate: d.unlockBoons + ' SUCCULENTS',
+               have: Math.min(boonsTaken(), d.unlockBoons), need: d.unlockBoons };
+    }
+    if (d.unlockAt) {
+      return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
+               plate: 'SCORE ' + d.unlockAt,
+               have: Math.min(bestReached(), d.unlockAt), need: d.unlockAt };
+    }
+    return null;
   }
 
   function firstUnlocked() {
@@ -250,6 +319,7 @@ var Doodads = (function () {
     has: function (id) { return !!BY_ID[id]; },
     draw: draw,
     bestReached: bestReached, noteScore: noteScore,
+    boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
     isUnlocked: isUnlocked, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey
   };
