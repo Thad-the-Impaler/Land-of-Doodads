@@ -6,7 +6,8 @@ ends when you hit something.
 
 Once you are past 8 the rafters start shedding eggs, and one in a handful of
 those is a deviled egg worth flying into. Get further and the coop fills up:
-there are six doodads, and three of them have to be earned.
+there are seven doodads, three of them have to be earned - and one is not
+for sale at all.
 
 ## Playing it
 
@@ -92,18 +93,28 @@ Three are standing in the coop from the start:
 | **Pepper** | holds a grudge | oily green shine, short temper |
 | **Gerald** | technically flightless | has not accepted this |
 
-Three more are boarded up in their stalls until you earn them:
+Three more are boarded up until you earn them, and a fourth until you find him:
 
 | | | |
 |---|---|---|
-| **Maximus** | **score 20** | a pug with two small wings and enormous confidence |
-| **Billy** | **score 30** | a biro doodle on ruled paper that got out of the margin |
+| **Maximus** | **score 15** | a pug with two small wings and enormous confidence |
+| **Billy** | **score 25** | a biro doodle on ruled paper that got out of the margin |
 | **Inari** | **nine succulents** | a grey cat, mildly disgusted, who let herself in |
+| **Saddam** | **find him** | a crawfish the size of a plum, waiting behind the bamboo |
 
 Not every price is a score. Inari costs **nine succulents**, the potted plant
 that only THE GARDEN grows, so she is earned by going and getting something
 rather than by surviving longer - and it is what she is worth, because what she
 brings is a spare life of her own.
+
+Saddam has no price - his stall just says `HE'S HIDING. CAN YOU FIND HIM?`
+**He is behind the tenth stake in THE GARDEN**,
+with just enough of himself showing over the top of it to be noticed, and the
+only way in is to fly close enough to touch him - which means hugging the
+bottom edge of a gap that would kill you nine pixels lower. His stall says
+`HIDING` and his card says `HE IS NOT FOR SALE`, because there is no meter to
+fill: you have met him or you have not. Miss him and the plank is gone for that
+run; he will be behind the tenth one again next time.
 
 The select screen shows every stall from the first run, so you can see what is
 in there and what it costs: a locked stall is timbered over with the price on
@@ -197,6 +208,7 @@ doodads are the same doodad with a different coat of paint.
 | MAXIMUS | **TROT** | the ground cannot end him |
 | BILLY | **PAPER-LIGHT** | he falls slow and flies soft |
 | INARI | **SPARE LIFE** | she brings her own; the first mistake is free |
+| SADDAM | **TAIL FLICK** | he bats down what falls, one at a time |
 
 ### Cookie's nerve
 
@@ -252,6 +264,30 @@ would have had the player expecting eight more saves than the code hands out.
 
 It is deliberately the same shape as what she costs. Nine of them buys her out
 of the stall; she hands one back at the start of every run after that.
+
+### Saddam's tail flick
+
+The mirror of Gerald's hunger, and the only other ability that does anything
+about what falls out of the sky: the hunger drags power-ups **in**, the tail
+knocks hazards **out**. A crawfish tail is the fastest thing on him, so it is
+the part that gets there: anything falling that comes within **28 pixels** is
+batted out of the air before it lands.
+
+**One flick takes one thing, and then the tail has to come back.** The cooldown
+is 1.8 seconds, set against the rate the levels actually shed at: they floor out
+around 1.1-1.5 seconds apart, so late on he gets about every other one and flies
+the rest himself. Early, when they are 2.5 seconds apart, he still gets them all
+- the ability thins out exactly as the pressure comes on, which is the right way
+round, and two arriving together is precisely the moment he should not get both.
+A quiet chirp and a few sparks say when the tail is back under him.
+
+It is deliberately blind to power-ups. A crawfish that batted the hot pepper
+away would be a curse wearing a gift's clothes, so the tail ignores exactly what
+Gerald's hunger reaches for - the two abilities share one test and read it in
+opposite directions.
+
+Planks, mint and the ground are all still lethal, and so is every second
+tomato.
 
 ### Billy's paper
 
@@ -376,10 +412,15 @@ so they stay smooth against the pixelated world.
   frames in `js/assets.js` and add an entry to `LIST` in `js/doodads.js` with
   that metadata - `pivotX`/`pivotY`/`bodyR`/`footOffset` are measured from the
   art so every doodad is drawn, stood up and collided at the same size.
-  Add `lockedAbout` and a price to gate it - `unlockAt: <score>`, or
-  `unlockBoons: <count>` for succulents; a doodad may state both and has to
+  Add `lockedAbout` and a price to gate it - `unlockAt: <score>`,
+  `unlockBoons: <count>` for succulents, or `unlockMeet: true` for one who is
+  found in the world rather than bought; a doodad may state several and has to
   satisfy all of it, and one that states nothing is simply there from the
-  start. `Doodads.requirement(d)` turns whichever lock it is into the price,
+  start. A `unlockMeet` doodad needs a level to hide him: that is `meetAt: <n>`
+  in a level's `tune`, naming which plank he is behind. The level says *where*
+  and the roster says *who* (`Doodads.meetable()` hands back the first still-shut
+  one), so neither has to know about the other and a second level can hide a
+  second doodad by adding one number. `Doodads.requirement(d)` turns whichever lock it is into the price,
   the plate, the progress and what to call it, so the select screen never has
   to know which kind it is looking at - a third kind of price is a third branch
   in that one function. `title: { role, r, homeX, homeY }`
@@ -399,7 +440,8 @@ so they stay smooth against the pixelated world.
   `watch` (a flag), `pull` (a radius), `trot` (a flag) and
   `light: { gravity, flap, fall }` (scales on the three numbers a doodad's
   flight is made of - ask `grav()`, `maxFall()` and `flapV()`, never the
-  constants) and `lives` (spare succulents a run starts with). Keep new ones **passive**: the one ability that needed a gesture
+  constants), `lives` (spare succulents a run starts with) and `flick` (a
+  radius that knocks hazards down). Keep new ones **passive**: the one ability that needed a gesture
   during play was cut for fighting the hand that was already flapping.
   A doodad may also have extra sprite frames: add the artwork, list it in
   `DOODADS` in `tools/trim_sprites.py` under a frame name, re-run the script

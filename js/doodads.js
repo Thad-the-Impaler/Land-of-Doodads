@@ -93,7 +93,7 @@ var Doodads = (function () {
       abilityLive: true,
       abilityAbout: ['THE GROUND CANNOT END HIM.', 'HE JUST TROTS IT OFF.'],
       trot: true,
-      unlockAt: 20,
+      unlockAt: 15,
       accent: '#c2a072', accentDark: '#6a4c25', accentLight: '#e8d2aa',
       sprite: { w: 361, h: 384, pivotX: 180.7, pivotY: 192.0, bodyR: 180.7, footOffset: 1.06 },
       title: { role: 'walk', r: 22, homeX: 392 }
@@ -114,7 +114,7 @@ var Doodads = (function () {
       abilityLive: true,
       abilityAbout: ['BIRO ON PAPER WEIGHS NOTHING.', 'HE FALLS SLOW AND FLIES SOFT.'],
       light: { gravity: 0.72, flap: 0.82, fall: 0.78 },
-      unlockAt: 30,
+      unlockAt: 25,
       /* the biro, not the paper: every other doodad is warm brown or green
          against a dim brown coop, and giving him the near-white paper as an
          accent would put a white light shaft behind a white sprite */
@@ -145,6 +145,48 @@ var Doodads = (function () {
       accent: '#8d95a6', accentDark: '#4a5263', accentLight: '#cdd6e6',
       sprite: { w: 384, h: 358, pivotX: 195.4, pivotY: 179.0, bodyR: 179.0, footOffset: 1.00 },
       title: { role: 'perch', r: 20 }
+    },
+    {
+      id: 'saddam',
+      name: 'SADDAM',
+      tagline: 'WAS ALWAYS THERE',
+      about: ['A CRAWFISH THE SIZE OF A PLUM.', 'ALL TAIL, CLAWS AND PATIENCE.'],
+      lockedAbout: ["HE'S HIDING.", 'CAN YOU FIND HIM?'],
+      /* The mirror of Gerald's hunger, and the only other doodad who does
+         anything about what falls: the hunger drags power-ups IN, the tail
+         knocks hazards OUT. A crawfish tail is the fastest thing on him, so
+         it is the part that gets there. It is deliberately blind to
+         power-ups - a crawfish that batted the hot pepper away would be a
+         curse wearing a gift's clothes.
+
+         `reach` is how far it gets, and `cool` is how long it takes to come
+         back. One flick takes ONE thing, and 1.8s is set against the rate
+         the levels actually shed at: they floor out around 1.1-1.5s apart,
+         so late on he gets about every other one and has to fly the rest
+         himself. Early, when they are 2.5s apart, he still gets them all -
+         the ability thins out exactly as the pressure comes on, which is
+         the right way round. */
+      ability: 'TAIL FLICK',
+      abilityLive: true,
+      abilityAbout: ['THE TAIL GETS THERE FIRST.', 'THEN IT NEEDS A MOMENT.'],
+      flick: { reach: 28, cool: 1.8 },
+      /* Not a price at all: he is FOUND. The level says which plank he is
+         hiding behind (tune.meetAt); this only says that touching him is
+         what opens the stall. */
+      unlockMeet: true,
+      /* boiled-crawfish red - the one warm red in a roster of browns,
+         greens, a grey and a blue, and it reads against the Garden's green
+         as well as the coop's timber */
+      accent: '#a4432a', accentDark: '#5e2415', accentLight: '#d4775a',
+      sprite: { w: 384, h: 329, pivotX: 179.9, pivotY: 143.9, bodyR: 143.9, footOffset: 1.00 },
+      /* Measured in SPRITE width, not body radius: his art is 2.67 body
+         radii across, so at r 19 he is 51px wide (23.8 left of the pivot,
+         26.9 right). The default wander of 26 then put him at -3.8 and
+         walked him off the stage, and into Gerald's 68.9..170.7 besides.
+         A shorter span and a home of 34 gives him 4.2..66.9 - on screen,
+         and clear of where Gerald's art begins at 68.9. (250, the first
+         guess, was behind the PLAY board, which is painted over him.) */
+      title: { role: 'walk', r: 19, homeX: 34, spanX: 6 }
     }
   ];
 
@@ -204,6 +246,7 @@ var Doodads = (function () {
 
   var reached = null;                 /* cached; localStorage is not free */
   var boons = null;
+  var met = null;                     /* ids of the ones found in the world */
   var passkey = null;
 
   /* The master passkey opens every doodad at once. It is its own flag
@@ -258,6 +301,39 @@ var Doodads = (function () {
     });
   }
 
+  /* The doodads that have been found rather than earned. A list of ids
+     rather than a count, because meeting one is a single event that either
+     has or has not happened and there is nothing to total up. */
+  function metIds() {
+    if (met !== null) return met;
+    var stored = Save.get('met', []);
+    met = Array.isArray(stored) ? stored.filter(function (id) { return !!BY_ID[id]; }) : [];
+    return met;
+  }
+
+  /* the doodad currently hiding in the world, if any: the first still-shut
+     one that is found rather than bought. Levels ask for this instead of
+     naming an id, so who is behind the plank stays the roster's business. */
+  function meetable() {
+    var best = bestReached();
+    for (var i = 0; i < LIST.length; i++) {
+      if (LIST[i].unlockMeet && !isUnlocked(LIST[i], best)) return LIST[i];
+    }
+    return null;
+  }
+
+  /* found one. returns it if this was the moment, or null if it was
+     already known - so a second touch cannot fire the banner twice. */
+  function noteMeet(d) {
+    if (typeof d === 'string') d = BY_ID[d];
+    if (!d || !d.unlockMeet) return null;
+    var list = metIds();
+    if (list.indexOf(d.id) >= 0) return null;
+    list.push(d.id);
+    Save.set('met', list);
+    return d;
+  }
+
   /* record a run. returns the doodads this score just opened up, in
      roster order - usually none, occasionally one, and both at once if
      somebody jumps straight from nothing to thirty. */
@@ -281,6 +357,7 @@ var Doodads = (function () {
     if (masterKey()) return true;
     if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
+    if (d.unlockMeet && metIds().indexOf(d.id) < 0) return false;
     return true;
   }
 
@@ -301,6 +378,12 @@ var Doodads = (function () {
                plate: 'SCORE ' + d.unlockAt,
                have: Math.min(bestReached(), d.unlockAt), need: d.unlockAt };
     }
+    /* nothing to total up and nothing to half-finish: you have met him or
+       you have not, so this one asks the card for no progress bar */
+    if (d.unlockMeet) {
+      return { price: 'FIND HIM IN THE GARDEN', plate: 'HIDING',
+               hint: 'HE IS NOT FOR SALE', bar: false };
+    }
     return null;
   }
 
@@ -320,6 +403,7 @@ var Doodads = (function () {
     draw: draw,
     bestReached: bestReached, noteScore: noteScore,
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
+    meetable: meetable, noteMeet: noteMeet,
     isUnlocked: isUnlocked, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey
   };

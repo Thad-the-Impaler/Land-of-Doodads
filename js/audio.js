@@ -129,6 +129,9 @@ var Audio3 = (function () {
                            tone({ from: 1318, dur: 0.26, type: 'square', vol: 0.10, delay: 0.24 }); },
     scoreHot:function () { tone({ from: 880, dur: 0.06, type: 'square', vol: 0.13 });
                            tone({ from: 1318, dur: 0.10, type: 'square', vol: 0.12, delay: 0.055 }); },
+    /* the tail back under him: a quiet all-clear you can hear under play */
+    ready:   function () { tone({ from: 660, dur: 0.05, type: 'triangle', vol: 0.07 });
+                           tone({ from: 990, dur: 0.07, type: 'triangle', vol: 0.06, delay: 0.045 }); },
     /* a plank shaved close: a thin zip past the ear, not another point */
     nerve:   function () { tone({ from: 990, to: 1480, dur: 0.06, type: 'square', vol: 0.09 });
                            tone({ from: 1480, to: 1980, dur: 0.07, type: 'triangle', vol: 0.07, delay: 0.05 });

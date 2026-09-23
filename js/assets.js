@@ -21,7 +21,9 @@ var Assets = (function () {
     billy_fall:  'Assets/sprites/billy_fall.png',
     billy_fly:   'Assets/sprites/billy_fly.png',
     inari_fall:  'Assets/sprites/inari_fall.png',
-    inari_fly:   'Assets/sprites/inari_fly.png'
+    inari_fly:   'Assets/sprites/inari_fly.png',
+    saddam_fall: 'Assets/sprites/saddam_fall.png',
+    saddam_fly:  'Assets/sprites/saddam_fly.png'
   };
   /* every doodad in js/doodads.js needs both frames listed here: the load
      loop walks MANIFEST, and window.DOODAD_SPRITES from the single file

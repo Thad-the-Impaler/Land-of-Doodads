@@ -43,7 +43,7 @@ var Levels = (function () {
     name: 'THE GARDEN',
     code: '1-2',
     /* earned, not built-later: see `unlock` and Levels.isUnlocked */
-    unlock: { room: 'backyard', level: 'coop', score: 30 },
+    unlock: { room: 'backyard', level: 'coop', score: 25 },
     blurb: ['IT WAS NEAT ROWS, ONCE.', 'THE MINT HAD OTHER IDEAS.'],
     art: Garden,
     tune: {
@@ -64,7 +64,11 @@ var Levels = (function () {
       dropFallMin: 4, dropFallMax: 30,
       spicyChance: 0.08,
       /* the succulent: genuinely rare, and never twice in quick succession */
-      boonChance: 0.028, boonGap: 10
+      boonChance: 0.028, boonGap: 10,
+        /* Somebody is hiding behind the tenth stake. Which doodad is the
+           roster's business, not this level's - PlayScene asks
+           Doodads.meetable() - so this only says where to look. */
+        meetAt: 10
     }
   };
 

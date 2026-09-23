@@ -270,7 +270,9 @@ var TitleScene = (function () {
     var ground = FLOOR - a.r * a.foot;
 
     if (a.state === 'walk') {
-      a.x = damp(a.x, a.homeX + Math.sin(t * 0.3 + a.bobPhase) * 26, 0.4, dt);
+      /* spanX, because how far a stomper can wander depends on how wide
+         its artwork is: the default 26 walks a broad sprite off the stage */
+      a.x = damp(a.x, a.homeX + Math.sin(t * 0.3 + a.bobPhase) * (a.spanX || 26), 0.4, dt);
       a.y = ground - Math.abs(Math.sin(t * 3.4 + a.bobPhase)) * 1.6;
       a.angle = Math.sin(t * 3.4 + a.bobPhase) * 0.04;
       if (a.timer <= 0) {
@@ -405,6 +407,7 @@ var TitleScene = (function () {
     } else {
       a.state = 'walk';
       a.homeX = d.title.homeX;
+      if (d.title.spanX) a.spanX = d.title.spanX;
       a.x = a.homeX; a.y = FLOOR - a.r * a.foot;
     }
     actors[d.id] = a;

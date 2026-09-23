@@ -142,25 +142,49 @@ var ScoresScene = (function () {
       Doodads.list.forEach(function (d) {
         if (!Doodads.isUnlocked(d, best)) { shut++; return; }
         var pb = Scores.personalBest(c.room, c.level, d.id);
-        parts.push({ d: d, text: d.name + ' ' + (pb > 0 ? pb : '-') });
+        parts.push({ d: d, pb: pb, text: d.name + ' ' + (pb > 0 ? pb : '-') });
       });
-      /* close the gap up rather than running off the edge if the roster
-         ever outgrows the room even once the locked ones are dropped */
-      var gap = 16;
-      var measure = function (g) {
-        var w = Font.measure('BESTS', 1);
-        parts.forEach(function (p) { w += g + Font.measure(p.text, 1); });
-        if (shut) w += g + 13 + Font.measure(shut + ' LOCKED', 1);
+
+      /* The row gives way in stages rather than running off the edge, in
+         the order of what it can most afford to lose. Closing the gap up
+         carried it to five doodads and had bottomed out at seven, where it
+         filled the screen to both edges with nothing to spare - and the
+         art folder has four more in it. */
+      var BUDGET = VW - 20, by = VH - 24;
+      var gap = 16, label = true, show = parts, hidden = 0;
+      var tail = function () { return hidden ? '+' + hidden : ''; };
+      var measure = function () {
+        var w = label ? Font.measure('BESTS', 1) : -gap;
+        show.forEach(function (p) { w += gap + Font.measure(p.text, 1); });
+        if (hidden) w += gap + Font.measure(tail(), 1);
+        if (shut) w += gap + 13 + Font.measure(shut + ' LOCKED', 1);
         return w;
       };
-      while (gap > 6 && measure(gap) > VW - 20) gap -= 2;
-      var bx = Math.round(VW / 2 - measure(gap) / 2), by = VH - 24;
-      UI.text(ctx, 'BESTS', bx, by, { colour: UI.C.inkFaint });
-      bx += Font.measure('BESTS', 1) + gap;
-      parts.forEach(function (p) {
+      while (gap > 6 && measure() > BUDGET) gap -= 2;
+      /* 1. the label goes first; it is the word that says least */
+      if (measure() > BUDGET) label = false;
+      /* 2. then the ones with nothing to report, counted instead - a row
+            of dashes is the least information on the line */
+      while (measure() > BUDGET) {
+        var idx = -1;
+        for (var q = 0; q < show.length; q++) if (show[q].pb <= 0) { idx = q; break; }
+        if (idx < 0) break;
+        show = show.slice(0, idx).concat(show.slice(idx + 1));
+        hidden++;
+      }
+      /* 3. and if even the scoring ones will not fit, the lowest of them */
+      while (measure() > BUDGET && show.length > 1) { show = show.slice(0, -1); hidden++; }
+
+      var bx = Math.round(VW / 2 - measure() / 2);
+      if (label) { UI.text(ctx, 'BESTS', bx, by, { colour: UI.C.inkFaint }); bx += Font.measure('BESTS', 1) + gap; }
+      show.forEach(function (p) {
         UI.text(ctx, p.text, bx, by, { colour: p.d.accentLight });
         bx += Font.measure(p.text, 1) + gap;
       });
+      if (hidden) {
+        UI.text(ctx, tail(), bx, by, { colour: UI.C.inkFaint });
+        bx += Font.measure(tail(), 1) + gap;
+      }
       if (shut) {
         UI.padlock(ctx, bx + 4, by + 3, 1, UI.C.inkFaint);
         UI.text(ctx, shut + ' LOCKED', bx + 13, by, { colour: UI.C.inkFaint });

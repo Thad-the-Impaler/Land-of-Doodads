@@ -83,6 +83,15 @@ var PlayScene = (function () {
   var spikeArmed = false;
   var hungry = 0;              /* things his hunger has hold of this frame */
   var nearestPull = 0;         /* how close the closest of them is, 0..1   */
+  var planksUp = 0;            /* planks spawned, for the one he hides on  */
+  var flickCool = 0;           /* seconds until the tail is back under him */
+  /* What the mid-flight banner is currently shouting about, and what is
+     waiting behind it. A score can open a level AND a doodad on the very
+     same plank - THE GARDEN and BILLY both sit at 25 - and reading the
+     accumulated lists meant the level won and the doodad was never
+     announced at all, even runs later. Each unlock takes its turn. */
+  var BANNER_TIME = 3.2;
+  var bannerQueue = [];
   var pottedLives = 0;         /* how many lives in hand came from a pot   */
   var spentPotted = false;     /* and whether the one just spent was one   */
   var nervePop = 0;            /* the shout for a plank taken close        */
@@ -139,6 +148,8 @@ var PlayScene = (function () {
        that is the ability, not a carry-over. */
     lives = doodad.lives || 0; invuln = 0; saveFlash = 0; saveBanner = 0;
     pottedLives = 0; spentPotted = false;
+    planksUp = 0; flickCool = 0;
+    bannerQueue.length = 0;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
     hungry = 0; nearestPull = 0;
     nervePop = 0; trotting = 0;
@@ -371,6 +382,82 @@ var PlayScene = (function () {
     }
   }
 
+  /* ------------------------------------------------------------- the meet
+
+     One doodad is not bought at all. He is behind a plank, with just enough
+     of himself showing to be noticed, and the only way in is to fly close
+     enough to touch him - which means hugging the bottom edge of a gap that
+     would kill you nine pixels lower. The reward for looking, and for
+     nerve. */
+
+  var MEET_R = 9;              /* his touchable bulge, above the cap    */
+  var MEET_RISE = 14;          /* how much of him clears the cap - over
+                                  half, so his eyes are on the near side
+                                  of the cut and he reads as something
+                                  looking back rather than a lump        */
+  var MEET_BODY = 13;          /* drawn at a flying doodad's size        */
+
+  /* where he is peeking from: the middle of the plank, just over the top
+     of its lower half */
+  function meetX(ob) { return ob.x + ob.w / 2; }
+  function meetY(ob) { return ob.gapY + ob.gapH; }
+  /* the middle of the part of him that is actually showing */
+  function meetCy(ob) { return meetY(ob) - MEET_RISE / 2; }
+
+  function updateMeet() {
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar' || !ob.meet || ob.met) continue;
+      var dx = player.x - meetX(ob), dy = player.y - meetCy(ob);
+      if (dx * dx + dy * dy > (MEET_R + HIT_R) * (MEET_R + HIT_R)) continue;
+      takeMeet(ob);
+      return;
+    }
+  }
+
+  function takeMeet(ob) {
+    var who = Doodads.noteMeet(ob.meet);
+    ob.met = true;
+    if (!who) return;                       /* already known; just the flinch */
+    unlocked.push(who);
+    announce('doodad', who);
+    Audio3.play('unlock');
+    Screen.shake(3, 0.35);
+    for (var k = 0; k < 30; k++) {
+      var a = rand(0, TAU), sp = rand(40, 170);
+      particles.push({ x: meetX(ob), y: meetCy(ob),
+                       vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.5, 1.2), g: -50,
+                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? who.accentLight : who.accent) });
+    }
+  }
+
+  /* Drawn on the smooth layer with the sprites, but clipped to the air
+     ABOVE the plank's lower cap - which is what makes him read as standing
+     behind the stake rather than floating in front of it. The plank itself
+     is painted on the room layer underneath and simply shows through. */
+  function drawMeet(ctx) {
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar' || !ob.meet || ob.met) continue;
+      var cut = meetY(ob);
+      if (cut <= CEIL || ob.x > VW + 40 || ob.x + ob.w < -40) continue;
+      /* Always the neutral frame. A flap frame was flipped in here to make
+         him twitch, but his two frames are pixel-identical above the cut
+         except for the very tip of his tail, whose join to his body is
+         below it - so the only thing that moved was a 3x3 scrap of red
+         floating clear of him, which reads as a glitch rather than as
+         something alive. He holds still, which is what a hider does. */
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, CEIL, VW, cut - CEIL);
+      ctx.clip();
+      Doodads.draw(ctx, ob.meet.id, meetX(ob), cut + MEET_BODY - MEET_RISE,
+                   MEET_BODY, 0, false);
+      ctx.restore();
+    }
+  }
+
   /* ---------------------------------------------------------- watchful
 
      What she can see that nobody else can: the gap of the plank still off
@@ -462,6 +549,60 @@ var PlayScene = (function () {
     ctx.globalAlpha = ga;
   }
 
+  /* ----------------------------------------------------------- the flick
+
+     Gerald's hunger drags power-ups in; the crawfish's tail knocks hazards
+     out. Same shape, opposite sign, and deliberately blind to power-ups:
+     batting the hot pepper away would be a curse dressed as a gift. The two
+     abilities share isPowerUp() and read it in opposite directions, which
+     is the whole of the symmetry. */
+
+  function updateFlick() {
+    var f = doodad.flick;
+    if (!f || flickCool > 0) return;
+    var R = f.reach;
+    for (var i = obstacles.length - 1; i >= 0; i--) {
+      var ob = obstacles[i];
+      if (ob.type !== 'drop' || ob.broken || isPowerUp(ob)) continue;
+      var dx = player.x - ob.x, dy = player.y - ob.y;
+      if (dx * dx + dy * dy > R * R) continue;
+      lash(ob);
+      smashDrop(ob);
+      obstacles.splice(i, 1);
+      /* one flick takes one thing, and then the tail has to come back:
+         two arriving together is exactly the moment he should not get
+         both, so stop looking rather than clearing the sky */
+      flickCool = f.cool;
+      return;
+    }
+  }
+
+  /* the tail back under him. Quiet, but it has to be visible somewhere or
+     the first drop that sails through reads as the ability being broken
+     rather than spent. */
+  function flickReady() {
+    Audio3.play('ready');
+    for (var i = 0; i < 5; i++) {
+      particles.push({ x: player.x - 9 + rand(-2, 2), y: player.y + rand(-4, 6),
+                       vx: rand(-40, -8), vy: rand(-26, 10),
+                       life: rand(0.16, 0.36), g: 30,
+                       col: chance(0.5) ? doodad.accentLight : '#fff3d0' });
+    }
+  }
+
+  /* the flick of the tail, thrown at what it just knocked down */
+  function lash(ob) {
+    var a = Math.atan2(ob.y - player.y, ob.x - player.x);
+    for (var i = 0; i < 9; i++) {
+      var sp = rand(50, 150);
+      particles.push({ x: player.x + Math.cos(a) * 8, y: player.y + Math.sin(a) * 8,
+                       vx: Math.cos(a + rand(-0.4, 0.4)) * sp,
+                       vy: Math.sin(a + rand(-0.4, 0.4)) * sp,
+                       life: rand(0.12, 0.3), g: 40,
+                       col: chance(0.5) ? doodad.accentLight : '#fff3d0' });
+    }
+  }
+
   /* ----------------------------------------------------- the succulent */
 
   function takeBoon(ob) {
@@ -501,9 +642,8 @@ var PlayScene = (function () {
   function checkBoonUnlocks() {
     var won = Doodads.noteBoon();
     if (!won.length || Doodads.masterKey()) return;
-    for (var i = 0; i < won.length; i++) unlocked.push(won[i]);
+    for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
     boonBanner = 0;
-    unlockBanner = 3.2;
     Audio3.play('unlock');
     Screen.shake(2.5, 0.3);
     for (var k = 0; k < 30; k++) {
@@ -626,7 +766,16 @@ var PlayScene = (function () {
       var bottom = FLOOR - 34 - gapH;
       var gapY = clamp(lastGapY + rand(-tune.gapDrift, tune.gapDrift), top, bottom);
       lastGapY = gapY;
-      obstacles.push(art.makePillar(spawnCursor, gapY, gapH));
+      var plank = art.makePillar(spawnCursor, gapY, gapH);
+      /* Somebody is hiding behind one particular plank. The level says
+         which one, the roster says who, and neither has to know about the
+         other - so a second level could hide a second doodad by adding one
+         number, and the doodad is found even on a run that never scores. */
+      if (tune.meetAt && ++planksUp === tune.meetAt) {
+        var who = Doodads.meetable();
+        if (who) plank.meet = who;
+      }
+      obstacles.push(plank);
 
       /* hazards in the space between two pillars */
       var mid = spawnCursor + d.spacing * 0.5;
@@ -775,7 +924,7 @@ var PlayScene = (function () {
       if (wonLevels.indexOf(opened[n]) < 0) wonLevels.push(opened[n]);
     }
     if (opened.length && !Doodads.masterKey()) {
-      unlockBanner = 3.2;
+      for (var z = 0; z < opened.length; z++) announce('level', opened[z]);
       Audio3.play('unlock');
       Screen.shake(2.5, 0.3);
       for (var q = 0; q < 26; q++) {
@@ -791,8 +940,7 @@ var PlayScene = (function () {
        ever switched off. But there is nothing to announce when the
        passkey has already opened everything. */
     if (!won.length || Doodads.masterKey()) return;
-    for (var i = 0; i < won.length; i++) unlocked.push(won[i]);
-    unlockBanner = 3.2;
+    for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
     Audio3.play('unlock');
     Screen.shake(2.5, 0.3);
     for (var k = 0; k < 30; k++) {
@@ -905,13 +1053,23 @@ var PlayScene = (function () {
     if (spicyFlash > 0) spicyFlash -= dt;
     if (spicyBanner > 0) spicyBanner -= dt;
     if (hazardWarn > 0) hazardWarn -= dt;
-    if (unlockBanner > 0) unlockBanner -= dt;
+    if (unlockBanner > 0) {
+      unlockBanner -= dt;
+      if (unlockBanner <= 0) {
+        bannerQueue.shift();
+        if (bannerQueue.length) unlockBanner = BANNER_TIME;
+      }
+    }
     if (invuln > 0) invuln -= dt;
     if (saveFlash > 0) saveFlash -= dt;
     if (saveBanner > 0) saveBanner -= dt;
     if (boonBanner > 0) boonBanner -= dt;
     if (lifePop > 0) lifePop -= dt;
     if (nervePop > 0) nervePop -= dt;
+    if (flickCool > 0) {
+      flickCool -= dt;
+      if (flickCool <= 0) { flickCool = 0; if (state === 'play') flickReady(); }
+    }
     /* the heat eases in and out, so nothing about it snaps on or off */
     heat = damp(heat, spicy > 0 ? 1 : 0, 0.0004, dt);
     updateParticles(dt);
@@ -953,6 +1111,8 @@ var PlayScene = (function () {
       updateHunger(dt);
       updateNerve();
       updateWatch(dt);
+      updateFlick();
+      updateMeet();
       collide();
       emberTrail(dt);
       if (scorePop > 0) scorePop -= dt;
@@ -1119,6 +1279,8 @@ var PlayScene = (function () {
   }
 
   function drawChars(ctx) {
+    /* whoever is hiding goes first, so the player passes in front of him */
+    drawMeet(ctx);
     /* blink through the grace period, faster as it runs out */
     if (invuln > 0 && Math.floor(invuln * (invuln < 0.6 ? 22 : 12)) % 2 === 0) return;
     /* mouth open while his hunger has hold of something, and only if he
@@ -1279,12 +1441,13 @@ var PlayScene = (function () {
     ctx.globalAlpha = ga;
   }
 
-  /* a doodad just came unlocked, mid-flight */
+  /* something just came unlocked, mid-flight */
   function drawUnlockBanner(ctx) {
     if (state === 'entry') return;
-    var lvl = wonLevels[wonLevels.length - 1];
-    var d = unlocked[unlocked.length - 1];
-    if (!lvl && !d) return;
+    var head = bannerQueue[0];
+    if (!head) return;
+    var lvl = head.kind === 'level' ? head.it : null;
+    var d = head.kind === 'doodad' ? head.it : null;
     var a = clamp(unlockBanner / 0.6, 0, 1);
     var ga = ctx.globalAlpha;
     ctx.globalAlpha = ga * a;
@@ -1302,6 +1465,13 @@ var PlayScene = (function () {
               { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
     }
     ctx.globalAlpha = ga;
+  }
+
+  /* Put an unlock in the queue. It waits its turn rather than shoving the
+     one on screen aside, so two landing together are both seen. */
+  function announce(kind, it) {
+    bannerQueue.push({ kind: kind, it: it });
+    if (unlockBanner <= 0) unlockBanner = BANNER_TIME;
   }
 
   /* the one-off heads up when the rafters start letting go */
@@ -1509,6 +1679,10 @@ var PlayScene = (function () {
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
                                     lives: lives, invuln: invuln,
                                     pottedLives: pottedLives, spentPotted: spentPotted,
+                                    planksUp: planksUp, flickCool: flickCool,
+                                    flick: doodad && doodad.flick ? doodad.flick.reach : 0,
+                                    banners: bannerQueue.map(function (b) { return b.kind + ':' + (b.it.id || b.it.name); }),
+                                    meetOn: obstacles.filter(function (o) { return o.meet && !o.met; }).length,
                                     boonsTaken: Doodads.boonsTaken(),
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
                                     trotting: trotting, watchA: watchA,

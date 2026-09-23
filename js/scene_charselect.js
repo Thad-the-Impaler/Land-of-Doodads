@@ -462,6 +462,13 @@ var CharSelectScene = (function () {
     UI.text(ctx, d.lockedAbout[0], VW / 2, 210, { align: 'center', colour: UI.C.inkDim });
     UI.text(ctx, d.lockedAbout[1], VW / 2, 219, { align: 'center', colour: UI.C.inkDim });
 
+    /* Some locks have nothing to half-finish - you have met him or you
+       have not - so they ask for a line instead of a meter. */
+    if (req.bar === false) {
+      UI.text(ctx, req.hint, VW / 2, 233, { align: 'center', colour: UI.C.inkFaint });
+      return;
+    }
+
     /* how far off it is. fixed x on every part, so the numbers growing a
        digit can never shove the bar sideways. What is being counted is the
        lock's business, not this screen's - see Doodads.requirement. */
