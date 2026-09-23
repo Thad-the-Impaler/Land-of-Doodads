@@ -4285,8 +4285,10 @@ var TitleScene = (function () {
       if (pf.life <= 0) puffs.splice(i, 1);
     }
     for (i = bubbles.length - 1; i >= 0; i--) {
-      bubbles[i].life -= dt;
-      if (bubbles[i].life <= 0) bubbles.splice(i, 1);
+      var bb = bubbles[i];
+      bb.life -= dt;
+      if (bb.life <= 0) { bubbles.splice(i, 1); continue; }
+      placeBubble(bb, dt);
     }
   }
 
@@ -4307,7 +4309,34 @@ var TitleScene = (function () {
     }
   }
 
+  /* Where a bubble sits, worked out once a frame rather than in the draw.
+
+     Two separate problems, two separate parts. The TARGET only moves when
+     its doodad has genuinely gone somewhere (2px), so a doodad that is
+     merely bobbing cannot flip the bubble between two columns - that alone
+     had it moving on 35% of frames. The SHOWN position then eases toward
+     that target, because a target which steps 2-5px at a time would
+     otherwise lurch after a doodad that is gliding. Bobbing moves nothing;
+     travelling reads as following. */
+  function placeBubble(b, dt) {
+    var a = b.actor;
+    var wx = a.x + a.r * 0.6, wy = a.y - a.r - 10;
+    if (b.tx === undefined) { b.tx = wx; b.ty = wy; b.sx = wx; b.sy = wy; }
+    if (Math.abs(wx - b.tx) > 2) b.tx = wx;
+    if (Math.abs(wy - b.ty) > 2) b.ty = wy;
+    b.sx = damp(b.sx, b.tx, 0.0005, dt);
+    b.sy = damp(b.sy, b.ty, 0.0005, dt);
+  }
+
+  /* One bubble per doodad. The director and the idle chatter can both fire
+     at a doodad inside the same second, and two bubbles at one actor draw
+     at the same spot, one over the other - which reads as a smeared or
+     doubled bubble rather than as two remarks. Saying something again
+     replaces what is already up. */
   function say(actor, symbol) {
+    for (var i = bubbles.length - 1; i >= 0; i--) {
+      if (bubbles[i].actor === actor) bubbles.splice(i, 1);
+    }
     bubbles.push({ actor: actor, symbol: symbol, life: 1.2 });
     Audio3.play('chirp');
   }
@@ -4758,14 +4787,33 @@ var TitleScene = (function () {
       UI.text(ctx, hi, VW - 11, 8, { align: 'right', colour: UI.C.gold });
     }
 
-    /* speech bubbles ride above their doodad */
+    /* Speech bubbles ride above their doodad.
+
+       The doodads live on the smooth layer and move in fractions of a
+       pixel; a bubble is pixel art and has to land on whole ones. Rounding
+       the actor's position every frame meant a doodad merely BOBBING
+       flipped the bubble back and forth between two columns - it moved on
+       35% of frames while its owner was only breathing. So the bubble
+       keeps its own position and only takes a new one when the doodad has
+       genuinely gone somewhere (2px), which leaves the rise as the only
+       motion in it. */
+    var ga = ctx.globalAlpha;
     for (var i = 0; i < bubbles.length; i++) {
       var b = bubbles[i];
       var a = b.actor;
-      var rise = (1.2 - b.life) * 6;
-      if (b.life < 0.25 && Math.floor(b.life * 24) % 2) continue;      /* blink out */
-      drawBubble(ctx, Math.round(a.x + a.r * 0.6), Math.round(a.y - a.r - 10 - rise), b.symbol);
+      /* an actor off the side of the stage has no bubble to show: both it
+         and the doodad belong off screen, and only one of them can be
+         clamped back on */
+      if (a.x < -20 || a.x > VW + 20 || b.sx === undefined) continue;
+      /* and it stays on the screen even when its doodad is at the edge */
+      var bx = clamp(Math.round(b.sx), 1, VW - 13);
+      var by = Math.round(b.sy - (1.2 - b.life) * 6);
+      /* fade rather than strobe: the old blink ran at 12Hz, which on a
+         bubble this small read as a fault */
+      ctx.globalAlpha = ga * clamp(b.life / 0.3, 0, 1);
+      drawBubble(ctx, bx, by, b.symbol);
     }
+    ctx.globalAlpha = ga;
 
     /* footer */
     ctx.fillStyle = UI.C.darker;
