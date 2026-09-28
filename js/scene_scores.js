@@ -17,6 +17,15 @@ var ScoresScene = (function () {
   var PX = 70, PW = 340, PY = 48, PH = 190;
   var ROW0 = 66, ROWH = 17;
 
+  /* The rectangles this screen drew, refilled inside drawFg and handed to
+     Input by Game.render. The pair of triangles that used to sit either side
+     of the level's name were the title screen's selection marker glyph
+     meaning something else entirely, and the controls that actually paged the
+     table were two pads in the opposite corner. Now the triangle IS the
+     control, it sits in a raised pad beside the table it pages, and there is
+     nothing else on the screen a tap can land on. */
+  var hot = [];
+
   function current() { return list[index]; }
 
   function enter() {
@@ -38,6 +47,12 @@ var ScoresScene = (function () {
     if (Game.locked()) return;
 
     if (confirming) {
+      /* KEEP carries no action of its own - a button that undoes something
+         should not share a key with the button that does it - so it is read
+         here. RESET carries a:'confirm' and falls into the line below, the
+         same one ENTER uses. */
+      var tgc = Input.tapped();
+      if (tgc && tgc.id === 'keep') { confirming = false; Audio3.play('move'); return; }
       if (Input.hit('confirm')) {
         Scores.erase(current().room, current().level);
         confirming = false;
@@ -49,6 +64,11 @@ var ScoresScene = (function () {
       }
       return;
     }
+
+    /* the side pads carry a:'left' / a:'right' and fall straight into the
+       paging code below, so only BACK needs a word here */
+    var tg = Input.tapped();
+    if (tg && tg.id === 'back') { Audio3.play('back'); Game.go(TitleScene, { menu: 1 }); return; }
 
     if (Input.nav('left') || Input.nav('right')) {
       if (list.length < 2) { Audio3.play('deny'); Screen.shake(1.2, 0.16); }
@@ -115,22 +135,33 @@ var ScoresScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     var c = current();
-    /* two line footer: everyone's bests, then the controls */
+    /* The bests row, and on a keyboard the key hints under it. A phone gets
+       no hint line at all - UI.footer leaves it out - so the strip shrinks to
+       the one row of content that is not a caption for a button. */
+    var strip = UI.touch() ? 18 : 28;
     ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(0, VH - 28, VW, 28);
+    ctx.fillRect(0, VH - strip, VW, strip);
     ctx.fillStyle = UI.C.inkFaint;
-    ctx.fillRect(0, VH - 28, VW, 1);
-    UI.rule(ctx, 40, VH - 14, VW - 80, UI.C.inkFaint);
+    ctx.fillRect(0, VH - strip, VW, 1);
 
     UI.heading(ctx, 'HIGH SCORES', VW / 2, 8, 2, { colour: UI.C.gold });
+
+    /* The way back, and the two that page the table. Only drawn once
+       something is pointing, the same rule the pads follow; a keyboard has
+       ◀ ▶ and ESC and does not need them taking up the room. */
+    if (Input.pointing() && !confirming) {
+      UI.button(ctx, hot, 6, 4, 44, 32, { id: 'back', label: 'BACK', scale: 1 });
+      if (list.length > 1) {
+        UI.button(ctx, hot, 26, 122, 36, 44, { id: 'prev', a: 'left', label: '◀' });
+        UI.button(ctx, hot, VW - 62, 122, 36, 44, { id: 'next', a: 'right', label: '▶' });
+      }
+    }
+
     if (c) {
       var label = c.room.name + '  ·  ' + c.level.name;
       UI.text(ctx, label, VW / 2, 30, { align: 'center', colour: UI.C.ink });
-      var half = Font.measure(label, 1) / 2;
-      var live = list.length > 1 ? UI.C.gold : UI.C.inkFaint;
-      UI.chevron(ctx, VW / 2 - half - 10, 33, -1, 4, live);
-      UI.chevron(ctx, VW / 2 + half + 10, 33, 1, 4, live);
 
       /* Each doodad's own best on this level, plus a count of the ones
          still boarded up. Only the earned ones are named: the row was
@@ -150,7 +181,7 @@ var ScoresScene = (function () {
          carried it to five doodads and had bottomed out at seven, where it
          filled the screen to both edges with nothing to spare - and the
          art folder has four more in it. */
-      var BUDGET = VW - 20, by = VH - 24;
+      var BUDGET = VW - 20, by = UI.touch() ? VH - 12 : VH - 24;
       var gap = 16, label = true, show = parts, hidden = 0;
       var tail = function () { return hidden ? '+' + hidden : ''; };
       var measure = function () {
@@ -191,23 +222,35 @@ var ScoresScene = (function () {
       }
     }
 
-    UI.text(ctx, UI.forInput('◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
-                             '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
-                             '◀ ▶ LEVEL    BACK'),
-            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
+    /* drawn over the bottom 13px of the strip above, and not at all on a
+       phone - where the arrows and the way back are buttons you can press */
+    UI.footer(ctx, '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                   '◀ ▶ LEVEL    X RESET TABLE    ESC BACK');
 
     if (confirming && c) {
       UI.scrim(ctx, 10);
-      var w = 236, h = 74, x = (VW - w) / 2, y = (VH - h) / 2;
+      var w = 236, h = 100, x = (VW - w) / 2, y = (VH - h) / 2;
       UI.board(ctx, x, y, w, h, { highlight: UI.C.red });
       UI.text(ctx, 'RESET ' + c.level.name + '?', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'BACK TO THE DOODADS\' OWN SCORES.', VW / 2, y + 31, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
-      UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 46, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-      UI.text(ctx, UI.forInput('ENTER RESET    ESC KEEP', 'CLICK RESET    ESC KEEPS',
-                               'TAP RESET    BACK KEEPS'),
-              VW / 2, y + 62, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+      UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 45, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+      /* Two boards, because this question has to be answerable by whatever
+         is pointing at it. It used to be answerable only by a KEY: the panel
+         read TAP RESET while drawing nothing tappable, and with the menu's
+         old tap-anywhere zone gone there was no way to answer or dismiss it
+         at all - a phone that reached this screen was stuck on it. */
+      if (Input.pointing()) {
+        UI.button(ctx, hot, VW / 2 - 104, y + 60, 96, 28,
+                  { id: 'reset', a: 'confirm', label: 'RESET', lit: true, scale: 1 });
+        UI.button(ctx, hot, VW / 2 + 8, y + 60, 96, 28,
+                  { id: 'keep', label: 'KEEP', scale: 1 });
+      } else {
+        UI.text(ctx, 'ENTER RESET    ESC KEEP', VW / 2, y + 66,
+                { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+      }
     }
   }
 
-  return { enter: enter, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg };
+  return { enter: enter, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();

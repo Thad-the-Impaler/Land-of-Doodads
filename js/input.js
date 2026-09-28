@@ -95,7 +95,7 @@ var Input = (function () {
     held[action] = true;
     pressAction(action);
     /* a key means the pads are in the way rather than in use */
-    pointerSeen = false; pointerKind = null; hoverAction = null;
+    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null;
     Audio3.unlock();
   }
 
@@ -119,31 +119,68 @@ var Input = (function () {
      Which part of the screen means what depends on the mode, because a tap
      in the middle means "flap" in a run and "choose this" in a menu. Scenes
      set the mode; the pads are drawn from this same table, so what is drawn
-     and what is listened to can never drift apart.                      */
+     and what is listened to can never drift apart.
+
+     There are only two rules a beginner has to learn, and they are the two
+     rules this file now enforces:
+
+       in a run, a tap anywhere flaps  - that is the 'rest' zone below;
+       everywhere else, you tap the thing itself.
+
+     "The thing itself" is the second half of the table: a scene fills a
+     list of TARGETS - the rectangles it just drew - and Game.render hands
+     them over with setTargets() immediately after drawFg. A touch arrives
+     between frames, so it is always tested against the frame the player is
+     actually looking at, which is the same guarantee the pads have always
+     had. That is why the menus no longer need pads or a rest zone at all:
+     a menu that draws nothing tappable listens to nothing.
+
+     zoneAt looks in one order and it matters: mode pads, then the scene's
+     targets, then the rest zone. Pads first means nothing a scene publishes
+     can ever end up on top of the pause button; the rest zone last means it
+     only ever catches what nothing else wanted.                          */
 
   var PAD = 44, PAD_Y = 216, EDGE = 8;
 
+  /* One object, shared by both modes that show it, so pausing and resuming
+     cannot end up with the button in two different places. */
+  var PAUSE_PAD = { a: 'pause', x: VW - 46, y: 4, w: 40, h: 34, icon: 'II' };
+
   var ZONES = {
     play: [
-      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
-      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
-      { a: 'pause', x: VW - 38,       y: 6,     w: 32, h: 26,   icon: 'II', small: true },
-      { a: 'up',    rest: true }
-    ],
-    menu: [
-      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
-      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
-      { a: 'back',  x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'BACK' },
-      { a: 'confirm', rest: true }
-    ],
-    text: [
       { a: 'left',  x: EDGE,           y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
       { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
-      { a: 'up',    x: 196,            y: PAD_Y, w: PAD, h: PAD, icon: '\u25B2' },
-      { a: 'down',  x: 196 + PAD + 6,  y: PAD_Y, w: PAD, h: PAD, icon: '\u25BC' },
-      { a: 'confirm', x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'SAVE' }
-    ]
+      PAUSE_PAD,
+      { a: 'up',    rest: true }
+    ],
+    /* Paused is its own mode because the run's rules are exactly wrong here:
+       'play' maps the whole screen to 'up', so a tap on the big PAUSED panel
+       used to send a flap that the paused branch threw away, leaving the one
+       small corner button as the only way back into the game. */
+    paused: [
+      PAUSE_PAD,
+      { a: 'confirm', rest: true }
+    ],
+    /* A menu has no pads and no rest zone on purpose. Arrow pads on a menu
+       contradicted the list they were pointing at, and a screen-wide
+       "tap anywhere = confirm" meant tapping the doodad you wanted started
+       a run as whoever the cursor happened to be on. A tap that lands on
+       nothing is now free. */
+    menu: []
   };
+
+  /* The rectangles the current scene drew this frame, as plain objects
+     { x, y, w, h, id, a, i }. Pads carry an action (`a`) and no `id`;
+     targets carry an `id` and may also carry an action. See setTargets. */
+  var targets = [];
+  var tapped = null;              /* the target a point landed on this frame */
+  /* Set while something covers the whole screen and is not part of the scene
+     - the turn-it-sideways notice is the only one. Without it the scene's
+     rectangles go on listening underneath an opaque panel: tapping the words
+     telling you to rotate the phone pressed whatever board happened to be
+     behind them, and the game walked off to another screen in the dark. */
+  var blocked = false;
+  var hoverTarget = null;         /* the target the cursor is over; mouse only */
 
   var touchMode = 'menu';
   var pointerSeen = false;        /* is anything pointing, so draw the pads  */
@@ -168,13 +205,29 @@ var Input = (function () {
      nothing about touch changes. */
   function usePointer(kind) { pointerSeen = true; pointerKind = kind; }
 
+  function inside(z, x, y) {
+    return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h;
+  }
+
   function zoneAt(x, y) {
+    if (blocked) return null;
     var list = ZONES[touchMode] || ZONES.menu;
-    var rest = null;
-    for (var i = 0; i < list.length; i++) {
-      var z = list[i];
+    var rest = null, i, z;
+    /* the mode's own pads first: the pause button can never be covered */
+    for (i = 0; i < list.length; i++) {
+      z = list[i];
       if (z.rest) { rest = z; continue; }
-      if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return z;
+      if (inside(z, x, y)) return z;
+    }
+    /* then what the scene drew, LAST FIRST. A scene paints back to front, so
+       the last rectangle pushed is the one lying on top, and the one on top
+       is the one the player can see and believes they are pressing. Reading
+       the list forwards gave the opposite: on the level select, BACK is
+       drawn first and a room plate slides over it, and for the quarter
+       second of the slide a tap on the visible plate pressed the hidden
+       BACK. */
+    for (i = targets.length - 1; i >= 0; i--) {
+      if (inside(targets[i], x, y)) return targets[i];
     }
     return rest;
   }
@@ -190,8 +243,14 @@ var Input = (function () {
     if (!v) return false;
     var z = zoneAt(v.x, v.y);
     if (!z) return false;
-    points[id] = z.a;
-    pressAction(z.a);
+    /* A pad IS its action. A target may carry one too - a board labelled
+       PLAY carries 'confirm' - and then it fires exactly as the key would,
+       so the scene's existing keyboard branch does the work. A target with
+       no action only moves the selection, which is what makes one tap on an
+       unchosen card mean "this one" rather than "go". */
+    points[id] = z.a || null;
+    if (z.a) pressAction(z.a);
+    if (z.id) tapped = z;
     return true;
   }
 
@@ -203,7 +262,7 @@ var Input = (function () {
     var v = Screen.toVirtual(clientX, clientY);
     if (!v) return;
     var z = zoneAt(v.x, v.y);
-    var now = z ? z.a : null;
+    var now = z ? (z.a || null) : null;
     if (now === points[id]) return;
     points[id] = now;
     /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
@@ -262,6 +321,9 @@ var Input = (function () {
     /* only the drawn pads light up - the rest-of-screen zone is the whole
        playfield, and lighting that up would mean lighting up everything */
     hoverAction = (z && !z.rest) ? z.a : null;
+    /* the scene's own rectangles light up through hovering() instead, which
+       is how a wooden board knows the cursor is on it */
+    hoverTarget = (z && z.id) ? z : null;
     if (!(MOUSE in points)) return;
     movePoint(MOUSE, e.clientX, e.clientY);
     rebuildTouchHeld();
@@ -279,6 +341,7 @@ var Input = (function () {
     if (e.relatedTarget || e.toElement) return;    // still inside the page
     delete points[MOUSE];
     hoverAction = null;
+    hoverTarget = null;
     rebuildTouchHeld();
   }
 
@@ -292,6 +355,18 @@ var Input = (function () {
   }
 
   function init() {
+    /* A phone is a phone before it is touched. pointerKind used to stay null
+       until the first touchstart, which meant the very first screen a phone
+       ever showed was captioned for a keyboard it does not have and the
+       turn-it-sideways notice - needed at exactly that moment - stayed
+       hidden. Asking the device settles it on frame one instead. A keypress
+       still hands the screen back to the keyboard, so a desktop with a
+       touchscreen loses nothing. ?touch=1 forces it, for testing on a
+       desktop where the emulator will not. */
+    var coarse = /[?&]touch=1/.test(location.search) ||
+                 (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+    if (coarse) usePointer('touch');
+
     window.addEventListener('keydown', onKeyDown, { passive: false });
     window.addEventListener('keyup', onKeyUp);
     var opt = { passive: false };
@@ -305,7 +380,7 @@ var Input = (function () {
     document.addEventListener('mouseout', onMouseOut);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {};
-      points = {}; touchHeld = {}; hoverAction = null;
+      points = {}; touchHeld = {}; hoverAction = null; hoverTarget = null;
     });
   }
 
@@ -330,6 +405,8 @@ var Input = (function () {
     pressed = {};
     anyPressed = false;
     typed.length = 0;
+    /* a tap is an edge, like a fresh key press: it lasts one frame */
+    tapped = null;
   }
 
   function setTextMode(on) {
@@ -354,8 +431,45 @@ var Input = (function () {
     watchCode: function (seq, fn) { codes.push({ seq: seq, fn: fn, buf: '' }); },
 
     /* ---- touch ---- */
-    setTouchMode: function (m) { if (ZONES[m]) touchMode = m; },
+    /* Changing mode drops the target list: a rectangle drawn by the scene
+       we are leaving must not outlive it, and nothing is listened to again
+       until the next render publishes a fresh list. */
+    setTouchMode: function (m) { if (ZONES[m]) { touchMode = m; targets = []; } },
     touchMode: function () { return touchMode; },
+
+    /* Publish the rectangles the scene just drew. Called once per frame by
+       Game.render, straight after scene.drawFg, with the array the scene
+       filled while it was drawing - so every listened rectangle is one that
+       was painted from the same x/y/w/h. The array is kept by reference; the
+       scene clears and refills it inside drawFg, which is synchronous, so no
+       event can ever see a half-built list. Pass null or nothing for a scene
+       that has no targets.
+
+       A target is { x, y, w, h, id, a, i } in virtual 480x270 pixels:
+         id  a short name for the kind of thing it is ('menu', 'card',
+             'stall', 'row', 'slot', 'back', 'quit' ...). Required: having an
+             id is what makes it a target rather than a pad.
+         a   optional Input action ('confirm', 'up', 'down', 'left',
+             'right'), fired on press exactly as the matching key would be.
+         i   optional integer - an index, or a direction of -1 / +1.        */
+    setTargets: function (list) { targets = list || []; },
+    /* Stop listening to anything at all, pads included, while a full-screen
+       notice is up. Game.render sets it from the same condition that draws
+       the notice, so what is covered is what is deaf. */
+    setBlocked: function (b) { blocked = !!b; },
+    /* the live list, for the ?hit=1 overlay that proves drawn == listened */
+    targets: function () { return targets; },
+    /* The target a finger or the mouse button landed on this frame, or null.
+       Edge-triggered like hit(): read it at the top of a scene's update and
+       use it to move the selection or to navigate directly. Sliding a finger
+       across the screen does NOT produce one - only a press does. */
+    tapped: function () { return tapped; },
+    /* True while the cursor rests on a target with this id (and this i, if
+       one is given), so a board can light up under a mouse. Always false on
+       a phone, which cannot hover. */
+    hovering: function (id, i) {
+      return !!hoverTarget && hoverTarget.id === id && (i === undefined || hoverTarget.i === i);
+    },
     /* true once a finger or a cursor has been used on the game: the
        on-screen pads stay out of the way until there is a reason to
        believe in them, and step back out of it at the next keypress */

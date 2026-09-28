@@ -145,6 +145,14 @@ var PlayScene = (function () {
 
   var player = { x: X_START, y: 0, vy: 0, vx: 0, angle: 0, flapTimer: 0, spin: 0 };
 
+  /* The rectangles the panels drew, refilled inside drawFg and handed to
+     Input by Game.render. A RUN itself never publishes any: a tap anywhere is
+     a flap, and the two movement pads and the pause button belong to Input's
+     own table. These are the boards on the panels that interrupt a run - the
+     pause panel, the results rows, the initials board - which is exactly
+     where a tap used to fire whatever the invisible cursor was sitting on. */
+  var hot = [];
+
   /* ----------------------------------------------------------- init */
 
   function enter() {
@@ -332,13 +340,14 @@ var PlayScene = (function () {
     Audio3.play('splat');
   }
 
-  function splatter(x, y, hot, n) {
+  /* `spiced` rather than `hot`: `hot` is this scene's target list */
+  function splatter(x, y, spiced, n) {
     for (var i = 0; i < n; i++) {
       particles.push({ x: x + rand(-3, 3), y: y + rand(-3, 3),
                        vx: rand(-64, 64) - speed * 0.12, vy: rand(-120, -20),
                        life: rand(0.3, 0.8), g: 380,
-                       col: hot ? (chance(0.5) ? FX.hotMid : FX.hot)
-                                : (chance(0.45) ? FX.splatHi : FX.splat) });
+                       col: spiced ? (chance(0.5) ? FX.hotMid : FX.hot)
+                                   : (chance(0.45) ? FX.splatHi : FX.splat) });
     }
   }
 
@@ -1154,11 +1163,18 @@ var PlayScene = (function () {
     entryPending = false;
     state = 'entry';
     Input.setTextMode(true);
-    Input.setTouchMode('text');
+    /* the touch mode stays 'menu' - no pads, no rest zone. The controls are
+       the plates and pads this screen draws for itself, so a tap that lands
+       on none of them does nothing rather than saving a name nobody chose. */
     Audio3.play(rank === 0 ? 'start' : 'select');
   }
 
   function updateEntry() {
+    /* the tapped column becomes the cursor's column FIRST, so the ▲ and ▼
+       a finger just pressed - which arrive below as nav('up')/nav('down'),
+       exactly as the arrow keys do - act on the letter they sit under */
+    var tg = Input.tapped();
+    if (tg && tg.i !== undefined) cursor = tg.i;
     var keys = Input.typed();
     if (keys.length) {
       for (var i = 0; i < keys.length; i++) {
@@ -1227,7 +1243,20 @@ var PlayScene = (function () {
 
     if (state === 'paused') {
       if (Game.locked()) return;
-      if (Input.hit('pause') || Input.hit('confirm')) { state = prePause; Audio3.play('pause'); }
+      /* the only other thing on the panel. Read before the resume lines
+         below, because QUIT carries no action of its own and the paused
+         mode's rest zone would otherwise resume out from under it. */
+      var tg = Input.tapped();
+      if (tg && tg.id === 'quit') {
+        Audio3.play('back');
+        Game.go(LevelSelectScene, { focus: 'level' });
+        return;
+      }
+      if (Input.hit('pause') || Input.hit('confirm')) {
+        state = prePause;
+        Input.setTouchMode('play');
+        Audio3.play('pause');
+      }
       if (Input.hit('back')) { Audio3.play('back'); Game.go(LevelSelectScene, { focus: 'level' }); }
       return;
     }
@@ -1274,14 +1303,26 @@ var PlayScene = (function () {
       if (!Game.locked()) {
         if (Input.hit('up')) { state = 'play'; player.vy = 0; flap(); }
         if (Input.hit('back')) { Audio3.play('back'); Game.go(CharSelectScene, {}); }
-        if (Input.hit('pause')) { prePause = 'ready'; state = 'paused'; Audio3.play('pause'); }
+        if (Input.hit('pause')) {
+          prePause = 'ready'; state = 'paused';
+          Input.setTouchMode('paused');
+          Audio3.play('pause');
+        }
       }
       return;
     }
 
     if (state === 'play') {
       if (!Game.locked()) {
-        if (Input.hit('pause')) { prePause = 'play'; state = 'paused'; Audio3.play('pause'); return; }
+        if (Input.hit('pause')) {
+          prePause = 'play'; state = 'paused';
+          /* the run's rule - a tap anywhere flaps - is exactly wrong on a
+             pause panel, so paused is its own mode where a tap anywhere
+             resumes instead */
+          Input.setTouchMode('paused');
+          Audio3.play('pause');
+          return;
+        }
         if (Input.hit('up')) flap();
       }
       runTime += dt;
@@ -1333,6 +1374,13 @@ var PlayScene = (function () {
       deadTimer += dt;
       if (deadTimer < 0.45 || Game.locked()) return;
       if (entryPending) { if (deadTimer > 0.7) beginEntry(); return; }
+      /* The rows ARE the buttons now. Tapping the word TITLE used to fire
+         confirm on whatever the marker happened to be on - usually RETRY -
+         so a player could press exactly what they wanted and reliably get
+         something else. The row carries a:'confirm', so this only has to
+         move the cursor onto it before the confirm line below reads it. */
+      var tg = Input.tapped();
+      if (tg && tg.id === 'row') menuIndex = tg.i;
       if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
       if (Input.nav('down')) { menuIndex = (menuIndex + 1) % MENU.length; Audio3.play('move'); }
       if (Input.hit('confirm')) { Audio3.play('select'); MENU[menuIndex].act(); }
@@ -1527,6 +1575,7 @@ var PlayScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     if (flash > 0) { ctx.fillStyle = '#f7e6c0'; ctx.fillRect(0, 0, VW, VH); }
     if (saveFlash > 0) {
       /* a wash, not a white-out: the run carries straight on and the player
@@ -1560,13 +1609,15 @@ var PlayScene = (function () {
 
     /* score */
     if (state !== 'dead') {
-      var hot = spicy > 0;
+      /* `spiced`, not `hot`: `hot` is this scene's target list and `var` is
+         function-scoped, so a local of that name in here would hide it */
+      var spiced = spicy > 0;
       var s = scorePop > 0 ? 4 : 3;
       UI.heading(ctx, String(score), VW / 2, 34 - (scorePop > 0 ? 3 : 0), s, {
-        colour: hot ? (scorePop > 0 ? '#ffe9bd' : '#ffb45c')
-                    : (scorePop > 0 ? '#fff3d0' : UI.C.ink),
-        outline: hot ? '#5c1a08' : UI.C.shadow,
-        wave: hot ? t * 9 : undefined, waveAmp: 1
+        colour: spiced ? (scorePop > 0 ? '#ffe9bd' : '#ffb45c')
+                       : (scorePop > 0 ? '#fff3d0' : UI.C.ink),
+        outline: spiced ? '#5c1a08' : UI.C.shadow,
+        wave: spiced ? t * 9 : undefined, waveAmp: 1
       });
       drawChase(ctx, 34 + s * 7 + 4);
       drawLives(ctx);
@@ -1773,7 +1824,8 @@ var PlayScene = (function () {
     if (state === 'dead' || state === 'entry') return;
     if (passedTimer > 0) {
       if (Math.floor(passedTimer * 8) % 2 || passedTimer < 1.0) {
-        UI.text(ctx, '\u25B2 PASSED ' + passedName, VW / 2, y, { align: 'center', colour: UI.C.gold });
+        /* no triangle: one lives in a pad and means "move this way" */
+        UI.text(ctx, 'PASSED ' + passedName, VW / 2, y, { align: 'center', colour: UI.C.gold });
       }
       return;
     }
@@ -1794,8 +1846,8 @@ var PlayScene = (function () {
             { align: 'center', colour: doodad.accentLight, spacing: 2 });
     UI.panel(ctx, VW / 2 - 92, y, 184, 44, { fill: UI.C.darker, dither: 13, edge: UI.C.inkFaint });
     var rows = [
-      ['FLY',   UI.forInput('SPACE / UP / W', 'SPACE / CLICK',  'TAP THE SCREEN')],
-      ['MOVE',  UI.forInput('◀ ▶ / A D',      '◀ ▶ / THE PADS', 'THE ◀ ▶ PADS')],
+      ['FLY',   UI.forInput('SPACE / UP / W', 'SPACE / CLICK',  'TAP ANYWHERE')],
+      ['MOVE',  UI.forInput('◀ ▶ / A D',      '◀ ▶ / THE PADS', '◀ ▶ PADS')],
       ['PAUSE', UI.forInput('P',              'P / II',         'II TOP RIGHT')]
     ];
     for (var i = 0; i < rows.length; i++) {
@@ -1803,8 +1855,6 @@ var PlayScene = (function () {
       UI.text(ctx, rows[i][0], VW / 2 + 84, y + 7 + i * 11, { align: 'right', colour: UI.C.inkDim });
     }
     UI.hint(ctx, UI.forInput('PRESS UP TO FLY', 'CLICK OR PRESS UP TO FLY', 'TAP TO FLY'), 132, t);
-    /* a chevron bouncing above the doodad */
-    UI.chevronV(ctx, player.x, player.y - 26 + Math.round(Math.sin(t * 6) * 2), -1, 4, UI.C.gold);
   }
 
   function drawPause(ctx) {
@@ -1813,6 +1863,28 @@ var PlayScene = (function () {
     UI.board(ctx, x, y, w, h, { highlight: UI.C.gold });
     UI.text(ctx, 'PAUSED', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
     UI.rule(ctx, x + 12, y + 28, w - 24, UI.C.boardLo);
+
+    /* On a phone the panel is two boards and nothing else. It used to be a
+       list of key hints for keys the phone does not have, ending in "TAP II
+       TO RESUME" - written across the middle of the screen, with the II
+       outside the panel it was talking about. A tap anywhere resumes (the
+       paused mode's rest zone), and RESUME is lit to say so; QUIT is the
+       only other thing there is, which is also the way out of GET READY. */
+    if (UI.touch()) {
+      /* The panel itself, first and therefore underneath both boards: a tap
+         that lands on the wood between them, or below QUIT, hits this and
+         does nothing. Without it the paused mode's tap-anywhere-resumes rule
+         reached inside the panel too, so a thumb that missed QUIT by a few
+         pixels resumed the run instead - and a run resumed by accident is a
+         doodad already falling. Outside the panel the rule still holds, which
+         is what makes the big obvious gesture work. */
+      hot.push({ x: x, y: y, w: w, h: h, id: 'panel' });
+      UI.button(ctx, hot, x + 16, y + 38, w - 32, 32,
+                { id: 'resume', a: 'confirm', label: 'RESUME', lit: true });
+      UI.button(ctx, hot, x + 16, y + 76, w - 32, 32,
+                { id: 'quit', label: 'QUIT TO LEVELS' });
+      return;
+    }
 
     /* a finger has no keys, so touch replaces the list; a cursor has the
        whole keyboard beside it, so it shares each line instead */
@@ -1830,25 +1902,25 @@ var PlayScene = (function () {
       ['SOUND', 'M'],
       ['FULLSCREEN', 'F'],
       ['QUIT TO LEVELS', 'ESC']
-    ], [
-      ['FLY', 'TAP THE SCREEN'],
-      ['MOVE', 'THE ◀ ▶ PADS'],
-      ['PAUSE', 'II TOP RIGHT'],
-      ['RESUME', 'TAP II AGAIN']
-    ]);
+    ], null);   /* touch never gets this far - it left with two boards above */
     for (var i = 0; i < rows.length; i++) {
       var ry = y + 36 + i * 11;
       UI.text(ctx, rows[i][0], x + 16, ry, { colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, rows[i][1], x + w - 16, ry, { align: 'right', colour: '#e8c98a', shadow: UI.C.shadow });
     }
-    UI.hint(ctx, UI.forInput('PRESS P TO RESUME', 'PRESS P OR CLICK II', 'TAP II TO RESUME'),
+    /* a click anywhere resumes too: the paused mode's rest zone is confirm,
+       and the mouse runs through the very same zones a finger does */
+    UI.hint(ctx, UI.forInput('PRESS P TO RESUME', 'CLICK ANYWHERE TO RESUME', ''),
             y + h + 8, t);
   }
 
   /* results (or initials entry) on the left, the table on the right */
   function drawGameOver(ctx) {
     UI.scrim(ctx, 11);
-    var lx = 66, lw = 156, rx = 230, rw = 184, y = 46, h = 156;
+    /* The board grew from 156 tall to 210 so that four menu rows can be 30
+       tall each - 42 CSS px on a phone - rather than the rows shrinking to
+       fit a board sized for a list you only ever read. */
+    var lx = 66, lw = 156, rx = 230, rw = 184, y = 30, h = 210;
     var entering = state === 'entry' || entryPending;
     var headline = rank === 0 ? 'HIGH SCORE!' : (rank > 0 ? 'RANKED ' + Scores.ordinal(rank) : 'GAME OVER');
     var flashing = rank === 0 && Math.floor(t * 4) % 2;
@@ -1868,55 +1940,67 @@ var PlayScene = (function () {
   }
 
   function drawResultsMenu(ctx, lx, lw, y) {
-    var hi = board.length ? Math.max(board[0].score, score) : score;
-    UI.text(ctx, 'HI', lx + 14, y + 50, { colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, String(savedRow === 0 ? score : hi), lx + lw - 14, y + 50,
-            { align: 'right', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    /* the HI line went: the table sitting beside this board already has the
+       best score in it, on its own top row, in gold */
     if (unlocked.length) {
       var won = unlocked[unlocked.length - 1];
-      UI.text(ctx, won.name + ' UNLOCKED!', lx + lw / 2, y + 63,
+      UI.text(ctx, won.name + ' UNLOCKED!', lx + lw / 2, y + 54,
               { align: 'center', colour: Math.floor(t * 3) % 2 ? won.accentLight : UI.C.gold,
                 shadow: UI.C.shadow });
     } else if (pbNew && score > 0) {
-      UI.text(ctx, 'NEW ' + doodad.name + ' BEST!', lx + lw / 2, y + 63,
+      UI.text(ctx, 'NEW ' + doodad.name + ' BEST!', lx + lw / 2, y + 54,
               { align: 'center', colour: doodad.accentLight, shadow: UI.C.shadow });
     }
-    UI.rule(ctx, lx + 10, y + 78, lw - 20, UI.C.boardLo);
+    UI.rule(ctx, lx + 10, y + 66, lw - 20, UI.C.boardLo);
 
+    /* Four boards, with the one you almost certainly want lit. This was the
+       worst thing in the game: a vertical list navigated by two horizontal
+       pads in the far corner, with the words themselves inert - so tapping
+       TITLE started another run. */
     for (var i = 0; i < MENU.length; i++) {
-      var my = y + 90 + i * 15;
-      var sel = i === menuIndex;
-      UI.text(ctx, MENU[i].label, lx + lw / 2 + 4, my, {
-        align: 'center', colour: sel ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow
-      });
-      if (sel) UI.marker(ctx, lx + lw / 2 - Font.measure(MENU[i].label, 1) / 2 - 10, my + 3, t);
+      UI.button(ctx, hot, lx + 10, y + 72 + i * 34, lw - 20, 30,
+                { id: 'row', i: i, a: 'confirm', label: MENU[i].label, lit: i === menuIndex });
     }
   }
 
+  /* Three letters, each with its own pair of pads, and one SAVE board.
+
+     This used to be a row of five identical pads in the bottom left corner -
+     left, right, up, down and SAVE - driving three letters at the other end
+     of the screen, with the letters themselves inert. The obvious thing to
+     press did nothing at all. Now the column you want is the column you
+     touch, the arrows sit directly above and below the letter they change,
+     and the initials arrive pre-filled with the last name saved, so most of
+     the time SAVE is the only thing anyone has to press. */
   function drawEntry(ctx, lx, lw, y) {
     var cx = lx + lw / 2;
-    UI.text(ctx, 'ENTER YOUR INITIALS', cx, y + 62, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    UI.text(ctx, 'ENTER YOUR INITIALS', cx, y + 54, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
 
-    var slot = 22, gw = Font.GW * 3, sx = Math.round(cx - slot - gw / 2), ly = y + 86;
     for (var i = 0; i < 3; i++) {
-      var x = sx + i * slot;
+      var c = cx + (i - 1) * 36, x = c - 17;
       var active = i === cursor;
-      UI.text(ctx, initials[i] === ' ' ? '_' : initials[i], x, ly, {
+      UI.button(ctx, hot, x, y + 66, 34, 26, { id: 'up', i: i, a: 'up', label: '\u25B2', scale: 1 });
+      /* the letter plate. Tapping it only moves the cursor here - a letter
+         is not a verb, and nothing on this screen may lose a score. */
+      UI.panel(ctx, x, y + 96, 34, 36, {
+        fill: UI.C.darker, edge: active ? UI.C.gold : UI.C.inkFaint
+      });
+      hot.push({ x: x, y: y + 96, w: 34, h: 36, id: 'slot', i: i });
+      UI.text(ctx, initials[i] === ' ' ? '_' : initials[i], c - 8, y + 103, {
         scale: 3, colour: active ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow
       });
       ctx.fillStyle = active ? UI.C.gold : UI.C.boardLo;
-      ctx.fillRect(x - 1, ly + 24, gw + 2, 2);
-      if (active) {
-        var bob = Math.round(Math.sin(t * 7));
-        UI.chevronV(ctx, x + gw / 2, ly - 6 - bob, -1, 3, UI.C.gold);
-        UI.chevronV(ctx, x + gw / 2, ly + 31 + bob, 1, 3, UI.C.gold);
-      }
+      ctx.fillRect(x + 3, y + 128, 28, 2);
+      UI.button(ctx, hot, x, y + 136, 34, 26, { id: 'down', i: i, a: 'down', label: '\u25BC', scale: 1 });
     }
-    UI.text(ctx, UI.forInput('TYPE, OR \u25B2\u25BC \u25C0\u25B6', 'TYPE, OR USE THE PADS',
-                             'USE THE PADS BELOW'),
-            cx, y + 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, UI.forInput('ENTER TO SAVE', 'ENTER OR SAVE', 'THEN SAVE'),
-            cx, y + 139, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+
+    UI.button(ctx, hot, lx + 10, y + 172, lw - 20, 32,
+              { id: 'save', a: 'confirm', label: 'SAVE', lit: true });
+
+    /* a keyboard still has to be told it can just type; a phone is looking
+       straight at every control it has */
+    var line = UI.forInput('TYPE, OR \u25B2 \u25BC \u25C0 \u25B6    ENTER SAVES', 'TYPE, OR CLICK    ENTER SAVES', '');
+    if (line) UI.text(ctx, line, cx, y + 218, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
   }
 
   /* the top ten, with this run slotted in live while initials are typed */
@@ -1932,15 +2016,17 @@ var PlayScene = (function () {
       if (rows.length > Scores.SIZE) rows.length = Scores.SIZE;
     }
 
+    /* 16px rows rather than 12: the board beside this one grew to fit four
+       pressable menu rows, so there is the height here to spend */
     for (var i = 0; i < Scores.SIZE; i++) {
-      var ry = y + 30 + i * 12;
+      var ry = y + 32 + i * 16;
       var e = rows[i];
-      var hot = i === mark && mark >= 0;
-      if (hot && (entering || deadTimer < 4 ? Math.floor(t * 5) % 2 === 0 : true)) {
+      var mine = i === mark && mark >= 0;
+      if (mine && (entering || deadTimer < 4 ? Math.floor(t * 5) % 2 === 0 : true)) {
         ctx.fillStyle = '#4a3017';
-        ctx.fillRect(x + 3, ry - 2, w - 6, 11);
+        ctx.fillRect(x + 3, ry - 3, w - 6, 14);
       }
-      var ink = hot ? UI.C.gold : (e ? Scores.rankColour(i) : UI.C.inkFaint);
+      var ink = mine ? UI.C.gold : (e ? Scores.rankColour(i) : UI.C.inkFaint);
       UI.text(ctx, Scores.ordinal(i), x + 8, ry, { colour: e ? Scores.rankColour(i) : UI.C.inkFaint });
       if (!e) {
         UI.text(ctx, '- - -', x + 40, ry, { colour: UI.C.inkFaint });
@@ -1955,6 +2041,7 @@ var PlayScene = (function () {
 
   return {
     enter: enter, exit: exit, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+    targets: function () { return hot; },
     /* a window into the run, for tuning and for testing */
     inspect: function () { return { state: state, player: player, obstacles: obstacles,
                                     score: score, runTime: runTime, rank: rank,

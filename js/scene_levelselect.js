@@ -16,8 +16,18 @@ var LevelSelectScene = (function () {
 
   var CARD = { w: 126, h: 150, y: 66 };
   var SIDE = { w: 88, h: 112, y: 85 };
-  var ROOM = { w: 152, h: 24, y: 14 };
-  var SIDEROOM = { w: 86, h: 16, y: 18 };
+  /* The side room slots were 16 tall, which is 22 CSS px on a phone - half a
+     touch target. They now stand the full height of the row they are in, so
+     the thing you press is the thing you were already looking at. */
+  var ROOM = { w: 152, h: 32, y: 11 };
+  var SIDEROOM = { w: 86, h: 32, y: 11 };
+
+  /* The rectangles this screen drew, refilled inside drawFg and handed to
+     Input by Game.render. The peeking neighbours ARE the arrows here: a
+     finger presses the room or the card it can see rather than working out
+     which of two rows a hidden cursor is on, so the four decorative
+     chevrons - and the whole idea of a mode - stop mattering to a thumb. */
+  var hot = [];
 
   function room(i) { return Levels.rooms[clamp(i, 0, Levels.rooms.length - 1)]; }
   /* undefined outside the list, so the side slots stay empty at the ends */
@@ -70,6 +80,18 @@ var LevelSelectScene = (function () {
 
     if (Game.locked()) return;
 
+    /* A tap goes straight at what it landed on, and then the keyboard branches
+       below carry on from wherever the finger left the cursor. A side card
+       tap moves the carousel; the centre card carries a:'confirm', so it
+       falls into the level branch's own confirm - which is what plays the
+       level, or refuses it if the gate is still shut. */
+    var tg = Input.tapped();
+    if (tg) {
+      if (tg.id === 'back') { Audio3.play('back'); Game.go(TitleScene, {}); return; }
+      if (tg.id === 'room') { focus = 'room'; moveRoom(tg.i); }
+      else if (tg.id === 'card') { focus = 'level'; if (tg.i) moveLevel(tg.i); }
+    }
+
     if (focus === 'room') {
       if (Input.nav('left')) moveRoom(-1);
       if (Input.nav('right')) moveRoom(1);
@@ -103,36 +125,61 @@ var LevelSelectScene = (function () {
     Coop.drawMenuBackdrop(ctx, scroll);
   }
 
+  /* Where every slot on this screen is, worked out once so the rectangle
+     that gets drawn and the rectangle that gets listened to are read off the
+     same six numbers - including halfway through a slide, when the drawn
+     card and a stale target would otherwise part company. */
+  function layout(shakeX) {
+    var rx = VW / 2 + slideRoom + (focus === 'room' ? shakeX : 0);
+    var lx = VW / 2 + slideLevel + (focus === 'level' ? shakeX : 0);
+    function rect(x, y, w, h) { return { x: Math.round(x), y: y, w: w, h: h }; }
+    return {
+      roomL: rect(rx - ROOM.w / 2 - SIDEROOM.w - 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h),
+      room:  rect(rx - ROOM.w / 2, ROOM.y, ROOM.w, ROOM.h),
+      roomR: rect(rx + ROOM.w / 2 + 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h),
+      cardL: rect(lx - CARD.w / 2 - SIDE.w - 20, SIDE.y, SIDE.w, SIDE.h),
+      card:  rect(lx - CARD.w / 2, CARD.y, CARD.w, CARD.h),
+      cardR: rect(lx + CARD.w / 2 + 20, SIDE.y, SIDE.w, SIDE.h)
+    };
+  }
+
+  /* one target, from the rectangle that was just drawn */
+  function hit(rc, id, i, a) {
+    hot.push({ x: rc.x, y: rc.y, w: rc.w, h: rc.h, id: id, i: i, a: a });
+  }
+
   function drawFg(ctx) {
+    hot.length = 0;
     var shakeX = denyShake > 0 ? Math.round(Math.sin(t * 60) * 2) : 0;
+    var L = layout(shakeX);
+
+    /* The way back, and the only piece of furniture on this screen that is
+       not also content. Drawn first, so its rectangle is FIRST in the list
+       and wins the moment a sliding room slot passes under it. */
+    if (Input.pointing()) UI.button(ctx, hot, 6, 4, 44, 32, { id: 'back', label: 'BACK', scale: 1 });
 
     /* ---- rooms ---- */
-    var rx = VW / 2 + slideRoom + (focus === 'room' ? shakeX : 0);
-    drawRoomSlot(ctx, roomAt(roomIndex - 1), rx - ROOM.w / 2 - SIDEROOM.w - 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h, false);
-    drawRoomSlot(ctx, roomAt(roomIndex + 1), rx + ROOM.w / 2 + 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h, false);
-    drawRoomSlot(ctx, room(roomIndex), rx - ROOM.w / 2, ROOM.y, ROOM.w, ROOM.h, true);
+    var prevRoom = roomAt(roomIndex - 1), nextRoom = roomAt(roomIndex + 1);
+    drawRoomSlot(ctx, prevRoom, L.roomL, false, -1);
+    if (prevRoom) hit(L.roomL, 'room', -1);
+    drawRoomSlot(ctx, nextRoom, L.roomR, false, 1);
+    if (nextRoom) hit(L.roomR, 'room', 1);
+    /* the centre room board is where you already are, so it is not a target */
+    drawRoomSlot(ctx, room(roomIndex), L.room, true);
 
-    if (roomIndex > 0) UI.chevron(ctx, rx - ROOM.w / 2 - 10 - arrowBob(), ROOM.y + ROOM.h / 2, -1, 5,
-                                  focus === 'room' ? UI.C.gold : UI.C.inkFaint);
-    if (roomIndex < Levels.rooms.length - 1) UI.chevron(ctx, rx + ROOM.w / 2 + 10 + arrowBob(), ROOM.y + ROOM.h / 2, 1, 5,
-                                  focus === 'room' ? UI.C.gold : UI.C.inkFaint);
-
-    UI.text(ctx, 'ROOM', rx, ROOM.y - 9, { align: 'center', colour: focus === 'room' ? UI.C.ink : UI.C.inkFaint });
+    UI.text(ctx, 'ROOM', L.room.x + ROOM.w / 2, ROOM.y - 9,
+            { align: 'center',
+              colour: (focus === 'room' && !UI.touch()) ? UI.C.ink : UI.C.inkFaint });
 
     /* ---- levels ---- */
     var r = room(roomIndex);
-    var lx = VW / 2 + slideLevel + (focus === 'level' ? shakeX : 0);
     var leftLv = levelIndex > 0 ? r.levels[levelIndex - 1] : null;
     var rightLv = levelIndex < r.levels.length - 1 ? r.levels[levelIndex + 1] : null;
 
-    if (leftLv) drawCard(ctx, leftLv, lx - CARD.w / 2 - SIDE.w - 20, SIDE.y, SIDE.w, SIDE.h, false);
-    if (rightLv) drawCard(ctx, rightLv, lx + CARD.w / 2 + 20, SIDE.y, SIDE.w, SIDE.h, false);
-    drawCard(ctx, level(roomIndex, levelIndex), lx - CARD.w / 2, CARD.y, CARD.w, CARD.h, true);
-
-    if (leftLv) UI.chevron(ctx, lx - CARD.w / 2 - 9 - arrowBob(), CARD.y + CARD.h / 2, -1, 6,
-                           focus === 'level' ? UI.C.gold : UI.C.inkFaint);
-    if (rightLv) UI.chevron(ctx, lx + CARD.w / 2 + 9 + arrowBob(), CARD.y + CARD.h / 2, 1, 6,
-                            focus === 'level' ? UI.C.gold : UI.C.inkFaint);
+    if (leftLv) { drawCard(ctx, leftLv, L.cardL, false, -1); hit(L.cardL, 'card', -1); }
+    if (rightLv) { drawCard(ctx, rightLv, L.cardR, false, 1); hit(L.cardR, 'card', 1); }
+    drawCard(ctx, level(roomIndex, levelIndex), L.card, true, 0);
+    hit(L.card, 'card', 0, 'confirm');
 
     /* ---- the strip under everything ---- */
     var lv = level(roomIndex, levelIndex);
@@ -143,55 +190,65 @@ var LevelSelectScene = (function () {
       if (lv.blurb[1]) UI.text(ctx, lv.blurb[1], VW / 2, VH - 31, { align: 'center', colour: UI.C.inkDim });
     }
 
-    var hintY = VH - 13;
-    if (focus === 'room') {
-      UI.text(ctx, UI.forInput('◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK',
-                               '◀ ▶ ROOM    CLICK PICK ROOM    ESC BACK',
-                               '◀ ▶ ROOM    TAP TO PICK    BACK'),
-              VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
-    } else {
-      var shut = lv.locked || !Levels.isUnlocked(lv);
-      UI.text(ctx, shut ? UI.forInput('◀ ▶ LEVEL    LOCKED    ESC ROOMS',
-                                      '◀ ▶ LEVEL    LOCKED    ESC ROOMS',
-                                      '◀ ▶ LEVEL    LOCKED    BACK')
-                        : UI.forInput('◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS',
-                                      '◀ ▶ LEVEL    CLICK PLAY    ESC ROOMS',
-                                      '◀ ▶ LEVEL    TAP TO PLAY    BACK'),
-              VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
-    }
+    var shut = lv.locked || !Levels.isUnlocked(lv);
+    UI.footer(ctx,
+      focus === 'room' ? '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK'
+                       : (shut ? '◀ ▶ LEVEL    LOCKED    ESC ROOMS'
+                               : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS'),
+      focus === 'room' ? 'CLICK A ROOM OR A CARD    ESC BACK'
+                       : 'CLICK THE BIG CARD TO PLAY    ESC ROOMS');
   }
 
-  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
-
-  function drawRoomSlot(ctx, r, x, y, w, h, big) {
+  /* `dir` is which side slot this is (-1 / +1), and only a cursor cares: it
+     is what lets the slot under the pointer light up without lighting up its
+     twin on the other side of the board. */
+  function drawRoomSlot(ctx, r, rc, big, dir) {
     if (!r) return;
-    var active = big && focus === 'room';
+    var x = rc.x, y = rc.y, w = rc.w, h = rc.h;
+    /* Gold means "this is what you press". On a keyboard that is whatever
+       the focus is on, and the focus can be up here on the room. A finger
+       has no focus and cannot press the centre plate at all - it is the
+       name of where you already are - so on touch the gold belongs to the
+       card below and never to this. It was the other way round on arrival:
+       the one lit, nailed, button-shaped thing on the screen was the one
+       thing that did nothing, and the card you had to press was dim. */
+    var active = big && focus === 'room' && !UI.touch();
     if (big) {
       UI.board(ctx, x, y, w, h, { highlight: active ? UI.C.gold : null });
     } else {
-      UI.panel(ctx, x, y, w, h, { fill: '#2b1e12', edge: UI.C.inkFaint, dither: 6 });
+      UI.panel(ctx, x, y, w, h, {
+        fill: '#2b1e12', dither: 6,
+        edge: Input.hovering('room', dir) ? UI.C.goldDark : UI.C.inkFaint
+      });
     }
     var colour = r.locked ? UI.C.inkFaint : (big ? UI.C.ink : UI.C.inkDim);
     if (r.locked && big) {
       UI.padlock(ctx, x + w / 2 - 22, y + h / 2, 1, UI.C.inkDim);
-      UI.text(ctx, r.name, x + w / 2 + 8, y + (h - 14) / 2, { align: 'center', scale: 2, colour: colour });
+      UI.text(ctx, r.name, x + w / 2 + 8, y + 9, { align: 'center', scale: 2, colour: colour });
     } else if (big) {
-      UI.text(ctx, r.name, x + w / 2, y + (h - 14) / 2, { align: 'center', scale: 2, colour: colour });
+      UI.text(ctx, r.name, x + w / 2, y + 9, { align: 'center', scale: 2, colour: colour });
     } else {
-      UI.text(ctx, r.name, x + w / 2, y + (h - 7) / 2, { align: 'center', colour: colour });
+      UI.text(ctx, r.name, x + w / 2, y + 12, { align: 'center', colour: colour });
     }
   }
 
-  function drawCard(ctx, lv, x, y, w, h, big) {
-    x = Math.round(x); y = Math.round(y);
-    var active = big && focus === 'level';
+  /* `dir` is -1 / 0 / +1, which side of the carousel this card is on. Only a
+     cursor cares: it is what lets the card under the pointer light its frame
+     without lighting its neighbour's. */
+  function drawCard(ctx, lv, rc, big, dir) {
+    var x = rc.x, y = rc.y, w = rc.w, h = rc.h;
+    /* on touch the big card is always the thing you press, so it is always
+       the lit one - see drawRoomSlot */
+    var active = big && (UI.touch() || focus === 'level');
+    var over = Input.hovering('card', dir);
     /* three states: never built (`locked`), built but not yet earned
        (`unlock`), and open. A placeholder shows nothing; an unearned level
        shows what it is and what it costs, the way a boarded doodad stall
        does - you cannot want something you cannot see. */
     var open = Levels.isUnlocked(lv);
     var frame = lv.locked ? UI.C.inkFaint
-              : (!open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.inkDim));
+              : (!open ? (over ? UI.C.goldDark : UI.C.inkDim)
+                       : (active ? UI.C.gold : (over ? UI.C.goldDark : UI.C.inkDim)));
 
     /* drop shadow + frame */
     ctx.fillStyle = UI.C.shadow;
@@ -250,7 +307,15 @@ var LevelSelectScene = (function () {
       UI.text(ctx, lv.name, x + w / 2, ny + 1 + (ns === 1 ? 4 : 0),
               { align: 'center', scale: ns,
                 colour: !open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.ink) });
-      UI.text(ctx, lv.code, px + 2, ny + 18, { colour: UI.C.inkDim });
+      /* The one commit verb, written on the one card it belongs to. A phone
+         has no ENTER and no footer to read it off, so the lit card says what
+         pressing it does; a keyboard keeps the level's code, which is what
+         the footer's ENTER PLAY is talking about. */
+      if (open && UI.touch()) {
+        UI.text(ctx, 'TAP TO PLAY', px + 2, ny + 18, { colour: UI.C.gold });
+      } else {
+        UI.text(ctx, lv.code, px + 2, ny + 18, { colour: UI.C.inkDim });
+      }
       if (open) {
         UI.text(ctx, 'HI ' + Scores.top(room(roomIndex), lv), px + pw - 2, ny + 18,
                 { align: 'right', colour: UI.C.inkDim });
@@ -363,5 +428,6 @@ var LevelSelectScene = (function () {
     ctx.fillStyle = P.beamDark; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 9, y, 1, h);
   }
 
-  return { enter: enter, update: update, drawBg: drawBg, drawFg: drawFg };
+  return { enter: enter, update: update, drawBg: drawBg, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();

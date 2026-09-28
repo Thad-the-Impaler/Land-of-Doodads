@@ -49,6 +49,12 @@ var CharSelectScene = (function () {
   var best = 0;                   /* cached: never read the save in a draw call */
   var fresh = [];                 /* ids unlocked since the player last looked */
 
+  /* The rectangles this screen drew, refilled inside drawFg and handed to
+     Input by Game.render. One per VISIBLE stall - slivers included, which is
+     how a roster of any length gets walked without the layout knowing how
+     long it is - plus the way back. */
+  var hot = [];
+
   function unlocked(i) { return Doodads.isUnlocked(Doodads.list[i], best); }
 
   /* ------------------------------------------------------- lifecycle */
@@ -124,14 +130,17 @@ var CharSelectScene = (function () {
     if (seen.indexOf(id) < 0) { seen.push(id); Save.set('seen', seen); }
   }
 
-  function move(dir) {
-    var next = index + dir;
-    if (next < 0 || next >= Doodads.list.length) {
+  /* Choose a stall by number rather than by direction, because a finger does
+     not step along the row - it lands on the one it wants, including the 5px
+     sliver bleeding in at the edge. The keyboard's move(dir) is this with the
+     arithmetic done first, so both ways in do exactly the same thing. */
+  function moveTo(i) {
+    if (i < 0 || i >= Doodads.list.length) {
       Audio3.play('deny');
       Screen.shake(1.2, 0.16);
       return;
     }
-    index = next;
+    index = i;
     flashTimer = FLASH_T;
     denyFlash = 0;
     clearNew(index);
@@ -142,6 +151,8 @@ var CharSelectScene = (function () {
     }
     Audio3.play('move');
   }
+
+  function move(dir) { moveTo(index + dir); }
 
   /* Which bay sits at the left end of the rail: the cursor is held in the
      middle of the window wherever the roster allows it, so there is always
@@ -172,6 +183,18 @@ var CharSelectScene = (function () {
     if (denyFlash > 0) denyFlash -= dt;
 
     if (Game.locked()) return;
+    /* The stall is already the best-looking button on the screen - it grows,
+       goes gold and gets a shaft of light down it - so tapping one chooses
+       it, and the chosen one carries a:'confirm' so a second tap on it falls
+       into the confirm branch below and flies. One tap on an unchosen stall
+       therefore never starts a run as somebody else. */
+    var tg = Input.tapped();
+    if (tg && tg.id === 'back') {
+      Audio3.play('back');
+      Game.go(LevelSelectScene, { focus: 'level' });
+      return;
+    }
+    if (tg && tg.id === 'stall' && tg.i !== index) moveTo(tg.i);
     if (Input.nav('left')) move(-1);
     if (Input.nav('right')) move(1);
     if (Input.hit('confirm')) {
@@ -361,6 +384,7 @@ var CharSelectScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     var d = Doodads.list[index];
     var open = unlocked(index);
     var r = Levels.rooms[Game.selection.room];
@@ -374,6 +398,10 @@ var CharSelectScene = (function () {
               { align: 'right', colour: UI.C.inkFaint });
     }
 
+    /* the way back, drawn before the row so its rectangle is first in the
+       list; it sits above the rail, so nothing on the row reaches it */
+    if (Input.pointing()) UI.button(ctx, hot, 6, 4, 44, 32, { id: 'back', label: 'BACK', scale: 1 });
+
     /* per stall: the boards go on before the plate text, so nothing dims it */
     for (var i = firstBay(); i <= lastBay(); i++) {
       var s = stall(i);
@@ -381,47 +409,39 @@ var CharSelectScene = (function () {
       if (!unlocked(i)) drawBoards(ctx, s, dd);
       else if (fresh.indexOf(dd.id) >= 0) drawNewTab(ctx, s);
       if (unlocked(i)) {
-        UI.text(ctx, dd.name, s.cx, 147, { align: 'center', colour: s.sel ? UI.C.gold : UI.C.inkDim });
+        /* the chosen open stall says what pressing it again does - on a
+           phone, where there is no ENTER and no footer to read it off. Its
+           name is already the 3x heading on the card below. */
+        if (s.sel && UI.touch()) {
+          UI.text(ctx, 'TAP TO FLY', s.cx, 147, { align: 'center', colour: UI.C.gold });
+        } else {
+          UI.text(ctx, dd.name, s.cx, 147, { align: 'center', colour: s.sel ? UI.C.gold : UI.C.inkDim });
+        }
       } else {
         /* the price nailed to the plate, in whatever currency it is */
         UI.text(ctx, Doodads.requirement(dd).plate, s.cx, 147,
                 { align: 'center', colour: s.sel ? UI.C.inkDim : UI.C.inkFaint });
       }
-    }
-
-    /* the rail runs off both sides once the roster outgrows the window.
-       Drawn over the sliver it points at, so the clipped stall reads as
-       more row rather than as a mistake. */
-    if (Doodads.list.length > BAYS) {
-      var bump = arrowBob();
-      var lastView = Doodads.list.length - BAYS;
-      if (view > 0.02) UI.chevron(ctx, 6 - bump, 106, -1, 5, UI.C.gold);
-      if (view < lastView - 0.02) UI.chevron(ctx, 474 + bump, 106, 1, 5, UI.C.gold);
+      /* and the stall itself is the control. Only the chosen one carries an
+         action, which is what makes the first tap "this one" and the second
+         "go". The rail-edge chevrons that used to point at the slivers are
+         gone: the sliver is the arrow, and it can be pressed. */
+      hot.push({ x: s.x, y: s.y, w: s.w, h: s.h, id: 'stall', i: i,
+                 a: s.sel ? 'confirm' : undefined });
     }
 
     /* the card. flat tint: the menu backdrop scrolls behind it */
     Tint.rect(ctx, 0, CARD_Y, VW, 86, UI.C.darker, 12);
     UI.rule(ctx, 40, CARD_Y, VW - 80, UI.C.inkFaint);
 
-    /* chevrons at a fixed x, so they do not twitch as names change width */
-    UI.chevron(ctx, 150 - arrowBob(), 184, -1, 6, index > 0 ? UI.C.gold : UI.C.inkFaint);
-    UI.chevron(ctx, 330 + arrowBob(), 184, 1, 6,
-               index < Doodads.list.length - 1 ? UI.C.gold : UI.C.inkFaint);
-
     if (open) drawOpenCard(ctx, d, r, lv);
     else drawLockedCard(ctx, d);
 
-    ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(0, VH - 13, VW, 13);
-    ctx.fillStyle = UI.C.inkFaint;
-    ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, open ? UI.forInput('◀ ▶ PICK    ENTER FLY    ESC LEVELS',
-                                    '◀ ▶ PICK    CLICK FLY    ESC LEVELS',
-                                    '◀ ▶ PICK    TAP TO FLY    BACK')
-                      : UI.forInput('◀ ▶ PICK    LOCKED    ESC LEVELS',
-                                    '◀ ▶ PICK    LOCKED    ESC LEVELS',
-                                    '◀ ▶ PICK    LOCKED    BACK'),
-            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
+    UI.footer(ctx,
+      open ? '◀ ▶ PICK    ENTER FLY    ESC LEVELS'
+           : '◀ ▶ PICK    LOCKED    ESC LEVELS',
+      open ? 'CLICK A STALL, AGAIN TO FLY    ESC LEVELS'
+           : 'CLICK A STALL    LOCKED    ESC LEVELS');
   }
 
   function drawOpenCard(ctx, d, r, lv) {
@@ -453,12 +473,12 @@ var CharSelectScene = (function () {
   }
 
   function drawLockedCard(ctx, d) {
-    var hot = denyFlash > 0;
-    UI.padlock(ctx, 190, 184, 2, hot ? UI.C.red : UI.C.inkDim);
+    var denied = denyFlash > 0;
+    UI.padlock(ctx, 190, 184, 2, denied ? UI.C.red : UI.C.inkDim);
     UI.heading(ctx, '? ? ?', 257, 174, 3, { colour: UI.C.inkDim });
     var req = Doodads.requirement(d);
     UI.text(ctx, req.price, VW / 2, 198,
-            { align: 'center', spacing: 2, colour: hot ? UI.C.red : UI.C.gold });
+            { align: 'center', spacing: 2, colour: denied ? UI.C.red : UI.C.gold });
     UI.text(ctx, d.lockedAbout[0], VW / 2, 210, { align: 'center', colour: UI.C.inkDim });
     UI.text(ctx, d.lockedAbout[1], VW / 2, 219, { align: 'center', colour: UI.C.inkDim });
 
@@ -518,8 +538,7 @@ var CharSelectScene = (function () {
     UI.text(ctx, 'NEW', x + 11, y + 1, { align: 'center', colour: UI.C.ink, shadow: null });
   }
 
-  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
-
   return { enter: enter, refresh: refresh, update: update,
-           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg };
+           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();

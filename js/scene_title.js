@@ -31,6 +31,13 @@ var TitleScene = (function () {
   var menuIndex = 0;
   var MENU = ['PLAY', 'HIGH SCORES'];
 
+  /* The rectangles this screen drew, refilled every frame inside drawFg and
+     handed to Input by Game.render. PLAY was already the biggest word on the
+     screen; it simply was not a button. Now it is one, and it is the only
+     thing on the title a tap can land on - the coop, the logo and the sky
+     are scenery again. */
+  var hot = [];
+
   /* ------------------------------------------------------- scenery */
 
   function spawnPerch(x) {
@@ -469,6 +476,11 @@ var TitleScene = (function () {
     director(dt);
 
     if (Game.locked()) return;
+    /* A tap on a board moves the cursor onto it BEFORE the confirm below
+       runs, and the board carries a:'confirm' - so one tap is choose and
+       go, and the keyboard branch underneath does the going. */
+    var tg = Input.tapped();
+    if (tg && tg.id === 'menu') menuIndex = tg.i;
     if (Input.nav('down')) { menuIndex = (menuIndex + 1) % MENU.length; Audio3.play('move'); }
     if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
     if (Input.hit('confirm')) {
@@ -575,21 +587,20 @@ var TitleScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     drawLogo(ctx);
 
-    /* menu boards, one per option */
-    var bw = 152, bx = (VW - bw) / 2;
+    /* Menu boards, one per option, and each one a button: 32 tall rather
+       than 22, which is 44 CSS px at the 1.389 fit a phone gets in
+       landscape. The blinking marker and the chevron that used to flank the
+       chosen row are gone - a triangle in this game now only ever appears
+       inside a raised pad and only ever means "move this way", and a board
+       that is lit up already says which one is chosen. */
+    var bw = 152, bh = 32, bx = (VW - bw) / 2;
     for (var m = 0; m < MENU.length; m++) {
-      var by = 186 + m * 26, sel = m === menuIndex;
-      UI.board(ctx, bx, by, bw, 22, { highlight: sel ? UI.C.gold : null, nails: sel, seams: false });
-      /* 14px glyphs plus their 2px drop shadow, centred on the 16px face
-         between the bevels; nudged left a pixel to offset the shadow */
-      UI.text(ctx, MENU[m], VW / 2 - 1, by + 3, { align: 'center', scale: 2,
-                                             colour: sel ? UI.C.ink : UI.C.inkDim, shadow: UI.C.shadow });
-      if (sel) {
-        UI.marker(ctx, bx - 12, by + 11, t);
-        UI.chevron(ctx, bx + bw + 12, by + 11, -1, 4, UI.C.gold);
-      }
+      var by = 182 + m * 38;
+      UI.button(ctx, hot, bx, by, bw, bh,
+                { id: 'menu', i: m, a: 'confirm', label: MENU[m], lit: m === menuIndex });
     }
 
     /* arcade style hi-score readout in the corner */
@@ -629,16 +640,12 @@ var TitleScene = (function () {
     }
     ctx.globalAlpha = ga;
 
-    /* footer */
-    ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(0, VH - 13, VW, 13);
-    Tint.rect(ctx, 0, VH - 16, VW, 3, UI.C.darker, 8);
-    ctx.fillStyle = UI.C.inkFaint;
-    ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, UI.forInput('◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
-                             '◀ ▶ MOVE   CLICK SELECT   M SOUND   F FULLSCREEN',
-                             '◀ ▶ MOVE    TAP TO SELECT'),
-            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
+    /* footer. It said "◀ ▶ MOVE", which was wrong on every input the game
+       has - this menu is a column and always has been - and on a phone it
+       repeated the boards as words directly underneath them, so UI.footer
+       leaves it out there entirely. */
+    UI.footer(ctx, '▲ ▼ CHOOSE   ENTER SELECT   M SOUND   F FULLSCREEN',
+                   'CLICK A BOARD   M SOUND   F FULLSCREEN');
   }
 
   function drawLogo(ctx) {
@@ -685,5 +692,6 @@ var TitleScene = (function () {
   }
 
   return { enter: enter, refresh: refresh, update: update,
-           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg };
+           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();

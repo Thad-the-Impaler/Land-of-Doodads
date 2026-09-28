@@ -71,6 +71,47 @@ var UI = (function () {
     ctx.fillStyle = C.shadow; ctx.fillRect(x, y + 2, 2, 1);
   }
 
+  /* A board you can press, and the only way this game says "press me".
+
+     It draws the board and adds its rectangle to `hot` in one call, on
+     purpose: the invariant the touch UI rests on is that the rectangle the
+     player sees and the rectangle the game listens to are the same one, and
+     a helper that cannot be split in half is how that stops being a
+     convention and starts being structural. There is no way to draw a
+     button here and forget to make it tappable.
+
+       ctx   the foreground context
+       hot   the scene's target list for this frame (see Input.setTargets)
+       o     { label, id, a, i, lit, scale }
+             label  the verb, e.g. 'PLAY', 'BACK', 'SAVE'
+             id     the kind of thing, passed straight through to the target
+             a      optional Input action fired on press, usually 'confirm'
+             i      optional index or direction, passed through
+             lit    true for the chosen one: gold edge, nails, bright text
+             scale  text scale, 2 unless it is a small board
+
+     The label is centred on the face and nudged a pixel left to offset its
+     own drop shadow, the same way the title boards have always done it. */
+  function button(ctx, hot, x, y, w, h, o) {
+    o = o || {};
+    var s = o.scale || 2;
+    /* a cursor can rest on a button without pressing it, which a finger
+       cannot, so it gets a step between plain and chosen */
+    var over = Input.hovering(o.id, o.i);
+    board(ctx, x, y, w, h, {
+      highlight: o.lit ? C.gold : (over ? C.goldDark : null),
+      nails: !!o.lit,
+      seams: false
+    });
+    if (o.label) {
+      text(ctx, o.label, x + w / 2 - 1, y + Math.round((h - Font.GH * s) / 2), {
+        align: 'center', scale: s,
+        colour: (o.lit || over) ? C.ink : C.inkDim, shadow: C.shadow
+      });
+    }
+    hot.push({ x: x, y: y, w: w, h: h, id: o.id, a: o.a, i: o.i });
+  }
+
   /* dark inset panel, for huds and previews */
   function panel(ctx, x, y, w, h, o) {
     o = o || {};
@@ -91,7 +132,15 @@ var UI = (function () {
     }
   }
 
-  /* solid pixel triangle; dir -1 = left, 1 = right */
+  /* Solid pixel triangle; dir -1 = left, 1 = right. NOT exported, and that
+     is the point: a triangle in this game now appears only inside a raised
+     pad and only ever means "move this way". Loose chevrons were half of
+     what made the menus contradict themselves - a decorative one beside the
+     name you were on, a second at the edge of the rail, a third in the
+     footer text, none of them pressable, all of them next to a pad that
+     was. The only ones left are the pair below, either side of the little
+     handset on the turn-it-sideways notice, which are a picture of a phone
+     rotating rather than anything you can press. */
   function chevron(ctx, x, y, dir, size, colour) {
     ctx.fillStyle = colour || C.ink;
     x = Math.round(x); y = Math.round(y);
@@ -99,21 +148,6 @@ var UI = (function () {
       var h = (size - i) * 2 - 1;
       ctx.fillRect(x + dir * i - (dir < 0 ? 1 : 0), y - (h >> 1), 1, h);
     }
-  }
-
-  function chevronV(ctx, x, y, dir, size, colour) {
-    ctx.fillStyle = colour || C.ink;
-    x = Math.round(x); y = Math.round(y);
-    for (var i = 0; i < size; i++) {
-      var w = (size - i) * 2 - 1;
-      ctx.fillRect(x - (w >> 1), y + dir * i - (dir < 0 ? 1 : 0), w, 1);
-    }
-  }
-
-  /* the blinking marker next to the focused menu row */
-  function marker(ctx, x, y, t, colour) {
-    var bob = Math.round(Math.sin(t * 7) * 1);
-    chevron(ctx, x + bob, y, 1, 4, colour || C.gold);
   }
 
   function text(ctx, str, x, y, o) {
@@ -135,6 +169,36 @@ var UI = (function () {
       wave: o.wave, waveAmp: o.waveAmp, wavePhase: o.wavePhase,
       spacing: o.spacing
     });
+  }
+
+  /* Is a finger driving? Scenes ask this to leave out furniture that only a
+     keyboard or a cursor needs, and to word a label for a thumb. */
+  function touch() {
+    return Input.pointerKind() === 'touch';
+  }
+
+  /* The strip of key hints along the bottom.
+
+     On a phone it draws NOTHING, and that rule lives here rather than in
+     five scenes so none of them can forget it. The strip used to repeat the
+     buttons as words directly underneath the buttons - BACK appeared twice
+     on the level select, once as a thing you press and once as a caption -
+     which is exactly the contradiction this pass is clearing. A keyboard
+     still needs to be told what the keys do, and a mouse gets its own
+     wording because on a desktop both work and hiding either would be a lie.
+
+     `keys` is shown to a keyboard (and before anything at all has pointed);
+     `mouse` to a cursor. */
+  function footer(ctx, keys, mouse) {
+    if (touch()) return;
+    ctx.fillStyle = C.darker;
+    ctx.fillRect(0, VH - 13, VW, 13);
+    /* a soft edge so the strip does not cut the scenery off with a hard line */
+    Tint.rect(ctx, 0, VH - 16, VW, 3, C.darker, 8);
+    ctx.fillStyle = C.inkFaint;
+    ctx.fillRect(0, VH - 13, VW, 1);
+    text(ctx, Input.pointerKind() === 'mouse' ? mouse : keys, VW / 2, VH - 10,
+         { align: 'center', colour: C.inkDim });
   }
 
   /* footer hint strip */
@@ -172,8 +236,13 @@ var UI = (function () {
 
   /* The on-screen controls. Their geometry is Input's, not ours, so what
      the player sees and what the game listens to are the same rectangles.
-     Kept faint: they sit over a run in progress and must not compete with
-     the pillars for attention. */
+
+     They are the last pads left in the game - the two movement pads and the
+     pause button during a run - so they are no longer kept faint. At 0.42
+     alpha the glyphs were all but invisible against the coop's floor, which
+     is a poor joke on the one control a player has to find by eye; the
+     outline and the brighter ink below are there to lift them off whatever
+     scenery they happen to be standing on. */
   function pads(ctx) {
     var list = Input.pads();
     for (var i = 0; i < list.length; i++) {
@@ -184,10 +253,15 @@ var UI = (function () {
          cannot - so it gets a step between resting and held */
       var over = !on && Input.padHover(z.a);
       var a = ctx.globalAlpha;
-      ctx.globalAlpha = a * (on ? 0.85 : (over ? 0.62 : 0.42));
+      ctx.globalAlpha = a * (on ? 1 : (over ? 0.85 : 0.70));
 
       ctx.fillStyle = C.shadow;
       ctx.fillRect(z.x + 1, z.y + 2, z.w, z.h);
+      /* a dark rim, so a pad edge reads against hay as well as against sky */
+      ctx.fillRect(z.x - 1, z.y - 1, z.w + 2, 1);
+      ctx.fillRect(z.x - 1, z.y + z.h, z.w + 2, 1);
+      ctx.fillRect(z.x - 1, z.y - 1, 1, z.h + 2);
+      ctx.fillRect(z.x + z.w, z.y - 1, 1, z.h + 2);
       ctx.fillStyle = on ? C.boardHi : C.board;
       ctx.fillRect(z.x, z.y, z.w, z.h);
       ctx.fillStyle = on ? C.gold : C.boardTop;
@@ -198,18 +272,18 @@ var UI = (function () {
       ctx.fillRect(z.x, z.y, z.w, 1); ctx.fillRect(z.x, z.y + z.h - 1, z.w, 1);
       ctx.fillRect(z.x, z.y, 1, z.h); ctx.fillRect(z.x + z.w - 1, z.y, 1, z.h);
 
+      /* Ink, not dim ink: a pad that has to be found against a hay bale
+         cannot afford a muted glyph. No pad carries a word any more - a
+         triangle inside a raised pad is the whole vocabulary, and it only
+         ever means "move this way". */
       var cx = z.x + z.w / 2, cy = z.y + z.h / 2;
-      if (z.label) {
-        text(ctx, z.label, cx, Math.round(cy - 3), { align: 'center',
-             colour: on ? C.ink : C.inkDim, shadow: C.shadow });
-      } else if (z.icon === 'II') {
-        ctx.fillStyle = on ? C.ink : C.inkDim;
-        ctx.fillRect(Math.round(cx) - 4, Math.round(cy) - 5, 3, 10);
-        ctx.fillRect(Math.round(cx) + 2, Math.round(cy) - 5, 3, 10);
+      if (z.icon === 'II') {
+        ctx.fillStyle = C.ink;
+        ctx.fillRect(Math.round(cx) - 5, Math.round(cy) - 7, 4, 14);
+        ctx.fillRect(Math.round(cx) + 1, Math.round(cy) - 7, 4, 14);
       } else {
-        text(ctx, z.icon, cx, Math.round(cy - (z.small ? 3 : 6)),
-             { align: 'center', scale: z.small ? 1 : 2,
-               colour: on ? C.ink : C.inkDim, shadow: C.shadow });
+        text(ctx, z.icon, cx, Math.round(cy - 6),
+             { align: 'center', scale: 2, colour: C.ink, shadow: C.shadow });
       }
       ctx.globalAlpha = a;
     }
@@ -244,9 +318,9 @@ var UI = (function () {
   }
 
   return {
-    C: C, scrim: scrim, board: board, panel: panel, nail: nail,
+    C: C, scrim: scrim, board: board, button: button, panel: panel, nail: nail,
     pads: pads, rotateNotice: rotateNotice, forInput: forInput,
-    chevron: chevron, chevronV: chevronV, marker: marker,
+    touch: touch, footer: footer,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };
 })();

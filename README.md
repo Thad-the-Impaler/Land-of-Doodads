@@ -39,34 +39,60 @@ python3 tools/build_single_file.py
 
 ## Pointing at it
 
-Neither touch nor the mouse has its own path through the game. A finger and a
-cursor both produce the same actions the keys do, so every screen behaves as it
-always has, and the on-screen pads are drawn from the very same table the game
-listens to - which is why what you see and what it responds to cannot drift
-apart. **A click is simply a one-fingered tap that can also hover**, so a mouse
-plays the game exactly the way a phone does:
+There are two rules, and between them they are the whole thing:
+
+> **In a run, a tap anywhere flies.**
+> **Everywhere else, you tap the thing itself - and the lit thing says what
+> pressing it does.**
+
+That is why the chosen doodad's nameplate reads `TAP TO FLY` and the level card
+reads `TAP TO PLAY`. Nothing has to be read off a footer, so on a phone there is
+no footer: a strip repeating the buttons as words, directly underneath the
+buttons, was half of what made the old screens contradict themselves.
 
 | | |
 |---|---|
-| In a run | **tap or click anywhere** to fly; the `◀ ▶` pads bottom-left to move; `II` top-right to pause |
-| In a menu | `◀ ▶` to move, **tap or click anywhere else** to choose, `BACK` bottom-right |
-| Entering initials | `◀ ▶` to pick a letter, `▲ ▼` to change it, `SAVE` |
+| In a run | **tap anywhere** to fly; the `◀ ▶` pads bottom-left to move; `II` top-right to pause |
+| Paused | **tap anywhere** to carry on, or `QUIT TO LEVELS` |
+| In a menu | **tap what you want.** One tap chooses it, and a second tap on the chosen one goes |
+| Entering initials | `▲` and `▼` sit directly above and below each letter; `SAVE` |
 
-Holding the button down works like a thumb: slide off a pad and it lets go,
-slide onto another and it takes over. A pad under the cursor lights up, which
-is the one thing a finger cannot do.
+There are no arrow pads on a menu any more, and no screen-wide "tap anywhere to
+confirm". Both were the same mistake: the arrows contradicted the list they
+pointed at, and tapping the doodad you wanted started a run as whoever the
+invisible cursor happened to be on. **A tap that lands on nothing is free.**
 
-The pads follow whatever you used last. They stay hidden until you actually tap
-or click, and a keypress puts them away again - so a desktop visitor who never
-touches the mouse sees exactly what they always did, and every hint is worded
-for the thing in your hand. On a phone that replaces the key list, because
-there are no keys; on a desktop it sits beside it, because both work.
+A triangle now appears only inside a raised pad, and only ever means *move this
+way* - the loose ones that used to flank a name, mark a chosen row or sit in a
+strip of hint text are gone, along with `UI.chevronV` and `UI.marker`.
+
+Neither touch nor the mouse has a path of its own. A finger and a cursor produce
+the same actions the keys do, so every screen behaves as it always has, and the
+rectangles the game listens to are the rectangles it just drew - see
+`UI.button`, which paints a board and registers it in one call that cannot be
+split in half. **A click is simply a one-fingered tap that can also hover**, so
+a mouse plays the game exactly the way a phone does, and a board lights under
+the cursor, which is the one thing a finger cannot do. Holding the button down
+works like a thumb: slide off a movement pad and it lets go, slide onto the
+other and it takes over.
+
+A keypress hands the screen back to the keyboard - the pads go away and the hint
+strip returns - so a desktop visitor who never touches the mouse sees exactly
+what they always did. **A phone, though, is treated as a phone from the first
+frame** (`matchMedia('(pointer: coarse)')`, or `?touch=1` to force it), because
+the first screen it ever drew used to be captioned for keys it does not have.
 
 **On a phone**, open the
 [play link](https://thad-the-impaler.github.io/Land-of-Doodads/) and turn the
 phone sideways - 480x270 is a landscape shape and the game says so if you are
-holding it upright. Every doodad's ability is passive, so there is no gesture
-to learn and nothing extra to reach for.
+holding it upright, from the first frame and with the menu underneath deaf while
+it does. Every doodad's ability is passive, so there is no gesture to learn and
+nothing extra to reach for.
+
+Add `?hit=1` to the URL to outline every rectangle the game is listening to.
+It is the cheap check on the one rule all of this rests on: every red box should
+sit on something that looks pressable, and everything that looks pressable
+should have a box.
 
 ## Controls
 
@@ -412,7 +438,7 @@ js/
   construction.js     BACKYARD / THE CONSTRUCTION ZONE: lumber, buzzsaws, a gear
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
-  ui.js               boards, panels, chevrons, padlocks
+  ui.js               boards, buttons, panels, padlocks, the on-screen pads
   scene_title.js      the animated coop and the doodads living in it
   scene_levelselect.js  room carousel then level carousel
   scene_charselect.js doodad stalls

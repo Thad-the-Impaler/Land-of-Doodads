@@ -482,7 +482,7 @@ var Input = (function () {
     held[action] = true;
     pressAction(action);
     /* a key means the pads are in the way rather than in use */
-    pointerSeen = false; pointerKind = null; hoverAction = null;
+    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null;
     Audio3.unlock();
   }
 
@@ -506,31 +506,68 @@ var Input = (function () {
      Which part of the screen means what depends on the mode, because a tap
      in the middle means "flap" in a run and "choose this" in a menu. Scenes
      set the mode; the pads are drawn from this same table, so what is drawn
-     and what is listened to can never drift apart.                      */
+     and what is listened to can never drift apart.
+
+     There are only two rules a beginner has to learn, and they are the two
+     rules this file now enforces:
+
+       in a run, a tap anywhere flaps  - that is the 'rest' zone below;
+       everywhere else, you tap the thing itself.
+
+     "The thing itself" is the second half of the table: a scene fills a
+     list of TARGETS - the rectangles it just drew - and Game.render hands
+     them over with setTargets() immediately after drawFg. A touch arrives
+     between frames, so it is always tested against the frame the player is
+     actually looking at, which is the same guarantee the pads have always
+     had. That is why the menus no longer need pads or a rest zone at all:
+     a menu that draws nothing tappable listens to nothing.
+
+     zoneAt looks in one order and it matters: mode pads, then the scene's
+     targets, then the rest zone. Pads first means nothing a scene publishes
+     can ever end up on top of the pause button; the rest zone last means it
+     only ever catches what nothing else wanted.                          */
 
   var PAD = 44, PAD_Y = 216, EDGE = 8;
 
+  /* One object, shared by both modes that show it, so pausing and resuming
+     cannot end up with the button in two different places. */
+  var PAUSE_PAD = { a: 'pause', x: VW - 46, y: 4, w: 40, h: 34, icon: 'II' };
+
   var ZONES = {
     play: [
-      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
-      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
-      { a: 'pause', x: VW - 38,       y: 6,     w: 32, h: 26,   icon: 'II', small: true },
-      { a: 'up',    rest: true }
-    ],
-    menu: [
-      { a: 'left',  x: EDGE,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
-      { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
-      { a: 'back',  x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'BACK' },
-      { a: 'confirm', rest: true }
-    ],
-    text: [
       { a: 'left',  x: EDGE,           y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
       { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
-      { a: 'up',    x: 196,            y: PAD_Y, w: PAD, h: PAD, icon: '\u25B2' },
-      { a: 'down',  x: 196 + PAD + 6,  y: PAD_Y, w: PAD, h: PAD, icon: '\u25BC' },
-      { a: 'confirm', x: VW - EDGE - 54, y: PAD_Y, w: 54, h: PAD, label: 'SAVE' }
-    ]
+      PAUSE_PAD,
+      { a: 'up',    rest: true }
+    ],
+    /* Paused is its own mode because the run's rules are exactly wrong here:
+       'play' maps the whole screen to 'up', so a tap on the big PAUSED panel
+       used to send a flap that the paused branch threw away, leaving the one
+       small corner button as the only way back into the game. */
+    paused: [
+      PAUSE_PAD,
+      { a: 'confirm', rest: true }
+    ],
+    /* A menu has no pads and no rest zone on purpose. Arrow pads on a menu
+       contradicted the list they were pointing at, and a screen-wide
+       "tap anywhere = confirm" meant tapping the doodad you wanted started
+       a run as whoever the cursor happened to be on. A tap that lands on
+       nothing is now free. */
+    menu: []
   };
+
+  /* The rectangles the current scene drew this frame, as plain objects
+     { x, y, w, h, id, a, i }. Pads carry an action (`a`) and no `id`;
+     targets carry an `id` and may also carry an action. See setTargets. */
+  var targets = [];
+  var tapped = null;              /* the target a point landed on this frame */
+  /* Set while something covers the whole screen and is not part of the scene
+     - the turn-it-sideways notice is the only one. Without it the scene's
+     rectangles go on listening underneath an opaque panel: tapping the words
+     telling you to rotate the phone pressed whatever board happened to be
+     behind them, and the game walked off to another screen in the dark. */
+  var blocked = false;
+  var hoverTarget = null;         /* the target the cursor is over; mouse only */
 
   var touchMode = 'menu';
   var pointerSeen = false;        /* is anything pointing, so draw the pads  */
@@ -555,13 +592,29 @@ var Input = (function () {
      nothing about touch changes. */
   function usePointer(kind) { pointerSeen = true; pointerKind = kind; }
 
+  function inside(z, x, y) {
+    return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h;
+  }
+
   function zoneAt(x, y) {
+    if (blocked) return null;
     var list = ZONES[touchMode] || ZONES.menu;
-    var rest = null;
-    for (var i = 0; i < list.length; i++) {
-      var z = list[i];
+    var rest = null, i, z;
+    /* the mode's own pads first: the pause button can never be covered */
+    for (i = 0; i < list.length; i++) {
+      z = list[i];
       if (z.rest) { rest = z; continue; }
-      if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return z;
+      if (inside(z, x, y)) return z;
+    }
+    /* then what the scene drew, LAST FIRST. A scene paints back to front, so
+       the last rectangle pushed is the one lying on top, and the one on top
+       is the one the player can see and believes they are pressing. Reading
+       the list forwards gave the opposite: on the level select, BACK is
+       drawn first and a room plate slides over it, and for the quarter
+       second of the slide a tap on the visible plate pressed the hidden
+       BACK. */
+    for (i = targets.length - 1; i >= 0; i--) {
+      if (inside(targets[i], x, y)) return targets[i];
     }
     return rest;
   }
@@ -577,8 +630,14 @@ var Input = (function () {
     if (!v) return false;
     var z = zoneAt(v.x, v.y);
     if (!z) return false;
-    points[id] = z.a;
-    pressAction(z.a);
+    /* A pad IS its action. A target may carry one too - a board labelled
+       PLAY carries 'confirm' - and then it fires exactly as the key would,
+       so the scene's existing keyboard branch does the work. A target with
+       no action only moves the selection, which is what makes one tap on an
+       unchosen card mean "this one" rather than "go". */
+    points[id] = z.a || null;
+    if (z.a) pressAction(z.a);
+    if (z.id) tapped = z;
     return true;
   }
 
@@ -590,7 +649,7 @@ var Input = (function () {
     var v = Screen.toVirtual(clientX, clientY);
     if (!v) return;
     var z = zoneAt(v.x, v.y);
-    var now = z ? z.a : null;
+    var now = z ? (z.a || null) : null;
     if (now === points[id]) return;
     points[id] = now;
     /* the big rest-of-screen zone is a tap, not a hold: do not re-fire it */
@@ -649,6 +708,9 @@ var Input = (function () {
     /* only the drawn pads light up - the rest-of-screen zone is the whole
        playfield, and lighting that up would mean lighting up everything */
     hoverAction = (z && !z.rest) ? z.a : null;
+    /* the scene's own rectangles light up through hovering() instead, which
+       is how a wooden board knows the cursor is on it */
+    hoverTarget = (z && z.id) ? z : null;
     if (!(MOUSE in points)) return;
     movePoint(MOUSE, e.clientX, e.clientY);
     rebuildTouchHeld();
@@ -666,6 +728,7 @@ var Input = (function () {
     if (e.relatedTarget || e.toElement) return;    // still inside the page
     delete points[MOUSE];
     hoverAction = null;
+    hoverTarget = null;
     rebuildTouchHeld();
   }
 
@@ -679,6 +742,18 @@ var Input = (function () {
   }
 
   function init() {
+    /* A phone is a phone before it is touched. pointerKind used to stay null
+       until the first touchstart, which meant the very first screen a phone
+       ever showed was captioned for a keyboard it does not have and the
+       turn-it-sideways notice - needed at exactly that moment - stayed
+       hidden. Asking the device settles it on frame one instead. A keypress
+       still hands the screen back to the keyboard, so a desktop with a
+       touchscreen loses nothing. ?touch=1 forces it, for testing on a
+       desktop where the emulator will not. */
+    var coarse = /[?&]touch=1/.test(location.search) ||
+                 (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+    if (coarse) usePointer('touch');
+
     window.addEventListener('keydown', onKeyDown, { passive: false });
     window.addEventListener('keyup', onKeyUp);
     var opt = { passive: false };
@@ -692,7 +767,7 @@ var Input = (function () {
     document.addEventListener('mouseout', onMouseOut);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {};
-      points = {}; touchHeld = {}; hoverAction = null;
+      points = {}; touchHeld = {}; hoverAction = null; hoverTarget = null;
     });
   }
 
@@ -717,6 +792,8 @@ var Input = (function () {
     pressed = {};
     anyPressed = false;
     typed.length = 0;
+    /* a tap is an edge, like a fresh key press: it lasts one frame */
+    tapped = null;
   }
 
   function setTextMode(on) {
@@ -741,8 +818,45 @@ var Input = (function () {
     watchCode: function (seq, fn) { codes.push({ seq: seq, fn: fn, buf: '' }); },
 
     /* ---- touch ---- */
-    setTouchMode: function (m) { if (ZONES[m]) touchMode = m; },
+    /* Changing mode drops the target list: a rectangle drawn by the scene
+       we are leaving must not outlive it, and nothing is listened to again
+       until the next render publishes a fresh list. */
+    setTouchMode: function (m) { if (ZONES[m]) { touchMode = m; targets = []; } },
     touchMode: function () { return touchMode; },
+
+    /* Publish the rectangles the scene just drew. Called once per frame by
+       Game.render, straight after scene.drawFg, with the array the scene
+       filled while it was drawing - so every listened rectangle is one that
+       was painted from the same x/y/w/h. The array is kept by reference; the
+       scene clears and refills it inside drawFg, which is synchronous, so no
+       event can ever see a half-built list. Pass null or nothing for a scene
+       that has no targets.
+
+       A target is { x, y, w, h, id, a, i } in virtual 480x270 pixels:
+         id  a short name for the kind of thing it is ('menu', 'card',
+             'stall', 'row', 'slot', 'back', 'quit' ...). Required: having an
+             id is what makes it a target rather than a pad.
+         a   optional Input action ('confirm', 'up', 'down', 'left',
+             'right'), fired on press exactly as the matching key would be.
+         i   optional integer - an index, or a direction of -1 / +1.        */
+    setTargets: function (list) { targets = list || []; },
+    /* Stop listening to anything at all, pads included, while a full-screen
+       notice is up. Game.render sets it from the same condition that draws
+       the notice, so what is covered is what is deaf. */
+    setBlocked: function (b) { blocked = !!b; },
+    /* the live list, for the ?hit=1 overlay that proves drawn == listened */
+    targets: function () { return targets; },
+    /* The target a finger or the mouse button landed on this frame, or null.
+       Edge-triggered like hit(): read it at the top of a scene's update and
+       use it to move the selection or to navigate directly. Sliding a finger
+       across the screen does NOT produce one - only a press does. */
+    tapped: function () { return tapped; },
+    /* True while the cursor rests on a target with this id (and this i, if
+       one is given), so a board can light up under a mouse. Always false on
+       a phone, which cannot hover. */
+    hovering: function (id, i) {
+      return !!hoverTarget && hoverTarget.id === id && (i === undefined || hoverTarget.i === i);
+    },
     /* true once a finger or a cursor has been used on the game: the
        on-screen pads stay out of the way until there is a reason to
        believe in them, and step back out of it at the next keypress */
@@ -9628,6 +9742,47 @@ var UI = (function () {
     ctx.fillStyle = C.shadow; ctx.fillRect(x, y + 2, 2, 1);
   }
 
+  /* A board you can press, and the only way this game says "press me".
+
+     It draws the board and adds its rectangle to `hot` in one call, on
+     purpose: the invariant the touch UI rests on is that the rectangle the
+     player sees and the rectangle the game listens to are the same one, and
+     a helper that cannot be split in half is how that stops being a
+     convention and starts being structural. There is no way to draw a
+     button here and forget to make it tappable.
+
+       ctx   the foreground context
+       hot   the scene's target list for this frame (see Input.setTargets)
+       o     { label, id, a, i, lit, scale }
+             label  the verb, e.g. 'PLAY', 'BACK', 'SAVE'
+             id     the kind of thing, passed straight through to the target
+             a      optional Input action fired on press, usually 'confirm'
+             i      optional index or direction, passed through
+             lit    true for the chosen one: gold edge, nails, bright text
+             scale  text scale, 2 unless it is a small board
+
+     The label is centred on the face and nudged a pixel left to offset its
+     own drop shadow, the same way the title boards have always done it. */
+  function button(ctx, hot, x, y, w, h, o) {
+    o = o || {};
+    var s = o.scale || 2;
+    /* a cursor can rest on a button without pressing it, which a finger
+       cannot, so it gets a step between plain and chosen */
+    var over = Input.hovering(o.id, o.i);
+    board(ctx, x, y, w, h, {
+      highlight: o.lit ? C.gold : (over ? C.goldDark : null),
+      nails: !!o.lit,
+      seams: false
+    });
+    if (o.label) {
+      text(ctx, o.label, x + w / 2 - 1, y + Math.round((h - Font.GH * s) / 2), {
+        align: 'center', scale: s,
+        colour: (o.lit || over) ? C.ink : C.inkDim, shadow: C.shadow
+      });
+    }
+    hot.push({ x: x, y: y, w: w, h: h, id: o.id, a: o.a, i: o.i });
+  }
+
   /* dark inset panel, for huds and previews */
   function panel(ctx, x, y, w, h, o) {
     o = o || {};
@@ -9648,7 +9803,15 @@ var UI = (function () {
     }
   }
 
-  /* solid pixel triangle; dir -1 = left, 1 = right */
+  /* Solid pixel triangle; dir -1 = left, 1 = right. NOT exported, and that
+     is the point: a triangle in this game now appears only inside a raised
+     pad and only ever means "move this way". Loose chevrons were half of
+     what made the menus contradict themselves - a decorative one beside the
+     name you were on, a second at the edge of the rail, a third in the
+     footer text, none of them pressable, all of them next to a pad that
+     was. The only ones left are the pair below, either side of the little
+     handset on the turn-it-sideways notice, which are a picture of a phone
+     rotating rather than anything you can press. */
   function chevron(ctx, x, y, dir, size, colour) {
     ctx.fillStyle = colour || C.ink;
     x = Math.round(x); y = Math.round(y);
@@ -9656,21 +9819,6 @@ var UI = (function () {
       var h = (size - i) * 2 - 1;
       ctx.fillRect(x + dir * i - (dir < 0 ? 1 : 0), y - (h >> 1), 1, h);
     }
-  }
-
-  function chevronV(ctx, x, y, dir, size, colour) {
-    ctx.fillStyle = colour || C.ink;
-    x = Math.round(x); y = Math.round(y);
-    for (var i = 0; i < size; i++) {
-      var w = (size - i) * 2 - 1;
-      ctx.fillRect(x - (w >> 1), y + dir * i - (dir < 0 ? 1 : 0), w, 1);
-    }
-  }
-
-  /* the blinking marker next to the focused menu row */
-  function marker(ctx, x, y, t, colour) {
-    var bob = Math.round(Math.sin(t * 7) * 1);
-    chevron(ctx, x + bob, y, 1, 4, colour || C.gold);
   }
 
   function text(ctx, str, x, y, o) {
@@ -9692,6 +9840,36 @@ var UI = (function () {
       wave: o.wave, waveAmp: o.waveAmp, wavePhase: o.wavePhase,
       spacing: o.spacing
     });
+  }
+
+  /* Is a finger driving? Scenes ask this to leave out furniture that only a
+     keyboard or a cursor needs, and to word a label for a thumb. */
+  function touch() {
+    return Input.pointerKind() === 'touch';
+  }
+
+  /* The strip of key hints along the bottom.
+
+     On a phone it draws NOTHING, and that rule lives here rather than in
+     five scenes so none of them can forget it. The strip used to repeat the
+     buttons as words directly underneath the buttons - BACK appeared twice
+     on the level select, once as a thing you press and once as a caption -
+     which is exactly the contradiction this pass is clearing. A keyboard
+     still needs to be told what the keys do, and a mouse gets its own
+     wording because on a desktop both work and hiding either would be a lie.
+
+     `keys` is shown to a keyboard (and before anything at all has pointed);
+     `mouse` to a cursor. */
+  function footer(ctx, keys, mouse) {
+    if (touch()) return;
+    ctx.fillStyle = C.darker;
+    ctx.fillRect(0, VH - 13, VW, 13);
+    /* a soft edge so the strip does not cut the scenery off with a hard line */
+    Tint.rect(ctx, 0, VH - 16, VW, 3, C.darker, 8);
+    ctx.fillStyle = C.inkFaint;
+    ctx.fillRect(0, VH - 13, VW, 1);
+    text(ctx, Input.pointerKind() === 'mouse' ? mouse : keys, VW / 2, VH - 10,
+         { align: 'center', colour: C.inkDim });
   }
 
   /* footer hint strip */
@@ -9729,8 +9907,13 @@ var UI = (function () {
 
   /* The on-screen controls. Their geometry is Input's, not ours, so what
      the player sees and what the game listens to are the same rectangles.
-     Kept faint: they sit over a run in progress and must not compete with
-     the pillars for attention. */
+
+     They are the last pads left in the game - the two movement pads and the
+     pause button during a run - so they are no longer kept faint. At 0.42
+     alpha the glyphs were all but invisible against the coop's floor, which
+     is a poor joke on the one control a player has to find by eye; the
+     outline and the brighter ink below are there to lift them off whatever
+     scenery they happen to be standing on. */
   function pads(ctx) {
     var list = Input.pads();
     for (var i = 0; i < list.length; i++) {
@@ -9741,10 +9924,15 @@ var UI = (function () {
          cannot - so it gets a step between resting and held */
       var over = !on && Input.padHover(z.a);
       var a = ctx.globalAlpha;
-      ctx.globalAlpha = a * (on ? 0.85 : (over ? 0.62 : 0.42));
+      ctx.globalAlpha = a * (on ? 1 : (over ? 0.85 : 0.70));
 
       ctx.fillStyle = C.shadow;
       ctx.fillRect(z.x + 1, z.y + 2, z.w, z.h);
+      /* a dark rim, so a pad edge reads against hay as well as against sky */
+      ctx.fillRect(z.x - 1, z.y - 1, z.w + 2, 1);
+      ctx.fillRect(z.x - 1, z.y + z.h, z.w + 2, 1);
+      ctx.fillRect(z.x - 1, z.y - 1, 1, z.h + 2);
+      ctx.fillRect(z.x + z.w, z.y - 1, 1, z.h + 2);
       ctx.fillStyle = on ? C.boardHi : C.board;
       ctx.fillRect(z.x, z.y, z.w, z.h);
       ctx.fillStyle = on ? C.gold : C.boardTop;
@@ -9755,18 +9943,18 @@ var UI = (function () {
       ctx.fillRect(z.x, z.y, z.w, 1); ctx.fillRect(z.x, z.y + z.h - 1, z.w, 1);
       ctx.fillRect(z.x, z.y, 1, z.h); ctx.fillRect(z.x + z.w - 1, z.y, 1, z.h);
 
+      /* Ink, not dim ink: a pad that has to be found against a hay bale
+         cannot afford a muted glyph. No pad carries a word any more - a
+         triangle inside a raised pad is the whole vocabulary, and it only
+         ever means "move this way". */
       var cx = z.x + z.w / 2, cy = z.y + z.h / 2;
-      if (z.label) {
-        text(ctx, z.label, cx, Math.round(cy - 3), { align: 'center',
-             colour: on ? C.ink : C.inkDim, shadow: C.shadow });
-      } else if (z.icon === 'II') {
-        ctx.fillStyle = on ? C.ink : C.inkDim;
-        ctx.fillRect(Math.round(cx) - 4, Math.round(cy) - 5, 3, 10);
-        ctx.fillRect(Math.round(cx) + 2, Math.round(cy) - 5, 3, 10);
+      if (z.icon === 'II') {
+        ctx.fillStyle = C.ink;
+        ctx.fillRect(Math.round(cx) - 5, Math.round(cy) - 7, 4, 14);
+        ctx.fillRect(Math.round(cx) + 1, Math.round(cy) - 7, 4, 14);
       } else {
-        text(ctx, z.icon, cx, Math.round(cy - (z.small ? 3 : 6)),
-             { align: 'center', scale: z.small ? 1 : 2,
-               colour: on ? C.ink : C.inkDim, shadow: C.shadow });
+        text(ctx, z.icon, cx, Math.round(cy - 6),
+             { align: 'center', scale: 2, colour: C.ink, shadow: C.shadow });
       }
       ctx.globalAlpha = a;
     }
@@ -9801,9 +9989,9 @@ var UI = (function () {
   }
 
   return {
-    C: C, scrim: scrim, board: board, panel: panel, nail: nail,
+    C: C, scrim: scrim, board: board, button: button, panel: panel, nail: nail,
     pads: pads, rotateNotice: rotateNotice, forInput: forInput,
-    chevron: chevron, chevronV: chevronV, marker: marker,
+    touch: touch, footer: footer,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };
 })();
@@ -9842,6 +10030,13 @@ var TitleScene = (function () {
   var timers = [];                 /* delayed beats, ticked by the scene */
   var menuIndex = 0;
   var MENU = ['PLAY', 'HIGH SCORES'];
+
+  /* The rectangles this screen drew, refilled every frame inside drawFg and
+     handed to Input by Game.render. PLAY was already the biggest word on the
+     screen; it simply was not a button. Now it is one, and it is the only
+     thing on the title a tap can land on - the coop, the logo and the sky
+     are scenery again. */
+  var hot = [];
 
   /* ------------------------------------------------------- scenery */
 
@@ -10281,6 +10476,11 @@ var TitleScene = (function () {
     director(dt);
 
     if (Game.locked()) return;
+    /* A tap on a board moves the cursor onto it BEFORE the confirm below
+       runs, and the board carries a:'confirm' - so one tap is choose and
+       go, and the keyboard branch underneath does the going. */
+    var tg = Input.tapped();
+    if (tg && tg.id === 'menu') menuIndex = tg.i;
     if (Input.nav('down')) { menuIndex = (menuIndex + 1) % MENU.length; Audio3.play('move'); }
     if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
     if (Input.hit('confirm')) {
@@ -10387,21 +10587,20 @@ var TitleScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     drawLogo(ctx);
 
-    /* menu boards, one per option */
-    var bw = 152, bx = (VW - bw) / 2;
+    /* Menu boards, one per option, and each one a button: 32 tall rather
+       than 22, which is 44 CSS px at the 1.389 fit a phone gets in
+       landscape. The blinking marker and the chevron that used to flank the
+       chosen row are gone - a triangle in this game now only ever appears
+       inside a raised pad and only ever means "move this way", and a board
+       that is lit up already says which one is chosen. */
+    var bw = 152, bh = 32, bx = (VW - bw) / 2;
     for (var m = 0; m < MENU.length; m++) {
-      var by = 186 + m * 26, sel = m === menuIndex;
-      UI.board(ctx, bx, by, bw, 22, { highlight: sel ? UI.C.gold : null, nails: sel, seams: false });
-      /* 14px glyphs plus their 2px drop shadow, centred on the 16px face
-         between the bevels; nudged left a pixel to offset the shadow */
-      UI.text(ctx, MENU[m], VW / 2 - 1, by + 3, { align: 'center', scale: 2,
-                                             colour: sel ? UI.C.ink : UI.C.inkDim, shadow: UI.C.shadow });
-      if (sel) {
-        UI.marker(ctx, bx - 12, by + 11, t);
-        UI.chevron(ctx, bx + bw + 12, by + 11, -1, 4, UI.C.gold);
-      }
+      var by = 182 + m * 38;
+      UI.button(ctx, hot, bx, by, bw, bh,
+                { id: 'menu', i: m, a: 'confirm', label: MENU[m], lit: m === menuIndex });
     }
 
     /* arcade style hi-score readout in the corner */
@@ -10441,16 +10640,12 @@ var TitleScene = (function () {
     }
     ctx.globalAlpha = ga;
 
-    /* footer */
-    ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(0, VH - 13, VW, 13);
-    Tint.rect(ctx, 0, VH - 16, VW, 3, UI.C.darker, 8);
-    ctx.fillStyle = UI.C.inkFaint;
-    ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, UI.forInput('◀ ▶ MOVE   ENTER SELECT   M SOUND   F FULLSCREEN',
-                             '◀ ▶ MOVE   CLICK SELECT   M SOUND   F FULLSCREEN',
-                             '◀ ▶ MOVE    TAP TO SELECT'),
-            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
+    /* footer. It said "◀ ▶ MOVE", which was wrong on every input the game
+       has - this menu is a column and always has been - and on a phone it
+       repeated the boards as words directly underneath them, so UI.footer
+       leaves it out there entirely. */
+    UI.footer(ctx, '▲ ▼ CHOOSE   ENTER SELECT   M SOUND   F FULLSCREEN',
+                   'CLICK A BOARD   M SOUND   F FULLSCREEN');
   }
 
   function drawLogo(ctx) {
@@ -10497,7 +10692,8 @@ var TitleScene = (function () {
   }
 
   return { enter: enter, refresh: refresh, update: update,
-           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg };
+           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();
 </script>
 <script>
@@ -10520,8 +10716,18 @@ var LevelSelectScene = (function () {
 
   var CARD = { w: 126, h: 150, y: 66 };
   var SIDE = { w: 88, h: 112, y: 85 };
-  var ROOM = { w: 152, h: 24, y: 14 };
-  var SIDEROOM = { w: 86, h: 16, y: 18 };
+  /* The side room slots were 16 tall, which is 22 CSS px on a phone - half a
+     touch target. They now stand the full height of the row they are in, so
+     the thing you press is the thing you were already looking at. */
+  var ROOM = { w: 152, h: 32, y: 11 };
+  var SIDEROOM = { w: 86, h: 32, y: 11 };
+
+  /* The rectangles this screen drew, refilled inside drawFg and handed to
+     Input by Game.render. The peeking neighbours ARE the arrows here: a
+     finger presses the room or the card it can see rather than working out
+     which of two rows a hidden cursor is on, so the four decorative
+     chevrons - and the whole idea of a mode - stop mattering to a thumb. */
+  var hot = [];
 
   function room(i) { return Levels.rooms[clamp(i, 0, Levels.rooms.length - 1)]; }
   /* undefined outside the list, so the side slots stay empty at the ends */
@@ -10574,6 +10780,18 @@ var LevelSelectScene = (function () {
 
     if (Game.locked()) return;
 
+    /* A tap goes straight at what it landed on, and then the keyboard branches
+       below carry on from wherever the finger left the cursor. A side card
+       tap moves the carousel; the centre card carries a:'confirm', so it
+       falls into the level branch's own confirm - which is what plays the
+       level, or refuses it if the gate is still shut. */
+    var tg = Input.tapped();
+    if (tg) {
+      if (tg.id === 'back') { Audio3.play('back'); Game.go(TitleScene, {}); return; }
+      if (tg.id === 'room') { focus = 'room'; moveRoom(tg.i); }
+      else if (tg.id === 'card') { focus = 'level'; if (tg.i) moveLevel(tg.i); }
+    }
+
     if (focus === 'room') {
       if (Input.nav('left')) moveRoom(-1);
       if (Input.nav('right')) moveRoom(1);
@@ -10607,36 +10825,61 @@ var LevelSelectScene = (function () {
     Coop.drawMenuBackdrop(ctx, scroll);
   }
 
+  /* Where every slot on this screen is, worked out once so the rectangle
+     that gets drawn and the rectangle that gets listened to are read off the
+     same six numbers - including halfway through a slide, when the drawn
+     card and a stale target would otherwise part company. */
+  function layout(shakeX) {
+    var rx = VW / 2 + slideRoom + (focus === 'room' ? shakeX : 0);
+    var lx = VW / 2 + slideLevel + (focus === 'level' ? shakeX : 0);
+    function rect(x, y, w, h) { return { x: Math.round(x), y: y, w: w, h: h }; }
+    return {
+      roomL: rect(rx - ROOM.w / 2 - SIDEROOM.w - 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h),
+      room:  rect(rx - ROOM.w / 2, ROOM.y, ROOM.w, ROOM.h),
+      roomR: rect(rx + ROOM.w / 2 + 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h),
+      cardL: rect(lx - CARD.w / 2 - SIDE.w - 20, SIDE.y, SIDE.w, SIDE.h),
+      card:  rect(lx - CARD.w / 2, CARD.y, CARD.w, CARD.h),
+      cardR: rect(lx + CARD.w / 2 + 20, SIDE.y, SIDE.w, SIDE.h)
+    };
+  }
+
+  /* one target, from the rectangle that was just drawn */
+  function hit(rc, id, i, a) {
+    hot.push({ x: rc.x, y: rc.y, w: rc.w, h: rc.h, id: id, i: i, a: a });
+  }
+
   function drawFg(ctx) {
+    hot.length = 0;
     var shakeX = denyShake > 0 ? Math.round(Math.sin(t * 60) * 2) : 0;
+    var L = layout(shakeX);
+
+    /* The way back, and the only piece of furniture on this screen that is
+       not also content. Drawn first, so its rectangle is FIRST in the list
+       and wins the moment a sliding room slot passes under it. */
+    if (Input.pointing()) UI.button(ctx, hot, 6, 4, 44, 32, { id: 'back', label: 'BACK', scale: 1 });
 
     /* ---- rooms ---- */
-    var rx = VW / 2 + slideRoom + (focus === 'room' ? shakeX : 0);
-    drawRoomSlot(ctx, roomAt(roomIndex - 1), rx - ROOM.w / 2 - SIDEROOM.w - 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h, false);
-    drawRoomSlot(ctx, roomAt(roomIndex + 1), rx + ROOM.w / 2 + 26, SIDEROOM.y, SIDEROOM.w, SIDEROOM.h, false);
-    drawRoomSlot(ctx, room(roomIndex), rx - ROOM.w / 2, ROOM.y, ROOM.w, ROOM.h, true);
+    var prevRoom = roomAt(roomIndex - 1), nextRoom = roomAt(roomIndex + 1);
+    drawRoomSlot(ctx, prevRoom, L.roomL, false, -1);
+    if (prevRoom) hit(L.roomL, 'room', -1);
+    drawRoomSlot(ctx, nextRoom, L.roomR, false, 1);
+    if (nextRoom) hit(L.roomR, 'room', 1);
+    /* the centre room board is where you already are, so it is not a target */
+    drawRoomSlot(ctx, room(roomIndex), L.room, true);
 
-    if (roomIndex > 0) UI.chevron(ctx, rx - ROOM.w / 2 - 10 - arrowBob(), ROOM.y + ROOM.h / 2, -1, 5,
-                                  focus === 'room' ? UI.C.gold : UI.C.inkFaint);
-    if (roomIndex < Levels.rooms.length - 1) UI.chevron(ctx, rx + ROOM.w / 2 + 10 + arrowBob(), ROOM.y + ROOM.h / 2, 1, 5,
-                                  focus === 'room' ? UI.C.gold : UI.C.inkFaint);
-
-    UI.text(ctx, 'ROOM', rx, ROOM.y - 9, { align: 'center', colour: focus === 'room' ? UI.C.ink : UI.C.inkFaint });
+    UI.text(ctx, 'ROOM', L.room.x + ROOM.w / 2, ROOM.y - 9,
+            { align: 'center',
+              colour: (focus === 'room' && !UI.touch()) ? UI.C.ink : UI.C.inkFaint });
 
     /* ---- levels ---- */
     var r = room(roomIndex);
-    var lx = VW / 2 + slideLevel + (focus === 'level' ? shakeX : 0);
     var leftLv = levelIndex > 0 ? r.levels[levelIndex - 1] : null;
     var rightLv = levelIndex < r.levels.length - 1 ? r.levels[levelIndex + 1] : null;
 
-    if (leftLv) drawCard(ctx, leftLv, lx - CARD.w / 2 - SIDE.w - 20, SIDE.y, SIDE.w, SIDE.h, false);
-    if (rightLv) drawCard(ctx, rightLv, lx + CARD.w / 2 + 20, SIDE.y, SIDE.w, SIDE.h, false);
-    drawCard(ctx, level(roomIndex, levelIndex), lx - CARD.w / 2, CARD.y, CARD.w, CARD.h, true);
-
-    if (leftLv) UI.chevron(ctx, lx - CARD.w / 2 - 9 - arrowBob(), CARD.y + CARD.h / 2, -1, 6,
-                           focus === 'level' ? UI.C.gold : UI.C.inkFaint);
-    if (rightLv) UI.chevron(ctx, lx + CARD.w / 2 + 9 + arrowBob(), CARD.y + CARD.h / 2, 1, 6,
-                            focus === 'level' ? UI.C.gold : UI.C.inkFaint);
+    if (leftLv) { drawCard(ctx, leftLv, L.cardL, false, -1); hit(L.cardL, 'card', -1); }
+    if (rightLv) { drawCard(ctx, rightLv, L.cardR, false, 1); hit(L.cardR, 'card', 1); }
+    drawCard(ctx, level(roomIndex, levelIndex), L.card, true, 0);
+    hit(L.card, 'card', 0, 'confirm');
 
     /* ---- the strip under everything ---- */
     var lv = level(roomIndex, levelIndex);
@@ -10647,55 +10890,65 @@ var LevelSelectScene = (function () {
       if (lv.blurb[1]) UI.text(ctx, lv.blurb[1], VW / 2, VH - 31, { align: 'center', colour: UI.C.inkDim });
     }
 
-    var hintY = VH - 13;
-    if (focus === 'room') {
-      UI.text(ctx, UI.forInput('◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK',
-                               '◀ ▶ ROOM    CLICK PICK ROOM    ESC BACK',
-                               '◀ ▶ ROOM    TAP TO PICK    BACK'),
-              VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
-    } else {
-      var shut = lv.locked || !Levels.isUnlocked(lv);
-      UI.text(ctx, shut ? UI.forInput('◀ ▶ LEVEL    LOCKED    ESC ROOMS',
-                                      '◀ ▶ LEVEL    LOCKED    ESC ROOMS',
-                                      '◀ ▶ LEVEL    LOCKED    BACK')
-                        : UI.forInput('◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS',
-                                      '◀ ▶ LEVEL    CLICK PLAY    ESC ROOMS',
-                                      '◀ ▶ LEVEL    TAP TO PLAY    BACK'),
-              VW / 2, hintY, { align: 'center', colour: UI.C.inkDim });
-    }
+    var shut = lv.locked || !Levels.isUnlocked(lv);
+    UI.footer(ctx,
+      focus === 'room' ? '◀ ▶ ROOM    ENTER PICK ROOM    ESC BACK'
+                       : (shut ? '◀ ▶ LEVEL    LOCKED    ESC ROOMS'
+                               : '◀ ▶ LEVEL    ENTER PLAY    ESC ROOMS'),
+      focus === 'room' ? 'CLICK A ROOM OR A CARD    ESC BACK'
+                       : 'CLICK THE BIG CARD TO PLAY    ESC ROOMS');
   }
 
-  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
-
-  function drawRoomSlot(ctx, r, x, y, w, h, big) {
+  /* `dir` is which side slot this is (-1 / +1), and only a cursor cares: it
+     is what lets the slot under the pointer light up without lighting up its
+     twin on the other side of the board. */
+  function drawRoomSlot(ctx, r, rc, big, dir) {
     if (!r) return;
-    var active = big && focus === 'room';
+    var x = rc.x, y = rc.y, w = rc.w, h = rc.h;
+    /* Gold means "this is what you press". On a keyboard that is whatever
+       the focus is on, and the focus can be up here on the room. A finger
+       has no focus and cannot press the centre plate at all - it is the
+       name of where you already are - so on touch the gold belongs to the
+       card below and never to this. It was the other way round on arrival:
+       the one lit, nailed, button-shaped thing on the screen was the one
+       thing that did nothing, and the card you had to press was dim. */
+    var active = big && focus === 'room' && !UI.touch();
     if (big) {
       UI.board(ctx, x, y, w, h, { highlight: active ? UI.C.gold : null });
     } else {
-      UI.panel(ctx, x, y, w, h, { fill: '#2b1e12', edge: UI.C.inkFaint, dither: 6 });
+      UI.panel(ctx, x, y, w, h, {
+        fill: '#2b1e12', dither: 6,
+        edge: Input.hovering('room', dir) ? UI.C.goldDark : UI.C.inkFaint
+      });
     }
     var colour = r.locked ? UI.C.inkFaint : (big ? UI.C.ink : UI.C.inkDim);
     if (r.locked && big) {
       UI.padlock(ctx, x + w / 2 - 22, y + h / 2, 1, UI.C.inkDim);
-      UI.text(ctx, r.name, x + w / 2 + 8, y + (h - 14) / 2, { align: 'center', scale: 2, colour: colour });
+      UI.text(ctx, r.name, x + w / 2 + 8, y + 9, { align: 'center', scale: 2, colour: colour });
     } else if (big) {
-      UI.text(ctx, r.name, x + w / 2, y + (h - 14) / 2, { align: 'center', scale: 2, colour: colour });
+      UI.text(ctx, r.name, x + w / 2, y + 9, { align: 'center', scale: 2, colour: colour });
     } else {
-      UI.text(ctx, r.name, x + w / 2, y + (h - 7) / 2, { align: 'center', colour: colour });
+      UI.text(ctx, r.name, x + w / 2, y + 12, { align: 'center', colour: colour });
     }
   }
 
-  function drawCard(ctx, lv, x, y, w, h, big) {
-    x = Math.round(x); y = Math.round(y);
-    var active = big && focus === 'level';
+  /* `dir` is -1 / 0 / +1, which side of the carousel this card is on. Only a
+     cursor cares: it is what lets the card under the pointer light its frame
+     without lighting its neighbour's. */
+  function drawCard(ctx, lv, rc, big, dir) {
+    var x = rc.x, y = rc.y, w = rc.w, h = rc.h;
+    /* on touch the big card is always the thing you press, so it is always
+       the lit one - see drawRoomSlot */
+    var active = big && (UI.touch() || focus === 'level');
+    var over = Input.hovering('card', dir);
     /* three states: never built (`locked`), built but not yet earned
        (`unlock`), and open. A placeholder shows nothing; an unearned level
        shows what it is and what it costs, the way a boarded doodad stall
        does - you cannot want something you cannot see. */
     var open = Levels.isUnlocked(lv);
     var frame = lv.locked ? UI.C.inkFaint
-              : (!open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.inkDim));
+              : (!open ? (over ? UI.C.goldDark : UI.C.inkDim)
+                       : (active ? UI.C.gold : (over ? UI.C.goldDark : UI.C.inkDim)));
 
     /* drop shadow + frame */
     ctx.fillStyle = UI.C.shadow;
@@ -10754,7 +11007,15 @@ var LevelSelectScene = (function () {
       UI.text(ctx, lv.name, x + w / 2, ny + 1 + (ns === 1 ? 4 : 0),
               { align: 'center', scale: ns,
                 colour: !open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.ink) });
-      UI.text(ctx, lv.code, px + 2, ny + 18, { colour: UI.C.inkDim });
+      /* The one commit verb, written on the one card it belongs to. A phone
+         has no ENTER and no footer to read it off, so the lit card says what
+         pressing it does; a keyboard keeps the level's code, which is what
+         the footer's ENTER PLAY is talking about. */
+      if (open && UI.touch()) {
+        UI.text(ctx, 'TAP TO PLAY', px + 2, ny + 18, { colour: UI.C.gold });
+      } else {
+        UI.text(ctx, lv.code, px + 2, ny + 18, { colour: UI.C.inkDim });
+      }
       if (open) {
         UI.text(ctx, 'HI ' + Scores.top(room(roomIndex), lv), px + pw - 2, ny + 18,
                 { align: 'right', colour: UI.C.inkDim });
@@ -10867,7 +11128,8 @@ var LevelSelectScene = (function () {
     ctx.fillStyle = P.beamDark; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 9, y, 1, h);
   }
 
-  return { enter: enter, update: update, drawBg: drawBg, drawFg: drawFg };
+  return { enter: enter, update: update, drawBg: drawBg, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();
 </script>
 <script>
@@ -10922,6 +11184,12 @@ var CharSelectScene = (function () {
   var flashTimer = 0, denyFlash = 0;
   var best = 0;                   /* cached: never read the save in a draw call */
   var fresh = [];                 /* ids unlocked since the player last looked */
+
+  /* The rectangles this screen drew, refilled inside drawFg and handed to
+     Input by Game.render. One per VISIBLE stall - slivers included, which is
+     how a roster of any length gets walked without the layout knowing how
+     long it is - plus the way back. */
+  var hot = [];
 
   function unlocked(i) { return Doodads.isUnlocked(Doodads.list[i], best); }
 
@@ -10998,14 +11266,17 @@ var CharSelectScene = (function () {
     if (seen.indexOf(id) < 0) { seen.push(id); Save.set('seen', seen); }
   }
 
-  function move(dir) {
-    var next = index + dir;
-    if (next < 0 || next >= Doodads.list.length) {
+  /* Choose a stall by number rather than by direction, because a finger does
+     not step along the row - it lands on the one it wants, including the 5px
+     sliver bleeding in at the edge. The keyboard's move(dir) is this with the
+     arithmetic done first, so both ways in do exactly the same thing. */
+  function moveTo(i) {
+    if (i < 0 || i >= Doodads.list.length) {
       Audio3.play('deny');
       Screen.shake(1.2, 0.16);
       return;
     }
-    index = next;
+    index = i;
     flashTimer = FLASH_T;
     denyFlash = 0;
     clearNew(index);
@@ -11016,6 +11287,8 @@ var CharSelectScene = (function () {
     }
     Audio3.play('move');
   }
+
+  function move(dir) { moveTo(index + dir); }
 
   /* Which bay sits at the left end of the rail: the cursor is held in the
      middle of the window wherever the roster allows it, so there is always
@@ -11046,6 +11319,18 @@ var CharSelectScene = (function () {
     if (denyFlash > 0) denyFlash -= dt;
 
     if (Game.locked()) return;
+    /* The stall is already the best-looking button on the screen - it grows,
+       goes gold and gets a shaft of light down it - so tapping one chooses
+       it, and the chosen one carries a:'confirm' so a second tap on it falls
+       into the confirm branch below and flies. One tap on an unchosen stall
+       therefore never starts a run as somebody else. */
+    var tg = Input.tapped();
+    if (tg && tg.id === 'back') {
+      Audio3.play('back');
+      Game.go(LevelSelectScene, { focus: 'level' });
+      return;
+    }
+    if (tg && tg.id === 'stall' && tg.i !== index) moveTo(tg.i);
     if (Input.nav('left')) move(-1);
     if (Input.nav('right')) move(1);
     if (Input.hit('confirm')) {
@@ -11235,6 +11520,7 @@ var CharSelectScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     var d = Doodads.list[index];
     var open = unlocked(index);
     var r = Levels.rooms[Game.selection.room];
@@ -11248,6 +11534,10 @@ var CharSelectScene = (function () {
               { align: 'right', colour: UI.C.inkFaint });
     }
 
+    /* the way back, drawn before the row so its rectangle is first in the
+       list; it sits above the rail, so nothing on the row reaches it */
+    if (Input.pointing()) UI.button(ctx, hot, 6, 4, 44, 32, { id: 'back', label: 'BACK', scale: 1 });
+
     /* per stall: the boards go on before the plate text, so nothing dims it */
     for (var i = firstBay(); i <= lastBay(); i++) {
       var s = stall(i);
@@ -11255,47 +11545,39 @@ var CharSelectScene = (function () {
       if (!unlocked(i)) drawBoards(ctx, s, dd);
       else if (fresh.indexOf(dd.id) >= 0) drawNewTab(ctx, s);
       if (unlocked(i)) {
-        UI.text(ctx, dd.name, s.cx, 147, { align: 'center', colour: s.sel ? UI.C.gold : UI.C.inkDim });
+        /* the chosen open stall says what pressing it again does - on a
+           phone, where there is no ENTER and no footer to read it off. Its
+           name is already the 3x heading on the card below. */
+        if (s.sel && UI.touch()) {
+          UI.text(ctx, 'TAP TO FLY', s.cx, 147, { align: 'center', colour: UI.C.gold });
+        } else {
+          UI.text(ctx, dd.name, s.cx, 147, { align: 'center', colour: s.sel ? UI.C.gold : UI.C.inkDim });
+        }
       } else {
         /* the price nailed to the plate, in whatever currency it is */
         UI.text(ctx, Doodads.requirement(dd).plate, s.cx, 147,
                 { align: 'center', colour: s.sel ? UI.C.inkDim : UI.C.inkFaint });
       }
-    }
-
-    /* the rail runs off both sides once the roster outgrows the window.
-       Drawn over the sliver it points at, so the clipped stall reads as
-       more row rather than as a mistake. */
-    if (Doodads.list.length > BAYS) {
-      var bump = arrowBob();
-      var lastView = Doodads.list.length - BAYS;
-      if (view > 0.02) UI.chevron(ctx, 6 - bump, 106, -1, 5, UI.C.gold);
-      if (view < lastView - 0.02) UI.chevron(ctx, 474 + bump, 106, 1, 5, UI.C.gold);
+      /* and the stall itself is the control. Only the chosen one carries an
+         action, which is what makes the first tap "this one" and the second
+         "go". The rail-edge chevrons that used to point at the slivers are
+         gone: the sliver is the arrow, and it can be pressed. */
+      hot.push({ x: s.x, y: s.y, w: s.w, h: s.h, id: 'stall', i: i,
+                 a: s.sel ? 'confirm' : undefined });
     }
 
     /* the card. flat tint: the menu backdrop scrolls behind it */
     Tint.rect(ctx, 0, CARD_Y, VW, 86, UI.C.darker, 12);
     UI.rule(ctx, 40, CARD_Y, VW - 80, UI.C.inkFaint);
 
-    /* chevrons at a fixed x, so they do not twitch as names change width */
-    UI.chevron(ctx, 150 - arrowBob(), 184, -1, 6, index > 0 ? UI.C.gold : UI.C.inkFaint);
-    UI.chevron(ctx, 330 + arrowBob(), 184, 1, 6,
-               index < Doodads.list.length - 1 ? UI.C.gold : UI.C.inkFaint);
-
     if (open) drawOpenCard(ctx, d, r, lv);
     else drawLockedCard(ctx, d);
 
-    ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(0, VH - 13, VW, 13);
-    ctx.fillStyle = UI.C.inkFaint;
-    ctx.fillRect(0, VH - 13, VW, 1);
-    UI.text(ctx, open ? UI.forInput('◀ ▶ PICK    ENTER FLY    ESC LEVELS',
-                                    '◀ ▶ PICK    CLICK FLY    ESC LEVELS',
-                                    '◀ ▶ PICK    TAP TO FLY    BACK')
-                      : UI.forInput('◀ ▶ PICK    LOCKED    ESC LEVELS',
-                                    '◀ ▶ PICK    LOCKED    ESC LEVELS',
-                                    '◀ ▶ PICK    LOCKED    BACK'),
-            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
+    UI.footer(ctx,
+      open ? '◀ ▶ PICK    ENTER FLY    ESC LEVELS'
+           : '◀ ▶ PICK    LOCKED    ESC LEVELS',
+      open ? 'CLICK A STALL, AGAIN TO FLY    ESC LEVELS'
+           : 'CLICK A STALL    LOCKED    ESC LEVELS');
   }
 
   function drawOpenCard(ctx, d, r, lv) {
@@ -11327,12 +11609,12 @@ var CharSelectScene = (function () {
   }
 
   function drawLockedCard(ctx, d) {
-    var hot = denyFlash > 0;
-    UI.padlock(ctx, 190, 184, 2, hot ? UI.C.red : UI.C.inkDim);
+    var denied = denyFlash > 0;
+    UI.padlock(ctx, 190, 184, 2, denied ? UI.C.red : UI.C.inkDim);
     UI.heading(ctx, '? ? ?', 257, 174, 3, { colour: UI.C.inkDim });
     var req = Doodads.requirement(d);
     UI.text(ctx, req.price, VW / 2, 198,
-            { align: 'center', spacing: 2, colour: hot ? UI.C.red : UI.C.gold });
+            { align: 'center', spacing: 2, colour: denied ? UI.C.red : UI.C.gold });
     UI.text(ctx, d.lockedAbout[0], VW / 2, 210, { align: 'center', colour: UI.C.inkDim });
     UI.text(ctx, d.lockedAbout[1], VW / 2, 219, { align: 'center', colour: UI.C.inkDim });
 
@@ -11392,10 +11674,9 @@ var CharSelectScene = (function () {
     UI.text(ctx, 'NEW', x + 11, y + 1, { align: 'center', colour: UI.C.ink, shadow: null });
   }
 
-  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
-
   return { enter: enter, refresh: refresh, update: update,
-           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg };
+           drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();
 </script>
 <script>
@@ -11546,6 +11827,14 @@ var PlayScene = (function () {
   ];
 
   var player = { x: X_START, y: 0, vy: 0, vx: 0, angle: 0, flapTimer: 0, spin: 0 };
+
+  /* The rectangles the panels drew, refilled inside drawFg and handed to
+     Input by Game.render. A RUN itself never publishes any: a tap anywhere is
+     a flap, and the two movement pads and the pause button belong to Input's
+     own table. These are the boards on the panels that interrupt a run - the
+     pause panel, the results rows, the initials board - which is exactly
+     where a tap used to fire whatever the invisible cursor was sitting on. */
+  var hot = [];
 
   /* ----------------------------------------------------------- init */
 
@@ -11734,13 +12023,14 @@ var PlayScene = (function () {
     Audio3.play('splat');
   }
 
-  function splatter(x, y, hot, n) {
+  /* `spiced` rather than `hot`: `hot` is this scene's target list */
+  function splatter(x, y, spiced, n) {
     for (var i = 0; i < n; i++) {
       particles.push({ x: x + rand(-3, 3), y: y + rand(-3, 3),
                        vx: rand(-64, 64) - speed * 0.12, vy: rand(-120, -20),
                        life: rand(0.3, 0.8), g: 380,
-                       col: hot ? (chance(0.5) ? FX.hotMid : FX.hot)
-                                : (chance(0.45) ? FX.splatHi : FX.splat) });
+                       col: spiced ? (chance(0.5) ? FX.hotMid : FX.hot)
+                                   : (chance(0.45) ? FX.splatHi : FX.splat) });
     }
   }
 
@@ -12556,11 +12846,18 @@ var PlayScene = (function () {
     entryPending = false;
     state = 'entry';
     Input.setTextMode(true);
-    Input.setTouchMode('text');
+    /* the touch mode stays 'menu' - no pads, no rest zone. The controls are
+       the plates and pads this screen draws for itself, so a tap that lands
+       on none of them does nothing rather than saving a name nobody chose. */
     Audio3.play(rank === 0 ? 'start' : 'select');
   }
 
   function updateEntry() {
+    /* the tapped column becomes the cursor's column FIRST, so the ▲ and ▼
+       a finger just pressed - which arrive below as nav('up')/nav('down'),
+       exactly as the arrow keys do - act on the letter they sit under */
+    var tg = Input.tapped();
+    if (tg && tg.i !== undefined) cursor = tg.i;
     var keys = Input.typed();
     if (keys.length) {
       for (var i = 0; i < keys.length; i++) {
@@ -12629,7 +12926,20 @@ var PlayScene = (function () {
 
     if (state === 'paused') {
       if (Game.locked()) return;
-      if (Input.hit('pause') || Input.hit('confirm')) { state = prePause; Audio3.play('pause'); }
+      /* the only other thing on the panel. Read before the resume lines
+         below, because QUIT carries no action of its own and the paused
+         mode's rest zone would otherwise resume out from under it. */
+      var tg = Input.tapped();
+      if (tg && tg.id === 'quit') {
+        Audio3.play('back');
+        Game.go(LevelSelectScene, { focus: 'level' });
+        return;
+      }
+      if (Input.hit('pause') || Input.hit('confirm')) {
+        state = prePause;
+        Input.setTouchMode('play');
+        Audio3.play('pause');
+      }
       if (Input.hit('back')) { Audio3.play('back'); Game.go(LevelSelectScene, { focus: 'level' }); }
       return;
     }
@@ -12676,14 +12986,26 @@ var PlayScene = (function () {
       if (!Game.locked()) {
         if (Input.hit('up')) { state = 'play'; player.vy = 0; flap(); }
         if (Input.hit('back')) { Audio3.play('back'); Game.go(CharSelectScene, {}); }
-        if (Input.hit('pause')) { prePause = 'ready'; state = 'paused'; Audio3.play('pause'); }
+        if (Input.hit('pause')) {
+          prePause = 'ready'; state = 'paused';
+          Input.setTouchMode('paused');
+          Audio3.play('pause');
+        }
       }
       return;
     }
 
     if (state === 'play') {
       if (!Game.locked()) {
-        if (Input.hit('pause')) { prePause = 'play'; state = 'paused'; Audio3.play('pause'); return; }
+        if (Input.hit('pause')) {
+          prePause = 'play'; state = 'paused';
+          /* the run's rule - a tap anywhere flaps - is exactly wrong on a
+             pause panel, so paused is its own mode where a tap anywhere
+             resumes instead */
+          Input.setTouchMode('paused');
+          Audio3.play('pause');
+          return;
+        }
         if (Input.hit('up')) flap();
       }
       runTime += dt;
@@ -12735,6 +13057,13 @@ var PlayScene = (function () {
       deadTimer += dt;
       if (deadTimer < 0.45 || Game.locked()) return;
       if (entryPending) { if (deadTimer > 0.7) beginEntry(); return; }
+      /* The rows ARE the buttons now. Tapping the word TITLE used to fire
+         confirm on whatever the marker happened to be on - usually RETRY -
+         so a player could press exactly what they wanted and reliably get
+         something else. The row carries a:'confirm', so this only has to
+         move the cursor onto it before the confirm line below reads it. */
+      var tg = Input.tapped();
+      if (tg && tg.id === 'row') menuIndex = tg.i;
       if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
       if (Input.nav('down')) { menuIndex = (menuIndex + 1) % MENU.length; Audio3.play('move'); }
       if (Input.hit('confirm')) { Audio3.play('select'); MENU[menuIndex].act(); }
@@ -12929,6 +13258,7 @@ var PlayScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     if (flash > 0) { ctx.fillStyle = '#f7e6c0'; ctx.fillRect(0, 0, VW, VH); }
     if (saveFlash > 0) {
       /* a wash, not a white-out: the run carries straight on and the player
@@ -12962,13 +13292,15 @@ var PlayScene = (function () {
 
     /* score */
     if (state !== 'dead') {
-      var hot = spicy > 0;
+      /* `spiced`, not `hot`: `hot` is this scene's target list and `var` is
+         function-scoped, so a local of that name in here would hide it */
+      var spiced = spicy > 0;
       var s = scorePop > 0 ? 4 : 3;
       UI.heading(ctx, String(score), VW / 2, 34 - (scorePop > 0 ? 3 : 0), s, {
-        colour: hot ? (scorePop > 0 ? '#ffe9bd' : '#ffb45c')
-                    : (scorePop > 0 ? '#fff3d0' : UI.C.ink),
-        outline: hot ? '#5c1a08' : UI.C.shadow,
-        wave: hot ? t * 9 : undefined, waveAmp: 1
+        colour: spiced ? (scorePop > 0 ? '#ffe9bd' : '#ffb45c')
+                       : (scorePop > 0 ? '#fff3d0' : UI.C.ink),
+        outline: spiced ? '#5c1a08' : UI.C.shadow,
+        wave: spiced ? t * 9 : undefined, waveAmp: 1
       });
       drawChase(ctx, 34 + s * 7 + 4);
       drawLives(ctx);
@@ -13175,7 +13507,8 @@ var PlayScene = (function () {
     if (state === 'dead' || state === 'entry') return;
     if (passedTimer > 0) {
       if (Math.floor(passedTimer * 8) % 2 || passedTimer < 1.0) {
-        UI.text(ctx, '\u25B2 PASSED ' + passedName, VW / 2, y, { align: 'center', colour: UI.C.gold });
+        /* no triangle: one lives in a pad and means "move this way" */
+        UI.text(ctx, 'PASSED ' + passedName, VW / 2, y, { align: 'center', colour: UI.C.gold });
       }
       return;
     }
@@ -13196,8 +13529,8 @@ var PlayScene = (function () {
             { align: 'center', colour: doodad.accentLight, spacing: 2 });
     UI.panel(ctx, VW / 2 - 92, y, 184, 44, { fill: UI.C.darker, dither: 13, edge: UI.C.inkFaint });
     var rows = [
-      ['FLY',   UI.forInput('SPACE / UP / W', 'SPACE / CLICK',  'TAP THE SCREEN')],
-      ['MOVE',  UI.forInput('◀ ▶ / A D',      '◀ ▶ / THE PADS', 'THE ◀ ▶ PADS')],
+      ['FLY',   UI.forInput('SPACE / UP / W', 'SPACE / CLICK',  'TAP ANYWHERE')],
+      ['MOVE',  UI.forInput('◀ ▶ / A D',      '◀ ▶ / THE PADS', '◀ ▶ PADS')],
       ['PAUSE', UI.forInput('P',              'P / II',         'II TOP RIGHT')]
     ];
     for (var i = 0; i < rows.length; i++) {
@@ -13205,8 +13538,6 @@ var PlayScene = (function () {
       UI.text(ctx, rows[i][0], VW / 2 + 84, y + 7 + i * 11, { align: 'right', colour: UI.C.inkDim });
     }
     UI.hint(ctx, UI.forInput('PRESS UP TO FLY', 'CLICK OR PRESS UP TO FLY', 'TAP TO FLY'), 132, t);
-    /* a chevron bouncing above the doodad */
-    UI.chevronV(ctx, player.x, player.y - 26 + Math.round(Math.sin(t * 6) * 2), -1, 4, UI.C.gold);
   }
 
   function drawPause(ctx) {
@@ -13215,6 +13546,28 @@ var PlayScene = (function () {
     UI.board(ctx, x, y, w, h, { highlight: UI.C.gold });
     UI.text(ctx, 'PAUSED', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
     UI.rule(ctx, x + 12, y + 28, w - 24, UI.C.boardLo);
+
+    /* On a phone the panel is two boards and nothing else. It used to be a
+       list of key hints for keys the phone does not have, ending in "TAP II
+       TO RESUME" - written across the middle of the screen, with the II
+       outside the panel it was talking about. A tap anywhere resumes (the
+       paused mode's rest zone), and RESUME is lit to say so; QUIT is the
+       only other thing there is, which is also the way out of GET READY. */
+    if (UI.touch()) {
+      /* The panel itself, first and therefore underneath both boards: a tap
+         that lands on the wood between them, or below QUIT, hits this and
+         does nothing. Without it the paused mode's tap-anywhere-resumes rule
+         reached inside the panel too, so a thumb that missed QUIT by a few
+         pixels resumed the run instead - and a run resumed by accident is a
+         doodad already falling. Outside the panel the rule still holds, which
+         is what makes the big obvious gesture work. */
+      hot.push({ x: x, y: y, w: w, h: h, id: 'panel' });
+      UI.button(ctx, hot, x + 16, y + 38, w - 32, 32,
+                { id: 'resume', a: 'confirm', label: 'RESUME', lit: true });
+      UI.button(ctx, hot, x + 16, y + 76, w - 32, 32,
+                { id: 'quit', label: 'QUIT TO LEVELS' });
+      return;
+    }
 
     /* a finger has no keys, so touch replaces the list; a cursor has the
        whole keyboard beside it, so it shares each line instead */
@@ -13232,25 +13585,25 @@ var PlayScene = (function () {
       ['SOUND', 'M'],
       ['FULLSCREEN', 'F'],
       ['QUIT TO LEVELS', 'ESC']
-    ], [
-      ['FLY', 'TAP THE SCREEN'],
-      ['MOVE', 'THE ◀ ▶ PADS'],
-      ['PAUSE', 'II TOP RIGHT'],
-      ['RESUME', 'TAP II AGAIN']
-    ]);
+    ], null);   /* touch never gets this far - it left with two boards above */
     for (var i = 0; i < rows.length; i++) {
       var ry = y + 36 + i * 11;
       UI.text(ctx, rows[i][0], x + 16, ry, { colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, rows[i][1], x + w - 16, ry, { align: 'right', colour: '#e8c98a', shadow: UI.C.shadow });
     }
-    UI.hint(ctx, UI.forInput('PRESS P TO RESUME', 'PRESS P OR CLICK II', 'TAP II TO RESUME'),
+    /* a click anywhere resumes too: the paused mode's rest zone is confirm,
+       and the mouse runs through the very same zones a finger does */
+    UI.hint(ctx, UI.forInput('PRESS P TO RESUME', 'CLICK ANYWHERE TO RESUME', ''),
             y + h + 8, t);
   }
 
   /* results (or initials entry) on the left, the table on the right */
   function drawGameOver(ctx) {
     UI.scrim(ctx, 11);
-    var lx = 66, lw = 156, rx = 230, rw = 184, y = 46, h = 156;
+    /* The board grew from 156 tall to 210 so that four menu rows can be 30
+       tall each - 42 CSS px on a phone - rather than the rows shrinking to
+       fit a board sized for a list you only ever read. */
+    var lx = 66, lw = 156, rx = 230, rw = 184, y = 30, h = 210;
     var entering = state === 'entry' || entryPending;
     var headline = rank === 0 ? 'HIGH SCORE!' : (rank > 0 ? 'RANKED ' + Scores.ordinal(rank) : 'GAME OVER');
     var flashing = rank === 0 && Math.floor(t * 4) % 2;
@@ -13270,55 +13623,67 @@ var PlayScene = (function () {
   }
 
   function drawResultsMenu(ctx, lx, lw, y) {
-    var hi = board.length ? Math.max(board[0].score, score) : score;
-    UI.text(ctx, 'HI', lx + 14, y + 50, { colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, String(savedRow === 0 ? score : hi), lx + lw - 14, y + 50,
-            { align: 'right', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    /* the HI line went: the table sitting beside this board already has the
+       best score in it, on its own top row, in gold */
     if (unlocked.length) {
       var won = unlocked[unlocked.length - 1];
-      UI.text(ctx, won.name + ' UNLOCKED!', lx + lw / 2, y + 63,
+      UI.text(ctx, won.name + ' UNLOCKED!', lx + lw / 2, y + 54,
               { align: 'center', colour: Math.floor(t * 3) % 2 ? won.accentLight : UI.C.gold,
                 shadow: UI.C.shadow });
     } else if (pbNew && score > 0) {
-      UI.text(ctx, 'NEW ' + doodad.name + ' BEST!', lx + lw / 2, y + 63,
+      UI.text(ctx, 'NEW ' + doodad.name + ' BEST!', lx + lw / 2, y + 54,
               { align: 'center', colour: doodad.accentLight, shadow: UI.C.shadow });
     }
-    UI.rule(ctx, lx + 10, y + 78, lw - 20, UI.C.boardLo);
+    UI.rule(ctx, lx + 10, y + 66, lw - 20, UI.C.boardLo);
 
+    /* Four boards, with the one you almost certainly want lit. This was the
+       worst thing in the game: a vertical list navigated by two horizontal
+       pads in the far corner, with the words themselves inert - so tapping
+       TITLE started another run. */
     for (var i = 0; i < MENU.length; i++) {
-      var my = y + 90 + i * 15;
-      var sel = i === menuIndex;
-      UI.text(ctx, MENU[i].label, lx + lw / 2 + 4, my, {
-        align: 'center', colour: sel ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow
-      });
-      if (sel) UI.marker(ctx, lx + lw / 2 - Font.measure(MENU[i].label, 1) / 2 - 10, my + 3, t);
+      UI.button(ctx, hot, lx + 10, y + 72 + i * 34, lw - 20, 30,
+                { id: 'row', i: i, a: 'confirm', label: MENU[i].label, lit: i === menuIndex });
     }
   }
 
+  /* Three letters, each with its own pair of pads, and one SAVE board.
+
+     This used to be a row of five identical pads in the bottom left corner -
+     left, right, up, down and SAVE - driving three letters at the other end
+     of the screen, with the letters themselves inert. The obvious thing to
+     press did nothing at all. Now the column you want is the column you
+     touch, the arrows sit directly above and below the letter they change,
+     and the initials arrive pre-filled with the last name saved, so most of
+     the time SAVE is the only thing anyone has to press. */
   function drawEntry(ctx, lx, lw, y) {
     var cx = lx + lw / 2;
-    UI.text(ctx, 'ENTER YOUR INITIALS', cx, y + 62, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    UI.text(ctx, 'ENTER YOUR INITIALS', cx, y + 54, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
 
-    var slot = 22, gw = Font.GW * 3, sx = Math.round(cx - slot - gw / 2), ly = y + 86;
     for (var i = 0; i < 3; i++) {
-      var x = sx + i * slot;
+      var c = cx + (i - 1) * 36, x = c - 17;
       var active = i === cursor;
-      UI.text(ctx, initials[i] === ' ' ? '_' : initials[i], x, ly, {
+      UI.button(ctx, hot, x, y + 66, 34, 26, { id: 'up', i: i, a: 'up', label: '\u25B2', scale: 1 });
+      /* the letter plate. Tapping it only moves the cursor here - a letter
+         is not a verb, and nothing on this screen may lose a score. */
+      UI.panel(ctx, x, y + 96, 34, 36, {
+        fill: UI.C.darker, edge: active ? UI.C.gold : UI.C.inkFaint
+      });
+      hot.push({ x: x, y: y + 96, w: 34, h: 36, id: 'slot', i: i });
+      UI.text(ctx, initials[i] === ' ' ? '_' : initials[i], c - 8, y + 103, {
         scale: 3, colour: active ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow
       });
       ctx.fillStyle = active ? UI.C.gold : UI.C.boardLo;
-      ctx.fillRect(x - 1, ly + 24, gw + 2, 2);
-      if (active) {
-        var bob = Math.round(Math.sin(t * 7));
-        UI.chevronV(ctx, x + gw / 2, ly - 6 - bob, -1, 3, UI.C.gold);
-        UI.chevronV(ctx, x + gw / 2, ly + 31 + bob, 1, 3, UI.C.gold);
-      }
+      ctx.fillRect(x + 3, y + 128, 28, 2);
+      UI.button(ctx, hot, x, y + 136, 34, 26, { id: 'down', i: i, a: 'down', label: '\u25BC', scale: 1 });
     }
-    UI.text(ctx, UI.forInput('TYPE, OR \u25B2\u25BC \u25C0\u25B6', 'TYPE, OR USE THE PADS',
-                             'USE THE PADS BELOW'),
-            cx, y + 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-    UI.text(ctx, UI.forInput('ENTER TO SAVE', 'ENTER OR SAVE', 'THEN SAVE'),
-            cx, y + 139, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+
+    UI.button(ctx, hot, lx + 10, y + 172, lw - 20, 32,
+              { id: 'save', a: 'confirm', label: 'SAVE', lit: true });
+
+    /* a keyboard still has to be told it can just type; a phone is looking
+       straight at every control it has */
+    var line = UI.forInput('TYPE, OR \u25B2 \u25BC \u25C0 \u25B6    ENTER SAVES', 'TYPE, OR CLICK    ENTER SAVES', '');
+    if (line) UI.text(ctx, line, cx, y + 218, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
   }
 
   /* the top ten, with this run slotted in live while initials are typed */
@@ -13334,15 +13699,17 @@ var PlayScene = (function () {
       if (rows.length > Scores.SIZE) rows.length = Scores.SIZE;
     }
 
+    /* 16px rows rather than 12: the board beside this one grew to fit four
+       pressable menu rows, so there is the height here to spend */
     for (var i = 0; i < Scores.SIZE; i++) {
-      var ry = y + 30 + i * 12;
+      var ry = y + 32 + i * 16;
       var e = rows[i];
-      var hot = i === mark && mark >= 0;
-      if (hot && (entering || deadTimer < 4 ? Math.floor(t * 5) % 2 === 0 : true)) {
+      var mine = i === mark && mark >= 0;
+      if (mine && (entering || deadTimer < 4 ? Math.floor(t * 5) % 2 === 0 : true)) {
         ctx.fillStyle = '#4a3017';
-        ctx.fillRect(x + 3, ry - 2, w - 6, 11);
+        ctx.fillRect(x + 3, ry - 3, w - 6, 14);
       }
-      var ink = hot ? UI.C.gold : (e ? Scores.rankColour(i) : UI.C.inkFaint);
+      var ink = mine ? UI.C.gold : (e ? Scores.rankColour(i) : UI.C.inkFaint);
       UI.text(ctx, Scores.ordinal(i), x + 8, ry, { colour: e ? Scores.rankColour(i) : UI.C.inkFaint });
       if (!e) {
         UI.text(ctx, '- - -', x + 40, ry, { colour: UI.C.inkFaint });
@@ -13357,6 +13724,7 @@ var PlayScene = (function () {
 
   return {
     enter: enter, exit: exit, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+    targets: function () { return hot; },
     /* a window into the run, for tuning and for testing */
     inspect: function () { return { state: state, player: player, obstacles: obstacles,
                                     score: score, runTime: runTime, rank: rank,
@@ -13401,6 +13769,15 @@ var ScoresScene = (function () {
   var PX = 70, PW = 340, PY = 48, PH = 190;
   var ROW0 = 66, ROWH = 17;
 
+  /* The rectangles this screen drew, refilled inside drawFg and handed to
+     Input by Game.render. The pair of triangles that used to sit either side
+     of the level's name were the title screen's selection marker glyph
+     meaning something else entirely, and the controls that actually paged the
+     table were two pads in the opposite corner. Now the triangle IS the
+     control, it sits in a raised pad beside the table it pages, and there is
+     nothing else on the screen a tap can land on. */
+  var hot = [];
+
   function current() { return list[index]; }
 
   function enter() {
@@ -13422,6 +13799,12 @@ var ScoresScene = (function () {
     if (Game.locked()) return;
 
     if (confirming) {
+      /* KEEP carries no action of its own - a button that undoes something
+         should not share a key with the button that does it - so it is read
+         here. RESET carries a:'confirm' and falls into the line below, the
+         same one ENTER uses. */
+      var tgc = Input.tapped();
+      if (tgc && tgc.id === 'keep') { confirming = false; Audio3.play('move'); return; }
       if (Input.hit('confirm')) {
         Scores.erase(current().room, current().level);
         confirming = false;
@@ -13433,6 +13816,11 @@ var ScoresScene = (function () {
       }
       return;
     }
+
+    /* the side pads carry a:'left' / a:'right' and fall straight into the
+       paging code below, so only BACK needs a word here */
+    var tg = Input.tapped();
+    if (tg && tg.id === 'back') { Audio3.play('back'); Game.go(TitleScene, { menu: 1 }); return; }
 
     if (Input.nav('left') || Input.nav('right')) {
       if (list.length < 2) { Audio3.play('deny'); Screen.shake(1.2, 0.16); }
@@ -13499,22 +13887,33 @@ var ScoresScene = (function () {
   }
 
   function drawFg(ctx) {
+    hot.length = 0;
     var c = current();
-    /* two line footer: everyone's bests, then the controls */
+    /* The bests row, and on a keyboard the key hints under it. A phone gets
+       no hint line at all - UI.footer leaves it out - so the strip shrinks to
+       the one row of content that is not a caption for a button. */
+    var strip = UI.touch() ? 18 : 28;
     ctx.fillStyle = UI.C.darker;
-    ctx.fillRect(0, VH - 28, VW, 28);
+    ctx.fillRect(0, VH - strip, VW, strip);
     ctx.fillStyle = UI.C.inkFaint;
-    ctx.fillRect(0, VH - 28, VW, 1);
-    UI.rule(ctx, 40, VH - 14, VW - 80, UI.C.inkFaint);
+    ctx.fillRect(0, VH - strip, VW, 1);
 
     UI.heading(ctx, 'HIGH SCORES', VW / 2, 8, 2, { colour: UI.C.gold });
+
+    /* The way back, and the two that page the table. Only drawn once
+       something is pointing, the same rule the pads follow; a keyboard has
+       ◀ ▶ and ESC and does not need them taking up the room. */
+    if (Input.pointing() && !confirming) {
+      UI.button(ctx, hot, 6, 4, 44, 32, { id: 'back', label: 'BACK', scale: 1 });
+      if (list.length > 1) {
+        UI.button(ctx, hot, 26, 122, 36, 44, { id: 'prev', a: 'left', label: '◀' });
+        UI.button(ctx, hot, VW - 62, 122, 36, 44, { id: 'next', a: 'right', label: '▶' });
+      }
+    }
+
     if (c) {
       var label = c.room.name + '  ·  ' + c.level.name;
       UI.text(ctx, label, VW / 2, 30, { align: 'center', colour: UI.C.ink });
-      var half = Font.measure(label, 1) / 2;
-      var live = list.length > 1 ? UI.C.gold : UI.C.inkFaint;
-      UI.chevron(ctx, VW / 2 - half - 10, 33, -1, 4, live);
-      UI.chevron(ctx, VW / 2 + half + 10, 33, 1, 4, live);
 
       /* Each doodad's own best on this level, plus a count of the ones
          still boarded up. Only the earned ones are named: the row was
@@ -13534,7 +13933,7 @@ var ScoresScene = (function () {
          carried it to five doodads and had bottomed out at seven, where it
          filled the screen to both edges with nothing to spare - and the
          art folder has four more in it. */
-      var BUDGET = VW - 20, by = VH - 24;
+      var BUDGET = VW - 20, by = UI.touch() ? VH - 12 : VH - 24;
       var gap = 16, label = true, show = parts, hidden = 0;
       var tail = function () { return hidden ? '+' + hidden : ''; };
       var measure = function () {
@@ -13575,25 +13974,37 @@ var ScoresScene = (function () {
       }
     }
 
-    UI.text(ctx, UI.forInput('◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
-                             '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
-                             '◀ ▶ LEVEL    BACK'),
-            VW / 2, VH - 10, { align: 'center', colour: UI.C.inkDim });
+    /* drawn over the bottom 13px of the strip above, and not at all on a
+       phone - where the arrows and the way back are buttons you can press */
+    UI.footer(ctx, '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                   '◀ ▶ LEVEL    X RESET TABLE    ESC BACK');
 
     if (confirming && c) {
       UI.scrim(ctx, 10);
-      var w = 236, h = 74, x = (VW - w) / 2, y = (VH - h) / 2;
+      var w = 236, h = 100, x = (VW - w) / 2, y = (VH - h) / 2;
       UI.board(ctx, x, y, w, h, { highlight: UI.C.red });
       UI.text(ctx, 'RESET ' + c.level.name + '?', VW / 2, y + 9, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
       UI.text(ctx, 'BACK TO THE DOODADS\' OWN SCORES.', VW / 2, y + 31, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
-      UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 46, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
-      UI.text(ctx, UI.forInput('ENTER RESET    ESC KEEP', 'CLICK RESET    ESC KEEPS',
-                               'TAP RESET    BACK KEEPS'),
-              VW / 2, y + 62, { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+      UI.text(ctx, 'PERSONAL BESTS ARE KEPT.', VW / 2, y + 45, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+      /* Two boards, because this question has to be answerable by whatever
+         is pointing at it. It used to be answerable only by a KEY: the panel
+         read TAP RESET while drawing nothing tappable, and with the menu's
+         old tap-anywhere zone gone there was no way to answer or dismiss it
+         at all - a phone that reached this screen was stuck on it. */
+      if (Input.pointing()) {
+        UI.button(ctx, hot, VW / 2 - 104, y + 60, 96, 28,
+                  { id: 'reset', a: 'confirm', label: 'RESET', lit: true, scale: 1 });
+        UI.button(ctx, hot, VW / 2 + 8, y + 60, 96, 28,
+                  { id: 'keep', label: 'KEEP', scale: 1 });
+      } else {
+        UI.text(ctx, 'ENTER RESET    ESC KEEP', VW / 2, y + 66,
+                { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+      }
     }
   }
 
-  return { enter: enter, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg };
+  return { enter: enter, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
+           targets: function () { return hot; } };
 })();
 </script>
 <script>
@@ -13616,6 +14027,14 @@ var Game = (function () {
 
   var toastText = '', toastTime = 0;
   var rotateT = 0;
+
+  /* ?hit=1 outlines every rectangle the game is listening to this frame, in
+     red, over the top of everything. It is the only cheap way to check the
+     one rule the whole touch UI rests on - that a listened rectangle is a
+     drawn one - because the check is "does every red box sit exactly on
+     something that looks pressable, and does every pressable thing have
+     one". Left in the shipped build: it costs a regex at boot. */
+  var HIT_DEBUG = /[?&]hit=1/.test(location.search);
 
   var selection = {
     room: Levels.startRoom,
@@ -13707,15 +14126,39 @@ var Game = (function () {
     Screen.beginFrame();
     var bg = Screen.ctxBg, ch = Screen.ctxCh, fg = Screen.ctxFg;
 
+    /* A phone held upright gets the notice and nothing else. It is worked
+       out here, before a single rectangle is published, because the notice
+       covers the scene completely and a covered scene must not be listening:
+       see Input.setBlocked. */
+    var upright = Input.pointerKind() === 'touch' && Screen.portrait;
+
     if (scene) {
       if (scene.drawBg) scene.drawBg(bg);
+
+      /* The movement pads and the pause button go on the BACKGROUND layer,
+         above the world and UNDER the doodad. They used to be painted on the
+         foreground with everything else, which meant that holding LEFT and
+         flying low - the one moment the left pad is certainly in use - hid
+         the doodad behind the very button steering it, completely. Nothing
+         else about them changes; they are still Input's rectangles, drawn
+         from Input's table. Menus have no pads at all, so this only ever
+         paints during a run. */
+      if (Input.pointing()) UI.pads(bg);
+
       if (scene.drawChars) scene.drawChars(ch);
       if (scene.drawFg) scene.drawFg(fg);
     }
 
-    /* the on-screen controls belong to every scene, so they are drawn
-       here once rather than remembered in five different places */
-    if (Input.pointing()) UI.pads(fg);
+    /* This is where drawn becomes listened. The scene has just this moment
+       painted its boards, cards and stalls, and filled a list of their
+       rectangles while it did so; handing that list to Input here means the
+       next touch is tested against the frame the player is looking at. Doing
+       it from update() instead would test a finger against a layout that had
+       not been shown yet. */
+    Input.setTargets(upright ? null : (scene && scene.targets ? scene.targets() : null));
+    Input.setBlocked(upright);
+
+    if (HIT_DEBUG) drawHitBoxes(fg);
 
     if (toastTime > 0) {
       var a = Math.min(1, toastTime * 3);
@@ -13723,13 +14166,16 @@ var Game = (function () {
         /* sized to the words: the old fixed 76px panel clipped anything
            longer than about twelve characters */
         var tw = Font.measure(toastText, 1) + 12;
-        UI.panel(fg, VW - tw - 6, 6, tw, 13, { fill: UI.C.darker, edge: UI.C.inkFaint });
-        UI.text(fg, toastText, VW - tw / 2 - 6, 10, { align: 'center', colour: UI.C.inkDim });
+        /* and shoved along when the pause button is up there with it, so
+           SOUND OFF does not park itself underneath the way out of a run */
+        var tx = VW - tw - 6 - ((Input.pointing() && Input.touchMode() !== 'menu') ? 46 : 0);
+        UI.panel(fg, tx, 6, tw, 13, { fill: UI.C.darker, edge: UI.C.inkFaint });
+        UI.text(fg, toastText, tx + tw / 2, 10, { align: 'center', colour: UI.C.inkDim });
       }
     }
 
     /* nothing below this point is worth showing if the phone is upright */
-    if (Input.pointerKind() === 'touch' && Screen.portrait) UI.rotateNotice(fg, rotateT);
+    if (upright) UI.rotateNotice(fg, rotateT);
 
     if (wipe > 0) Dither.wipe(fg, wipe, '#0b0805');
 
@@ -13740,6 +14186,22 @@ var Game = (function () {
   }
 
   function toast(str) { toastText = str; toastTime = 1.5; }
+
+  /* every rectangle a press could land on: the mode's pads first, then the
+     scene's own targets. The rest zone has no rectangle to draw - it is
+     whatever is left over - so it is skipped. */
+  function drawHitBoxes(ctx) {
+    var pads = Input.pads(), list = Input.targets(), i;
+    ctx.strokeStyle = '#ff2020';
+    ctx.lineWidth = 1;
+    for (i = 0; i < pads.length; i++) if (!pads[i].rest) outline(ctx, pads[i]);
+    for (i = 0; i < list.length; i++) outline(ctx, list[i]);
+  }
+
+  function outline(ctx, r) {
+    ctx.strokeRect(Math.round(r.x) + 0.5, Math.round(r.y) + 0.5,
+                   Math.round(r.w) - 1, Math.round(r.h) - 1);
+  }
 
   /* ---------------------------------------------------------- boot */
 
