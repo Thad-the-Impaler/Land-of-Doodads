@@ -19,7 +19,7 @@ var Game = (function () {
 
   var selection = {
     room: Levels.startRoom,
-    level: 1,
+    level: 0,
     doodad: 'cookie'                 /* replaced in init(), see pickDoodad */
   };
 

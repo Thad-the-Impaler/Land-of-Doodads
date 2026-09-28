@@ -1,7 +1,10 @@
 /* ------------------------------------------------------------------
    Land of Doodads - rooms and levels
-   Locked placeholders sit either side of the real entries so the
-   carousels read the way they will once there is more to pick from.
+   Locked placeholders stand in for what has not been built yet, so the
+   carousels read the way they will once there is more to pick from: two
+   rooms either side of the BACKYARD, and one bay to the left of THE COOP.
+   The five built levels run in the order they are earned in, each one
+   gated on the one before it.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -72,13 +75,135 @@ var Levels = (function () {
     }
   };
 
+  /* THE DECK sits between the Garden's pace and the Canopy's. Its second
+     hazard is the only one in the game that switches itself off: a mister
+     is lethal for about a quarter of its cycle, so it can reach further
+     than the mint does and still be fair. */
+  var DECK = {
+    id: 'deck',
+    name: 'THE DECK',
+    code: '1-3',
+    unlock: { room: 'backyard', level: 'garden', score: 20 },
+    blurb: ['PATIO HEATERS AND MISTERS.', 'IT CANNOT PICK A SEASON.'],
+    art: Deck,
+    tune: {
+      /* 111 and 176 are not arbitrary: js/deck.js keys the mister clock to
+         250px of scroll and says in its own comment that this is 2.3
+         seconds at speedStart and 1.4 at speedMax. Move these and that
+         comment stops being true. */
+      speedStart: 111, speedMax: 176, speedRamp: 0.83,
+      gapStart: 103, gapMin: 78, gapRamp: 0.31,
+      spacingStart: 227, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 56,
+      /* the misters come on a shade earlier than the mint does */
+      spikeScore: 14,
+      spikeChance: 0.31, spikeChanceMax: 0.65,
+      /* A mister's length INCLUDES its plumbing - the level takes 10px off
+         a ceiling head and 14 off a floor one to get the jet - so these
+         are the Garden's mint lengths with the riser added back on, and
+         the water reaches about as far as the mint ever did. */
+      spikeCeilMin: 24, spikeCeilMax: 38,
+      spikeFloorMin: 30, spikeFloorMax: 46,
+      /* apples from 7, the same as the tomatoes; the golden one is the
+         level's own business and deliberately not a key here */
+      dropScore: 7,
+      dropEvery: 2.4, dropEveryMin: 1.05, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      spicyChance: 0.085,
+      /* the same potted succulent the Garden grows, and just as rare */
+      boonChance: 0.030, boonGap: 10
+    }
+  };
+
+  var CANOPY = {
+    id: 'canopy',
+    name: 'THE CANOPY',
+    code: '1-4',
+    unlock: { room: 'backyard', level: 'deck', score: 25 },
+    blurb: ['UP A TREE THAT GROWS APPLES.', 'AND ORANGES. AND LIMES.'],
+    art: Canopy,
+    /* straight from the numbers js/canopy.js asks for in its own header */
+    tune: {
+      speedStart: 114, speedMax: 178, speedRamp: 0.84,
+      gapStart: 102, gapMin: 78, gapRamp: 0.31,
+      spacingStart: 226, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 58,
+      /* nobody pruned up here, so the twigs are in from early on */
+      spikeScore: 12, spikeChance: 0.32, spikeChanceMax: 0.66,
+      spikeCeilMin: 18, spikeCeilMax: 32,
+      spikeFloorMin: 20, spikeFloorMax: 36,
+      dropScore: 6,
+      dropEvery: 2.3, dropEveryMin: 1.0, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      /* The power-up here is a LIME, and a lime is not a hot pepper wearing
+         green: it is the sour one. It shrinks the doodad instead of doubling
+         the score, and this level has no spicy at all - which is why there
+         is no spicyChance here and why the engine's sour path exists. */
+      sourChance: 0.09,
+      /* and the spare life is a split pomegranate off the ceiling */
+      boonChance: 0.032, boonGap: 10
+    }
+  };
+
+  var CONSTRUCTION = {
+    id: 'construction',
+    name: 'THE CONSTRUCTION ZONE',
+    code: '1-5',
+    unlock: { room: 'backyard', level: 'canopy', score: 25 },
+    blurb: ['THREE YEARS OF DECK MATERIALS.', 'THE SAWS ARE STILL PLUGGED IN.'],
+    art: Construction,
+    tune: {
+      /* The last level leads on density rather than on raw speed, and the
+         speed is pinned from below anyway: js/construction.js gears the
+         blades to the world at one turn per 70px and states the result as
+         1.6 turns a second at speedStart and 2.5 at speedMax, which is
+         exactly 112 and 175. What makes this the hardest bay is that the
+         gaps are the tightest, the bays the closest together, the saws
+         never switch off and the lumber is heavy (DROP_GRAV 44). */
+      speedStart: 112, speedMax: 175, speedRamp: 0.86,
+      /* gapMin holds at 78 like the two levels before it. A flap lifts the
+         doodad 48px and the hitbox is 22 across, so 78 leaves 8px to time
+         it in; taking that lower is not difficulty, it is a coin toss. */
+      gapStart: 100, gapMin: 78, gapRamp: 0.32,
+      spacingStart: 224, spacingMin: 180, spacingRamp: 0.46,
+      gapDrift: 60,
+      /* somebody left the saws running, and they never stop */
+      spikeScore: 10,
+      spikeChance: 0.34, spikeChanceMax: 0.68,
+      /* A blade shows at most 2R-3 of itself past the line and the level
+         clamps to that, so anything past about 21 is a wasted roll. These
+         ask for most of a blade and let the clamp have the rest. */
+      spikeCeilMin: 14, spikeCeilMax: 20,
+      spikeFloorMin: 16, spikeFloorMax: 21,
+      /* the lid starts letting go earlier here than anywhere else */
+      dropScore: 5,
+      dropEvery: 2.2, dropEveryMin: 1.0, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      /* the butane can is the heat. The golden gear rides the very same
+         spawner and is worth points rather than time, so the can sits at
+         the Deck's rate rather than climbing again - between them this bay
+         sheds more power-ups than any other. */
+      spicyChance: 0.08,
+      /* the heart of junk: a spare life, a little less rare than the
+         pomegranate because everything else here is worse */
+      boonChance: 0.034, boonGap: 10
+    }
+  };
+
   var LOCKED_LEVEL = { id: 'locked', name: '? ? ?', code: '', locked: true,
                        blurb: ['SOMETHING IS BEING BUILT', 'OUT HERE. NOT YET.'] };
 
   var ROOMS = [
     { id: 'locked-a', name: '? ? ?', locked: true, levels: [LOCKED_LEVEL, LOCKED_LEVEL, LOCKED_LEVEL] },
+    /* startLevel is THE COOP, not the middle of the row: the carousel
+       defaults to the middle of whatever it is given, which with five bays
+       would open the room on a level nobody has earned yet. The Backyard
+       has no locked placeholder any more - these five are the room. */
     { id: 'backyard', name: 'BACKYARD', locked: false,
-      levels: [LOCKED_LEVEL, COOP, GARDEN], startLevel: 1 },
+      levels: [COOP, GARDEN, DECK, CANOPY, CONSTRUCTION], startLevel: 0 },
     { id: 'locked-b', name: '? ? ?', locked: true, levels: [LOCKED_LEVEL, LOCKED_LEVEL, LOCKED_LEVEL] }
   ];
 
@@ -161,7 +286,14 @@ var Levels = (function () {
     return reachedOn(r, lv) >= level.unlock.score;
   }
 
-  /* what a locked-but-earnable level costs, for the level select card */
+  /* What a locked-but-earnable level costs, for the level select card.
+     The levels are a chain now - the Canopy is bought with a score in the
+     Deck, which is itself bought with a score in the Garden - so `name` is
+     regularly a level the player has not opened either. That still reads:
+     the card says SCORE 25 IN THE DECK, and THE DECK is the card directly
+     to its left saying what IT costs. `have` is 0 until the level in
+     question has been played, which is the honest answer to "how close am
+     I", and reachedOn writes no score table to find it out. */
   function requirement(level) {
     if (!level || !level.unlock) return null;
     var r = roomById(level.unlock.room);
@@ -190,6 +322,9 @@ var Levels = (function () {
     startRoom: 1,
     coop: COOP,
     garden: GARDEN,
+    deck: DECK,
+    canopy: CANOPY,
+    construction: CONSTRUCTION,
     reachedOn: reachedOn, noteScore: noteScore,
     isUnlocked: isUnlocked, requirement: requirement, refresh: refresh,
     buildArt: buildArt,

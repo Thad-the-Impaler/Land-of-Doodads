@@ -102,10 +102,11 @@ Three more are boarded up until you earn them, and a fourth until you find him:
 | **Inari** | **nine succulents** | a grey cat, mildly disgusted, who let herself in |
 | **Saddam** | **find him** | a crawfish the size of a plum, waiting behind the bamboo |
 
-Not every price is a score. Inari costs **nine succulents**, the potted plant
-that only THE GARDEN grows, so she is earned by going and getting something
-rather than by surviving longer - and it is what she is worth, because what she
-brings is a spare life of her own.
+Not every price is a score. Inari costs **nine succulents**, the spare life the
+levels grow - the Garden's potted plant, and the Deck's pot, the Canopy's
+pomegranate and the Construction Zone's heart of junk with it - so she is earned
+by going and getting something rather than by surviving longer, and it is what
+she is worth, because what she brings is a spare life of her own.
 
 Saddam has no price - his stall just says `HE'S HIDING. CAN YOU FIND HIM?`
 **He is behind the tenth stake in THE GARDEN**,
@@ -160,25 +161,43 @@ localStorage.removeItem('doodads.passkey'); location.reload();
 
 ## The levels
 
-**THE COOP** (1-1) is open from the start. **THE GARDEN** (1-2) opens once you have
-reached **30** in the Coop, or with the master passkey. Its card sits on the level
-select from the first run showing the padlock, what it costs and how close you are -
-a level you cannot see is a level nobody chases.
+Five of them, and they are a chain: every one but the first is bought with a
+score on the one before it, so the BACKYARD opens a bay at a time.
 
-A level's art is a module of its own (`js/coop.js`, `js/garden.js`) implementing a
-shared contract, and `js/scene_play.js` never names one. Both grow the same five
+| | | opens on | |
+|---|---|---|---|
+| **THE COOP** | 1-1 | from the start | a DIY chicken coop the size of a barn |
+| **THE GARDEN** | 1-2 | **25** in the Coop | neat rows, once, before the mint got its way |
+| **THE DECK** | 1-3 | **20** in the Garden | the good furniture, under an apple tree |
+| **THE CANOPY** | 1-4 | **25** in the Deck | up inside that tree, weaving between the branches |
+| **THE CONSTRUCTION ZONE** | 1-5 | **25** in the Canopy | three years of deck materials, and the saws still plugged in |
+
+Every card sits on the level select from the first run showing the padlock, what
+it costs and how close you are - a level you cannot see is a level nobody
+chases. A locked card names the level you have to score in, which is often the
+card immediately to its left, still locked itself. The master passkey opens the
+lot.
+
+A level's art is a module of its own - `js/coop.js`, `js/garden.js`,
+`js/deck.js`, `js/canopy.js`, `js/construction.js` - implementing a shared
+contract, and `js/scene_play.js` never names one. All five grow the same five
 kinds of thing, themed differently:
 
-| | THE COOP | THE GARDEN |
-|---|---|---|
-| pillars | plank columns | bamboo stakes, with short thorny vines off the sides |
-| spikes | bent nails, from the start | mint sprouts, past **15**, and long |
-| falling | eggs, past 8 | tomatoes, past **7** |
-| the hot one | deviled egg | hot pepper |
-| dressing | feed, feathers, bedding | bark chips, fallen leaves, a paver |
-| the rare one | - | **a succulent in a pot** |
+| | pillars | spikes | falling | the power-up | dressing |
+|---|---|---|---|---|---|
+| THE COOP | plank columns | bent nails, from the start | eggs, past **8** | deviled egg | feed, feathers, bedding |
+| THE GARDEN | bamboo stakes, thorny vines off the sides | mint sprouts, past **15**, and long | tomatoes, past **7** | hot pepper | bark chips, fallen leaves, a paver |
+| THE DECK | bronze patio heaters | misters, past **14**, on a timer of their own | apples off the bough, past **7** | cinnamon apple | paint chips, windfall apples, a split log |
+| THE CANOPY | silhouetted trunk sections | twigs, past **12** - nobody pruned up here | apples and oranges, past **6** | a lime, which *shrinks* you | fallen fruit, dry leaves, a broken twig |
+| THE CONSTRUCTION ZONE | stacked lumber, strapped | buzzsaws, past **10**, and never off | beams off the lid, past **5** | a butane can | dropped screws, an offcut, sawdust |
 
-### The succulent
+Three of them also shed something **gold** - a golden apple in the Deck and the
+Canopy, a golden gear in the Construction Zone. It falls two or three times as
+fast as everything else, and it is the one thing in the game worth points for
+being *caught* rather than for being threaded: `GOLD +5`, flat, because the heat
+doubles what you fly past and not what you are handed.
+
+### The spare life
 
 A potted succulent occasionally sits on the ground in the Garden, glowing a cool
 jade that nothing else in the level wears. Fly into it and it buys back one mistake.
@@ -190,6 +209,13 @@ the world around it instead, so you are never revived into the pillar that just 
 you. You can hold two at a time; taking a third when the pot is full pays out points.
 They are deliberately rare - roughly one bay in thirty-five, and never two close
 together.
+
+Four of the five levels grow one, and it is the same spare life every time, in
+whatever the room has to hand: the Deck stands the identical pot on the boards,
+the Canopy hangs a split **pomegranate** off the ceiling, and the Construction
+Zone leaves a **heart of junk** on a pallet. Only the Coop grows none. They all
+glow the same jade, because a colour that means *one more mistake* has to mean
+it everywhere - and every one of them counts towards Inari's nine.
 
 ## Abilities
 
@@ -317,8 +343,27 @@ A gauge under the score counts the heat down and blinks when it is nearly out.
 Catching a second one while the first is still burning tops it up.
 
 Everything about them is tuned in `tune` on the level in `js/levels.js` -
-`eggScore` is the score they start at, and a level that leaves it out never
-sheds any.
+`dropScore` is the score they start at, and a level that leaves it out never
+sheds any. Every level past the Coop sheds something: tomatoes, apples, fruit,
+lumber. The machinery is the same in each, and only the art and the numbers
+change.
+
+### The lime
+
+THE CANOPY sheds the one power-up that is not heat. Roughly one fruit in eleven
+is a **lime**, and catching it does not set the run on fire - it shrinks you.
+
+The doodad eases down to **62%** of its size over about half a second and stays
+there for **7** seconds: the hitbox radius goes 11 -> 6.8, so the body you have
+to thread through a gap narrows from 22 pixels across to under 14. Nothing else
+about the run changes - no extra speed, no doubled planks, no cooking the fruit
+you touch - the gaps are simply bigger than you are. Catching a second lime
+while the first is still going tops the clock up, to a ceiling of 11.2 seconds.
+
+It is the same gauge under the score, in the lime's own colour, and it blinks
+the same way when the seconds are nearly gone. A drop is never both gold and
+sour: the gold is taken first, so making it both would swallow the lime and owe
+you an effect you never got.
 
 ## High scores
 
@@ -362,6 +407,9 @@ js/
   doodads.js          the characters and how they are drawn
   coop.js             BACKYARD / THE COOP: tiles, obstacles, eggs, collision
   garden.js           BACKYARD / THE GARDEN: the same contract, grown instead of built
+  deck.js             BACKYARD / THE DECK: patio heaters, misters on a timer
+  canopy.js           BACKYARD / THE CANOPY: dark trunks in dense foliage
+  construction.js     BACKYARD / THE CONSTRUCTION ZONE: lumber, buzzsaws, a gear
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
   ui.js               boards, panels, chevrons, padlocks
@@ -391,18 +439,31 @@ so they stay smooth against the pixelated world.
 
 ### Adding to it
 
-* **A new level** - write an art module implementing the level contract and drop a
-  level object into a room's `levels` array. `js/coop.js` and `js/garden.js` are the
-  two worked examples; between them they cover every member. The contract is:
+* **A new level** - write an art module implementing the level contract, add its
+  script tag to `index.html` (**after** the core, screen and doodad files and
+  **before** `js/levels.js`, where the five existing levels sit) and drop a level
+  object into a room's `levels` array. There are five worked examples; `js/coop.js`
+  is the smallest and `js/garden.js` the one to read second, and between them they
+  cover every member. The contract is:
   `CEIL` `FLOOR` `END_MIN` `DROP_GRAV` `SPLAT_TIME`, the palettes `P` `FX` `PREVIEW`,
-  the hazard warnings `WARN`, `build()`, `drawBackdrop` `drawCeiling` `drawFloor`
-  `drawObstacle` `drawDrop` `drawDropSpot` `drawDropSplat`, `rectsFor`, and the
-  generators `makePillar` `makeSpikes` `makeDrop` `makeLitter` (plus optional
-  `makeBoon`). `P` is the level's own pigments and PlayScene never reads it; `FX` is
+  the hazard warnings `WARN`, the baked `tiles`, `build()`, `drawBackdrop`
+  `drawMenuBackdrop` `drawCeiling` `drawFloor`
+  `drawObstacle` `drawDrop` `drawDropSpot` `drawDropSplat` `drawPreview`, `rectsFor`,
+  and the generators `makePillar` `makeSpikes` `makeDrop` `makeLitter` (plus optional
+  `makeBoon`, which every level but the Coop now has). `P` is the level's own
+  pigments and PlayScene never reads it; `FX` is
   the neutral effect palette it paints particles and the spicy wash out of, and
-  `PREVIEW` is the handful of colours the level-select window uses.
+  `PREVIEW` is the handful of colours the level-select window uses - a level that
+  paints its own `drawPreview` cover, as all but the Coop do, publishes them
+  anyway. **The five obstacle type strings are the shared vocabulary and a level
+  may invent none**: anything new is a *field* on a `pillar`, `spike`, `drop`,
+  `litter` or `boon`, and the art module decides what it looks like and what boxes
+  it has. Misters and buzzsaws are spikes; beams, apples and gold cans are all
+  drops.
   Give the level `unlock: { room, level, score }` to gate it behind a score on
-  another level; leave it out and it is open from the start.
+  another level; leave it out and it is open from the start. Gating it on a level
+  that is itself gated is fine - the BACKYARD is a chain of five - and the locked
+  card names whichever level it wants a score in.
 * **A new room** - replace one of the locked placeholder rooms in
   `js/levels.js`.
 * **A new doodad** - drop the `Fall` and `Fly` artwork into
@@ -420,10 +481,10 @@ so they stay smooth against the pixelated world.
   in a level's `tune`, naming which plank he is behind. The level says *where*
   and the roster says *who* (`Doodads.meetable()` hands back the first still-shut
   one), so neither has to know about the other and a second level can hide a
-  second doodad by adding one number. `Doodads.requirement(d)` turns whichever lock it is into the price,
-  the plate, the progress and what to call it, so the select screen never has
-  to know which kind it is looking at - a third kind of price is a third branch
-  in that one function. `title: { role, r, homeX, homeY }`
+  second doodad by adding one number. `Doodads.requirement(d)` turns whichever
+  lock it is into the price, the plate, the progress and what to call it, so the
+  select screen never has to know which kind it is looking at - a third kind of
+  price is a third branch in that one function. `title: { role, r, homeX, homeY }`
   says how it behaves in the coop on the title screen - `perch` hops between
   the perches, `patrol` flies a figure of eight (`spanX`/`spanY` size it), and
   `walk` stomps the hay and keeps trying to fly (two doodads may share a role -
@@ -440,9 +501,11 @@ so they stay smooth against the pixelated world.
   `watch` (a flag), `pull` (a radius), `trot` (a flag) and
   `light: { gravity, flap, fall }` (scales on the three numbers a doodad's
   flight is made of - ask `grav()`, `maxFall()` and `flapV()`, never the
-  constants), `lives` (spare succulents a run starts with) and `flick` (a
-  radius that knocks hazards down). Keep new ones **passive**: the one ability that needed a gesture
-  during play was cut for fighting the hand that was already flapping.
+  constants), `lives` (spare succulents a run starts with) and
+  `flick: { reach, cool }` (a reach in pixels, and the seconds the tail needs
+  before it can swing again - one flick takes one thing). Keep new ones
+  **passive**: the one ability that needed a gesture during play was cut for
+  fighting the hand that was already flapping.
   A doodad may also have extra sprite frames: add the artwork, list it in
   `DOODADS` in `tools/trim_sprites.py` under a frame name, re-run the script
   (it crops every frame of a doodad with one shared box, so **adding a frame

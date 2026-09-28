@@ -241,8 +241,15 @@ var LevelSelectScene = (function () {
     var ny = py + ph + 2;
     Dither.rect(ctx, px, ny, pw, titleH - 2, UI.C.darker, 14);
     if (big) {
-      UI.text(ctx, lv.name, x + w / 2, ny + 1, { align: 'center', scale: 2,
-              colour: !open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.ink) });
+      /* THE CONSTRUCTION ZONE is 250px at scale 2 against a 150px plate, so
+         it hung over both neighbours. A long name steps down a size rather
+         than overflowing, which keeps the plate the plate however a future
+         level is named. */
+      var ns = 2;
+      while (ns > 1 && Font.measure(lv.name, ns) > pw - 6) ns--;
+      UI.text(ctx, lv.name, x + w / 2, ny + 1 + (ns === 1 ? 4 : 0),
+              { align: 'center', scale: ns,
+                colour: !open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.ink) });
       UI.text(ctx, lv.code, px + 2, ny + 18, { colour: UI.C.inkDim });
       if (open) {
         UI.text(ctx, 'HI ' + Scores.top(room(roomIndex), lv), px + pw - 2, ny + 18,
@@ -251,7 +258,14 @@ var LevelSelectScene = (function () {
         UI.text(ctx, 'LOCKED', px + pw - 2, ny + 18, { align: 'right', colour: UI.C.inkFaint });
       }
     } else {
-      UI.text(ctx, lv.name, x + w / 2, ny + 1, { align: 'center', colour: UI.C.inkDim });
+      /* the small cards are only 1 scale to begin with, but a long name
+         still has to stop at the frame */
+      var sn = lv.name;
+      if (Font.measure(sn, 1) > pw - 4) {
+        while (sn.length > 4 && Font.measure(sn + '.', 1) > pw - 4) sn = sn.slice(0, -1);
+        sn += '.';
+      }
+      UI.text(ctx, sn, x + w / 2, ny + 1, { align: 'center', colour: UI.C.inkDim });
     }
   }
 

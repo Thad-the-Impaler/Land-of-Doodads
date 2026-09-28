@@ -1,8 +1,14 @@
 # macOS finder droppings
 .DS_Store
 
-# The garden reference is a photograph of an actual back garden and the
-# house behind it. This repository is public, the game does not need the
-# file to build or run, and nothing under tools/ reads it. Delete this
-# line if you would rather publish it.
+# The level references are photographs of an actual back garden, deck and
+# house. This repository is public, the game does not need them to build
+# or run, and nothing under tools/ reads them. Delete these lines if you
+# would rather publish them.
 Assets/Concept/Garden ref.HEIC
+Assets/Concept/Deck ref 1.jpeg
+Assets/Concept/Deck ref 2.jpeg
+Assets/Concept/Canopy ref.jpeg
+Assets/Concept/Construction Zone ref 1.jpeg
+Assets/Concept/Construction Zone ref 2.HEIC
+Assets/Concept/Construction Zone ref 3.HEIC

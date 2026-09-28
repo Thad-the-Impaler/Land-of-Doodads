@@ -51,6 +51,29 @@ var PlayScene = (function () {
   var SPICY_SPEED = 1.55;
   var SPICY_MULT  = 2;
 
+  /* The gold can: the only thing in the game that is worth points for being
+     CAUGHT rather than flown past. Flat, like the succulent's consolation
+     bonus - the heat doubles what you thread, not what you are handed. */
+  var GOLD_BONUS = 5;
+
+  /* The lime, on its own axis: size. No speed, no multiplier, no smashing
+     through anything - the whole of the effect is a smaller doodad, which
+     buys timing room instead of taking the danger away. Its colours live
+     here for the same reason the succulent's do (LIFE_LEAF above): a lime
+     reads the same on any level that ever grows one, and a level's neutral
+     effect palette has no green in it at all.
+     SOUR_SHRINK 0.62 takes the hitbox from 22px across to 14 and the drawn
+     body from 13 to 8; in the tightest gap a level allows that roughly
+     doubles the room to time a flap in. 0.55 to 0.70 is the useful range. */
+  var SOUR_TIME   = 7.0;
+  var SOUR_SHRINK = 0.62;
+  var SOUR_HI = '#d6ff7a', SOUR_MID = '#8fd44a', SOUR_DARK = '#3f7a2a';
+  /* the same two greens again, as gradient stops want them. FX carries its
+     glow colours in this form for the same reason: a radial gradient needs
+     the components, a fillRect needs the hex, and neither converts cheaply
+     in a draw loop. */
+  var SOUR_GLOW = '214,255,122', SOUR_GLOW_EDGE = '143,212,74';
+
   var state = 'ready';         /* ready | play | dying | dead | entry | paused */
   var t = 0, runTime = 0;
   var scroll = 0, speed = 0;
@@ -68,10 +91,14 @@ var PlayScene = (function () {
   var menuIndex = 0;
   var dropArmed = false;        /* the rafters have started shedding */
   var warnLines = null;        /* whose heads-up is on screen, from art.WARN */
-  var dropTimer = 0, hazardWarn = 0, spicyGap = 0;
+  var dropTimer = 0, hazardWarn = 0, spicyGap = 0, goldGap = 0, sourGap = 0;
   var spicy = 0;               /* seconds of heat left */
   var heat = 0;                /* the same thing eased, for the visuals */
   var spicyFlash = 0, spicyBanner = 0;
+  var sour = 0;                /* seconds of lime left */
+  var shrivel = 0;             /* the same thing eased - and the ONE number
+                                  both the hitbox and the drawn body read */
+  var sourFlash = 0, sourBanner = 0;
   var streaks = [];            /* speed lines, only drawn while hot */
   var unlocked = [];           /* doodads this run has earned */
   var unlockBanner = 0;
@@ -80,6 +107,11 @@ var PlayScene = (function () {
   var invuln = 0;              /* grace after a save, in seconds */
   var saveFlash = 0, saveBanner = 0;
   var lifePop = 0, boonBanner = 0, boonGap = 0, boonBonus = false;
+  /* What the level calls its spare life, and what it comes apart into. Three
+     of the five are not succulents at all - a pomegranate off a branch, a
+     heart of scrap on a pallet - and announcing those as SUCCULENT names a
+     plant from a different level. The Garden's own defaults sit here. */
+  var boonName = 'SUCCULENT';
   var spikeArmed = false;
   var hungry = 0;              /* things his hunger has hold of this frame */
   var nearestPull = 0;         /* how close the closest of them is, 0..1   */
@@ -96,6 +128,8 @@ var PlayScene = (function () {
   var spentPotted = false;     /* and whether the one just spent was one   */
   var nervePop = 0;            /* the shout for a plank taken close        */
   var nerveX = 0, nerveY = 0, nerveGain = 1;
+  var goldPop = 0;             /* and the one for a gold can caught        */
+  var goldX = 0, goldY = 0;
   var watchY0 = 0, watchY1 = 0, watchA = 0;   /* the gap she can see coming */
   var trotting = 0;            /* seconds of floor under a doodad that can */
   var tune, level, roomRef, doodad;
@@ -139,8 +173,10 @@ var PlayScene = (function () {
     score = 0; flash = 0; deadTimer = 0; scorePop = 0;
     board = Scores.table(roomRef, level).slice();
     rank = -1; entryPending = false; savedRow = -1; pbNew = false;
-    dropArmed = false; dropTimer = 0; hazardWarn = 0; spicyGap = 0; warnLines = null;
+    dropArmed = false; dropTimer = 0; hazardWarn = 0; warnLines = null;
+    spicyGap = 0; goldGap = 0; sourGap = 0;
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
+    sour = 0; shrivel = 0; sourFlash = 0; sourBanner = 0;
     unlocked.length = 0; unlockBanner = 0; wonLevels.length = 0;
     /* Lives never carry between runs: start() is what RETRY calls, so a
        lucky run would otherwise hand every retry after it a free save.
@@ -151,8 +187,9 @@ var PlayScene = (function () {
     planksUp = 0; flickCool = 0;
     bannerQueue.length = 0;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
+    boonName = 'SUCCULENT';
     hungry = 0; nearestPull = 0;
-    nervePop = 0; trotting = 0;
+    nervePop = 0; goldPop = 0; trotting = 0;
     watchY0 = watchY1 = watchA = 0;
     target = nextTarget(); passedTimer = 0;
     Input.setTextMode(false);
@@ -241,11 +278,35 @@ var PlayScene = (function () {
     var spicy = spicyGap <= 0 && chance(tune.spicyChance);
     if (spicy) spicyGap = 4;
 
+    /* The gold can and the lime ride the same spawner, and are spaced the
+       same hardcoded way. A drop is exactly ONE of plain, spicy, gold or
+       sour: the heat wins the roll because it is the one every level that
+       sheds anything already has, so adding a can can never cost a level
+       the power-up it was tuned around. */
+    if (goldGap > 0) goldGap--;
+    var gold = !spicy && goldGap <= 0 && chance(tune.goldChance || 0);
+    if (gold) goldGap = 4;
+    if (sourGap > 0) sourGap--;
+    var lime = !spicy && !gold && sourGap <= 0 && chance(tune.sourChance || 0);
+    if (lime) sourGap = 4;
+
     var x = VW - rand(tune.dropAheadMin, tune.dropAheadMax);
     var fall = rand(tune.dropFallMin, tune.dropFallMax);
-    /* the spicy one drifts down slower, to give it a chance of being
-       caught rather than merely dodged */
-    obstacles.push(art.makeDrop(x, spicy, spicy ? fall * 0.78 : fall));
+    /* anything that is there to be CAUGHT drifts down slower, so it has a
+       chance of being taken rather than merely dodged */
+    var ob = art.makeDrop(x, spicy, (spicy || gold || lime) ? fall * 0.78 : fall);
+    /* Set after the maker returns, the way a plank's `meet` is: makeDrop
+       keeps the signature it has, and a level that grows neither of these
+       never learns they exist. `spicy` still goes IN because the art sizes
+       the drop by it; these two only change how it is painted. */
+    if (gold) ob.gold = true;
+    /* An art module may roll its own gold - the three newest levels do,
+       because the sprite has to know it is drawing a gear and not a beam.
+       The engine must not then also make it sour: collide() takes gold
+       first, so the lime would be swallowed with no banner, no gauge and
+       no shrink, and the player would be owed an effect they never got. */
+    if (lime && !ob.gold) ob.sour = true;
+    admit(ob);
 
     for (var i = 0; i < 4; i++) {
       particles.push({ x: x + rand(-4, 4), y: CEIL + rand(0, 3),
@@ -283,10 +344,16 @@ var PlayScene = (function () {
 
   /* ---------------------------------------------------------- hunger */
 
+  /* Where a boon is anchored before anything has moved it. The art module
+     says so by putting `y` on what makeBoon returns - a pomegranate hangs
+     off the ceiling - and a level that says nothing grows it out of the
+     floor at the height the Garden's pot puts its rosette. */
+  function boonY(ob) { return ob.y === undefined ? FLOOR - 12 : ob.y; }
+
   /* the point a power-up is grabbed by - for the succulent that is the
      plant, which is offset from the pot it was growing in */
   function grabX(ob) { return ob.type === 'boon' ? ob.x + ob.dx : ob.x; }
-  function grabY(ob) { return ob.type === 'boon' ? FLOOR - 12 + ob.dy : ob.y; }
+  function grabY(ob) { return ob.type === 'boon' ? boonY(ob) + ob.dy : ob.y; }
 
   function nudge(ob, mx, my) {
     if (ob.type === 'boon') { ob.dx += mx; ob.dy += my; }
@@ -296,9 +363,13 @@ var PlayScene = (function () {
   /* how far Gerald's reach actually extends, for the ring he draws */
   function pullReach() { return doodad && doodad.pull ? doodad.pull : 0; }
 
+  /* The one place the game says which falling things are gifts. Gerald's
+     hunger and Saddam's tail read it in opposite directions, so a new kind
+     of catchable drop goes in here once and both abilities learn about it
+     together: he pulls it in, and the tail leaves it alone. */
   function isPowerUp(ob) {
     if (ob.type === 'boon') return !ob.taken;
-    return ob.type === 'drop' && ob.spicy && !ob.broken;
+    return ob.type === 'drop' && (ob.spicy || ob.gold || ob.sour) && !ob.broken;
   }
 
   function updateHunger(dt) {
@@ -353,12 +424,15 @@ var PlayScene = (function () {
 
   function updateNerve() {
     if (!doodad.nerve) return;
+    /* the clearance is what the real hitbox missed by, so it has to be the
+       real hitbox: a shrivelled doodad genuinely does thread closer */
+    var hr = hitR();
     for (var i = 0; i < obstacles.length; i++) {
       var ob = obstacles[i];
       if (ob.type !== 'pillar' || ob.scored) continue;
-      if (player.x + HIT_R < ob.x || player.x - HIT_R > ob.x + ob.w) continue;
-      var over  = (player.y - HIT_R) - ob.gapY;
-      var under = (ob.gapY + ob.gapH) - (player.y + HIT_R);
+      if (player.x + hr < ob.x || player.x - hr > ob.x + ob.w) continue;
+      var over  = (player.y - hr) - ob.gapY;
+      var under = (ob.gapY + ob.gapH) - (player.y + hr);
       if (ob.skim === NO_NERVE) continue;          /* already disqualified */
       var c = Math.min(over, under);
       if (c < 0) { ob.skim = NO_NERVE; continue; }
@@ -405,11 +479,14 @@ var PlayScene = (function () {
   function meetCy(ob) { return meetY(ob) - MEET_RISE / 2; }
 
   function updateMeet() {
+    /* his bulge is his own size; a shrivelled doodad has to get closer to
+       touch him, which is the same bargain the planks strike */
+    var reach = MEET_R + hitR();
     for (var i = 0; i < obstacles.length; i++) {
       var ob = obstacles[i];
       if (ob.type !== 'pillar' || !ob.meet || ob.met) continue;
       var dx = player.x - meetX(ob), dy = player.y - meetCy(ob);
-      if (dx * dx + dy * dy > (MEET_R + HIT_R) * (MEET_R + HIT_R)) continue;
+      if (dx * dx + dy * dy > reach * reach) continue;
       takeMeet(ob);
       return;
     }
@@ -527,7 +604,11 @@ var PlayScene = (function () {
       var stop = Math.round(ob.y) + 7;
       for (y = FLOOR - 4; y > stop; y -= 4) ctx.fillRect(x, y, 1, 2);
       ctx.globalAlpha = ga * 0.75;
-      ctx.fillStyle = ob.spicy ? FX.hotHi : WATCH_HI;
+      /* the foot of the line says what is coming down it, so she can tell a
+         thing to catch from a thing to dodge before it is close enough to
+         make out */
+      ctx.fillStyle = ob.spicy ? FX.hotHi
+                    : (ob.gold ? UI.C.gold : (ob.sour ? SOUR_HI : WATCH_HI));
       ctx.fillRect(x - 3, FLOOR - 2, 7, 1);
       ctx.fillRect(x - 3, FLOOR - 4, 1, 2);
       ctx.fillRect(x + 3, FLOOR - 4, 1, 2);
@@ -607,6 +688,7 @@ var PlayScene = (function () {
 
   function takeBoon(ob) {
     ob.taken = true;
+    boonName = ob.name || 'SUCCULENT';
     boonBanner = 1.4;
     lifePop = 0.45;
     if (lives >= LIVES_MAX) {
@@ -623,11 +705,15 @@ var PlayScene = (function () {
       pottedLives++;
     }
     Audio3.play('life');
+    /* at the plant, not at the thing it grew out of: once Gerald has lifted
+       a rosette clear of its pot the burst belongs where he took it, and a
+       fruit hanging off the ceiling is nowhere near the floor at all */
     for (var i = 0; i < 26; i++) {
       var a = rand(0, TAU), sp = rand(30, 140);
-      particles.push({ x: ob.x, y: FLOOR - 12, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 50,
+      particles.push({ x: grabX(ob), y: grabY(ob), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 50,
                        life: rand(0.4, 1.0), g: -60,
-                       col: chance(0.4) ? LIFE_PALE : (chance(0.5) ? LIFE_LEAF : LIFE_TIP) });
+                       col: ob.burst ? ob.burst[randInt(0, ob.burst.length - 1)]
+                          : (chance(0.4) ? LIFE_PALE : (chance(0.5) ? LIFE_LEAF : LIFE_TIP)) });
     }
     checkBoonUnlocks();
   }
@@ -652,6 +738,35 @@ var PlayScene = (function () {
                        life: rand(0.5, 1.2), g: -50,
                        col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
     }
+  }
+
+  /* ---------------------------------------------------------- the gold
+
+     Five planks in one can, and nothing else changes - no heat, no size, no
+     spare life. It is the reward for going and getting something, which is
+     why the shout lands where it was caught rather than in the middle of
+     the screen: that slot already belongs to SPICY!, SAVED!, EXTRA LIFE,
+     the unlock queue and the hazard warning, and a can can be taken in the
+     middle of any of them. */
+  function takeGold(ob) {
+    score += GOLD_BONUS;
+    scorePop = 0.42;
+    goldPop = 0.6;
+    goldX = clamp(ob.x, 30, VW - 30);
+    goldY = Math.max(CEIL + 6, ob.y - 14);
+    Audio3.play('scoreHot');
+    for (var i = 0; i < 20; i++) {
+      var a = rand(0, TAU), sp = rand(30, 150);
+      particles.push({ x: ob.x, y: ob.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.35, 0.95), g: -50,
+                       col: chance(0.45) ? UI.C.gold
+                          : (chance(0.5) ? '#fff3d0' : UI.C.goldDark) });
+    }
+    /* +5 steps clean over things. Both of these ask what the jump CROSSED
+       rather than what it landed on, so a can is allowed to open a level and
+       overtake a name on the table in the same instant. */
+    checkPassed();
+    checkUnlocks();
   }
 
   /* A hit that might not be fatal. Returns true when collide() should stop
@@ -695,7 +810,10 @@ var PlayScene = (function () {
       obstacles.splice(i, 1);
     }
 
-    /* a save on the floor has to get off it, or it lands again next frame */
+    /* A save on the floor has to get off it, or it lands again next frame.
+       The full-size radius on purpose: this is a lift clear of trouble and
+       not a collision test, so a shrivelled doodad has no reason to be
+       given the smaller, meaner one. */
     if (cause === 'ground') {
       player.y = Math.min(player.y, FLOOR - HIT_R - 14);
       player.vy = -250;
@@ -747,6 +865,38 @@ var PlayScene = (function () {
                         : (chance(0.5) ? FX.hotMid : FX.hot) });
   }
 
+  /* --------------------------------------------------------- the lime */
+
+  function grabSour(ob) {
+    /* a pair tops the lime up rather than restarting it, as the heat does */
+    sour = sour > 0 ? Math.min(SOUR_TIME * 1.6, sour + SOUR_TIME * 0.6) : SOUR_TIME;
+    sourFlash = 0.14;
+    sourBanner = 1.1;
+    /* smaller and longer than a hit's shake. Screen.shake decays over its
+       own time, so this reads as the whole room buzzing rather than as
+       something having gone wrong - which is the point of a sour face. */
+    Screen.shake(2.5, 0.55);
+    Audio3.play('fizzle');
+    for (var i = 0; i < 26; i++) {
+      var a = rand(0, TAU), sp = rand(30, 150);
+      particles.push({ x: ob.x, y: ob.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30,
+                       life: rand(0.35, 0.95), g: -70,
+                       col: chance(0.4) ? SOUR_HI : (chance(0.5) ? SOUR_MID : SOUR_DARK) });
+    }
+  }
+
+  /* emberTrail's twin, and deliberately the other way up: the heat trails
+     embers back behind the doodad, the lime fizzes up off it, so at a glance
+     the two are never the same power-up even when both are running. */
+  function sourTrail(dt) {
+    if (sour <= 0 || !chance(dt * 46)) return;
+    particles.push({ x: player.x + rand(-7, 7), y: player.y + rand(-5, 5),
+                     vx: rand(-16, 4) - speed * 0.15, vy: rand(-46, -18),
+                     life: rand(0.25, 0.6), g: -30,
+                     col: chance(0.45) ? SOUR_HI
+                        : (chance(0.5) ? SOUR_MID : SOUR_DARK) });
+  }
+
   function updateStreaks(dt) {
     if (heat < 0.02) return;
     for (var i = 0; i < streaks.length; i++) {
@@ -754,6 +904,18 @@ var PlayScene = (function () {
       s.x -= speed * s.spd * dt;
       if (s.x + s.len < 0) streaks[i] = freshStreak(VW + rand(0, 60));
     }
+  }
+
+  /* Everything enters the world through here, and enters it with a clock on
+     it. Both spawners run AFTER moveObstacles in the play branch, so a brand
+     new obstacle is drawn once before its first tick - and an art module
+     that phases an animation off `ob.age` would read undefined on exactly
+     that frame. Setting it at birth means a maker never has to remember to,
+     and `ob.age` is a number every time anything is allowed to look. */
+  function admit(ob) {
+    if (ob.age === undefined) ob.age = 0;
+    obstacles.push(ob);
+    return ob;
   }
 
   function spawnAhead() {
@@ -775,7 +937,7 @@ var PlayScene = (function () {
         var who = Doodads.meetable();
         if (who) plank.meet = who;
       }
-      obstacles.push(plank);
+      admit(plank);
 
       /* hazards in the space between two pillars */
       var mid = spawnCursor + d.spacing * 0.5;
@@ -785,16 +947,16 @@ var PlayScene = (function () {
            are short and stubby, the Garden's mint runs away with itself */
         var lo = onCeiling ? (tune.spikeCeilMin || 13) : (tune.spikeFloorMin || 15);
         var hi = onCeiling ? (tune.spikeCeilMax || 21) : (tune.spikeFloorMax || 27);
-        obstacles.push(art.makeSpikes(mid + rand(-14, 14), onCeiling ? 'ceil' : 'floor',
-                                      randInt(3, 6), randInt(lo, hi)));
+        admit(art.makeSpikes(mid + rand(-14, 14), onCeiling ? 'ceil' : 'floor',
+                             randInt(3, 6), randInt(lo, hi)));
       }
-      if (chance(0.55)) obstacles.push(art.makeLitter(mid + rand(-40, 40)));
+      if (chance(0.55)) admit(art.makeLitter(mid + rand(-40, 40)));
 
       /* the succulent: rare, never twice in quick succession, and only on
          a level whose art actually grows one */
       if (boonGap > 0) boonGap--;
       else if (art.makeBoon && tune.boonChance && chance(tune.boonChance)) {
-        obstacles.push(art.makeBoon(mid + rand(-30, 30)));
+        admit(art.makeBoon(mid + rand(-30, 30)));
         boonGap = tune.boonGap || 5;
       }
 
@@ -812,6 +974,16 @@ var PlayScene = (function () {
   function grav()    { return doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY; }
   function maxFall() { return doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL; }
   function flapV()   { return doodad.light ? FLAP * doodad.light.flap : FLAP; }
+
+  /* And the size the doodad is right now, for the same reason: a lime makes
+     it smaller, so everything that measures the doodad asks rather than
+     reading the constant. Both accessors run off the SAME eased `shrivel`,
+     updated once a frame before anything is drawn, so the box and the body
+     shrink and regrow together and the hitbox can never lie about what the
+     player can see. With shrivel 0 they return the constants exactly. */
+  function shrink()  { return 1 - shrivel * (1 - SOUR_SHRINK); }
+  function hitR()    { return HIT_R * shrink(); }
+  function bodyR()   { return BODY_R * shrink(); }
 
   function flap() {
     player.vy = flapV();
@@ -840,19 +1012,24 @@ var PlayScene = (function () {
     player.vy = Math.min(player.vy + g * dt, maxFall());
     player.flapTimer -= dt;
 
+    var br = bodyR();
+
     /* the rafters are solid but survivable */
-    if (player.y - BODY_R < CEIL) {
-      player.y = CEIL + BODY_R;
+    if (player.y - br < CEIL) {
+      player.y = CEIL + br;
       if (player.vy < 0) player.vy *= -0.18;
     }
 
     /* and for a doodad that can trot, so is the bedding. Done here rather
        than in collide() so the floor simply stops him the way the rafters
        do: by the time collide() looks he is already standing on it, and
-       its ground check cannot fire. Planks and floor spikes still can. */
-    if (doodad.trot && player.y + BODY_R > FLOOR) {
+       its ground check cannot fire. Planks and floor spikes still can.
+       Both of these stand him at the radius he is DRAWN at: stood at the
+       constant while shrivelled he would hover a clear five pixels above
+       the bedding, with his feet in mid air. */
+    if (doodad.trot && player.y + br > FLOOR) {
       var landed = trotting <= 0;
-      player.y = FLOOR - BODY_R;
+      player.y = FLOOR - br;
       if (player.vy > 0) {
         if (landed && player.vy > 140) { Audio3.play('thud'); Screen.shake(1.8, 0.12); }
         player.vy = 0;
@@ -896,7 +1073,7 @@ var PlayScene = (function () {
     state = 'dead';
     Input.setTouchMode('menu');
     deadTimer = 0;
-    player.y = FLOOR - BODY_R;
+    player.y = FLOOR - bodyR();
     Audio3.play('thud');
     Screen.shake(3, 0.3);
     for (var i = 0; i < 16; i++) {
@@ -1015,6 +1192,7 @@ var PlayScene = (function () {
      of the list mid-loop */
   function collide() {
     var rects = [];
+    var hr = hitR();
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
       if (ob.type === 'litter') continue;
@@ -1025,16 +1203,21 @@ var PlayScene = (function () {
       var hit = false;
       for (var k = 0; k < rects.length && !hit; k++) {
         var r = rects[k];
-        hit = circleHitsRect(player.x, player.y, HIT_R, r[0], r[1], r[2], r[3]);
+        hit = circleHitsRect(player.x, player.y, hr, r[0], r[1], r[2], r[3]);
       }
       if (!hit) continue;
       if (ob.type === 'boon') { takeBoon(ob); obstacles.splice(i, 1); continue; }
       if (ob.type !== 'drop') { if (hurt('obstacle')) return; continue; }
+      /* Every gift is taken before the heat gets a chance to smash through,
+         or a hot run would destroy the very can and lime it is flying into -
+         the reward for a good run turned into a way of losing one. */
       if (ob.spicy) { grabSpicy(ob); obstacles.splice(i, 1); continue; }
+      if (ob.gold)  { takeGold(ob);  obstacles.splice(i, 1); continue; }
+      if (ob.sour)  { grabSour(ob);  obstacles.splice(i, 1); continue; }
       if (spicy > 0) { smashDrop(ob); obstacles.splice(i, 1); continue; }
       if (hurt('drop')) return;
     }
-    if (player.y + HIT_R >= FLOOR) hurt('ground');
+    if (player.y + hr >= FLOOR) hurt('ground');
   }
 
   /* --------------------------------------------------------- update */
@@ -1052,6 +1235,8 @@ var PlayScene = (function () {
     if (flash > 0) flash -= dt;
     if (spicyFlash > 0) spicyFlash -= dt;
     if (spicyBanner > 0) spicyBanner -= dt;
+    if (sourFlash > 0) sourFlash -= dt;
+    if (sourBanner > 0) sourBanner -= dt;
     if (hazardWarn > 0) hazardWarn -= dt;
     if (unlockBanner > 0) {
       unlockBanner -= dt;
@@ -1066,12 +1251,16 @@ var PlayScene = (function () {
     if (boonBanner > 0) boonBanner -= dt;
     if (lifePop > 0) lifePop -= dt;
     if (nervePop > 0) nervePop -= dt;
+    if (goldPop > 0) goldPop -= dt;
     if (flickCool > 0) {
       flickCool -= dt;
       if (flickCool <= 0) { flickCool = 0; if (state === 'play') flickReady(); }
     }
     /* the heat eases in and out, so nothing about it snaps on or off */
     heat = damp(heat, spicy > 0 ? 1 : 0, 0.0004, dt);
+    /* and so does the shrivel - which is also the hitbox, so this has to
+       happen before collide() and before anything is drawn */
+    shrivel = damp(shrivel, sour > 0 ? 1 : 0, 0.0004, dt);
     updateParticles(dt);
     updateDust(dt);
     updateStreaks(dt);
@@ -1101,6 +1290,10 @@ var PlayScene = (function () {
         spicy -= dt;
         if (spicy <= 0) { spicy = 0; Audio3.play('cooldown'); }
       }
+      if (sour > 0) {
+        sour -= dt;
+        if (sour <= 0) { sour = 0; Audio3.play('cooldown'); }
+      }
       speed = d.speed * (spicy > 0 ? SPICY_SPEED : 1);
       scroll += speed * dt;
       spawnCursor -= speed * dt;
@@ -1115,6 +1308,7 @@ var PlayScene = (function () {
       updateMeet();
       collide();
       emberTrail(dt);
+      sourTrail(dt);
       if (scorePop > 0) scorePop -= dt;
       if (passedTimer > 0) passedTimer -= dt;
       return;
@@ -1125,7 +1319,7 @@ var PlayScene = (function () {
       player.y += player.vy * dt;
       player.x -= 24 * dt;
       player.angle += player.spin * dt;
-      if (player.y + BODY_R >= FLOOR) land();
+      if (player.y + bodyR() >= FLOOR) land();
       return;
     }
 
@@ -1149,6 +1343,14 @@ var PlayScene = (function () {
   function moveObstacles(dt, spd) {
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
+      /* The one clock an art module may read: seconds since this obstacle
+         came into the world (admit() starts it). Per-obstacle rather than
+         shared, so a deck of misters is never all in phase, and advanced
+         only here - which means pause, dying and the results screen freeze
+         every animation along with everything else, and a jet can never be
+         waited out behind the scrim. The `|| 0` is for anything that
+         reached the list without passing through admit(). */
+      ob.age = (ob.age || 0) + dt;
       ob.x -= spd * dt;
       if (ob.type === 'drop') {
         if (ob.broken > 0) {
@@ -1246,6 +1448,25 @@ var PlayScene = (function () {
     if (doodad.watch && state === 'play') drawWatch(ctx);
 
     if (heat > 0.02) drawHeat(ctx);
+    if (shrivel > 0.02) drawSourAura(ctx);
+  }
+
+  /* The lime, in the room: a green light closing in on the doodad, and
+     nothing else. No speed lines and no wash over the level, because size
+     is the whole of this power-up - and the radius shrinks along with the
+     shrivel, so it reads as the doodad being squeezed rather than as a
+     second flavour of heat. Drawn behind the sprite for the same reason
+     the glow is: light in the room, not a filter over the picture. */
+  function drawSourAura(ctx) {
+    if (state !== 'play' && state !== 'dying') return;
+    var pulse = 0.75 + 0.25 * Math.sin(t * 12);
+    var r = 30 - shrivel * 9 + pulse * 4;
+    var g = ctx.createRadialGradient(player.x, player.y, 1, player.x, player.y, r);
+    g.addColorStop(0, 'rgba(' + SOUR_GLOW + ',' + (0.26 * shrivel).toFixed(3) + ')');
+    g.addColorStop(0.55, 'rgba(' + SOUR_GLOW_EDGE + ',' + (0.14 * shrivel).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(' + SOUR_GLOW_EDGE + ',0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(player.x - r, player.y - r, r * 2, r * 2);
   }
 
   /* everything the room does while the run is hot: speed lines tearing
@@ -1293,7 +1514,16 @@ var PlayScene = (function () {
       var th = 1 + heat * 0.05 * Math.sin(t * 16);
       o = { squashX: 1 / th, squashY: th };
     }
-    Doodads.draw(ctx, doodad.id, player.x, player.y, BODY_R, player.angle, frame, o);
+    /* and a faster, shallower one while shrivelled: the heat is a throb, the
+       lime is a buzz, and both can be running at once */
+    if (shrivel > 0.02) {
+      var sh = 1 + shrivel * 0.04 * Math.sin(t * 23);
+      if (o) { o.squashX /= sh; o.squashY *= sh; }
+      else o = { squashX: 1 / sh, squashY: sh };
+    }
+    /* the drawn size IS the current size - the sprite sits on the smooth
+       layer, so any radius costs the same */
+    Doodads.draw(ctx, doodad.id, player.x, player.y, bodyR(), player.angle, frame, o);
   }
 
   function drawFg(ctx) {
@@ -1320,6 +1550,13 @@ var PlayScene = (function () {
       ctx.fillRect(0, 0, VW, VH);
       ctx.globalAlpha = fa;
     }
+    if (sourFlash > 0) {
+      var qa = ctx.globalAlpha;
+      ctx.globalAlpha = qa * clamp(sourFlash / 0.14, 0, 1);
+      ctx.fillStyle = SOUR_HI;
+      ctx.fillRect(0, 0, VW, VH);
+      ctx.globalAlpha = qa;
+    }
 
     /* score */
     if (state !== 'dead') {
@@ -1334,7 +1571,9 @@ var PlayScene = (function () {
       drawChase(ctx, 34 + s * 7 + 4);
       drawLives(ctx);
       drawSpicy(ctx);
+      drawSour(ctx);
       if (nervePop > 0) drawNerve(ctx);
+      if (goldPop > 0) drawGold(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
       else if (hazardWarn > 0) drawHazardWarning(ctx);
@@ -1382,6 +1621,18 @@ var PlayScene = (function () {
     ctx.globalAlpha = ga;
   }
 
+  /* and the shout for a can caught, thrown the same way and for the same
+     reason: where it happened, not into the contested middle of the screen */
+  function drawGold(ctx) {
+    if (state === 'entry') return;
+    var k = clamp(goldPop / 0.6, 0, 1);
+    var ga = ctx.globalAlpha;
+    ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
+    UI.text(ctx, 'GOLD +' + GOLD_BONUS, goldX, goldY - (1 - k) * 15,
+            { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+    ctx.globalAlpha = ga;
+  }
+
   /* the shout when a succulent is taken, and when one is spent */
   function drawSaveBanner(ctx) {
     if (state === 'entry') return;
@@ -1390,7 +1641,7 @@ var PlayScene = (function () {
       ctx.globalAlpha = ga * clamp(saveBanner / 0.6, 0, 1);
       UI.heading(ctx, 'SAVED!', VW / 2, 112 - (1.5 - saveBanner) * 9, 3,
                  { colour: LIFE_PALE, outline: '#123a30', wave: t * 11, waveAmp: 1.4 });
-      UI.text(ctx, spentPotted ? 'ONE SUCCULENT SPENT' : 'ONE LIFE SPENT',
+      UI.text(ctx, spentPotted ? 'ONE ' + boonName + ' SPENT' : 'ONE LIFE SPENT',
               VW / 2, 140 - (1.5 - saveBanner) * 9,
               { align: 'center', colour: LIFE_LEAF, shadow: UI.C.shadow });
     } else if (boonBanner > 0) {
@@ -1398,7 +1649,7 @@ var PlayScene = (function () {
       UI.heading(ctx, boonBonus ? '+' + BOON_BONUS : 'EXTRA LIFE', VW / 2,
                  112 - (1.4 - boonBanner) * 9, boonBonus ? 3 : 2,
                  { colour: LIFE_PALE, outline: '#123a30' });
-      UI.text(ctx, boonBonus ? 'POT ALREADY FULL' : 'SUCCULENT', VW / 2,
+      UI.text(ctx, boonBonus ? 'NO ROOM FOR IT' : boonName, VW / 2,
               136 - (1.4 - boonBanner) * 9,
               { align: 'center', colour: LIFE_LEAF, shadow: UI.C.shadow });
     }
@@ -1425,20 +1676,53 @@ var PlayScene = (function () {
     if (heat < 0.02) return;
     /* the last stretch blinks, so running out is never a surprise */
     if (spicy > 0 && spicy < 1.8 && Math.floor(t * 8) % 2 === 0) return;
+    drawGauge(ctx, clamp(spicy / SPICY_TIME, 0, 1), heat, SPICY_GAUGE,
+              'SPICY  X' + SPICY_MULT);
+  }
 
+  /* The gauge body, shared by the heat and the lime: panel, three fill rows,
+     a bright tip and a label under it. Both draw at the same y, because no
+     level grows both - belt and braces, the lime's gauge stands down while
+     the heat's is up, and a level that ever wants the pair should give the
+     second one y 92 rather than share the slot. */
+  var SPICY_GAUGE = { panel: '#2a1008', edge: '#6b2a12', base: '#c8452a',
+                      mid: '#f0722c', top: '#ffd08a', label: '#ff8a3c' };
+  var SOUR_GAUGE  = { panel: '#10240a', edge: '#2d5c1c', base: '#3f7a2a',
+                      mid: '#6fb838', top: '#d6ff7a', label: '#8fd44a' };
+
+  function drawGauge(ctx, k, alpha, cols, label) {
     var w = 104, x = Math.round((VW - w) / 2), y = 80;
-    var k = clamp(spicy / SPICY_TIME, 0, 1);
     var fill = Math.max(0, Math.round((w - 2) * k));
     var ga = ctx.globalAlpha;
-    ctx.globalAlpha = ga * clamp(heat, 0, 1);
-    UI.panel(ctx, x - 1, y - 1, w + 2, 8, { fill: '#2a1008', edge: '#6b2a12' });
-    ctx.fillStyle = '#c8452a'; ctx.fillRect(x + 1, y + 1, fill, 4);
-    ctx.fillStyle = '#f0722c'; ctx.fillRect(x + 1, y + 1, fill, 3);
-    ctx.fillStyle = '#ffd08a'; ctx.fillRect(x + 1, y + 1, fill, 1);
+    ctx.globalAlpha = ga * clamp(alpha, 0, 1);
+    UI.panel(ctx, x - 1, y - 1, w + 2, 8, { fill: cols.panel, edge: cols.edge });
+    ctx.fillStyle = cols.base; ctx.fillRect(x + 1, y + 1, fill, 4);
+    ctx.fillStyle = cols.mid;  ctx.fillRect(x + 1, y + 1, fill, 3);
+    ctx.fillStyle = cols.top;  ctx.fillRect(x + 1, y + 1, fill, 1);
     ctx.fillStyle = '#fff3d0'; ctx.fillRect(x + 1, y + 1, Math.min(fill, 2), 4);
-    UI.text(ctx, 'SPICY  X' + SPICY_MULT, VW / 2, y + 11,
-            { align: 'center', colour: '#ff8a3c', shadow: UI.C.shadow });
+    UI.text(ctx, label, VW / 2, y + 11,
+            { align: 'center', colour: cols.label, shadow: UI.C.shadow });
     ctx.globalAlpha = ga;
+  }
+
+  /* the lime's gauge and shout, the heat's twin in every respect but one:
+     it says what it took away rather than what it gave */
+  function drawSour(ctx) {
+    if (state === 'entry') return;
+    if (sourBanner > 0) {
+      var a = ctx.globalAlpha;
+      var lift = (1.1 - sourBanner) * 11;
+      ctx.globalAlpha = a * clamp(sourBanner / 0.6, 0, 1);
+      UI.heading(ctx, 'SOUR!', VW / 2, 112 - lift, 3,
+                 { colour: SOUR_HI, outline: SOUR_DARK, wave: t * 11, waveAmp: 1.4 });
+      UI.text(ctx, 'SMALLER HITBOX', VW / 2, 138 - lift,
+              { align: 'center', colour: SOUR_MID, shadow: UI.C.shadow });
+      ctx.globalAlpha = a;
+    }
+
+    if (shrivel < 0.02 || heat > 0.02) return;
+    if (sour > 0 && sour < 1.8 && Math.floor(t * 8) % 2 === 0) return;
+    drawGauge(ctx, clamp(sour / SOUR_TIME, 0, 1), shrivel, SOUR_GAUGE, 'SOUR  SMALL');
   }
 
   /* something just came unlocked, mid-flight */
@@ -1476,7 +1760,7 @@ var PlayScene = (function () {
 
   /* the one-off heads up when the rafters start letting go */
   function drawHazardWarning(ctx) {
-    if (state === 'entry' || spicyBanner > 0) return;
+    if (state === 'entry' || spicyBanner > 0 || sourBanner > 0) return;
     if (Math.floor(hazardWarn * 6) % 2) return;
     var w = warnLines;
     if (!w) return;
@@ -1675,6 +1959,7 @@ var PlayScene = (function () {
     inspect: function () { return { state: state, player: player, obstacles: obstacles,
                                     score: score, runTime: runTime, rank: rank,
                                     spicy: spicy, heat: heat, dropArmed: dropArmed,
+                                    sour: sour, shrivel: shrivel, hitR: hitR(),
                                     unlocked: unlocked.map(function (d) { return d.id; }),
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
                                     lives: lives, invuln: invuln,
@@ -1687,6 +1972,7 @@ var PlayScene = (function () {
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
                                     trotting: trotting, watchA: watchA,
                                     nervePop: nervePop, nerveGain: nerveGain,
+                                    goldPop: goldPop,
                                     ability: doodad ? doodad.ability : null,
                                     difficulty: tune ? difficulty() : null }; }
   };
