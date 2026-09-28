@@ -37,6 +37,7 @@ DOODADS = {
     "billy": {"fall": "BillFall", "fly": "BillFly"},
     "inari": {"fall": "InarFall", "fly": "InarFly"},
     "saddam": {"fall": "SaddFall", "fly": "SaddFly"},
+    "turd": {"fall": "TurdFall", "fly": "TurdFly"},
 }
 
 ALPHA_FLOOR = 64   # drop the faint drop shadow and the antialiased fringe

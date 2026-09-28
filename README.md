@@ -126,13 +126,15 @@ Three are standing in the coop from the start:
 | **Pepper** | holds a grudge | oily green shine, short temper |
 | **Gerald** | technically flightless | has not accepted this |
 
-Three more are boarded up until you earn them, and a fourth until you find him:
+Five more are boarded up until you earn them, and one of those until you find
+him rather than buy him:
 
 | | | |
 |---|---|---|
 | **Maximus** | **score 15** | a pug with two small wings and enormous confidence |
 | **Billy** | **score 25** | a biro doodle on ruled paper that got out of the margin |
 | **Inari** | **nine succulents** | a grey cat, mildly disgusted, who let herself in |
+| **Turd the Bird** | **five limes** | a small brown bird; the name was not his idea |
 | **Saddam** | **find him** | a crawfish the size of a plum, waiting behind the bamboo |
 
 Not every price is a score. Inari costs **nine succulents**, the spare life the
@@ -140,6 +142,13 @@ levels grow - the Garden's potted plant, and the Deck's pot, the Canopy's
 pomegranate and the Construction Zone's heart of junk with it - so she is earned
 by going and getting something rather than by surviving longer, and it is what
 she is worth, because what she brings is a spare life of her own.
+
+Turd the Bird is bought with **five limes**, which only THE CANOPY sheds, so
+his card names the level: a price in a currency you have never seen is not a
+price at all. There are four kinds of lock now - a score, a count of succulents,
+a count of limes, and having found somebody - and `Doodads.requirement()` turns
+any of them into the same price, plate and progress bar, so the select screen
+never has to know which one it is looking at.
 
 Saddam has no price - his stall just says `HE'S HIDING. CAN YOU FIND HIM?`
 **He is behind the tenth stake in THE GARDEN**,
@@ -268,6 +277,7 @@ doodads are the same doodad with a different coat of paint.
 | BILLY | **PAPER-LIGHT** | he falls slow and flies soft |
 | INARI | **SPARE LIFE** | she brings her own; the first mistake is free |
 | SADDAM | **TAIL FLICK** | he bats down what falls, one at a time |
+| TURD THE BIRD | **PINT-SIZED** | he is simply smaller, and a lime makes him smaller still |
 
 ### Cookie's nerve
 
@@ -356,6 +366,43 @@ pixels against the standard 48) - it just takes longer. Measured: **0.66
 seconds** of hang against everyone else's 0.59. Gentler arcs, and more time to
 change your mind halfway through one.
 
+### Turd's size
+
+He is **0.7 of a normal doodad**, all the time, and that is the whole ability:
+a hitbox 15 pixels across instead of 22, and a body drawn to match so what you
+see is what the planks test. It is not a tuning number - it is the art. His
+source drawing is 0.693 of Cookie's on the same canvas, and the sprite pipeline
+normalises that away when it scales every frame to the same size, so the roster
+entry puts it back.
+
+What it is worth, in the only unit that matters - the room to time a flap in at
+the tightest gap the game ever offers (78 pixels, in the Canopy), which is the
+gap less your own width less the 48 pixels one flap lifts you:
+
+| | room to flap |
+|---|---|
+| anyone else | **8px** |
+| anyone else, with a lime | 16px |
+| **Turd** | **15px** |
+| **Turd, with a lime** | **21px** |
+
+So he flies permanently with about what a lime buys everyone else, and a lime
+on top of that takes him somewhere nobody else goes. The lime multiplies his
+size rather than replacing it - 0.7 x 0.62 = **0.43**, a hitbox nine pixels
+across - because being small is what he *is*, not something that happens to
+him.
+
+It costs him something, and deliberately: a smaller circle catches less, so a
+succulent, a spicy drop or a lime is about a fifth harder for him to take, and
+he has to hug a plank closer to meet anyone hiding behind it.
+
+He is drawn small everywhere he stands beside another doodad - the stall rail,
+the coop on the title screen, the little row on the high score table - because
+it is what he is rather than a thing the run does to him. **Five limes** buys
+him, and limes grow in one place only: THE CANOPY, roughly one falling fruit in
+eleven. His locked card says so, because a player who cannot see where limes
+come from cannot go and get them.
+
 ## Eggs
 
 Reach **8** in THE COOP and the rafters start letting go. An egg tips off up
@@ -388,7 +435,9 @@ is a **lime**, and catching it does not set the run on fire - it shrinks you.
 
 The doodad eases down to **62%** of its size over about half a second and stays
 there for **7** seconds: the hitbox radius goes 11 -> 6.8, so the body you have
-to thread through a gap narrows from 22 pixels across to under 14. Nothing else
+to thread through a gap narrows from 22 pixels across to under 14. It is 62% of
+*its own* size, not a fixed target, which is why it compounds with Turd's - he
+goes to 0.43 of a normal doodad rather than levelling with everyone else. Nothing else
 about the run changes - no extra speed, no doubled planks, no cooking the fruit
 you touch - the gaps are simply bigger than you are. Catching a second lime
 while the first is still going tops the clock up, to a ceiling of 11.2 seconds.

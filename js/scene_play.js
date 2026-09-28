@@ -64,7 +64,10 @@ var PlayScene = (function () {
      effect palette has no green in it at all.
      SOUR_SHRINK 0.62 takes the hitbox from 22px across to 14 and the drawn
      body from 13 to 8; in the tightest gap a level allows that roughly
-     doubles the room to time a flap in. 0.55 to 0.70 is the useful range. */
+     doubles the room to time a flap in. 0.55 to 0.70 is the useful range.
+     Those figures are for a standard doodad; one with a `size` of its own
+     starts below them and the lime takes the same fraction off whatever he
+     is - see shrink(). */
   var SOUR_TIME   = 7.0;
   var SOUR_SHRINK = 0.62;
   var SOUR_HI = '#d6ff7a', SOUR_MID = '#8fd44a', SOUR_DARK = '#3f7a2a';
@@ -478,7 +481,13 @@ var PlayScene = (function () {
                                   half, so his eyes are on the near side
                                   of the cut and he reads as something
                                   looking back rather than a lump        */
-  var MEET_BODY = 13;          /* drawn at a flying doodad's size        */
+  var MEET_BODY = 13;          /* drawn at a STANDARD flying doodad's size,
+                                  deliberately not scaled by the hider's own
+                                  `size`: MEET_R and MEET_RISE are tuned
+                                  around a 13px body, and nobody small hides
+                                  today. If one ever does, retune the three
+                                  numbers together rather than scaling this
+                                  one.                                   */
 
   /* where he is peeking from: the middle of the plank, just over the top
      of its lower half */
@@ -892,6 +901,28 @@ var PlayScene = (function () {
                        life: rand(0.35, 0.95), g: -70,
                        col: chance(0.4) ? SOUR_HI : (chance(0.5) ? SOUR_MID : SOUR_DARK) });
     }
+    checkLimeUnlocks();
+  }
+
+  /* checkBoonUnlocks' twin: one doodad is bought with limes rather than
+     with succulents or a score, so a lime caught is a lime counted, and
+     the SOUR! shout stands down for the same reason the extra-life one
+     does - the two captions share the middle of the screen and a stall
+     coming open is the bigger news. The lime itself still lands: the
+     timer, the shrink and the gauge were set before this ran. */
+  function checkLimeUnlocks() {
+    var won = Doodads.noteLime();
+    if (!won.length || Doodads.masterKey()) return;
+    for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
+    sourBanner = 0;
+    Audio3.play('unlock');
+    Screen.shake(2.5, 0.3);
+    for (var k = 0; k < 30; k++) {
+      var a = rand(0, TAU), sp = rand(40, 170);
+      particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.5, 1.2), g: -50,
+                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+    }
   }
 
   /* emberTrail's twin, and deliberately the other way up: the heat trails
@@ -989,8 +1020,12 @@ var PlayScene = (function () {
      reading the constant. Both accessors run off the SAME eased `shrivel`,
      updated once a frame before anything is drawn, so the box and the body
      shrink and regrow together and the hitbox can never lie about what the
-     player can see. With shrivel 0 they return the constants exactly. */
-  function shrink()  { return 1 - shrivel * (1 - SOUR_SHRINK); }
+     player can see. With shrivel 0 they return the constants exactly -
+     times the doodad's own `size`, which is 1 for everyone who does not
+     say otherwise. A doodad that is small is the base the lime multiplies,
+     not an exception to it: 0.7 of a doodad with a lime in him is 0.43 of
+     one, which is the point of him. */
+  function shrink()  { return (doodad && doodad.size ? doodad.size : 1) * (1 - shrivel * (1 - SOUR_SHRINK)); }
   function hitR()    { return HIT_R * shrink(); }
   function bodyR()   { return BODY_R * shrink(); }
 
@@ -2051,6 +2086,7 @@ var PlayScene = (function () {
                                     score: score, runTime: runTime, rank: rank,
                                     spicy: spicy, heat: heat, dropArmed: dropArmed,
                                     sour: sour, shrivel: shrivel, hitR: hitR(),
+                                    bodyR: bodyR(),
                                     unlocked: unlocked.map(function (d) { return d.id; }),
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
                                     lives: lives, invuln: invuln,
@@ -2060,6 +2096,8 @@ var PlayScene = (function () {
                                     banners: bannerQueue.map(function (b) { return b.kind + ':' + (b.it.id || b.it.name); }),
                                     meetOn: obstacles.filter(function (o) { return o.meet && !o.met; }).length,
                                     boonsTaken: Doodads.boonsTaken(),
+                                    limesTaken: Doodads.limesTaken(),
+                                    size: doodad && doodad.size ? doodad.size : 1,
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
                                     trotting: trotting, watchA: watchA,
                                     nervePop: nervePop, nerveGain: nerveGain,

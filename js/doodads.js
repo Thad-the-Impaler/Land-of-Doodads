@@ -8,16 +8,24 @@
    tools/trim_sprites.py to regenerate it; do not hand-edit.
 
    unlockAt is the score the player has to have reached before a doodad
-   can be flown. No unlockAt means it was always there.
+   can be flown. No unlockAt means it was always there. unlockBoons,
+   unlockLimes and unlockMeet are the other prices: things collected, and
+   somebody found.
    title says how the doodad behaves in the coop on the title screen.
 
    Every doodad has an ability, and every one of them is PASSIVE: it needs
    no button of its own. The one that did (a dash on a double-tap) was cut,
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
-   `trot`, `light` - so a new one is a new field rather than a new branch on
-   an id, and each sits on its own axis: points, sight, pickups, survival,
-   handling.
+   `trot`, `light`, `lives`, `flick`, `size` - so a new one is a new field
+   rather than a new branch on an id, and each sits on its own axis:
+   points, sight, pickups, survival, handling, room.
+
+   `size` is the one field the OTHER scenes read too: it is how big the
+   doodad is against a standard one, and a doodad that is small is small
+   wherever it stands - the rail, the coop, the score table - because it is
+   what he is, not something that happens to him in the run. A doodad that
+   says nothing is size 1.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -187,6 +195,52 @@ var Doodads = (function () {
          and clear of where Gerald's art begins at 68.9. (250, the first
          guess, was behind the PLAY board, which is painted over him.) */
       title: { role: 'walk', r: 19, homeX: 34, spanX: 6 }
+    },
+    {
+      id: 'turd',
+      name: 'TURD THE BIRD',
+      tagline: 'EASY TO MISS',
+      about: ['A SMALL BROWN BIRD.', 'THE NAME WAS NOT HIS IDEA.'],
+      lockedAbout: ['SOMETHING SMALL IS IN HERE.', 'YOU MAY HAVE TO SQUINT.'],
+      /* He is drawn smaller than everyone else, and that is the whole of
+         his ability: there is less of him to hit. `size` scales both the
+         hitbox and the body, together, so what the player sees is always
+         what the planks test - and it is the base the lime multiplies, so
+         a lime makes him smaller still (0.7 x 0.62 = 0.43: a 9px hitbox
+         and an 11px body, still comfortably above anything that could
+         tunnel through a cap or a twig).
+
+         0.7 is the art, not a tuning choice: his source drawing is 0.693
+         of Cookie's, and the trim tool normalises that away, so this puts
+         it back. It is also the number that earns his keep as his ONLY
+         ability. The room to time a flap in at the tightest gap is
+         gap - hitbox - 48px of lift: 78 - 22 - 48 = 8px for everyone else,
+         78 - 15 - 48 = 15px for him, which is about what Billy's slow fall
+         and soft flap come to between them. 0.85 - the "slightly" reading -
+         would be 11px, a third of what a lime does, permanently, and the
+         hardest unlock in the game paying out something you could not
+         feel. And the bargain the lime already strikes applies to him all
+         day: a smaller circle catches less, so a succulent, a can or a lime
+         is about a fifth harder to take, and he has to hug a plank closer
+         to meet anyone hiding behind one. */
+      ability: 'PINT-SIZED',
+      abilityLive: true,
+      abilityAbout: ['LESS OF HIM TO HIT.', 'A LIME LEAVES EVEN LESS.'],
+      size: 0.7,
+      /* Five limes, and limes only grow in the Canopy: one eligible drop
+         in eleven there is a lime. The price says where, because a player
+         who cannot see where limes come from cannot chase them. */
+      unlockLimes: 5,
+      /* Cocoa: his art is one flat #805830 brown, and taken straight it is
+         a third sandy brown on a rail that already has Gerald's and
+         Maximus's. Pushed darker and redder it stays honest to the bird and
+         reads as its own thing, warm against the canopy's green and dark
+         enough not to be another tan. */
+      accent: '#7b4f2c', accentDark: '#3f2612', accentLight: '#c48c5a',
+      sprite: { w: 384, h: 330, pivotX: 219.0, pivotY: 165.0, bodyR: 165.0, footOffset: 1.00 },
+      /* 13 is Cookie's 19 at 0.7: the perches are where he stands next to
+         her, so this is where the difference has to hold up */
+      title: { role: 'perch', r: 13 }
     }
   ];
 
@@ -246,6 +300,7 @@ var Doodads = (function () {
 
   var reached = null;                 /* cached; localStorage is not free */
   var boons = null;
+  var limes = null;
   var met = null;                     /* ids of the ones found in the world */
   var passkey = null;
 
@@ -301,6 +356,28 @@ var Doodads = (function () {
     });
   }
 
+  /* Limes ever caught, across every run - the succulent count's twin, kept
+     for the same reasons: a wiped score table must not take a doodad away,
+     and a total is not recoverable from anything else the save keeps. The
+     engine calls the power-up "sour"; the save and the price call it what
+     the player sees, a lime. */
+  function limesTaken() {
+    if (limes !== null) return limes;
+    var stored = Save.get('limes', 0);
+    limes = (typeof stored === 'number' && stored > 0) ? Math.floor(stored) : 0;
+    return limes;
+  }
+
+  /* one lime caught. returns the doodads it just opened up. */
+  function noteLime() {
+    var before = limesTaken();
+    limes = before + 1;
+    Save.set('limes', limes);
+    return LIST.filter(function (d) {
+      return d.unlockLimes && d.unlockLimes > before && d.unlockLimes <= limes;
+    });
+  }
+
   /* The doodads that have been found rather than earned. A list of ids
      rather than a count, because meeting one is a single event that either
      has or has not happened and there is nothing to total up. */
@@ -347,9 +424,9 @@ var Doodads = (function () {
     });
   }
 
-  /* pass `best` when checking several doodads in one frame. masterKey()
-     and boonsTaken() both cache, so this stays cheap enough to call from
-     a draw loop. A doodad states whatever it wants and has to satisfy all
+  /* pass `best` when checking several doodads in one frame. masterKey(),
+     boonsTaken() and limesTaken() all cache, so this stays cheap enough to
+     call from a draw loop. A doodad states whatever it wants and has to satisfy all
      of it; one that states nothing was always there. */
   function isUnlocked(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
@@ -357,6 +434,7 @@ var Doodads = (function () {
     if (masterKey()) return true;
     if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
+    if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
     if (d.unlockMeet && metIds().indexOf(d.id) < 0) return false;
     return true;
   }
@@ -364,7 +442,7 @@ var Doodads = (function () {
   /* What a locked doodad is still waiting for: the price to print, how far
      along the player is and what to call it. Here rather than on the select
      screen, so the card never has to know which kind of lock it is looking
-     at - and a third kind is a third branch in one place. */
+     at - and a fourth kind is a fourth branch in one place. */
   function requirement(d) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return null;
@@ -372,6 +450,13 @@ var Doodads = (function () {
       return { price: 'COLLECT ' + d.unlockBoons + ' SUCCULENTS', unit: 'TAKEN',
                plate: d.unlockBoons + ' SUCCULENTS',
                have: Math.min(boonsTaken(), d.unlockBoons), need: d.unlockBoons };
+    }
+    /* the price names the level, because only one grows them - a player
+       who has never seen a lime has no other way to learn where to look */
+    if (d.unlockLimes) {
+      return { price: 'CATCH ' + d.unlockLimes + ' LIMES IN THE CANOPY', unit: 'CAUGHT',
+               plate: d.unlockLimes + ' LIMES',
+               have: Math.min(limesTaken(), d.unlockLimes), need: d.unlockLimes };
     }
     if (d.unlockAt) {
       return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
@@ -403,6 +488,7 @@ var Doodads = (function () {
     draw: draw,
     bestReached: bestReached, noteScore: noteScore,
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
+    limesTaken: limesTaken, noteLime: noteLime,
     meetable: meetable, noteMeet: noteMeet,
     isUnlocked: isUnlocked, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey

@@ -38,6 +38,13 @@ var CharSelectScene = (function () {
   var PLATE_Y = 144;
   var RAIL_Y = 38, RAIL_H = 6;
   var CARD_Y = 168;
+
+  /* Where the arrow-key chevrons sit either side of the name, and how much
+     room that leaves the name itself. One pair of numbers, because the two
+     have to be decided together: TURD THE BIRD is 231px at scale 3 and
+     would bury both chevrons under its own letters. */
+  var NAME_L = 150, NAME_R = 330;
+  var NAME_SPAN = NAME_R - NAME_L - 12;
   var POP_T = 0.22, FLASH_T = 0.08, DENY_T = 0.35;
   var BOARD_H = 10, BOARD_Y = [62, 90, 118];
 
@@ -323,7 +330,8 @@ var CharSelectScene = (function () {
 
       /* crate to stand on, and the shadow it catches */
       crate(ctx, s.cx, CRATE_Y, s.sel ? 56 : 44, s.sel && open);
-      var sr = s.sel ? 25 : 18;
+      /* the shadow is the sprite's, so it is the sprite's size - see drawChars */
+      var sr = (s.sel ? 25 : 18) * (d.size || 1);
       Dither.rect(ctx, Math.round(s.cx - sr * 0.7), CRATE_Y + 1,
                   Math.round(sr * 1.4), 3, UI.C.shadow, 12);
 
@@ -371,7 +379,11 @@ var CharSelectScene = (function () {
       var d = Doodads.list[i];
       var s = stall(i);
       var open = unlocked(i);
-      var r = s.sel ? 25 : 18;
+      /* A doodad that is small is small HERE, standing next to the others,
+         which is the one place the promise on his card can be checked
+         before it is paid for - and behind the boards too, where
+         "something small is in here" is the tease. */
+      var r = (s.sel ? 25 : 18) * (d.size || 1);
       var amp = open ? (s.sel ? 2.4 : 1.4) : 0.8;      /* a shut one barely stirs */
       var b = Math.sin(t * 2.3 + bob[i]) * amp;
       var fly = open && flapTimer[i] > 0;
@@ -452,8 +464,8 @@ var CharSelectScene = (function () {
        change width. Signage for the arrow keys; a phone gets none, because
        there the stalls above are the arrows. */
     if (!UI.touch()) {
-      UI.chevron(ctx, 150 - arrowBob(), 184, -1, 6, index > 0 ? UI.C.gold : UI.C.inkFaint);
-      UI.chevron(ctx, 330 + arrowBob(), 184, 1, 6,
+      UI.chevron(ctx, NAME_L - arrowBob(), 184, -1, 6, index > 0 ? UI.C.gold : UI.C.inkFaint);
+      UI.chevron(ctx, NAME_R + arrowBob(), 184, 1, 6,
                  index < Doodads.list.length - 1 ? UI.C.gold : UI.C.inkFaint);
     }
 
@@ -468,7 +480,14 @@ var CharSelectScene = (function () {
   }
 
   function drawOpenCard(ctx, d, r, lv) {
-    UI.heading(ctx, d.name, VW / 2, 174, 3, { colour: d.accentLight });
+    /* A name too long for the space between the chevrons steps down a size
+       rather than running over them - the same rule the level select's
+       title plate uses, and for the same reason: the furniture is fixed and
+       the name is not. A shorter heading is nudged down so it stays centred
+       in the band above the tagline instead of floating at the top of it. */
+    var ns = 3;
+    while (ns > 1 && Font.measure(d.name, ns) > NAME_SPAN) ns--;
+    UI.heading(ctx, d.name, VW / 2, 174 + (3 - ns) * 4, ns, { colour: d.accentLight });
     UI.text(ctx, d.tagline, VW / 2, 198, { align: 'center', colour: UI.C.gold, spacing: 2 });
     /* a doodad whose ability actually does something says what it does,
        in place of its second line of flavour */

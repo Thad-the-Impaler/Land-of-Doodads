@@ -130,7 +130,9 @@ var ScoresScene = (function () {
       var lead = i === 0;
       var bob = lead ? Math.sin(t * 3) * 1.2 : 0;
       var flap = lead && Math.sin(t * 3) > 0.6;
-      Doodads.draw(ctx, d.id, x + 99, rowY(i) + 6 + bob, 5.2, 0, flap);
+      /* at his own size, like everywhere else he stands in a line with the
+         others: a row of these is a row of doodads, not a row of icons */
+      Doodads.draw(ctx, d.id, x + 99, rowY(i) + 6 + bob, 5.2 * (d.size || 1), 0, flap);
     }
   }
 
