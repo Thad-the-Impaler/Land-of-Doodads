@@ -62,9 +62,16 @@ confirm". Both were the same mistake: the arrows contradicted the list they
 pointed at, and tapping the doodad you wanted started a run as whoever the
 invisible cursor happened to be on. **A tap that lands on nothing is free.**
 
-A triangle now appears only inside a raised pad, and only ever means *move this
-way* - the loose ones that used to flank a name, mark a chosen row or sit in a
-strip of hint text are gone, along with `UI.chevronV` and `UI.marker`.
+**Triangles mean different things to a thumb and to a keyboard, so there are
+two vocabularies and a screen never shows both.** On a phone a triangle appears
+only inside a raised pad, and only ever means *press this to move that way* - a
+loose one beside a pad that did the same job was half of what made the old menus
+contradict themselves. On a computer the loose ones come back, flanking the room
+plate, the level card, the doodad's name, the ends of the stall rail and the
+chosen menu row: there they are signage for the **arrow keys**, and they are not
+pressable because the thing they point at is. The high scores table is the one
+screen where the two could collide - its paging arrows become buttons the moment
+anything points - so there the chevrons are drawn only when nothing is.
 
 Neither touch nor the mouse has a path of its own. A finger and a cursor produce
 the same actions the keys do, so every screen behaves as it always has, and the

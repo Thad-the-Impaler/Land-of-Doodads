@@ -226,6 +226,10 @@ var CharSelectScene = (function () {
   /* is the rail longer than the window, i.e. does the row run off the edges */
   function overflowing() { return Doodads.list.length > BAYS; }
 
+  /* the one-pixel nudge that makes a chevron look like it is leaning the
+     way it points. Keyboard and cursor only - see the callers. */
+  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
+
   function rowX() { return -Math.round(view * PITCH / STEP) * STEP; }
 
   /* the bays with any part of themselves on screen, ends included, so the
@@ -424,15 +428,34 @@ var CharSelectScene = (function () {
       }
       /* and the stall itself is the control. Only the chosen one carries an
          action, which is what makes the first tap "this one" and the second
-         "go". The rail-edge chevrons that used to point at the slivers are
-         gone: the sliver is the arrow, and it can be pressed. */
+         "go". On a phone that is the whole story: the sliver bleeding in at
+         the edge IS the arrow, and it can be pressed. */
       hot.push({ x: s.x, y: s.y, w: s.w, h: s.h, id: 'stall', i: i,
                  a: s.sel ? 'confirm' : undefined });
+    }
+
+    /* The rail runs off both sides once the roster outgrows the window, and
+       on a keyboard nothing else says so. Drawn over the sliver it points
+       at, so the clipped stall reads as more row rather than as a mistake. */
+    if (!UI.touch() && overflowing()) {
+      var bump = arrowBob();
+      var lastView = Doodads.list.length - BAYS;
+      if (view > 0.02) UI.chevron(ctx, 6 - bump, 106, -1, 5, UI.C.gold);
+      if (view < lastView - 0.02) UI.chevron(ctx, 474 + bump, 106, 1, 5, UI.C.gold);
     }
 
     /* the card. flat tint: the menu backdrop scrolls behind it */
     Tint.rect(ctx, 0, CARD_Y, VW, 86, UI.C.darker, 12);
     UI.rule(ctx, 40, CARD_Y, VW - 80, UI.C.inkFaint);
+
+    /* Either side of the name, at a fixed x so they do not twitch as names
+       change width. Signage for the arrow keys; a phone gets none, because
+       there the stalls above are the arrows. */
+    if (!UI.touch()) {
+      UI.chevron(ctx, 150 - arrowBob(), 184, -1, 6, index > 0 ? UI.C.gold : UI.C.inkFaint);
+      UI.chevron(ctx, 330 + arrowBob(), 184, 1, 6,
+                 index < Doodads.list.length - 1 ? UI.C.gold : UI.C.inkFaint);
+    }
 
     if (open) drawOpenCard(ctx, d, r, lv);
     else drawLockedCard(ctx, d);

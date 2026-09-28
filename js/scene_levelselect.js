@@ -143,6 +143,10 @@ var LevelSelectScene = (function () {
     };
   }
 
+  /* the one-pixel nudge that makes a chevron look like it is leaning the
+     way it points. Keyboard and cursor only - see the callers. */
+  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
+
   /* one target, from the rectangle that was just drawn */
   function hit(rc, id, i, a) {
     hot.push({ x: rc.x, y: rc.y, w: rc.w, h: rc.h, id: id, i: i, a: a });
@@ -167,6 +171,16 @@ var LevelSelectScene = (function () {
     /* the centre room board is where you already are, so it is not a target */
     drawRoomSlot(ctx, room(roomIndex), L.room, true);
 
+    /* Signage for the arrow keys, either side of what they move. Not drawn
+       on a phone, where the side slots are the arrows and can be pressed. */
+    if (!UI.touch()) {
+      var rbob = arrowBob();
+      var rcol = focus === 'room' ? UI.C.gold : UI.C.inkFaint;
+      var rmy = ROOM.y + ROOM.h / 2;
+      if (prevRoom) UI.chevron(ctx, L.room.x - 10 - rbob, rmy, -1, 5, rcol);
+      if (nextRoom) UI.chevron(ctx, L.room.x + ROOM.w + 10 + rbob, rmy, 1, 5, rcol);
+    }
+
     UI.text(ctx, 'ROOM', L.room.x + ROOM.w / 2, ROOM.y - 9,
             { align: 'center',
               colour: (focus === 'room' && !UI.touch()) ? UI.C.ink : UI.C.inkFaint });
@@ -180,6 +194,14 @@ var LevelSelectScene = (function () {
     if (rightLv) { drawCard(ctx, rightLv, L.cardR, false, 1); hit(L.cardR, 'card', 1); }
     drawCard(ctx, level(roomIndex, levelIndex), L.card, true, 0);
     hit(L.card, 'card', 0, 'confirm');
+
+    if (!UI.touch()) {
+      var cbob = arrowBob();
+      var ccol = focus === 'level' ? UI.C.gold : UI.C.inkFaint;
+      var cmy = CARD.y + CARD.h / 2;
+      if (leftLv) UI.chevron(ctx, L.card.x - 9 - cbob, cmy, -1, 6, ccol);
+      if (rightLv) UI.chevron(ctx, L.card.x + CARD.w + 9 + cbob, cmy, 1, 6, ccol);
+    }
 
     /* ---- the strip under everything ---- */
     var lv = level(roomIndex, levelIndex);

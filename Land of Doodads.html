@@ -9803,15 +9803,23 @@ var UI = (function () {
     }
   }
 
-  /* Solid pixel triangle; dir -1 = left, 1 = right. NOT exported, and that
-     is the point: a triangle in this game now appears only inside a raised
-     pad and only ever means "move this way". Loose chevrons were half of
-     what made the menus contradict themselves - a decorative one beside the
-     name you were on, a second at the edge of the rail, a third in the
-     footer text, none of them pressable, all of them next to a pad that
-     was. The only ones left are the pair below, either side of the little
-     handset on the turn-it-sideways notice, which are a picture of a phone
-     rotating rather than anything you can press. */
+  /* Solid pixel triangle; dir -1 = left, 1 = right.
+
+     THE RULE, because it is the whole reason these exist twice:
+
+       on TOUCH a triangle appears only inside a raised pad, and only ever
+       means "press this to move that way";
+       on a COMPUTER loose triangles come back, as signage for the ARROW
+       KEYS - they flank the thing the arrow keys move, and they are not
+       pressable because the thing they point at is.
+
+     That is why every caller below is gated on `!touch()`. A loose triangle
+     beside a pad that did the same job was half of what made the old menus
+     contradict themselves; beside a keyboard it is just a label saying
+     which way the keys go. The one screen where both could appear at once
+     is the high scores table, whose paging arrows ARE buttons under a
+     pointer - so there the chevrons are drawn only when nothing is
+     pointing. Never two arrow vocabularies on one screen. */
   function chevron(ctx, x, y, dir, size, colour) {
     ctx.fillStyle = colour || C.ink;
     x = Math.round(x); y = Math.round(y);
@@ -9819,6 +9827,24 @@ var UI = (function () {
       var h = (size - i) * 2 - 1;
       ctx.fillRect(x + dir * i - (dir < 0 ? 1 : 0), y - (h >> 1), 1, h);
     }
+  }
+
+  /* the same triangle stood on end; dir -1 = up, 1 = down */
+  function chevronV(ctx, x, y, dir, size, colour) {
+    ctx.fillStyle = colour || C.ink;
+    x = Math.round(x); y = Math.round(y);
+    for (var i = 0; i < size; i++) {
+      var w = (size - i) * 2 - 1;
+      ctx.fillRect(x - (w >> 1), y + dir * i - (dir < 0 ? 1 : 0), w, 1);
+    }
+  }
+
+  /* the blinking marker beside the chosen menu row. Keyboard and cursor
+     only: a lit board already says which one is chosen, and on a phone the
+     board is the button, so a marker pointing at it is one thing too many. */
+  function marker(ctx, x, y, t, colour) {
+    var bob = Math.round(Math.sin(t * 7) * 1);
+    chevron(ctx, x + bob, y, 1, 4, colour || C.gold);
   }
 
   function text(ctx, str, x, y, o) {
@@ -9992,6 +10018,7 @@ var UI = (function () {
     C: C, scrim: scrim, board: board, button: button, panel: panel, nail: nail,
     pads: pads, rotateNotice: rotateNotice, forInput: forInput,
     touch: touch, footer: footer,
+    chevron: chevron, chevronV: chevronV, marker: marker,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };
 })();
@@ -10592,15 +10619,23 @@ var TitleScene = (function () {
 
     /* Menu boards, one per option, and each one a button: 32 tall rather
        than 22, which is 44 CSS px at the 1.389 fit a phone gets in
-       landscape. The blinking marker and the chevron that used to flank the
-       chosen row are gone - a triangle in this game now only ever appears
-       inside a raised pad and only ever means "move this way", and a board
-       that is lit up already says which one is chosen. */
+       landscape.
+
+       The blinking marker and the chevron that flank the chosen row are
+       keyboard-and-cursor only. On a phone the board IS the button and a lit
+       board already says which one is chosen, so a pair of triangles
+       pointing at it would be one thing too many on a screen whose whole
+       rule is "tap the thing itself". On a computer they are what the arrow
+       keys look like. */
     var bw = 152, bh = 32, bx = (VW - bw) / 2;
     for (var m = 0; m < MENU.length; m++) {
       var by = 182 + m * 38;
       UI.button(ctx, hot, bx, by, bw, bh,
                 { id: 'menu', i: m, a: 'confirm', label: MENU[m], lit: m === menuIndex });
+      if (m === menuIndex && !UI.touch()) {
+        UI.marker(ctx, bx - 12, by + bh / 2, t);
+        UI.chevron(ctx, bx + bw + 12, by + bh / 2, -1, 4, UI.C.gold);
+      }
     }
 
     /* arcade style hi-score readout in the corner */
@@ -10843,6 +10878,10 @@ var LevelSelectScene = (function () {
     };
   }
 
+  /* the one-pixel nudge that makes a chevron look like it is leaning the
+     way it points. Keyboard and cursor only - see the callers. */
+  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
+
   /* one target, from the rectangle that was just drawn */
   function hit(rc, id, i, a) {
     hot.push({ x: rc.x, y: rc.y, w: rc.w, h: rc.h, id: id, i: i, a: a });
@@ -10867,6 +10906,16 @@ var LevelSelectScene = (function () {
     /* the centre room board is where you already are, so it is not a target */
     drawRoomSlot(ctx, room(roomIndex), L.room, true);
 
+    /* Signage for the arrow keys, either side of what they move. Not drawn
+       on a phone, where the side slots are the arrows and can be pressed. */
+    if (!UI.touch()) {
+      var rbob = arrowBob();
+      var rcol = focus === 'room' ? UI.C.gold : UI.C.inkFaint;
+      var rmy = ROOM.y + ROOM.h / 2;
+      if (prevRoom) UI.chevron(ctx, L.room.x - 10 - rbob, rmy, -1, 5, rcol);
+      if (nextRoom) UI.chevron(ctx, L.room.x + ROOM.w + 10 + rbob, rmy, 1, 5, rcol);
+    }
+
     UI.text(ctx, 'ROOM', L.room.x + ROOM.w / 2, ROOM.y - 9,
             { align: 'center',
               colour: (focus === 'room' && !UI.touch()) ? UI.C.ink : UI.C.inkFaint });
@@ -10880,6 +10929,14 @@ var LevelSelectScene = (function () {
     if (rightLv) { drawCard(ctx, rightLv, L.cardR, false, 1); hit(L.cardR, 'card', 1); }
     drawCard(ctx, level(roomIndex, levelIndex), L.card, true, 0);
     hit(L.card, 'card', 0, 'confirm');
+
+    if (!UI.touch()) {
+      var cbob = arrowBob();
+      var ccol = focus === 'level' ? UI.C.gold : UI.C.inkFaint;
+      var cmy = CARD.y + CARD.h / 2;
+      if (leftLv) UI.chevron(ctx, L.card.x - 9 - cbob, cmy, -1, 6, ccol);
+      if (rightLv) UI.chevron(ctx, L.card.x + CARD.w + 9 + cbob, cmy, 1, 6, ccol);
+    }
 
     /* ---- the strip under everything ---- */
     var lv = level(roomIndex, levelIndex);
@@ -11362,6 +11419,10 @@ var CharSelectScene = (function () {
   /* is the rail longer than the window, i.e. does the row run off the edges */
   function overflowing() { return Doodads.list.length > BAYS; }
 
+  /* the one-pixel nudge that makes a chevron look like it is leaning the
+     way it points. Keyboard and cursor only - see the callers. */
+  function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
+
   function rowX() { return -Math.round(view * PITCH / STEP) * STEP; }
 
   /* the bays with any part of themselves on screen, ends included, so the
@@ -11560,15 +11621,34 @@ var CharSelectScene = (function () {
       }
       /* and the stall itself is the control. Only the chosen one carries an
          action, which is what makes the first tap "this one" and the second
-         "go". The rail-edge chevrons that used to point at the slivers are
-         gone: the sliver is the arrow, and it can be pressed. */
+         "go". On a phone that is the whole story: the sliver bleeding in at
+         the edge IS the arrow, and it can be pressed. */
       hot.push({ x: s.x, y: s.y, w: s.w, h: s.h, id: 'stall', i: i,
                  a: s.sel ? 'confirm' : undefined });
+    }
+
+    /* The rail runs off both sides once the roster outgrows the window, and
+       on a keyboard nothing else says so. Drawn over the sliver it points
+       at, so the clipped stall reads as more row rather than as a mistake. */
+    if (!UI.touch() && overflowing()) {
+      var bump = arrowBob();
+      var lastView = Doodads.list.length - BAYS;
+      if (view > 0.02) UI.chevron(ctx, 6 - bump, 106, -1, 5, UI.C.gold);
+      if (view < lastView - 0.02) UI.chevron(ctx, 474 + bump, 106, 1, 5, UI.C.gold);
     }
 
     /* the card. flat tint: the menu backdrop scrolls behind it */
     Tint.rect(ctx, 0, CARD_Y, VW, 86, UI.C.darker, 12);
     UI.rule(ctx, 40, CARD_Y, VW - 80, UI.C.inkFaint);
+
+    /* Either side of the name, at a fixed x so they do not twitch as names
+       change width. Signage for the arrow keys; a phone gets none, because
+       there the stalls above are the arrows. */
+    if (!UI.touch()) {
+      UI.chevron(ctx, 150 - arrowBob(), 184, -1, 6, index > 0 ? UI.C.gold : UI.C.inkFaint);
+      UI.chevron(ctx, 330 + arrowBob(), 184, 1, 6,
+                 index < Doodads.list.length - 1 ? UI.C.gold : UI.C.inkFaint);
+    }
 
     if (open) drawOpenCard(ctx, d, r, lv);
     else drawLockedCard(ctx, d);
@@ -13641,8 +13721,12 @@ var PlayScene = (function () {
        pads in the far corner, with the words themselves inert - so tapping
        TITLE started another run. */
     for (var i = 0; i < MENU.length; i++) {
-      UI.button(ctx, hot, lx + 10, y + 72 + i * 34, lw - 20, 30,
+      var my = y + 72 + i * 34;
+      UI.button(ctx, hot, lx + 10, my, lw - 20, 30,
                 { id: 'row', i: i, a: 'confirm', label: MENU[i].label, lit: i === menuIndex });
+      /* the marker beside the chosen row, for the keyboard that moves it.
+         A phone presses the row and needs nothing pointing at it. */
+      if (i === menuIndex && !UI.touch()) UI.marker(ctx, lx + 2, my + 15, t);
     }
   }
 
@@ -13914,6 +13998,18 @@ var ScoresScene = (function () {
     if (c) {
       var label = c.room.name + '  ·  ' + c.level.name;
       UI.text(ctx, label, VW / 2, 30, { align: 'center', colour: UI.C.ink });
+
+      /* The one screen in the game where both arrow vocabularies could show
+         at once: the two paging buttons above are drawn the moment anything
+         points, and these say the same thing for the arrow KEYS. So they
+         are drawn only when nothing is pointing - never a loose triangle
+         beside a pressable one doing the same job. */
+      if (!Input.pointing()) {
+        var half = Font.measure(label, 1) / 2;
+        var live = list.length > 1 ? UI.C.gold : UI.C.inkFaint;
+        UI.chevron(ctx, VW / 2 - half - 10, 33, -1, 4, live);
+        UI.chevron(ctx, VW / 2 + half + 10, 33, 1, 4, live);
+      }
 
       /* Each doodad's own best on this level, plus a count of the ones
          still boarded up. Only the earned ones are named: the row was

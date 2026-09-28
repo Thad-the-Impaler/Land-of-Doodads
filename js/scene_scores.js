@@ -163,6 +163,18 @@ var ScoresScene = (function () {
       var label = c.room.name + '  ·  ' + c.level.name;
       UI.text(ctx, label, VW / 2, 30, { align: 'center', colour: UI.C.ink });
 
+      /* The one screen in the game where both arrow vocabularies could show
+         at once: the two paging buttons above are drawn the moment anything
+         points, and these say the same thing for the arrow KEYS. So they
+         are drawn only when nothing is pointing - never a loose triangle
+         beside a pressable one doing the same job. */
+      if (!Input.pointing()) {
+        var half = Font.measure(label, 1) / 2;
+        var live = list.length > 1 ? UI.C.gold : UI.C.inkFaint;
+        UI.chevron(ctx, VW / 2 - half - 10, 33, -1, 4, live);
+        UI.chevron(ctx, VW / 2 + half + 10, 33, 1, 4, live);
+      }
+
       /* Each doodad's own best on this level, plus a count of the ones
          still boarded up. Only the earned ones are named: the row was
          sized for three and five of them overflow the 480px screen, and

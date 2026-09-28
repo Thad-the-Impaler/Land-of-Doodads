@@ -1958,8 +1958,12 @@ var PlayScene = (function () {
        pads in the far corner, with the words themselves inert - so tapping
        TITLE started another run. */
     for (var i = 0; i < MENU.length; i++) {
-      UI.button(ctx, hot, lx + 10, y + 72 + i * 34, lw - 20, 30,
+      var my = y + 72 + i * 34;
+      UI.button(ctx, hot, lx + 10, my, lw - 20, 30,
                 { id: 'row', i: i, a: 'confirm', label: MENU[i].label, lit: i === menuIndex });
+      /* the marker beside the chosen row, for the keyboard that moves it.
+         A phone presses the row and needs nothing pointing at it. */
+      if (i === menuIndex && !UI.touch()) UI.marker(ctx, lx + 2, my + 15, t);
     }
   }
 

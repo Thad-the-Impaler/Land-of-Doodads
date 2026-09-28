@@ -132,15 +132,23 @@ var UI = (function () {
     }
   }
 
-  /* Solid pixel triangle; dir -1 = left, 1 = right. NOT exported, and that
-     is the point: a triangle in this game now appears only inside a raised
-     pad and only ever means "move this way". Loose chevrons were half of
-     what made the menus contradict themselves - a decorative one beside the
-     name you were on, a second at the edge of the rail, a third in the
-     footer text, none of them pressable, all of them next to a pad that
-     was. The only ones left are the pair below, either side of the little
-     handset on the turn-it-sideways notice, which are a picture of a phone
-     rotating rather than anything you can press. */
+  /* Solid pixel triangle; dir -1 = left, 1 = right.
+
+     THE RULE, because it is the whole reason these exist twice:
+
+       on TOUCH a triangle appears only inside a raised pad, and only ever
+       means "press this to move that way";
+       on a COMPUTER loose triangles come back, as signage for the ARROW
+       KEYS - they flank the thing the arrow keys move, and they are not
+       pressable because the thing they point at is.
+
+     That is why every caller below is gated on `!touch()`. A loose triangle
+     beside a pad that did the same job was half of what made the old menus
+     contradict themselves; beside a keyboard it is just a label saying
+     which way the keys go. The one screen where both could appear at once
+     is the high scores table, whose paging arrows ARE buttons under a
+     pointer - so there the chevrons are drawn only when nothing is
+     pointing. Never two arrow vocabularies on one screen. */
   function chevron(ctx, x, y, dir, size, colour) {
     ctx.fillStyle = colour || C.ink;
     x = Math.round(x); y = Math.round(y);
@@ -148,6 +156,24 @@ var UI = (function () {
       var h = (size - i) * 2 - 1;
       ctx.fillRect(x + dir * i - (dir < 0 ? 1 : 0), y - (h >> 1), 1, h);
     }
+  }
+
+  /* the same triangle stood on end; dir -1 = up, 1 = down */
+  function chevronV(ctx, x, y, dir, size, colour) {
+    ctx.fillStyle = colour || C.ink;
+    x = Math.round(x); y = Math.round(y);
+    for (var i = 0; i < size; i++) {
+      var w = (size - i) * 2 - 1;
+      ctx.fillRect(x - (w >> 1), y + dir * i - (dir < 0 ? 1 : 0), w, 1);
+    }
+  }
+
+  /* the blinking marker beside the chosen menu row. Keyboard and cursor
+     only: a lit board already says which one is chosen, and on a phone the
+     board is the button, so a marker pointing at it is one thing too many. */
+  function marker(ctx, x, y, t, colour) {
+    var bob = Math.round(Math.sin(t * 7) * 1);
+    chevron(ctx, x + bob, y, 1, 4, colour || C.gold);
   }
 
   function text(ctx, str, x, y, o) {
@@ -321,6 +347,7 @@ var UI = (function () {
     C: C, scrim: scrim, board: board, button: button, panel: panel, nail: nail,
     pads: pads, rotateNotice: rotateNotice, forInput: forInput,
     touch: touch, footer: footer,
+    chevron: chevron, chevronV: chevronV, marker: marker,
     text: text, heading: heading, hint: hint, rule: rule, padlock: padlock
   };
 })();

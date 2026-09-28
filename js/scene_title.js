@@ -592,15 +592,23 @@ var TitleScene = (function () {
 
     /* Menu boards, one per option, and each one a button: 32 tall rather
        than 22, which is 44 CSS px at the 1.389 fit a phone gets in
-       landscape. The blinking marker and the chevron that used to flank the
-       chosen row are gone - a triangle in this game now only ever appears
-       inside a raised pad and only ever means "move this way", and a board
-       that is lit up already says which one is chosen. */
+       landscape.
+
+       The blinking marker and the chevron that flank the chosen row are
+       keyboard-and-cursor only. On a phone the board IS the button and a lit
+       board already says which one is chosen, so a pair of triangles
+       pointing at it would be one thing too many on a screen whose whole
+       rule is "tap the thing itself". On a computer they are what the arrow
+       keys look like. */
     var bw = 152, bh = 32, bx = (VW - bw) / 2;
     for (var m = 0; m < MENU.length; m++) {
       var by = 182 + m * 38;
       UI.button(ctx, hot, bx, by, bw, bh,
                 { id: 'menu', i: m, a: 'confirm', label: MENU[m], lit: m === menuIndex });
+      if (m === menuIndex && !UI.touch()) {
+        UI.marker(ctx, bx - 12, by + bh / 2, t);
+        UI.chevron(ctx, bx + bw + 12, by + bh / 2, -1, 4, UI.C.gold);
+      }
     }
 
     /* arcade style hi-score readout in the corner */
