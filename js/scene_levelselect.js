@@ -149,26 +149,26 @@ var LevelSelectScene = (function () {
 
   /* How to fit a level's name on its cover.
 
-     THE GARDEN and THE CANOPY measure 118px at scale 2 against a 112px
-     plate - over by SIX PIXELS - and were dropping to scale 1 for it, which
-     is half the size for the sake of nothing anyone could see. Tightening
-     the letter spacing before touching the scale buys 18px on a ten-letter
-     name and 40 on a long one, which is more than enough to keep both of
-     them big.
+     The font has two useful sizes here and nothing in between - it is drawn
+     from whole pixels, so a scale of 1.5 would put half-pixel stems on some
+     letters and not others - which makes the budget the only real dial.
 
-     Ordered so the biggest thing that fits wins: full size and normal
-     spacing, then full size and tight, then down a step and the same two
-     again. THE CONSTRUCTION ZONE ends up at the bottom rung and is better
-     off for it - at 125px it used to hang over both ends of its own plate,
-     and tight it is 105 and inside it. */
+     THE GARDEN and THE CANOPY are 118px at scale 2 and were dropping to
+     scale 1, half the size, because the budget was 112. Six pixels. The
+     budget is now the whole title plate, 118, which both of them fit
+     exactly; they get a pixel of the card's own inset either side rather
+     than a gap inside the plate, which is close but is not the plate
+     overflowing.
+
+     Squeezing the letters together was tried and taken out again: it bought
+     the room but a title set tighter than every other line on the screen
+     looks like a mistake, and it looked like one. Better a size that fits
+     on its own terms.
+
+     THE CONSTRUCTION ZONE fits neither and takes scale 1, which is what it
+     always did. */
   function fitTitle(name, budget) {
-    var tries = [[2, 1], [2, 0], [1, 1], [1, 0]];
-    for (var i = 0; i < tries.length; i++) {
-      if (Font.measure(name, tries[i][0], tries[i][1]) <= budget) {
-        return { scale: tries[i][0], spacing: tries[i][1] };
-      }
-    }
-    return { scale: 1, spacing: 0 };
+    return { scale: Font.measure(name, 2) <= budget ? 2 : 1, spacing: 1 };
   }
 
   /* one target, from the rectangle that was just drawn */
@@ -344,8 +344,8 @@ var LevelSelectScene = (function () {
     var ny = py + ph + 2;
     Dither.rect(ctx, px, ny, pw, titleH - 2, UI.C.darker, 14);
     if (big) {
-      /* the plate, less a pixel of air at each end - see fitTitle */
-      var fit = fitTitle(lv.name, pw - 2);
+      /* the whole title plate is the budget - see fitTitle */
+      var fit = fitTitle(lv.name, pw);
       UI.text(ctx, lv.name, x + w / 2, ny + 1 + (fit.scale === 1 ? 4 : 0),
               { align: 'center', scale: fit.scale, spacing: fit.spacing,
                 colour: !open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.ink) });
