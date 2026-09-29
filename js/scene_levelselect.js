@@ -147,6 +147,30 @@ var LevelSelectScene = (function () {
      way it points. Keyboard and cursor only - see the callers. */
   function arrowBob() { return Math.round((Math.sin(t * 5) + 1) * 0.5 + 0.2); }
 
+  /* How to fit a level's name on its cover.
+
+     THE GARDEN and THE CANOPY measure 118px at scale 2 against a 112px
+     plate - over by SIX PIXELS - and were dropping to scale 1 for it, which
+     is half the size for the sake of nothing anyone could see. Tightening
+     the letter spacing before touching the scale buys 18px on a ten-letter
+     name and 40 on a long one, which is more than enough to keep both of
+     them big.
+
+     Ordered so the biggest thing that fits wins: full size and normal
+     spacing, then full size and tight, then down a step and the same two
+     again. THE CONSTRUCTION ZONE ends up at the bottom rung and is better
+     off for it - at 125px it used to hang over both ends of its own plate,
+     and tight it is 105 and inside it. */
+  function fitTitle(name, budget) {
+    var tries = [[2, 1], [2, 0], [1, 1], [1, 0]];
+    for (var i = 0; i < tries.length; i++) {
+      if (Font.measure(name, tries[i][0], tries[i][1]) <= budget) {
+        return { scale: tries[i][0], spacing: tries[i][1] };
+      }
+    }
+    return { scale: 1, spacing: 0 };
+  }
+
   /* one target, from the rectangle that was just drawn */
   function hit(rc, id, i, a) {
     hot.push({ x: rc.x, y: rc.y, w: rc.w, h: rc.h, id: id, i: i, a: a });
@@ -320,14 +344,10 @@ var LevelSelectScene = (function () {
     var ny = py + ph + 2;
     Dither.rect(ctx, px, ny, pw, titleH - 2, UI.C.darker, 14);
     if (big) {
-      /* THE CONSTRUCTION ZONE is 250px at scale 2 against a 150px plate, so
-         it hung over both neighbours. A long name steps down a size rather
-         than overflowing, which keeps the plate the plate however a future
-         level is named. */
-      var ns = 2;
-      while (ns > 1 && Font.measure(lv.name, ns) > pw - 6) ns--;
-      UI.text(ctx, lv.name, x + w / 2, ny + 1 + (ns === 1 ? 4 : 0),
-              { align: 'center', scale: ns,
+      /* the plate, less a pixel of air at each end - see fitTitle */
+      var fit = fitTitle(lv.name, pw - 2);
+      UI.text(ctx, lv.name, x + w / 2, ny + 1 + (fit.scale === 1 ? 4 : 0),
+              { align: 'center', scale: fit.scale, spacing: fit.spacing,
                 colour: !open ? UI.C.inkDim : (active ? UI.C.gold : UI.C.ink) });
       /* The one commit verb, written on the one card it belongs to. A phone
          has no ENTER and no footer to read it off, so the lit card says what

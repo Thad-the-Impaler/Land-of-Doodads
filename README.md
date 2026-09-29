@@ -134,7 +134,7 @@ him rather than buy him:
 | **Maximus** | **score 15** | a pug with two small wings and enormous confidence |
 | **Billy** | **score 25** | a biro doodle on ruled paper that got out of the margin |
 | **Inari** | **nine succulents** | a grey cat, mildly disgusted, who let herself in |
-| **Turd the Bird** | **five limes** | a small brown bird; the name was not his idea |
+| **Turd the Bird** | **three limes** | a small brown bird; the name was not his idea |
 | **Saddam** | **find him** | a crawfish the size of a plum, waiting behind the bamboo |
 
 Not every price is a score. Inari costs **nine succulents**, the spare life the
@@ -143,7 +143,7 @@ pomegranate and the Construction Zone's heart of junk with it - so she is earned
 by going and getting something rather than by surviving longer, and it is what
 she is worth, because what she brings is a spare life of her own.
 
-Turd the Bird is bought with **five limes**, which only THE CANOPY sheds, so
+Turd the Bird is bought with **three limes**, which only THE CANOPY sheds, so
 his card names the level: a price in a currency you have never seen is not a
 price at all. There are four kinds of lock now - a score, a count of succulents,
 a count of limes, and having found somebody - and `Doodads.requirement()` turns
@@ -209,10 +209,10 @@ score on the one before it, so the BACKYARD opens a bay at a time.
 | | | opens on | |
 |---|---|---|---|
 | **THE COOP** | 1-1 | from the start | a DIY chicken coop the size of a barn |
-| **THE GARDEN** | 1-2 | **25** in the Coop | neat rows, once, before the mint got its way |
+| **THE GARDEN** | 1-2 | **20** in the Coop | neat rows, once, before the mint got its way |
 | **THE DECK** | 1-3 | **20** in the Garden | the good furniture, under an apple tree |
-| **THE CANOPY** | 1-4 | **25** in the Deck | up inside that tree, weaving between the branches |
-| **THE CONSTRUCTION ZONE** | 1-5 | **25** in the Canopy | three years of deck materials, and the saws still plugged in |
+| **THE CANOPY** | 1-4 | **20** in the Deck | up inside that tree, weaving between the branches |
+| **THE CONSTRUCTION ZONE** | 1-5 | **20** in the Canopy | three years of deck materials, and the saws still plugged in |
 
 Every card sits on the level select from the first run showing the padlock, what
 it costs and how close you are - a level you cannot see is a level nobody
@@ -231,7 +231,7 @@ kinds of thing, themed differently:
 | THE GARDEN | bamboo stakes, thorny vines off the sides | mint sprouts, past **15**, and long | tomatoes, past **7** | hot pepper | bark chips, fallen leaves, a paver |
 | THE DECK | bronze patio heaters | misters, past **14**, on a timer of their own | apples off the bough, past **7** | cinnamon apple | paint chips, windfall apples, a split log |
 | THE CANOPY | silhouetted trunk sections | twigs, past **12** - nobody pruned up here | apples and oranges, past **6** | a lime, which *shrinks* you | fallen fruit, dry leaves, a broken twig |
-| THE CONSTRUCTION ZONE | stacked lumber, strapped | buzzsaws, past **10**, and never off | beams off the lid, past **5** | a butane can | dropped screws, an offcut, sawdust |
+| THE CONSTRUCTION ZONE | stacked lumber, strapped | buzzsaws, past **6**, and never off - half the bays, then nine in ten | beams off the lid, past **5** | a butane can | dropped screws, an offcut, sawdust |
 
 Three of them also shed something **gold** - a golden apple in the Deck and the
 Canopy, a golden gear in the Construction Zone. It falls two or three times as
@@ -343,11 +343,12 @@ the part that gets there: anything falling that comes within **28 pixels** is
 batted out of the air before it lands.
 
 **One flick takes one thing, and then the tail has to come back.** The cooldown
-is 1.8 seconds, set against the rate the levels actually shed at: they floor out
-around 1.1-1.5 seconds apart, so late on he gets about every other one and flies
-the rest himself. Early, when they are 2.5 seconds apart, he still gets them all
-- the ability thins out exactly as the pressure comes on, which is the right way
-round, and two arriving together is precisely the moment he should not get both.
+is 2.5 seconds, set against the rate the levels actually shed at: they start
+around 2.2-2.5 seconds apart and floor out at 1.0-1.1, so early on he still gets
+nearly all of them and late on he gets roughly one in three and flies the rest
+himself. The ability thins out exactly as the pressure comes on, which is the
+right way round, and two arriving together is precisely the moment he should not
+get both.
 A quiet chirp and a few sparks say when the tail is back under him.
 
 It is deliberately blind to power-ups. A crawfish that batted the hot pepper
@@ -398,7 +399,7 @@ he has to hug a plank closer to meet anyone hiding behind it.
 
 He is drawn small everywhere he stands beside another doodad - the stall rail,
 the coop on the title screen, the little row on the high score table - because
-it is what he is rather than a thing the run does to him. **Five limes** buys
+it is what he is rather than a thing the run does to him. **Three limes** buys
 him, and limes grow in one place only: THE CANOPY, roughly one falling fruit in
 eleven. His locked card says so, because a player who cannot see where limes
 come from cannot go and get them.

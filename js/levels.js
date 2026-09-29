@@ -46,7 +46,7 @@ var Levels = (function () {
     name: 'THE GARDEN',
     code: '1-2',
     /* earned, not built-later: see `unlock` and Levels.isUnlocked */
-    unlock: { room: 'backyard', level: 'coop', score: 25 },
+    unlock: { room: 'backyard', level: 'coop', score: 20 },
     blurb: ['IT WAS NEAT ROWS, ONCE.', 'THE MINT HAD OTHER IDEAS.'],
     art: Garden,
     tune: {
@@ -120,7 +120,7 @@ var Levels = (function () {
     id: 'canopy',
     name: 'THE CANOPY',
     code: '1-4',
-    unlock: { room: 'backyard', level: 'deck', score: 25 },
+    unlock: { room: 'backyard', level: 'deck', score: 20 },
     blurb: ['UP A TREE THAT GROWS APPLES.', 'AND ORANGES. AND LIMES.'],
     art: Canopy,
     /* straight from the numbers js/canopy.js asks for in its own header */
@@ -151,7 +151,7 @@ var Levels = (function () {
     id: 'construction',
     name: 'THE CONSTRUCTION ZONE',
     code: '1-5',
-    unlock: { room: 'backyard', level: 'canopy', score: 25 },
+    unlock: { room: 'backyard', level: 'canopy', score: 20 },
     blurb: ['THREE YEARS OF DECK MATERIALS.', 'THE SAWS ARE STILL PLUGGED IN.'],
     art: Construction,
     tune: {
@@ -169,9 +169,16 @@ var Levels = (function () {
       gapStart: 100, gapMin: 78, gapRamp: 0.32,
       spacingStart: 224, spacingMin: 180, spacingRamp: 0.46,
       gapDrift: 60,
-      /* somebody left the saws running, and they never stop */
-      spikeScore: 10,
-      spikeChance: 0.34, spikeChanceMax: 0.68,
+      /* Somebody left the saws running, and they never stop. This is the
+         level's signature, so it leads on saws the way the Garden leads on
+         mint: they start at 6 rather than 10, half the bays have one from
+         the off, and by the end nine in ten do. One gap can still only hold
+         a single blade - that limit is the engine's, and it is what keeps
+         "nearly every bay" from meaning "a wall" - so the ceiling of 0.90
+         is a saw you almost always have to fly around rather than a
+         corridor that closes. */
+      spikeScore: 6,
+      spikeChance: 0.50, spikeChanceMax: 0.90,
       /* A blade shows at most 2R-3 of itself past the line and the level
          clamps to that, so anything past about 21 is a wasted roll. These
          ask for most of a blade and let the clamp have the rest. */

@@ -168,16 +168,17 @@ var Doodads = (function () {
          curse wearing a gift's clothes.
 
          `reach` is how far it gets, and `cool` is how long it takes to come
-         back. One flick takes ONE thing, and 1.8s is set against the rate
-         the levels actually shed at: they floor out around 1.1-1.5s apart,
-         so late on he gets about every other one and has to fly the rest
-         himself. Early, when they are 2.5s apart, he still gets them all -
-         the ability thins out exactly as the pressure comes on, which is
-         the right way round. */
+         back. One flick takes ONE thing, and 2.5s is set against the rate
+         the levels actually shed at: they start around 2.2-2.5s apart and
+         floor out at 1.0-1.1, so early on he still gets nearly all of them
+         and late on he gets roughly one in three and has to fly the rest
+         himself. The ability thins out exactly as the pressure comes on,
+         which is the right way round - 1.8s left him taking half of them at
+         the floor, which was most of the danger of the last level gone. */
       ability: 'TAIL FLICK',
       abilityLive: true,
       abilityAbout: ['THE TAIL GETS THERE FIRST.', 'THEN IT NEEDS A MOMENT.'],
-      flick: { reach: 28, cool: 1.8 },
+      flick: { reach: 28, cool: 2.5 },
       /* Not a price at all: he is FOUND. The level says which plank he is
          hiding behind (tune.meetAt); this only says that touching him is
          what opens the stall. */
@@ -227,10 +228,12 @@ var Doodads = (function () {
       abilityLive: true,
       abilityAbout: ['LESS OF HIM TO HIT.', 'A LIME LEAVES EVEN LESS.'],
       size: 0.7,
-      /* Five limes, and limes only grow in the Canopy: one eligible drop
+      /* Three limes, and limes only grow in the Canopy: one eligible drop
          in eleven there is a lime. The price says where, because a player
-         who cannot see where limes come from cannot chase them. */
-      unlockLimes: 5,
+         who cannot see where limes come from cannot chase them - and three
+         is about one good run's worth once you are up there, which is the
+         point of a price you can see the end of. */
+      unlockLimes: 3,
       /* Cocoa: his art is one flat #805830 brown, and taken straight it is
          a third sandy brown on a rail that already has Gerald's and
          Maximus's. Pushed darker and redder it stays honest to the bird and
