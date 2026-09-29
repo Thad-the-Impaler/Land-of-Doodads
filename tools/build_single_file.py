@@ -3,13 +3,15 @@
 
 Chrome refuses to let a file:// page load the scripts and images sitting next
 to it (every file:// url is its own origin), so double-clicking index.html
-gives you a blank page. This inlines the stylesheet, every script and all the
-character frames as data uris, producing a single file that opens anywhere -
-straight off the desktop, from a usb stick, as an email attachment.
+gives you a blank page. This inlines the stylesheet, every script, all the
+character frames and the sounds as data uris, producing a single file that
+opens anywhere - straight off the desktop, from a usb stick, as an email
+attachment.
 
     python3 tools/build_single_file.py
 
-Re-run it after changing anything under js/, css/ or Assets/sprites/.
+Re-run it after changing anything under js/, css/, Assets/sprites/ or
+Assets/sounds/.
 """
 
 import base64
@@ -19,15 +21,20 @@ import sys
 
 OUT = "Land of Doodads.html"
 
+# A sound file is named for what it IS, so that it stays identifiable; audio.js
+# plays it under the name of what it DOES. This is the one place the two meet,
+# and a file with no entry keeps its own stem as its role.
+SOUND_ROLES = {"mkoydokoy.mp3": "unlock"}
+
 
 def read(path):
     with open(path, encoding="utf-8") as fh:
         return fh.read()
 
 
-def data_uri(path):
+def data_uri(path, mime="image/png"):
     with open(path, "rb") as fh:
-        return "data:image/png;base64," + base64.b64encode(fh.read()).decode("ascii")
+        return "data:%s;base64,%s" % (mime, base64.b64encode(fh.read()).decode("ascii"))
 
 
 def main():
@@ -47,7 +54,19 @@ def main():
         if name.endswith(".png"):
             sprites[name[:-4]] = data_uri(os.path.join("Assets/sprites", name))
     frames = "\n".join('  %s: "%s",' % (k, v) for k, v in sprites.items())
-    inline_assets = "<script>\nwindow.DOODAD_SPRITES = {\n" + frames + "\n};\n</script>"
+
+    # the sounds, keyed by the ROLE js/audio.js plays them under rather than
+    # by filename - audio.js maps role -> path and this overrides the path
+    sounds = {}
+    if os.path.isdir("Assets/sounds"):
+        for name in sorted(os.listdir("Assets/sounds")):
+            if name.endswith(".mp3"):
+                sounds[SOUND_ROLES.get(name, name[:-4])] = data_uri(
+                    os.path.join("Assets/sounds", name), "audio/mpeg")
+    clips = "\n".join('  %s: "%s",' % (k, v) for k, v in sounds.items())
+
+    inline_assets = ("<script>\nwindow.DOODAD_SPRITES = {\n" + frames + "\n};\n"
+                     "window.DOODAD_SOUNDS = {\n" + clips + "\n};\n</script>")
 
     # every script tag, in the order index.html lists them
     scripts = re.findall(r'<script src="([^"]+)"></script>', html)
@@ -69,8 +88,8 @@ def main():
     with open(OUT, "w", encoding="utf-8") as fh:
         fh.write(html)
 
-    print("%s  (%.0f KB, %d scripts, %d sprite frames)"
-          % (OUT, os.path.getsize(OUT) / 1024, len(scripts), len(sprites)))
+    print("%s  (%.0f KB, %d scripts, %d sprite frames, %d sounds)"
+          % (OUT, os.path.getsize(OUT) / 1024, len(scripts), len(sprites), len(sounds)))
 
 
 if __name__ == "__main__":

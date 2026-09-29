@@ -1,7 +1,9 @@
 /* ------------------------------------------------------------------
    Land of Doodads - tiny WebAudio blip synth
-   No samples: every sound is a couple of oscillators, which keeps the
-   whole game a handful of files. M mutes, and the choice is saved.
+   Nearly no samples: every sound is a couple of oscillators, which keeps
+   the whole game a handful of files. The one exception is the unlock
+   fanfare, which is a recording - see SAMPLES near the bottom. M mutes,
+   and the choice is saved.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -20,7 +22,8 @@ var Audio3 = (function () {
       master = ctx.createGain();
       master.gain.value = muted ? 0 : 0.5;
       master.connect(ctx.destination);
-    } catch (e) { ctx = null; }
+    } catch (e) { ctx = null; return; }
+    decodeAll();
   }
 
   function toggleMute() {
@@ -144,7 +147,116 @@ var Audio3 = (function () {
                            tone({ from: 784, to: 784, dur: 0.2, type: 'square', vol: 0.12, delay: 0.24 }); }
   };
 
-  function play(name) { var fn = SFX[name]; if (fn) { unlock(); fn(); } }
+  /* ---------------------------------------------------------- samples
+
+     The synth above is the house style and it stays. This is the single
+     exception, because an unlock is the one moment in the game that is
+     worth a voice rather than an arpeggio, and no arrangement of square
+     waves was going to be that.
+
+     The synth fanfare is still there and still correct: if the recording
+     has not arrived, or the browser will not decode it, or the fetch fails
+     on somebody's file:// page, play() falls through to it. The biggest
+     moment in the game never goes silent because of an asset.          */
+
+  var SAMPLES = { unlock: 'Assets/sounds/mkoydokoy.mp3' };
+  var SAMPLE_VOL = 0.45;        /* peaks at -1.5dB, so this sits it just
+                                   above the loudest blip, which is what a
+                                   fanfare is for */
+
+  var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */
+  var buffers = {};             /* name -> AudioBuffer, decoded once ctx  */
+  var sounding = {};            /* name -> the source currently playing   */
+
+  /* the single file build inlines the sound as a data uri, exactly as it
+     does the sprite frames, because a file:// page may not fetch its
+     neighbours */
+  function sampleSrc(name) {
+    var inlined = window.DOODAD_SOUNDS;
+    return (inlined && inlined[name]) || SAMPLES[name];
+  }
+
+  function loadSample(name) {
+    var url = sampleSrc(name);
+    if (!url) return;
+    if (url.indexOf('data:') === 0) {
+      /* already in memory: unpack it rather than asking the network for
+         something that is sitting in the page */
+      try {
+        var b64 = url.slice(url.indexOf(',') + 1);
+        var bin = atob(b64), n = bin.length, arr = new Uint8Array(n), i;
+        for (i = 0; i < n; i++) arr[i] = bin.charCodeAt(i);
+        bytes[name] = arr.buffer;
+      } catch (e) { return; }
+      decodeSample(name);
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function () {
+      /* status 0 is a local file that loaded */
+      if (xhr.status === 200 || xhr.status === 0) {
+        bytes[name] = xhr.response;
+        decodeSample(name);
+      }
+    };
+    xhr.onerror = function () {};        /* the synth fanfare covers for it */
+    try { xhr.send(); } catch (e) {}
+  }
+
+  /* Decoding needs the context, and the context needs a gesture, so this is
+     called both when the bytes land and when the context is finally made -
+     whichever happens second is the one that does the work. */
+  function decodeSample(name) {
+    if (!ctx || buffers[name] || !bytes[name]) return;
+    /* decodeAudioData DETACHES what it is given, so hand it a copy: a
+       decode that fails must not take the bytes with it */
+    var copy = bytes[name].slice(0);
+    var keep = function (buf) { if (buf) buffers[name] = buf; };
+    try {
+      var p = ctx.decodeAudioData(copy, keep, function () {});
+      if (p && p.then) p.then(keep, function () {});
+    } catch (e) {}
+  }
+
+  function decodeAll() { for (var name in SAMPLES) decodeSample(name); }
+
+  /* Returns whether it actually played, which is what lets play() fall back
+     to the synth without knowing why it did not. */
+  function playSample(name) {
+    if (!ctx || muted || !buffers[name]) return false;
+    /* One at a time. A score that opens a level AND a doodad calls this
+       twice in the same frame, and two four-second voices over each other
+       is a mess - so whatever is sounding is stopped and it starts again
+       from the top, which is also what makes a second unlock feel like a
+       second unlock rather than a smear. */
+    if (sounding[name]) {
+      try { sounding[name].stop(); } catch (e) {}
+      sounding[name] = null;
+    }
+    var src = ctx.createBufferSource();
+    src.buffer = buffers[name];
+    var gain = ctx.createGain();
+    gain.gain.value = SAMPLE_VOL;
+    src.connect(gain); gain.connect(master);
+    src.onended = function () { if (sounding[name] === src) sounding[name] = null; };
+    src.start();
+    sounding[name] = src;
+    return true;
+  }
+
+  function play(name) {
+    var fn = SFX[name];
+    if (!fn && !SAMPLES[name]) return;
+    unlock();
+    if (playSample(name)) return;
+    if (fn) fn();
+  }
+
+  /* the bytes can be on their way before anything has been touched; only
+     the decoding has to wait for a gesture */
+  for (var s in SAMPLES) loadSample(s);
 
   return { unlock: unlock, play: play, toggleMute: toggleMute, isMuted: isMuted };
 })();

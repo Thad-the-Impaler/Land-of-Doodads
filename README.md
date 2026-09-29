@@ -448,6 +448,31 @@ the same way when the seconds are nearly gone. A drop is never both gold and
 sour: the gold is taken first, so making it both would swallow the lime and owe
 you an effect you never got.
 
+## Sound
+
+Every sound in the game is a couple of oscillators - a square wave, a filtered
+noise burst, no files - which is what keeps the whole thing a handful of
+scripts. `M` mutes, and the choice is saved.
+
+There is exactly one exception. **An unlock plays a recording**, because the
+moment a stall comes open is the one moment worth a voice rather than an
+arpeggio, and no arrangement of square waves was going to be that. It fires
+for a doodad and for a level alike, and for the master passkey.
+
+The chiptune fanfare it replaced is still in the file and still wired up: if
+the recording has not finished decoding, or the browser will not take it, or
+the fetch fails, `play()` falls through to the synth. The biggest moment in the
+game never goes quiet because of an asset. It is also one at a time - a score
+that opens a level *and* a doodad in the same frame restarts the clip rather
+than layering two of it.
+
+The source is `Extra Sounds/Mkoydokoy.caf`, which is Opus inside a CoreAudio
+container and plays in nothing but Safari; `Assets/sounds/mkoydokoy.mp3` is the
+web-playable copy the game actually loads, trimmed of its lead-in and brought
+up to a -1.5dB peak. The single-file build inlines it as a data uri the same
+way it does the sprite frames, because a `file://` page may not fetch its
+neighbours.
+
 ## High scores
 
 Every level keeps an arcade-style top ten. A new table starts with a few low
@@ -484,7 +509,7 @@ js/
   core.js             constants, maths, save helpers
   font.js             the hand-plotted 5x7 bitmap font
   input.js            keyboard, edge triggered so flaps cannot be held
-  audio.js            a small WebAudio blip synth (no sample files)
+  audio.js            a small WebAudio blip synth, plus the one recording
   screen.js           canvas layers, screen shake, ordered dithering
   assets.js           image loading
   doodads.js          the characters and how they are drawn
