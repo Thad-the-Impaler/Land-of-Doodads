@@ -12943,23 +12943,42 @@ var Desk = (function () {
    AND THE PANELS ARE STUFFED, NOT CAST. The cut after that one had the
    right layout and the wrong material: square corners, a flat face and
    a drawn seam, which the owner read as a concrete wall with bolts in
-   it. Each panel is a HEIGHT FIELD now - a pillow-shaped dome with
-   rounded corners, dimpled under its four buttons - lit from the
-   pendants and ordered-dithered through a tile-anchored Bayer. The
-   corners are round, the top is a rolled crest, every seam is a valley
-   both neighbours roll down into, and there is no straight edge on the
-   fabric anywhere. bakeCouch has the numbers.
+   it. So the SHAPE of a panel is a stuffed one and has been since - a
+   wide pillow with corners rounded generously at the top and tight at
+   the bottom, a rolled crest that curves instead of ruling, a valley at
+   every seam that both neighbours fall into, a dimple under each of its
+   four buttons, and no straight edge on the fabric anywhere.
 
-   AND THE CREST IS THE LAST OF IT. The modelling pass did all of that
-   and still left a 480px row of P.outline across the top of the tile,
-   with the panels starting underneath it - so the top of the sofa, which
-   is the first thing the eye meets because it is the silhouette against
+   AND THE RENDERING IS THE HOUSE'S, WHICH TOOK TWO GOES. The cut that
+   got the shape right drew it as a continuous height field with a light
+   vector, seven tones and a tile-anchored ordered Bayer between every
+   pair of them. That measures a mean run of 2.0 identical pixels along a
+   row where the Coop's plank wall measures 5.2, and the owner's word for
+   it was that the cushions had gone "really realistic" and stopped
+   matching the rest of the game. He was right, so the height field, the
+   light vector, the Bayer and two of the seven tones are gone.
+
+   What draws the sofa now is the Backyard's own grammar and nothing
+   else: FIVE flat tones with hard edges, a lit band and a dark band
+   whose every boundary sits on a feature of the cushion, a dark line
+   with a lit lip wherever two things meet, and a sparse seeded NAP of
+   1px grain ticks over the lot - which is the Coop's plank, the Garden's
+   stucco and the Construction Zone's lumber, at sofa scale. Five tones
+   alone came out the other side of the fault at a mean run of 14 with
+   three quarters of the field in one colour; it is the nap that brings
+   it back to the family. bakeCouch has the numbers and the measurements
+   beside them.
+
+   AND THE CREST IS THE LAST OF IT. The shape pass did all of that and
+   still left a 480px row of P.outline across the top of the tile, with
+   the panels starting underneath it - so the top of the sofa, which is
+   the first thing the eye meets because it is the silhouette against
    the bright shutters, was a dead-straight rule with a shallow notch
-   every 160 pixels. The rule is gone. The crest is a curve carried in
-   the height field, the arch of a cushion plus a long wave across the
-   whole tile so no two panels on screen crest at the same height, and
-   the hard edge that holds it against the sill follows that curve
-   instead of cutting across it.
+   every 160 pixels. The rule is gone. The crest is a curve - crestOf,
+   the arch of a cushion plus a long wave across the whole tile so no two
+   panels on screen crest at the same height - and the hard edge that
+   holds it against the sill follows that curve instead of cutting
+   across it.
 
    WHAT THIS BAY IS, AND WHY IT IS NOT THE DESK. Both rooms are the same
    room and both have the same windows in them, so the first cut of this
@@ -13106,24 +13125,22 @@ var Couch = (function () {
        separation does not depend on the lamp. */
     backMid:      '#67635c',   /* the body of a cushion panel  (lum 99) */
     backLit:      '#7c7871',   /* its lamp-side swell         (lum 120) */
-    backSwell:    '#716d66',   /* between the two: the swell's shoulder (109) */
-    backRoll:     '#5b5750',   /* the panel rolling away to its seam    (88) */
-    backCrease:   '#4f4c46',   /* the seam's shadow, and a crease        (76) */
-    button:       '#343230',   /* a tufting button, and the seam row    */
-    crest:        '#918d86',   /* the lit roll along the very top       */
-    /* backSwell and backRoll are NEW and they are what pays for the
-       lattice. A diamond-quilted back has a fold every 37 rows and a lit
-       face above every fold, so the old wall carried its tonal variety in
-       the pattern; a plain cushion panel has nothing but its own stuffing
-       to model, and modelled in three tones (120 / 99 / 76) each panel
-       came out as a lit disc on a flat plate with a hard ring round it -
-       a 21-luminance contour, which on a 160px panel is an edge the eye
-       finds. Five tones about eleven apart make the swell a RAMP in five
-       steps, each one under the room's own eight-a-row rule, and the
-       panel's mean lands within two of the old lattice's: see bakeCouch.
-       Since the modelling pass the ramp runs through SEVEN: crest above
-       backLit for the roll along the top of each cushion, and button
-       below backCrease for the valley between two of them. */
+    backCrease:   '#4f4c46',   /* the seam's shadow, and a pleat         (76) */
+    button:       '#343230',   /* a tufting button, and the seam row     (50) */
+    crest:        '#918d86',   /* the arris along the very top          (141) */
+    /* FIVE TONES AND NO RAMP. There used to be two more here - backSwell
+       109 and backRoll 88 - and their whole job was to be the
+       intermediate steps of a smooth falloff across a cushion panel,
+       seven tones about eleven apart with an ordered dither between each
+       pair. That is how a renderer draws a dome and it is not how this
+       game draws anything: the Coop's planks, the Garden's bamboo and the
+       Construction Zone's lumber each say their curvature with ONE lit
+       band and ONE dark band 35 to 50 apart with a flat body between, and
+       put every band edge on a feature of the object. So the two
+       in-between steps are gone, these five carry the sofa, and the steps
+       between neighbours are 21 / 21 / 23 / 26 - each one an edge the eye
+       finds on purpose. What makes the panels read as stuffed is now
+       WHERE the edges are and not how softly they blend. See bakeCouch. */
 
     /* THE THROW PILLOWS, and they are the thing that kills you, so
        nothing else in this bay is allowed to be this colour. The two
@@ -13630,7 +13647,18 @@ var Couch = (function () {
      later, so the window would have been built 160 wide instead of 90. */
   var CUSHION_W = 160;
   var BTN_DX = 29;
-  var BTN_Y = [53, 92];
+  /* ROW 88 AND NOT 92, which is the only number in this block the
+     photograph did not pick. The three throw cushions propped on the seat
+     are baked over the bottom of the panels and their outline ring lands
+     on tile row 94; a lower button row at 92 puts its own shadow row on
+     94 as well, so on the two panels a cushion stands in front of the
+     bottom two buttons lost their shadow and sat ON the cushion's rim
+     with nothing between. At 88 the dimple ends at row 90 and every one
+     of the twelve has four rows of clear fabric under it. 53 and 88 of
+     141 is 38% and 62%, which is the photograph's pair to within two
+     points, and it puts the wide rectangle of four on the panel's middle
+     instead of a little below it. */
+  var BTN_Y = [53, 88];
 
   /* A 56x52 throw cushion propped against the back, drawn into its own
      little canvas so the outline can go underneath it.
@@ -13767,7 +13795,7 @@ var Couch = (function () {
        continuous curve rising and falling across the panels with nothing
        above it at all.
 
-       So the crest is part of the HEIGHT FIELD now. The top of the
+       So the crest is part of the SILHOUETTE now. The top of the
        fabric is a curve (crestOf, in step 2), the dark above it is the
        recess between the sofa back and the window sill, and the hard
        edge the house style asks for is two rows of outline that FOLLOW
@@ -13777,79 +13805,138 @@ var Couch = (function () {
        straight rule again by another name. */
     c.fillStyle = P.backMid;  c.fillRect(0, 0, CO_W, CO_H);
 
-    /* 2. THE PANELS, and each one is a STUFFED THING. Square corners, a
-       flat face and a drawn seam read as cast concrete with bolts in it
-       - the owner's words - so a panel is a HEIGHT FIELD now, and the
-       tones are read off it the way light would read them:
+    /* 2. THE PANELS, AND THEY ARE DRAWN THE WAY THE REST OF THIS GAME
+       DRAWS EVERYTHING. The SHAPES here are the ones that were right and
+       are kept to the pixel - separate panels, four buttons each in a
+       wide rectangle, corners rounded generously at the top and tight at
+       the bottom, a crest that curves rather than rules, a valley at
+       every seam, a dimple at every button. What changed is the
+       RENDERING.
 
-         - its silhouette is a rounded rectangle, 158 of the panel's 160
-           columns and all 141 rows of the field, with an 18px radius on
-           the top corners and 8px on the bottom ones. Generous at the
-           top, where there is no frame behind the cushion and the
-           stuffing rounds freely; tight at the bottom, where the cushion
-           is pushed down into the seat. Outside that silhouette - the
-           corner wedges and the one column each side of a seam - is the
-           dark between two cushions.
-         - AND THAT RECTANGLE HANGS OFF A CREST LINE, not off row 0. The
-           panel's own vertical coordinate is measured down from wherever
-           the crest is on this column, so the rounded corners, the dome
-           and the lit roll along the top all follow the curve, and the
-           top of the sofa is a shape rather than a rule. crestOf below
-           is the curve and the numbers it was chosen for.
-         - the stuffing is a PILLOW and not a plateau: the product of two
-           superellipse bumps, one across and one down, each
-           (1 - r^3)^(1/3). Nearly flat through the middle, rolling over
-           hard in the outer fifth, and no mitre at the corners - a
-           distance field to the rectangle has one along each diagonal,
-           and it read as a bevelled box. The dome is 1 at the centre and
-           0 at every edge.
-         - each of the four buttons pulls the fabric INTO it: a Gaussian
-           dimple of radius 5.5px takes two fifths of the height at its
-           centre and nothing at twice that radius.
-         - the light is the pendants, overhead and a little to the left:
-           (-0.30, -0.85, 0.45), normalised. A pixel's tone is a base of
-           2.5 (between backSwell and backMid, mostly the latter), less 2
-           steps for standing the full height of the dome, less 7 steps
-           for how much more squarely its surface faces the light than a
-           flat one does - the gradient of the height field, scaled by
-           20px of puff, is the surface. So the roll along the top faces
-           up into the lamps and comes out crest; the roll at the bottom
-           faces the seat and goes down to backCrease; the left side of a
-           panel is a shade lighter than the right; the upper lip of
-           every dimple is in shadow and its lower lip is lit. Inside a
-           cushion the tone is clamped at backCrease, so the fabric's own
-           darkest value is one step above the valley it rolls into, and
-           the bottom roll is a ramp and not a cliff.
+       What used to be here was a continuous height field, a normalised
+       light vector, seven tones and a 4x4 ordered dither between every
+       pair of them. Measured on this baked tile with no light sheet over
+       it, that drew at a mean run of 2.2 identical pixels along a row,
+       median 1, in thirteen colours. The Coop's plank wall measures 5.2
+       on the same harness and the Garden's stucco 11.2. It was a
+       continuous-tone renderer wearing a pixel-art costume, and against
+       the Coop's planks it read as a photograph pasted into the game.
 
-       THE RAMP IS DITHERED, AND IT IS BAKED. Seven flat tones laid as
-       contours read as a target (TONES has an eighth, P.outline, and it
-       is not a tone of the fabric - it is the edge above the crest, set
-       as a whole index and never dithered into), so the tone is a
-       CONTINUOUS value and
-       the pixel takes the tone above or the tone below it by a 4x4
-       Bayer threshold - an ordered dither, baked once into this tile.
-       That is the one place in this file a Bayer grid is allowed, and
-       the reason is the file's own rule: the grid is indexed by TILE
-       coordinates, and the tile moves as one piece, so it never
-       re-phases against anything and cannot boil. 480 and 160 both
-       divide by four, so the pattern wraps at the tile seam as well.
-       Dither.rect, which anchors to the screen, is still not called
-       anywhere in here. */
-    var TONES = [P.crest, P.backLit, P.backSwell, P.backMid, P.backRoll,
-                 P.backCrease, P.button, P.outline];
-    var BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+       THE GRAMMAR IT IS DRAWN IN NOW, read off js/coop.js, js/garden.js
+       and js/construction.js rather than invented:
+         - ONE FLAT TONE PER FACE. A slat of the Coop's wall is one of
+           four tones over its whole width; a 2x4 in the Construction
+           Zone's bundle is lumHi 1 / lumMid 4 / lumDark 1 and nothing in
+           between.
+         - CURVATURE IS A LIT BAND AND A DARK BAND. A plank is plankLight
+           5 on the lamp side, plankMid 17 flat, plankDark 6 on the far
+           side. A bamboo cane is bambooLit 4 / bambooMid 4 / bambooDark
+           3. Not a ramp: two bands and a flat, 35 to 50 luminance apart,
+           and every band edge sits on a FEATURE of the object - an
+           arris, a node, a joint, the silhouette.
+         - A DARK LINE WHEREVER TWO THINGS MEET, usually paired with a 1px
+           lit lip under it: bakePlank's board joints, bakePillar's
+           bamboo nodes, the twine lashings, the gap between two courses
+           of lumber.
+         - TEXTURE IS SPARSE SEEDED TICKS - grain, knots, nail heads, the
+           Garden's 2600 pixels of stucco tooth. Never a Bayer laid
+           between two tones to fake a third. This is the one bullet the
+           first cut of these bands dropped, and dropping it is what left
+           74% of the field in a single colour with the buttons and the
+           folds engraved on a blank slab. See THE NAP, below.
+         - A LIGHT RAMP EXISTS ONLY AT THE SCALE OF A WHOLE WALL, and only
+           on a FLAT PLANE. The Garden's stucco steps about five times
+           each way in 1/16 Tints; the Coop's grime is three flat steps
+           and its daylight shaft five. On a flat plane the iso-lines of
+           light are straight and parallel to the sill and the screed, so
+           a light step and an architectural line are the same mark. On a
+           curved OBJECT - plank, cane, 2x4, egg - the Backyard never
+           ramps at all.
+
+       WHICH IS WHY NO BAND BELOW IS A THRESHOLD OF A FIELD. A dome has no
+       straight iso-lines: its are closed concentric loops with no edge of
+       anything to sit on, so quantising its light - even to four tones,
+       even with the dither gone - draws nested rings, which is a
+       topographic map of a cushion. The old comment here said as much
+       ("seven flat tones laid as contours read as a target") and reached
+       for a dither to hide it; the house cure is to stop drawing
+       iso-lines at all. So every edge below is ONE NAMED CURVE WITH A
+       PHYSICAL CAUSE, and no two of them are offset copies of each other,
+       because offset copies is what a contour map is made of: the cap's
+       lower edge is the only one that follows the crest and it is a
+       different curve from it, the skirt is dead straight because the
+       seat it is pushed down into is straight, and the two flanks follow
+       the silhouette.
+
+       FIVE TONES, down from seven, every one of them already in P:
+         ARRIS  P.crest      141  the rolled top edge catching the pendants
+         LIT    P.backLit    120  the top roll turning under, and the
+                                  lamp-side shoulder
+         BODY   P.backMid     99  three quarters of the panel, one flat
+         SHADE  P.backCrease  76  the skirt pushed into the seat, and the
+                                  flank turned away from the lamp
+         DARK   P.button      50  the gap between two cushions
+       Steps of 21 / 21 / 23 / 26. Smaller than the Coop's 35-50, because
+       microfibre is not pine and this sofa has to stay eleven points off
+       neutral under the pillars; but every one of them is an edge the eye
+       finds, which is now the point rather than the problem. P.outline
+       stays the edge above the crest and is not a tone of the fabric.
+       P.backSwell and P.backRoll were the two intermediate steps that
+       made the old ramp a ramp, and they go with it.
+
+       THE BANDS, down one 160x141 panel. `u` runs across it, `vv` is
+       measured down from wherever the crest is on this column and
+       rescaled to the full panel - exactly the coordinate the height
+       field used to be read in, so the bands hang off the curved top the
+       way the dome used to:
+         THE DARK     everything inside the field and outside the
+                      silhouette: the 2-column valley at every seam,
+                      widening into the 18px corner wedges at the top and
+                      the 8px ones at the bottom. The gap between two
+                      cushions, seen straight on.
+         THE OUTLINE  two rows directly above the first fabric row of each
+                      column, following the crest. A solid thing against
+                      the recess behind it.
+         THE ARRIS    the first two fabric rows wherever the silhouette
+                      faces within 25 degrees of straight up, thinning to
+                      one row out to 70 degrees round the left corner and
+                      30 round the right - the lamps are up and to the
+                      left. This is the lumHi row on a 2x4 and the
+                      bambooLit lip under a node.
+         THE CAP      from under the arris down to vv 16 at the apex of
+                      the panel, 13 a quarter of the way out and 9 at the
+                      seams, PLUS a 4px strip hugging the left silhouette
+                      down to vv 44, just above the top button row. The
+                      top roll turns under here, deepest where the cushion
+                      is fattest, and on the lamp side it carries on down
+                      the shoulder the way plankLight runs the length of a
+                      plank. This one curved edge is what carries the dome.
+         THE BODY     everything not claimed above, about three quarters
+                      of the panel, one flat tone. The big flat is what
+                      makes it pixel art - but a big flat and NOTHING
+                      ELSE is what makes it plastic, which is what the
+                      nap three steps down is for.
+         THE SHADE    the bottom 10 rows straight across, and a 5px strip
+                      hugging the right silhouette from vv 20 down into
+                      them. The roll pushed into the seat and the flank
+                      turned away from the lamp: plankDark's band.
+       The dome survives as the cap's lower edge dipping seven rows deeper
+       at the apex than at the ends, read against the lit left shoulder
+       and the shaded right flank - a cylinder's lit-band/dark-band read,
+       stated once instead of integrated over every pixel. A seam survives
+       as a 7px dark-then-light event: the neighbour's 5px shade strip,
+       the 2px dark valley, this panel's 4px lit strip. That is the Coop's
+       slat seam and the Garden's node, at sofa scale. */
+    var ARRIS = 0, LIT = 1, BODY = 2, SHADE = 3, DARK = 4, OUTLINE = 5;
+    var TONES = [P.crest, P.backLit, P.backMid, P.backCrease, P.button, P.outline];
     var PW = CUSHION_W, PH = CREASE - FIELD;          /* one panel: 160 x 141 */
     var R_TOP = 18, R_BOT = 8, GAP = 1;
-    var PUFF = 3;                                      /* the superellipse exponent    */
-    var PUFF_Z = 20;                                   /* px of height the normals see */
-    var DIMPLE_R = 5.5, DIMPLE_D = 0.40;
-    var DIMPLE_REACH = DIMPLE_R * 2.5;                 /* where a dimple stops mattering */
-    var DIMPLE_LIFT = 1.2;                             /* and how far its lip may light  */
-    var K_H = 2.0, K_N = 7.0, BASE = 2.5;
+    var CAP_MID = 16, CAP_END = 9;      /* the cap's depth at the apex and at a seam */
+    var SKIRT = 10;                     /* rows of shade along the bottom            */
+    var SIDE_SHADE = 5, SHADE_FROM = 20;/* the shaded right flank, and where it starts */
+    var SIDE_LIT = 4, LIT_TO = 44;      /* the lit left shoulder, and where it stops   */
     var CREST_DIP = 11, CREST_P = 1.6, CREST_RUN = 3;
-    var LX = -0.30, LY = -0.85, LZ = 0.45;
-    var LN = Math.sqrt(LX * LX + LY * LY + LZ * LZ);
-    LX /= LN; LY /= LN; LZ /= LN;
+    var DEG = 180 / Math.PI;
 
     /* THE CREST LINE: which tile row the top of the fabric is on, column
        by column, and it is the whole of what makes the top edge read as a
@@ -13885,230 +13972,326 @@ var Couch = (function () {
                    CREST_RUN * (1 + Math.cos(TAU * (x + 0.5) / CO_W)) / 2;
     }
 
-    /* the height of the stuffing on tile column `xi` at row `v`, or -1
-       outside the cushion's rounded silhouette. The panel's vertical
-       coordinate is measured DOWN FROM THE CREST where the crest actually
-       is on this column and rescaled to the full panel, so the corners,
-       the dome and the roll along the top all hang off the curve while
-       the bottom of the panel still lands on the crease. The four dimples
-       are the exception: they stay on the tile rows their buttons are
-       stamped on, so they take v and not the shifted one. */
-    function puff(xi, v) {
+    /* WHERE A PIXEL STANDS IN ITS PANEL: the signed distance to the
+       rounded-rectangle silhouette (negative inside), the vertical
+       coordinate hung off the crest, and the two overshoots the corner
+       arcs are measured from - which are also what says which way the
+       silhouette FACES, and the arris is the one band that needs to know.
+       Written into `sd` rather than returned, so the per-pixel loop
+       allocates nothing. There is no height field and no gradient any
+       more, so this needs no border ring around the tile: a pixel's tone
+       depends on where it is and on nothing its neighbours are doing. */
+    var sd = { d: 1, vv: 0, u: 0, qx: 0, qy: 0, ox: 0, oy: 0 };
+    function silhouette(xi, v) {
       var top = crestOf[xi];
       var vv = (v - top) * PH / (PH - top);
-      if (vv < 0) return -1;
+      sd.vv = vv;
+      if (vv < 0) { sd.d = 1; return; }
       var u = wrap(xi, PW) + 0.5;
       var r = vv < PH / 2 ? R_TOP : R_BOT;
       var hw = PW / 2 - GAP - r, hh = PH / 2 - r;
       var qx = Math.abs(u - PW / 2) - hw, qy = Math.abs(vv - PH / 2) - hh;
       var ox = Math.max(qx, 0), oy = Math.max(qy, 0);
-      var d = Math.sqrt(ox * ox + oy * oy) + Math.min(Math.max(qx, qy), 0) - r;
-      if (d >= 0) return -1;
-      var rx = Math.min(1, Math.abs(u - PW / 2) / (PW / 2 - GAP));
-      var ry = Math.min(1, Math.abs(vv - PH / 2) / (PH / 2));
-      var h = Math.pow(1 - Math.pow(rx, PUFF), 1 / PUFF) *
-              Math.pow(1 - Math.pow(ry, PUFF), 1 / PUFF);
-      for (var b = 0; b < 4; b++) {
-        var dx = u - (PW / 2 + ((b & 1) ? BTN_DX : -BTN_DX));
-        var dy = v - (BTN_Y[b >> 1] - FIELD);
-        h *= 1 - DIMPLE_D * Math.exp(-(dx * dx + dy * dy) / (DIMPLE_R * DIMPLE_R));
-      }
-      return h;
+      sd.u = u; sd.qx = qx; sd.qy = qy; sd.ox = ox; sd.oy = oy;
+      sd.d = Math.sqrt(ox * ox + oy * oy) + Math.min(Math.max(qx, qy), 0) - r;
     }
 
-    /* HOW HARD A BUTTON IS PULLING at this pixel: the strongest of the
-       four dimples' own falloff, 1 under a button and nothing by two and
-       a half radii out. It is asked for once per pixel of the field, so
-       it leaves on a subtraction for everything a button cannot reach. */
-    function pull(xi, v) {
-      var best = 0, u = wrap(xi, PW) + 0.5, b, dx, dy, e;
-      for (b = 0; b < 4; b++) {
-        dy = v - (BTN_Y[b >> 1] - FIELD);
-        if (dy > DIMPLE_REACH || dy < -DIMPLE_REACH) continue;
-        dx = u - (PW / 2 + ((b & 1) ? BTN_DX : -BTN_DX));
-        if (dx > DIMPLE_REACH || dx < -DIMPLE_REACH) continue;
-        e = Math.exp(-(dx * dx + dy * dy) / (DIMPLE_R * DIMPLE_R));
-        if (e > best) best = e;
-      }
-      return best;
+    /* HOW DEEP THE CAP RUNS on this column: 16 rows at the apex of the
+       panel, about 13 a quarter of the way out, 9 at the seams.
+       Cos-squared and not a straight taper, so the edge has no flat and
+       no corner anywhere along it - the top roll is fattest where the
+       stuffing is and turns under sooner as the panel runs out of it.
+       This is the ONLY curved tone edge on the panel, which is what
+       keeps it from reading as the innermost ring of a contour map. */
+    function capDepth(u) {
+      var k = Math.cos(Math.PI * (u - PW / 2) / PW);
+      return CAP_END + (CAP_MID - CAP_END) * k * k;
     }
 
-    /* the field, with a one-pixel border so the gradient is defined on
-       the edge rows and columns, and wrapped across so the valley at x 0
-       sees the roll of the panel before it. The whole 480 is computed
-       now rather than one panel laid three times over: the long wave in
-       the crest makes the three panels genuinely different, and a panel
-       printed three times could not carry it. `po` is the silhouette
-       test, kept rather than recomputed - puff() is four exponentials. */
-    var GW = CO_W + 2, GH = PH + 2;
-    var hgt = new Float32Array(GW * GH);
-    var po = new Uint8Array(GW * GH);          /* 1 = outside the fabric */
-    var v, hv;
-    for (v = -1; v <= PH; v++) {
-      for (x = -1; x <= CO_W; x++) {
-        hv = puff(wrap(x, CO_W), v + 0.5);
-        po[(v + 1) * GW + (x + 1)] = hv < 0 ? 1 : 0;
-        hgt[(v + 1) * GW + (x + 1)] = hv < 0 ? 0 : hv;
-      }
-    }
-
-    /* the tile's tones, dithered. `inside` is the silhouette, for the
-       creases and the nap. */
     var tone = new Uint8Array(CO_W * CO_H);
     var inside = new Uint8Array(CO_W * CO_H);
+    var v, th, depth, left, tv, ti;
     for (v = 0; v < PH; v++) {
       for (x = 0; x < CO_W; x++) {
-        var gi = (v + 1) * GW + (x + 1);
-        var tv, k;
-        if (po[gi]) {
-          tv = 6;
+        ti = (FIELD + v) * CO_W + x;
+        silhouette(x, v + 0.5);
+        if (sd.d >= 0) { tone[ti] = DARK; continue; }
+        inside[ti] = 1;
+        depth = -sd.d;
+        left = sd.u < PW / 2;
+        /* which way the silhouette faces here, in degrees off straight
+           up, negative to the left. Only the top half of a panel can face
+           upward at all; below the waist the edge is a flank, and the
+           bottom is the skirt, which has its own band. */
+        if (sd.vv < PH / 2) {
+          if (sd.ox > 0 && sd.oy > 0) th = Math.atan2(sd.ox, sd.oy) * DEG;
+          else if (sd.qy > 0) th = 0;
+          else th = 90;
         } else {
-          var gu = (hgt[gi + 1] - hgt[gi - 1]) / 2;
-          var gv = (hgt[gi + GW] - hgt[gi - GW]) / 2;
-          var nx = -gu * PUFF_Z, ny = -gv * PUFF_Z;
-          var nl = Math.sqrt(nx * nx + ny * ny + 1);
-          var ndl = (nx * LX + ny * LY + LZ) / nl;
-          tv = clamp(BASE - K_H * (hgt[gi] - 1) - K_N * (ndl - LZ), 0, 5);
-          /* AND A BUTTON IS A TUFT, NOT A FLARE. K_N 7 drives the normal
-             term past the dome's own range on the steep lower lip of a
-             dimple, so each of the twelve buttons came out with about
-             thirty-four pixels of P.crest under it - the same brightest
-             tone as the roll along the very top of the sofa - and read as
-             hardware bolted to a surface. In Couch ref 2 and ref 4 a
-             button is a soft dark dimple with no highlight at all. So the
-             lit side of a dimple is floored at one step above the panel
-             body and the floor RAMPS with the pull: 1 + 1.2 at the
-             button, 1 at the edge of its reach, which is the lamp-side
-             swell the panel wears anyway. Continuous in the pull, so the
-             dither carries it and no contour appears where the floor
-             starts to bite; and the shadowed upper lip, which is what
-             actually sells the pucker, is untouched. */
-          var dp = pull(x, v + 0.5);
-          if (dp > 0) {
-            var lift = 1 + DIMPLE_LIFT * dp;
-            if (tv < lift) tv = lift;
-          }
-          inside[(FIELD + v) * CO_W + x] = 1;
+          th = 180;
         }
-        k = Math.floor(tv);
-        if (k < 6 && (tv - k) * 16 > BAYER[(FIELD + v) & 3][x & 3]) k++;
-        tone[(FIELD + v) * CO_W + x] = k;
+        if (left) th = -th;
+        tv = BODY;
+        if (depth < 2 && th >= -70 && th <= 30 &&
+            (depth < 1 || (th < 0 ? -th : th) <= 25)) tv = ARRIS;
+        else if (sd.vv >= PH - SKIRT) tv = SHADE;
+        else if (!left && depth < SIDE_SHADE && sd.vv >= SHADE_FROM) tv = SHADE;
+        else if (sd.vv < capDepth(sd.u)) tv = LIT;
+        else if (left && depth < SIDE_LIT && sd.vv < LIT_TO) tv = LIT;
+        tone[ti] = tv;
       }
     }
 
-    /* THE CREASES - "just a few", and the owner's words are the spec.
-       Six per panel: from each button a soft fold runs out toward its
-       own corner of the panel, and between the two buttons of each row
-       the fabric is pulled into a shallow horizontal fold. A fold is
-       drawn as a 1px line one tone DARKER with the row under it one tone
-       LIGHTER - a crease has a shadowed face and a lit face - and it
-       TAPERS: dense where it leaves the button, thinning to single
-       pixels at its far end, so it reads as cloth gathered and let go
-       rather than as a ruled line. Hashed, not Math.random, so the tile
-       is the same tile every boot. A crease stays on the cushion: it
-       never writes into a valley or a corner wedge, and never below
-       backCrease. */
-    function crease(x0, y0, ddx, ddy, len, seed) {
+    /* THE PLEATS - "just a few", and the owner's words are still the
+       spec. Six per panel, on the origins they have always had: from each
+       button a fold runs out toward its own corner, and between the two
+       buttons of each row the fabric is pulled into a shallow horizontal
+       one. A fold is the Coop's board joint borrowed - a 1px SHADE line
+       with a 1px LIT lip directly under it, a dark line paired with a lit
+       one, which is how every joint, node and lashing in the Backyard is
+       drawn - solid for the first three fifths of its length and every
+       second pixel after it, so it thins the way cloth gathered and let
+       go does rather than stopping dead.
+
+       It is written ONLY onto BODY. That is not tidiness: a pleat laid
+       across a band edge would put a second line a pixel from the first,
+       and a twin line a few pixels from an edge is exactly the ring this
+       whole pass exists to get rid of.
+
+       `locked` is what the nap below reads. A fold is the one mark on
+       this panel that has to stay continuous, and a grain tick dropped
+       on top of one would eat a pixel out of it; so every pixel a pleat
+       writes is flagged here and the nap steps over it. The gather grows
+       ROUND a fold, not through it. */
+    var locked = new Uint8Array(CO_W * CO_H);
+    function pleat(x0, y0, ddx, ddy, len) {
       var len2 = Math.sqrt(ddx * ddx + ddy * ddy);
       ddx /= len2; ddy /= len2;
       for (var s = 3; s < len; s++) {
-        var keep = 1 - (s - 3) / (len - 3);
-        if ((hash(seed * 131 + s) % 1000) / 1000 > keep * 0.85 + 0.15) continue;
-        var cx2 = Math.round(x0 + ddx * s), cy2 = Math.round(y0 + ddy * s);
-        if (cy2 < FIELD + 1 || cy2 >= CREASE - 1) continue;
-        var ii = cy2 * CO_W + wrap(cx2, CO_W);
-        var jj = (cy2 + 1) * CO_W + wrap(cx2, CO_W);
-        if (!inside[ii] || !inside[jj]) continue;
-        if (tone[ii] < 5) tone[ii]++;
-        /* and the lit face of a fold stops at backLit, not at crest. A
-           crease is cloth gathered and let go; the brightest tone in the
-           palette belongs to the roll along the top of the sofa and to
-           nothing else. Six of the twelve folds leave a button on a
-           backLit pixel, and one step up from there was putting two or
-           three pixels of P.crest beside each button - the same flare the
-           dimple's own floor was just taken off. */
-        if (tone[jj] > 1) tone[jj]--;
+        if (s > 0.6 * len && (s & 1)) continue;
+        var px2 = wrap(Math.round(x0 + ddx * s), CO_W);
+        var py2 = Math.round(y0 + ddy * s);
+        if (py2 < FIELD + 1 || py2 >= CREASE - 1) continue;
+        var ii = py2 * CO_W + px2, jj = (py2 + 1) * CO_W + px2;
+        if (tone[ii] === BODY) { tone[ii] = SHADE; locked[ii] = 1; }
+        if (tone[jj] === BODY) { tone[jj] = LIT; locked[jj] = 1; }
       }
     }
-    for (p = 0; p < CO_W / CUSHION_W; p++) {
+    /* the six of them, as a table rather than as six calls, because the
+       nap has to walk the same six lines a second time to thicken the
+       grain along them and two copies of these numbers is two chances to
+       move one of them: [x off the panel's centre, row, dx, dy, length] */
+    var PLEATS = [[-BTN_DX,     BTN_Y[0],     -0.80, -0.60, 28],
+                  [ BTN_DX,     BTN_Y[0],      0.80, -0.60, 28],
+                  [-BTN_DX,     BTN_Y[1],     -0.80,  0.60, 24],
+                  [ BTN_DX,     BTN_Y[1],      0.80,  0.60, 24],
+                  [-BTN_DX + 4, BTN_Y[0] + 1,  1,     0,    2 * BTN_DX - 8],
+                  [-BTN_DX + 4, BTN_Y[1] + 1,  1,     0,    2 * BTN_DX - 8]];
+    var PANELS = CO_W / CUSHION_W;
+    var q;
+    for (p = 0; p < PANELS; p++) {
       pcx = p * CUSHION_W + hx;
-      crease(pcx - BTN_DX, BTN_Y[0], -0.80, -0.60, 28, p * 7 + 1);
-      crease(pcx + BTN_DX, BTN_Y[0],  0.80, -0.60, 28, p * 7 + 2);
-      crease(pcx - BTN_DX, BTN_Y[1], -0.80,  0.60, 24, p * 7 + 3);
-      crease(pcx + BTN_DX, BTN_Y[1],  0.80,  0.60, 24, p * 7 + 4);
-      crease(pcx - BTN_DX + 4, BTN_Y[0] + 1, 1, 0, 2 * BTN_DX - 8, p * 7 + 5);
-      crease(pcx - BTN_DX + 4, BTN_Y[1] + 1, 1, 0, 2 * BTN_DX - 8, p * 7 + 6);
-    }
-
-    /* THE NAP. Microfibre is a pile fabric and it shows every direction
-       it has been brushed in; one pixel in sixty bumped a tone either
-       way is enough to say so, and it is tonal variety at a scale no
-       measurement of rows or columns can see - which is the point. On
-       the cushion only, like the creases. */
-    for (i = 0; i < (CO_W * (CREASE - FIELD)) / 60; i++) {
-      var h = hash(4001 + i * 9173);
-      var nxp = h % CO_W, nyp = FIELD + ((h >>> 9) % (CREASE - FIELD));
-      var ni = nyp * CO_W + nxp;
-      if (!inside[ni]) continue;
-      if ((h >>> 20) & 1) { if (tone[ni] < 5) tone[ni]++; }
-      else if (tone[ni] > 0) tone[ni]--;
-    }
-
-    /* THE EDGE, AND IT IS A CURVE NOW. The house style wants a hard edge
-       wherever a solid thing meets something behind it, and the thing
-       that used to provide it along the top of the sofa was the straight
-       rule at row 0. Walk down each column to the first row of fabric
-       and lay two rows of outline immediately above it instead: on the
-       twenty-two columns where the crest reaches row 0 nothing is drawn
-       at all and the sill's own shadow line is the edge, and everywhere
-       else the edge hugs the roll and then the two rounded corners
-       rolling down into the seam. Above those two rows is tone 6, the
-       same P.button the valley between two cushions is painted in,
-       because it is the same gap seen from the same angle: a wide V at
-       the top narrowing to the 2px dark line that runs the rest of the
-       way down to the crease. A column with no fabric on it at all - the
-       seam itself - is left alone, or the walk would paint an edge into
-       the bottom of the valley. */
-    for (x = 0; x < CO_W; x++) {
-      y = -1;
-      for (j = 0; j < CREASE; j++) { if (inside[j * CO_W + x]) { y = j; break; } }
-      if (y > 0) tone[(y - 1) * CO_W + x] = 7;
-      if (y > 1) tone[(y - 2) * CO_W + x] = 7;
-    }
-
-    for (y = FIELD; y < CREASE; y++) {
-      for (x = 0; x < CO_W; x++) {
-        c.fillStyle = TONES[tone[y * CO_W + x]];
-        c.fillRect(x, y, 1, 1);
+      for (q = 0; q < PLEATS.length; q++) {
+        pleat(pcx + PLEATS[q][0], PLEATS[q][1], PLEATS[q][2], PLEATS[q][3], PLEATS[q][4]);
       }
     }
 
-    /* 3. FOUR BUTTONS A PANEL. The dimple is in the height field now -
-       the shadowed upper lip and the lit lower lip come out of the light
-       and not out of a stamp, and the lit one is floored off the crest's
-       tone up in the tone pass so a button is a pucker and not a flare -
-       so what is stamped here is the button
-       itself: 3x3 covered in the sofa's own dark, one lit pixel on its
-       dome, and the one-row shadow it throws onto the lip under it.
-       Stamped after the tone pass because a button wants a crisp edge. */
+    /* THE NAP, and it is the fifth point of the grammar above - the one
+       the first cut of these flat bands left out. The Coop drops 26
+       seeded 1px grain ticks 3 to 11 long down every plank and two knots
+       besides; the Garden scatters about 2600 single pixels of tooth
+       across its stucco; the Construction Zone gives every course of
+       lumber 20 ticks and two knots. None of that is a dither between two
+       tones. All of it is sparse single pixels and short ticks of a
+       NEIGHBOURING tone dropped by a seeded hash, so the surface has
+       grain without having a gradient.
+
+       Left out, the five bands measured a mean run of 14 identical pixels
+       along a row where the Coop's plank wall measures 5.2, with 74% of
+       the field in one colour and the longest flat run on a panel body
+       154 pixels of a 160 pixel panel. The bands were right and the
+       surface under them was plastic, so the four buttons and the six
+       folds floated in open ground and read as an engraving on a blank
+       slab rather than as cloth gathered round a thread.
+
+       Microfibre is what the photographs show and it is the one
+       upholstery that genuinely reads as fine directional grain, so the
+       ticks run WITH THE FALL OF THE CLOTH: 1 pixel wide, two to four
+       rows tall, which is the Coop's grain tick stood up the way a sofa
+       back's pile hangs. One step LIGHTER or one step DARKER on the
+       five-tone ladder and never anything else - no new tone, no third
+       value mixed between two, which is the line between a nap and a
+       dither - clamped at both ends, because the arris has no lighter
+       neighbour in this palette and the skirt no darker one.
+
+       THREE PASSES, and the second and third are the point of it. A nap
+       spread evenly is a texture; a nap that thickens where the cloth is
+       gathered is upholstery. So the field gets its scatter, and then
+       every button and every fold gets a handful more dropped around it,
+       which is what settles the pleats into the surface. Seeded off hash
+       and not Math.random: the tile is the same tile every boot, and a
+       tile that is the same every boot cannot boil when it scrolls. */
+    /* THE NAP, and the one number in it that decides whether this reads as
+       cloth or as weather.
+
+       A tick 2 to 4 rows tall, at this density, is a STREAK: the first cut
+       put 820 of them over the field and the cushions looked rained on -
+       scratched, not woven. The Coop's grain ticks are 3 to 11 rows tall
+       and look like timber because there are twenty-six of them on a whole
+       plank, roughly half a percent of it; the Garden's stucco is the other
+       answer, four and a half percent of the wall as SINGLE pixels, and it
+       reads as tooth because nothing in it is long enough to be a line.
+
+       Cloth is the Garden's case, not the Coop's. A tick is 1 row three
+       times in four and 2 rows otherwise - short enough that no mark is a
+       stroke - and there are more of them to hold the row-run measure where
+       it was. Nothing here is a gradient and nothing is a dither; it is the
+       same five tones, moved one step, in single pixels. */
+    var NAP_FIELD = 1150;      /* marks over the whole 480 x 141 field    */
+    var NAP_BTN = 34;          /* and again round each of the 12 buttons  */
+    var NAP_PLEAT = 28;        /* and again along each of the 18 folds    */
+    var NAP_BOX_X = 35, NAP_BOX_Y = 27;   /* the gather box round a button */
+
+    function napTick(h, nx, ny) {
+      /* 1 row three times in four, 2 the rest - see the NAP comment */
+      var len = (((h >>> 3) & 3) === 0) ? 2 : 1;
+      var up = ((h >>> 11) & 1) ? -1 : 1;
+      var k, ii, nt;
+      for (k = 0; k < len; k++) {
+        if (ny + k >= CREASE) return;
+        ii = (ny + k) * CO_W + nx;
+        if (!inside[ii] || locked[ii]) continue;
+        if (tone[ii] > SHADE) continue;     /* DARK and OUTLINE are structure */
+        nt = tone[ii] + up;
+        if (nt < ARRIS) nt = LIT;           /* nothing above the arris   */
+        if (nt > SHADE) nt = BODY;          /* nothing below the skirt   */
+        tone[ii] = nt;
+      }
+    }
+
+    var nh, nx2, ny2, k2, ks;
+    for (i = 0; i < NAP_FIELD; i++) {
+      nh = hash(4001 + i * 9173);
+      napTick(nh, nh % CO_W, FIELD + ((nh >>> 9) % PH));
+    }
+    ks = 0;
+    for (p = 0; p < PANELS; p++) {
+      pcx = p * CUSHION_W + hx;
+      for (j = 0; j < 2; j++) {
+        for (i = 0; i < 2; i++) {
+          for (k2 = 0; k2 < NAP_BTN; k2++) {
+            nh = hash(7001 + (ks * 97 + k2) * 2749);
+            nx2 = wrap(pcx + (i ? BTN_DX : -BTN_DX) - (NAP_BOX_X >> 1) +
+                       ((nh >>> 5) % NAP_BOX_X), CO_W);
+            ny2 = BTN_Y[j] - (NAP_BOX_Y >> 1) + ((nh >>> 17) % NAP_BOX_Y);
+            if (ny2 >= FIELD && ny2 < CREASE) napTick(nh, nx2, ny2);
+          }
+          ks++;
+        }
+      }
+    }
+    ks = 0;
+    for (p = 0; p < PANELS; p++) {
+      pcx = p * CUSHION_W + hx;
+      for (q = 0; q < PLEATS.length; q++) {
+        var pl = PLEATS[q];
+        var pn = Math.sqrt(pl[2] * pl[2] + pl[3] * pl[3]);
+        var pdx = pl[2] / pn, pdy = pl[3] / pn;
+        for (k2 = 0; k2 < NAP_PLEAT; k2++) {
+          nh = hash(9001 + (ks * 101 + k2) * 3571);
+          /* how far along the fold, and how far off it: the gather is a
+             sleeve round the line rather than a second line beside it */
+          var ps = 3 + ((nh >>> 4) % (pl[4] - 3));
+          var po = ((nh >>> 14) % 7) - 3;
+          nx2 = wrap(Math.round(pcx + pl[0] + pdx * ps - pdy * po), CO_W);
+          ny2 = Math.round(pl[1] + pdy * ps + pdx * po);
+          if (ny2 >= FIELD && ny2 < CREASE) napTick(nh, nx2, ny2);
+        }
+        ks++;
+      }
+    }
+
+    /* 3. FOUR BUTTONS A PANEL, and a button is a soft dark dimple with no
+       highlight on it - which is what Couch ref 2 and ref 4 show, and
+       what the last pass's lit lower lip was not.
+
+       The stamp itself is unchanged: 3x3 of the sofa's own dark, one body
+       pixel on its upper left shoulder so it is a dome and not a hole,
+       and a 3px shade row under it for the shadow it throws on the lip
+       below. What is new is that the pucker round it no longer comes out
+       of a height field, because there is no height field: it is an
+       EYEBROW, five shade pixels three rows above the button with one at
+       each end a row lower, which is the fabric lifting where the thread
+       pulls it in. An eyebrow and a shadow row with flat body between
+       them - no ramp, so there is nothing here that can contour either.
+       Stamped last, over the pleats and the nap, because a button wants a
+       crisp edge and the nap must not eat one. */
+    var bx, by, bd;
     for (p = 0; p < CO_W / CUSHION_W; p++) {
       pcx = p * CUSHION_W + hx;
       for (j = 0; j < 2; j++) {
         for (i = 0; i < 2; i++) {
-          var bx = pcx + (i ? BTN_DX : -BTN_DX), by = BTN_Y[j];
-          c.fillStyle = P.button;     c.fillRect(bx - 1, by - 1, 3, 3);
-          c.fillStyle = P.backMid;    c.fillRect(bx - 1, by - 1, 1, 1);
-          c.fillStyle = P.backCrease; c.fillRect(bx - 1, by + 2, 3, 1);
+          bx = pcx + (i ? BTN_DX : -BTN_DX); by = BTN_Y[j];
+          for (bd = -2; bd <= 2; bd++) tone[(by - 3) * CO_W + wrap(bx + bd, CO_W)] = SHADE;
+          tone[(by - 2) * CO_W + wrap(bx - 3, CO_W)] = SHADE;
+          tone[(by - 2) * CO_W + wrap(bx + 3, CO_W)] = SHADE;
+          for (bd = -1; bd <= 1; bd++) {
+            tone[(by - 1) * CO_W + wrap(bx + bd, CO_W)] = DARK;
+            tone[by * CO_W + wrap(bx + bd, CO_W)] = DARK;
+            tone[(by + 1) * CO_W + wrap(bx + bd, CO_W)] = DARK;
+            tone[(by + 2) * CO_W + wrap(bx + bd, CO_W)] = SHADE;
+          }
+          tone[(by - 1) * CO_W + wrap(bx - 1, CO_W)] = BODY;
         }
       }
     }
 
+    /* THE EDGE, AND IT IS A CURVE. The house style wants a hard edge
+       wherever a solid thing meets something behind it, and the thing
+       that used to provide it along the top of the sofa was a straight
+       rule at row 0. Walk down each column to the first row of fabric and
+       lay two rows of outline immediately above it instead: on the
+       twenty-two columns where the crest reaches row 0 nothing is drawn
+       at all and the sill's own shadow line is the edge, and everywhere
+       else the edge hugs the roll and then the two rounded corners
+       rolling down into the seam. Above those two rows is DARK, the same
+       P.button the valley between two cushions is painted in, because it
+       is the same gap seen from the same angle: a wide V at the top
+       narrowing to the 2px dark line that runs the rest of the way down
+       to the crease. A column with no fabric on it at all - the seam
+       itself - is left alone, or the walk would paint an edge into the
+       bottom of the valley. */
+    for (x = 0; x < CO_W; x++) {
+      y = -1;
+      for (j = 0; j < CREASE; j++) { if (inside[j * CO_W + x]) { y = j; break; } }
+      if (y > 0) tone[(y - 1) * CO_W + x] = OUTLINE;
+      if (y > 1) tone[(y - 2) * CO_W + x] = OUTLINE;
+    }
+
+    /* and laid down as RUNS, not as pixels. The old pass had to fill one
+       pixel at a time because the dither gave it a new colour every other
+       pixel; a row of this tile is now a handful of long flat bands, so
+       the same 67,680 pixels go down in about three thousand fills. That
+       the saving exists at all is the measurement: if this loop were not
+       much cheaper than the old one, the tile would not be flat. */
+    var runFrom, runTone;
+    for (y = FIELD; y < CREASE; y++) {
+      runFrom = 0; runTone = tone[y * CO_W];
+      for (x = 1; x <= CO_W; x++) {
+        if (x < CO_W && tone[y * CO_W + x] === runTone) continue;
+        c.fillStyle = TONES[runTone];
+        c.fillRect(runFrom, y, x - runFrom, 1);
+        if (x < CO_W) { runTone = tone[y * CO_W + x]; runFrom = x; }
+      }
+    }
     /* 4. THE SEAMS are not drawn. A seam used to be a 2px welt and a 1px
-       lit edge - a ruled line - and it is a VALLEY now: the column either
+       lit edge - a ruled line - and it is a VALLEY: the column either
        side of a panel boundary is outside both cushions' silhouettes and
-       takes the dark, and each neighbour rolls down into it through
-       backRoll and backCrease on its own, out of the height field. x 0
-       is the tile seam, and the valley on it is what hides the repeat. */
+       takes the dark. What flanks it is now a hard event rather than a
+       falloff - the left neighbour's 5px shade strip, the 2px dark, this
+       panel's 4px lit strip - which is the Coop's slat seam, where a 1px
+       wallShadow sits between two flat slats, at sofa scale. x 0 is the
+       tile seam, and the valley on it is what hides the repeat. */
 
     /* 5. THE CREASE. The seam where the back cushions meet the seat,
        and the darkest band in the bay by two whole values. A kernel
@@ -15403,123 +15586,144 @@ var Couch = (function () {
       ctx.fillStyle = P.shutterLit;   ctx.fillRect(rx, lidY + 1, 1, backY - lidY - 2);
     }
 
-    /* 3. THE SOFA, and it gets the rest of the card. The lit roll, then
-       the back as CUSHION PANELS - the level's own 160:137 proportion,
-       so a card this wide gets two of them and a bit - each one a lit
-       squircle of swell on its plate with FOUR buttons in a wide
-       rectangle and a seam between it and the next. That is bakeCouch
-       reduced to the three marks that survive at sixty pixels, and the
-       four-button rectangle is the one of the three that says "this
-       sofa" rather than "some sofa". */
+    /* 3. THE SOFA, and it gets the rest of the card: the cushion panels
+       the level bakes, reduced to the marks that survive at sixty pixels
+       - a curved crest with a hard edge over it, a lit cap under that, a
+       flat body, a shaded skirt, a valley at every seam, and FOUR BUTTONS
+       in a wide rectangle, which is the one of those marks that says
+       "this sofa" rather than "some sofa".
+
+       It is drawn in the same five tones and the same bands as bakeCouch,
+       and that is not a nicety. This file has advertised the wrong
+       rendering on this card once already: bakeCouch stopped drawing a
+       straight rule across the top of the fabric and the cover went on
+       drawing one, so the card promised a level that no longer existed.
+       The cushions have just been redrawn in flat bands with hard edges,
+       so the cover is redrawn with them. */
     var band = seatY - backY - 2;
     var top = backY + 2;
     var PW = Math.max(14, Math.round(band * 1.17));
 
-    /* The crest, as the level bakes it and NOT as a rule. bakeCouch stopped
-       drawing a straight full-width line across the top of the fabric this
-       round, because that is the first thing the eye meets and a sofa does
-       not have one; the cover went on drawing it, so the card was still
-       advertising the thing the level had just stopped doing. Same arch,
-       scaled: CREST_DIP 11 over a 160px panel is the level's, so a cover
-       panel PW wide dips PW * 11/160, and the apex is flat in a quadratic
-       so the exponent stays 1.6. */
+    /* The crest, as the level bakes it and NOT as a rule: CREST_DIP 11
+       over a 160px panel is the level's figure, so a cover panel PW wide
+       dips PW * 11/160, and the exponent stays 1.6 because a quadratic
+       arch is flat at its own apex and a flat apex is the straight rule
+       coming back under another name. */
     var cDip = Math.max(1, Math.round(PW * 11 / 160));
-    var cx2, cu, lift, ry;
-    ctx.fillStyle = P.backMid;
-    for (cx2 = 0; cx2 < w; cx2++) {
-      cu = ((cx2 % PW) / PW - 0.5) * 2;
-      lift = Math.round(cDip * Math.pow(cu < 0 ? -cu : cu, 1.6));
-      ry = top + lift;
-      ctx.fillRect(x + cx2, ry, 1, seatY - ry);
-      /* the roll and the hard edge follow the curve rather than cutting it */
-      ctx.fillStyle = P.backLit; ctx.fillRect(x + cx2, ry - 1, 1, 1);
-      ctx.fillStyle = P.crest;   ctx.fillRect(x + cx2, ry - 2, 1, 1);
-      ctx.fillStyle = P.outline; ctx.fillRect(x + cx2, ry - 3, 1, 1);
-      ctx.fillStyle = P.backMid;
-    }
-    var bx, byy, n, px0, lit, ax, ay;
-    /* the swell's row-invariant terms, declared HERE and used nowhere
-       else in this function. The rewrite that put the swell in declared
-       `var fy` inside the loop while `var fy` already existed ninety
-       lines below for the hot kernel's y - and `var` is function-scoped,
-       so 'use strict' passes a duplicate straight through and those were
-       one variable, not two. It happened to work only because the lower
-       one assigns immediately before its single use; hoisting the swell's
-       copy out of the loop, which is the obvious optimisation and is done
-       below, would have left a superellipse value of about 0.39 to 1.0
-       sitting in it and drawn the hot kernel off the top of the card. The
-       file already documents this exact trap for PANEL_W and CUSHION_W,
-       and the project has now shipped it three times, so: one declaration
-       site, names that cannot collide, and the kernel's y is `hotY`. */
-    var uy, ex, ey, sl, roll, qy, qy2;
 
-    /* The swell, as the level draws it: the pillow-shaped product of two
-       superellipse bumps, rounded at the corners and lit from above left,
-       in three tones here rather than seven - at this size the shoulders
-       are a pixel wide and buy nothing. The corner wedges and the seam
-       column between two panels take the sofa's dark, so even at sixty
-       pixels the panels are rounded things with a valley between them
-       and not a ruled grid.
-
-       Drawn as RUNS and not as pixels. A cover is repainted every frame it
-       is on screen, and a pixel at a time this was w x band fills - about
-       four thousand on the big card, every frame, for one of five cards.
-       The swell is three tones in wide smooth bands, so a row is five or
-       six runs: a twentieth of the FILLS, which is what that rewrite
-       bought. It did not buy any arithmetic, and for a while it quietly
-       cost some - see the row-invariant block below. */
+    /* EVERY TERM THAT DEPENDS ONLY ON THE COLUMN, COMPUTED ONCE. A cover
+       is repainted every frame it is on screen and the carousel paints
+       every visible card; this function had already gone from 0.188ms a
+       call to 0.447ms once by leaving row-invariant arithmetic inside the
+       pixel loop, and the fix was to hoist it. Same discipline, one loop
+       further out: the crest's Math.pow and the cap's Math.cos are paid
+       w times a call instead of w * band times.
+         pRy    the first fabric row of this column - the crest
+         pCap   how many rows of lit cap hang under the arris: the level's
+                16 rows of 141 at a panel's apex, 9 at its seams
+         pSkirtD / pShadeD / pLitD  the level's vv 131, 20 and 44, scaled
+         pQx    how far outside the corner radius this column is
+         pFlank 1 on the lit left strip, 2 on the shaded right one */
+    var pRy = [], pCap = [], pSkirtD = [], pShadeD = [], pLitD = [], pQx = [], pFlank = [];
     var CR = 0.26;                           /* corner radius, in half-panels */
-    var THIRD = 1 / 3;
-    for (n = 0; n < band; n++) {
-      ay = (n + 0.5) / band * 2 - 1;
-      /* EVERYTHING THAT DEPENDS ONLY ON THE ROW, LIFTED OUT OF THE ROW.
-         uy, the superellipse bump down the panel, the slope term and the
-         corner test's own y were all being recomputed for every pixel of
-         a cover that repaints every frame, and one of them is a Math.pow.
-         The carousel paints every visible card every frame, and this
-         function had gone from 0.188ms a call to 0.447ms while the
-         Desk's, untouched, costs 0.034ms. Hoisted it is the same pixels
-         to the bit - an isolated bench of the loop either way returns an
-         identical sum and runs 0.320ms against 0.198ms, 38% off. */
-      uy = ay < 0 ? -ay : ay;
-      if (uy > 0.98) uy = 0.98;
-      ey = Math.pow(1 - uy * uy * uy, THIRD);
-      /* how steeply the dome rolls on this row, and which way it faces */
-      sl = uy * uy / (ey * ey);
-      roll = (ay < 0 ? 0.25 : -0.25) * sl;
-      qy = uy - (1 - CR);
-      qy2 = qy * qy;
-      var runCol = null, runFrom = 0;
-      for (i = 0; i <= w; i++) {
-        var col = null;
-        if (i < w) {
-          var pu = i % PW;
-          ax = (pu + 0.5) / PW * 2 - 1;
-          var ux = ax < 0 ? -ax : ax;
-          var qx = ux - (1 - CR);
-          if (pu === 0 || (qx > 0 && qy > 0 && qx * qx + qy2 > CR * CR)) {
-            col = P.button;
-          } else {
-            ex = Math.pow(1 - ux * ux * ux, THIRD);
-            lit = ex * ey + roll - ax * 0.08;
-            col = lit > 1.04 ? P.backLit : (lit < 0.60 ? P.backRoll : null);
-          }
+    var pShadeW = Math.max(1, Math.round(PW * 5 / 160));
+    var pLitW = Math.max(1, Math.round(PW * 4 / 160));
+    var ci, pu, cu2, au, kc, ph2;
+    for (ci = 0; ci < w; ci++) {
+      pu = ci % PW;
+      cu2 = ((pu + 0.5) / PW - 0.5) * 2;
+      au = cu2 < 0 ? -cu2 : cu2;
+      pRy[ci] = top + Math.round(cDip * Math.pow(au, 1.6));
+      ph2 = Math.max(1, seatY - pRy[ci]);
+      kc = Math.cos(Math.PI * cu2 / 2);
+      pCap[ci] = Math.max(1, Math.round(ph2 * (9 + 7 * kc * kc) / 141));
+      pSkirtD[ci] = Math.round(ph2 * (1 - 10 / 141));
+      pShadeD[ci] = Math.round(ph2 * 20 / 141);
+      pLitD[ci] = Math.round(ph2 * 44 / 141);
+      pQx[ci] = au - (1 - CR);
+      pFlank[ci] = (pu > 0 && pu <= pLitW) ? 1 : (pu >= PW - pShadeW ? 2 : 0);
+    }
+
+    /* and the bands themselves, laid as RUNS and not as pixels: at this
+       size a row of the sofa is five or six flat runs, which is the whole
+       claim the level's own tile now makes. The order of the tests is
+       bakeCouch's order - dark, arris, skirt, right flank, cap, left
+       flank, body - because that order is what keeps the cap's curved
+       edge the only curved edge on the panel. */
+    var n, col, runCol, runFrom, d2, ay2, uy2, qy3, qy3sq;
+    for (n = -2; n < band; n++) {
+      ay2 = (n + 0.5) / band * 2 - 1;
+      uy2 = ay2 < 0 ? -ay2 : ay2;
+      if (uy2 > 0.98) uy2 = 0.98;
+      qy3 = uy2 - (1 - CR);
+      qy3sq = qy3 * qy3;
+      runCol = null; runFrom = 0;
+      for (ci = 0; ci <= w; ci++) {
+        col = null;
+        if (ci < w) {
+          d2 = top + n - pRy[ci];
+          if (d2 === -1 || d2 === -2) col = P.outline;
+          else if (d2 < 0) col = (n >= 0) ? P.button : null;   /* the V above the crest */
+          else if ((ci % PW) === 0 ||
+                   (pQx[ci] > 0 && qy3 > 0 && pQx[ci] * pQx[ci] + qy3sq > CR * CR)) col = P.button;
+          else if (d2 === 0) col = P.crest;
+          else if (d2 >= pSkirtD[ci]) col = P.backCrease;
+          else if (pFlank[ci] === 2 && d2 >= pShadeD[ci]) col = P.backCrease;
+          else if (d2 < pCap[ci]) col = P.backLit;
+          else if (pFlank[ci] === 1 && d2 < pLitD[ci]) col = P.backLit;
+          else col = P.backMid;
         }
         if (col === runCol) continue;
-        if (runCol) { ctx.fillStyle = runCol; ctx.fillRect(x + runFrom, top + n, i - runFrom, 1); }
-        runCol = col; runFrom = i;
+        if (runCol) { ctx.fillStyle = runCol; ctx.fillRect(x + runFrom, top + n, ci - runFrom, 1); }
+        runCol = col; runFrom = ci;
       }
     }
-    /* the four buttons on every panel; the seams are the valleys above */
+
+    /* AND THE NAP OVER THEM, because the level's fabric has one and a
+       cover that advertises bare flat bands advertises the slab this
+       round was called in to fix. At 160 pixels a panel a tick is 1 wide
+       and two to four tall; at the thirty or sixty a cover gets it is one
+       pixel, which is the same mark as far down as it goes.
+
+       It is laid ONLY on the flat body - the middle three fifths of a
+       panel, between the cap and the skirt - which is where all but a
+       tenth of the level's ticks land anyway, and which is cheap: it
+       needs none of the band chain above repeated, so this costs w*band/22
+       hash calls and nothing else. Seeded off the column and row, never
+       off `t`, so the speckle is nailed to the card and does not crawl
+       while the carousel animates. */
+    var nn, nh2, nx3, ny3, nd2;
+    for (nn = 0; nn < (w * band) / 22; nn++) {
+      nh2 = hash(5101 + nn * 7919 + w * 31 + band * 7);
+      nx3 = nh2 % w;
+      ny3 = (nh2 >>> 9) % band;
+      pu = nx3 % PW;
+      if (pu < PW * 0.2 || pu > PW * 0.8) continue;
+      nd2 = top + ny3 - pRy[nx3];        /* rows below this column's crest */
+      if (nd2 < pCap[nx3] || nd2 >= pSkirtD[nx3]) continue;
+      ctx.fillStyle = ((nh2 >>> 20) & 1) ? P.backLit : P.backCrease;
+      ctx.fillRect(x + nx3, top + ny3, 1, 1);
+    }
+
+    /* the four buttons on every panel, and a button is a dark pixel with
+       a shade pixel over it and NOTHING UNDER IT. The lit lower lip that
+       used to sit there went with the ramp: in Couch ref 2 and ref 4 a
+       button is a soft dark dimple with no highlight at all, and the
+       level stamps an eyebrow above and a shadow row below. At one pixel
+       a button that is all the eyebrow there is room for.
+
+       0.62 and not 0.64 on the lower row: the level moved its own lower
+       buttons from tile row 92 to 88 of 141 to get them clear of the
+       cushions propped in front of them, and 88/141 is 0.62. */
+    var bx, byy, px0;
     for (k = 0; k * PW < w; k++) {
       px0 = x + k * PW;
       for (n = 0; n < 2; n++) {
-        byy = top + Math.round(band * (n ? 0.64 : 0.36));
+        byy = top + Math.round(band * (n ? 0.62 : 0.36));
         for (i = 0; i < 2; i++) {
           bx = px0 + Math.round(PW * (i ? 0.68 : 0.32));
           if (bx >= x + w - 1) continue;
           ctx.fillStyle = P.backCrease; ctx.fillRect(bx, byy - 1, 1, 1);
-          ctx.fillStyle = P.backLit;    ctx.fillRect(bx, byy + 1, 1, 1);
           ctx.fillStyle = P.button;     ctx.fillRect(bx, byy, 1, 1);
         }
       }
