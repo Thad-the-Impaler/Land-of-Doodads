@@ -1517,21 +1517,37 @@ var Whiteboard = (function () {
      an integer rect. */
   function bakeRosette(flip) {
     var t = makeCanvas(20, 22), c = t.ctx;
-    if (flip) { c.translate(0, 21); c.scale(1, -1); }
+    /* mirror about the WHOLE 22-row space (y -> 21 - y) and not about 21
+       (y -> 20 - y) as this did, so that bakePot can flip on the same
+       axis and the two halves of the drawing stay a mirror of each other.
+       On the old axis the bottom row of the space had nowhere to land. */
+    if (flip) { c.translate(0, 22); c.scale(1, -1); }
     /* FOUR rings of 2px leaf arcs round a centre at (10, 10), and the
-       geometry is the Garden's exactly, shifted down three rows into
-       this bay's taller space. PlayScene paints the HUD life and the save
+       geometry is the Garden's exactly, shifted down TWO rows into this
+       bay's taller space. PlayScene paints the HUD life and the save
        burst in these pigments, so the thing on the board has to be that
        plant and not another - and an earlier version here hollowed every
        leaf out to board white to make it look DRAWN, which turned the
        rosette into a stack of empty brackets and read as a ziggurat. What
        says "drawn" is the pot being an outline and the whole thing being
-       flat; the plant itself has to stay the plant. */
+       flat; the plant itself has to stay the plant.
+
+       IT WAS THREE ROWS AND IS NOW TWO, which is the second half of the
+       proportion fix described over bakePot. At three the rosette's ink
+       ran rows 6..15 and the pot's mouth is rows 13..14, so the plant
+       sank THREE rows into the pot and swallowed the rim and the widest
+       course of the body with it: six rows of pot were left showing. The
+       Garden's plant covers exactly two rows of its pot and leaves seven.
+       Two rows does the same here, and the flip comes out right for free -
+       the transform is y -> 21 - y, so a rosette at 5..14 lands at 7..16
+       against an upturned pot whose rim is row 8, which is the same two
+       rows of overlap seen the other way up (the mirror is y -> 21 - y,
+       and the upturned pot's rim lands on rows 7 and 8). */
     var rings = [
-      { y: 13, xs: [[3, 4], [13, 4]], col: P.sucDark },
-      { y: 11, xs: [[4, 4], [12, 4], [8, 4]], col: P.sucMid },
-      { y: 9,  xs: [[6, 3], [11, 3]], col: P.sucMid },
-      { y: 7,  xs: [[8, 4]], col: P.sucHi }
+      { y: 12, xs: [[3, 4], [13, 4]], col: P.sucDark },
+      { y: 10, xs: [[4, 4], [12, 4], [8, 4]], col: P.sucMid },
+      { y: 8,  xs: [[6, 3], [11, 3]], col: P.sucMid },
+      { y: 6,  xs: [[8, 4]], col: P.sucHi }
     ];
     rings.forEach(function (ring) {
       ring.xs.forEach(function (p) {
@@ -1544,36 +1560,89 @@ var Whiteboard = (function () {
         c.fillStyle = P.sucTip;  c.fillRect(p[0] + p[1] - 1, ring.y, 1, 1);
       });
     });
-    c.fillStyle = P.sucHi;  c.fillRect(9, 7, 2, 2);
-    c.fillStyle = P.sucTip; c.fillRect(9, 6, 2, 1);
+    c.fillStyle = P.sucHi;  c.fillRect(9, 6, 2, 2);
+    c.fillStyle = P.sucTip; c.fillRect(9, 5, 2, 1);
     return t;
   }
 
+  /* The pot's width on a given body row, as ONE function, so the walls,
+     the rim and the closed far end cannot disagree about how wide the pot
+     is anywhere.
+
+     THE TAPER WAS 0.45 A ROW AND IS NOW 0.15, which is the owner's note
+     that "the succulent looks too big for its pot". It was not the plant:
+     measured off the baked tiles side by side with the Garden's, both
+     rosettes are 16px wide and 10 rows of ink, pixel for pixel the same
+     plant. The pot was the problem. At 0.45 the inset ran 0,0,1,1,2,2,3,3,4
+     so the body went 12,12,10,10,8,8,6,6,4 and closed on a 6px foot: under
+     a 16px rosette that is a cone, not a pot, and the ratio of plant to
+     visible pot came out 16:6. The Garden's pot does not taper at all -
+     it is a straight 12 under the same 16px rosette, 16:12 - so a drawn
+     version of the same power-up has to land near 12 too, or it is not
+     that plant in marker, it is a different plant.
+
+     0.15 gives 0,0,0,0,1,1,1,1,1: a body of 12 that steps in once to 10
+     near the foot. That keeps a taper - a marker pot with parallel sides
+     reads as a tin - while leaving the silhouette the Garden's. The rim
+     stays 14 because the pot here is a hollow outline with the board
+     showing through it and carries perhaps a third of the Garden pot's
+     ink; a slightly wider lip buys back the weight the hollow gives up. */
+  function potInset(row) { return Math.round(row * 0.15); }
+
   /* the pot, 20x22 shared space. `over` draws it upside down at the top
-     of the space for the one hanging under the rail. */
+     of the space for the one hanging under the rail.
+
+     IT FLIPS ON THE TRANSFORM NOW, exactly as bakeRosette does, because
+     flipping it by arithmetic got the mirror wrong. The old version drew
+     the body with `row = 8 - i` from the top of the space and then put
+     the rim one row PAST the body at rows 8 and 9, so the upturned pot
+     spanned ten rows against the upright one's nine - and the rosette,
+     which mirrors about row 21, came down far enough to cover the whole
+     of it. The upturned pot's mouth is the widest course it has and the
+     one thing that says a plant could ever have been in it, and it was
+     entirely hidden. Mirroring the identical upright drawing puts the
+     mouth at rows 7-8 with the same two rows of overlap the low one has,
+     and seven rows of pot showing on both. A baked tile is blitted as one
+     piece whichever way up it was made, and nothing resamples, because
+     every mark in here is an integer rect. */
   function bakePot(over) {
     var t = makeCanvas(20, 22), c = t.ctx;
-    var top = over ? 0 : 13;
-    var i, row;
+    if (over) { c.translate(0, 22); c.scale(1, -1); }
+    var top = 13, i, inset, x0, w;
     /* nine rows of tapering pot, drawn as a 2px outline with the board
-       left showing through it. `over` flips the taper as well as the
-       position - a pot drawn upside down tapers the other way or it is
-       not a pot, it is a bucket. */
+       left showing through it. The flip takes the taper with it - a pot
+       drawn upside down tapers the other way or it is not a pot, it is a
+       bucket.
+
+       AND THE INSIDE IS LEFT TRANSPARENT, where it used to be filled with
+       P.board. "The board showing through" is what the pot is for, and a
+       rect of the raw board pigment is not that: the room's light is
+       baked into the backdrop before an obstacle is drawn over it, so the
+       fill was the UNLIT board laid on top of the lit one. Measured in
+       play with a succulent sketched low at FLOOR - 17, where the skirting
+       gloom has the board down at luminance 119, the inside of the pot came
+       back at 215 - a 96-step white block eight pixels wide sitting inside
+       the drawing, which is what made the pot read as a solid object
+       rather than as a thing somebody drew, and no amount of fixing the
+       proportion would have fixed that. Transparent costs nothing: the
+       pot is baked, so the board behind it arrives already lit and the
+       ghost marks it crosses show through the way marker does. */
     for (i = 0; i < 9; i++) {
-      row = over ? 8 - i : i;
-      var inset = Math.round(row * 0.45);
-      var x0 = 4 + inset, w = 12 - inset * 2;
+      inset = potInset(i);
+      x0 = 4 + inset; w = 12 - inset * 2;
       c.fillStyle = P.potOrange;
       c.fillRect(x0, top + i, 2, 1);
       c.fillRect(x0 + w - 2, top + i, 2, 1);
-      c.fillStyle = P.board;
-      c.fillRect(x0 + 2, top + i, w - 4, 1);
     }
     /* the rim, which is the end of the pot the plant comes out of */
-    c.fillStyle = P.potOrange; c.fillRect(3, top + (over ? 8 : 0), 14, 2);
-    c.fillStyle = P.potHi;     c.fillRect(4, top + (over ? 9 : 0), 12, 1);
-    /* and the far end */
-    c.fillStyle = P.potOrange; c.fillRect(7, top + (over ? 0 : 8), 6, 1);
+    c.fillStyle = P.potOrange; c.fillRect(3, top, 14, 2);
+    c.fillStyle = P.potHi;     c.fillRect(4, top, 12, 1);
+    /* and the far end, closed across whatever the taper left at row 8
+       rather than across a hard-coded 6 - the old 6 was narrower than the
+       walls it was supposed to join and left the foot open at the corners */
+    inset = potInset(8);
+    c.fillStyle = P.potOrange;
+    c.fillRect(4 + inset, top + 8, 12 - inset * 2, 1);
     return t;
   }
 

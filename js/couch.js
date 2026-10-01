@@ -6,8 +6,8 @@
    shutters along the very top of the room and a dark walnut coffee
    table sliding past below. Drawn from Couch ref 1-4 in Assets/Concept:
    the sectional, the cream-and-gold damask cushions, the cream knit
-   throw over the far arm, the monstera leaf in the corner of the
-   window, the chess set, the magnifying glass, and the three round
+   throw over the far arm, the chess set, the magnifying glass, and the
+   three round
    coasters - two pale wood slices and one coiled pink one - which are
    the spare lives.
 
@@ -134,8 +134,6 @@ var Couch = (function () {
     shutterDark:  '#6b6459',   /* the gap in a panel that is shut       */
     nightBlue:    '#7f98bf',   /* the slice of night between two slats  */
     nightDeep:    '#5c7497',   /* every fourth one, and the palm fronds */
-    leafDark:     '#2c4a2b',   /* the monstera's veins and its notches  */
-    leafMid:      '#4f7d45',   /* the monstera leaf itself              */
 
     /* THE TUFTED BACK, off Couch ref 2, and it is the bay's field: two
        thirds of the screen is these five values. They are two whole
@@ -171,7 +169,16 @@ var Couch = (function () {
        170s into the 190s without flattening the modelling. */
     pillowCream:  '#e8dcc0',
     pillowHi:     '#f5ecd8',
-    pillowGold:   '#c4a24c',
+    /* The brass went UP a value when the damask medallion arrived. Two
+       reasons and they point the same way. The photograph's thread is a
+       soft brass on cream, not an ochre - at #c4a24c the print was
+       darker against its own cushion than anything in Couch ref 4 is.
+       And the medallion spends luminance where the old open diamond
+       spent almost none: a gold pixel at 162 replacing lit cream at 228
+       costs the pillar body six hundredths of a value, and there are a
+       hundred of them now. At 178 the same print costs a third less and
+       the separation stays where the last round left it. */
+    pillowGold:   '#d4b258',
     pillowGoldDeep: '#957839',
     pillowShade:  '#cdbb94',   /* the face turned away from the pendant */
     pillowDeep:   '#ab9870',   /* and the last of it, at the seam       */
@@ -226,7 +233,8 @@ var Couch = (function () {
     popHi:        '#ffffff',
     popCream:     '#e9dcc0',
     popShade:     '#c4b48f',
-    hull:         '#5a3a1e',   /* the one brown pixel that says kernel  */
+    hull:         '#5a3a1e',   /* the kernel coat, down in the cleft    */
+    hullPale:     '#e2c15e',   /* and the pip of yellow sitting on it   */
 
     /* the hot cheddar kind */
     cheddar:      '#f0922e',
@@ -427,11 +435,25 @@ var Couch = (function () {
      band has a dark stretch and a light stretch rather than one
      alternating texture.
 
-     IT IS 384 AND NOT 192 BECAUSE OF THE LEAF. One monstera per tile at
-     192 put two or three of them on screen at once, all at the same
-     height, and a plant that repeats is wallpaper. At 384 there is
-     usually one and never more than two, and the panel pattern takes
-     twice as long to come round.
+     IT IS STILL 384 WITH THE LEAF GONE, AND THAT IS NOT AN OVERSIGHT.
+     The monstera used to be the reason: one leaf per tile at 192 put
+     two or three on screen at once, all at the same height, and a plant
+     that repeats is wallpaper. The owner wanted the leaf out of the
+     blinds, so it is out - and the question that leaves behind is
+     whether 384 is now just 192 printed twice, which would be a tile
+     paying double for nothing.
+
+     IT IS NOT, FOR TWO REASONS, AND I MEASURED THE SECOND ONE. The
+     panel sequence is OPEN, SHUT, SHUT, OPEN. A 192 period needs panel
+     i and panel i+2 to match, and open does not match shut, so the band
+     has a dark stretch two panels wide with the night showing either
+     side of it - exactly Couch ref 2's window - and that rhythm is 384
+     pixels long whatever is painted in it. And the palm seen through
+     the two open panels is drawn from ONE mulberry32 stream taken in
+     panel order, so the second open panel gets different fronds from
+     the first: the two 192px halves of the baked tile differ in 243
+     pixels, counted off the tile itself. Halving it would not save a
+     repeat, it would create one.
 
      IT IS A BAND, 70 ROWS DEEP, and that is the whole of this fix. It
      used to be 218 - every row from the moulding to the floor - and the
@@ -548,41 +570,6 @@ var Couch = (function () {
     c.fillRect(px + PANEL_W, 0, 1, SILL_Y);
   }
 
-  /* The monstera in the corner of the window. Three notches cut into
-     its right edge is the whole of what makes a 24x30 green blob read
-     as that particular plant. */
-  function monstera(c, x, y) {
-    var ROWS = [
-      [10, 4], [7, 10], [5, 14], [3, 17], [2, 19], [1, 21], [1, 22],
-      [0, 23], [0, 23], [0, 23], [0, 24], [0, 24], [0, 24], [0, 23],
-      [0, 23], [0, 22], [1, 21], [1, 20], [2, 19], [2, 17], [3, 16],
-      [4, 14], [5, 12], [6, 11], [7, 9], [8, 8], [9, 6], [10, 5],
-      [11, 3], [12, 2]
-    ];
-    var i;
-    LivingRoom.rowsOutline(c, ROWS, x, y, P.outline);
-    LivingRoom.rowsFill(c, ROWS, x, y, P.leafMid);
-    /* the midrib, and the veins running out of it to the leaf's edge */
-    c.fillStyle = P.leafDark;
-    for (i = 0; i < ROWS.length; i++) c.fillRect(x + 11, y + i, 1, 1);
-    for (i = 3; i < 26; i += 4) {
-      var half = Math.round(ROWS[i][1] / 2);
-      c.fillRect(x + 12, y + i, half - 1, 1);
-      c.fillRect(x + 11 - half + 2, y + i + 1, half - 2, 1);
-    }
-    /* the three notches, cut back to the midrib out of the right edge */
-    [[6, 5], [13, 6], [20, 5]].forEach(function (n) {
-      c.fillStyle = P.leafDark;
-      c.fillRect(x + 13, y + n[0], 11, n[1]);
-    });
-    c.globalCompositeOperation = 'destination-out';
-    [[6, 5], [13, 6], [20, 5]].forEach(function (n) {
-      c.fillStyle = '#000';
-      c.fillRect(x + 15, y + n[0] + 1, 10, n[1] - 2);
-    });
-    c.globalCompositeOperation = 'source-over';
-  }
-
   function bakeShutters() {
     var t = makeCanvas(SH_W, SH_H), c = t.ctx;
     var r = mulberry32(6120), i;
@@ -596,18 +583,6 @@ var Couch = (function () {
     shutterPanel(c, 97, false, r);   /* shut                     */
     shutterPanel(c, 193, false, r);  /* shut                     */
     shutterPanel(c, 289, true, r);   /* open to the night        */
-
-    /* the monstera in the corner of the open panel, on a stem that goes
-       off the left edge of the tile - a leaf floating in the middle of
-       a pane is a sticker, and a leaf on a stalk is a plant standing
-       somewhere off to the side of the room. It used to hang at local
-       y 72, which no longer exists; in Couch ref 1 and ref 4 it is in
-       the TOP corner of the window anyway. */
-    for (i = 0; i < 10; i++) {
-      c.fillStyle = i > 6 ? P.leafDark : P.leafMid;
-      c.fillRect(i, 30 + Math.round(i * 0.5), 1, 2);
-    }
-    monstera(c, 6, 14);              /* local 14..43, screen 38..67 */
 
     /* NO STEP BACK TOWARD THE WALL. There used to be a 3/16 Tint of
        P.wall over the whole tile, because the shutters were the entire
@@ -1082,6 +1057,122 @@ var Couch = (function () {
      clear of the field it passes over (backMid #67635c, 99), and a
      hundred values of internal range inside the column itself - hi 236
      down to deep 149 - so it is a modelled object on a flat one. */
+  /* ------------------------------------------- the damask medallion
+
+     GO AND LOOK AT COUCH REF 1, 2 AND 4. Three of the four throw
+     pillows in the photographs carry one print, and it is not a
+     diamond: it is a large ikat damask MEDALLION. One scalloped ogee
+     fills most of the pillow face, with a gold-filled centre carrying a
+     cream quatrefoil, grey scroll-vines curling off the four corners
+     with hooked tendrils, gold leaf-lobes between the vines, and plain
+     cream round the edge. Two threads on cream - a soft brass gold and
+     a mid grey - with the GOLD carrying the medallion and the GREY
+     carrying the vines.
+
+     WHAT WAS HERE BEFORE was a 20px open diamond in one pixel with four
+     dots and a grey centre, written down as "the damask reduced to what
+     survives on a 34px cushion". It survived, and what it read as was a
+     TILE MOTIF: no fill, no scallop, no vines, which is the whole of
+     the owner's note. The lesson that produced it - thread at this size
+     is a line and not a field - is right about the THREAD and wrong
+     about the MEDALLION, which in the photograph is a solid stamp of
+     gold with the cream drawn back out of it.
+
+     IT MUST NOT COST THE SEPARATION, which is the one thing this pillar
+     may not spend. A print is read by HUE and the separation is
+     measured in LUMINANCE, and those are two different budgets: gold
+     (#c4a24c, luminance 162) printed on the lit cream it sits on (about
+     228) moves a 34x32 cushion's mean by 0.06 of a value per pixel, so
+     the hundred-odd gold pixels below are worth about six values on a
+     body that measures 177 against a lane of 110. If a later pass ever
+     brings that under 60 the fix is to LIFT pillowGold toward the brass
+     the photograph actually shows, never to thin the medallion back
+     into a line.
+
+     The ogee, as half-widths per row from the point at the top to the
+     point at the bottom: fourteen pixels across the belly and
+     twenty-two deep, which is a medallion filling a pillow face rather
+     than a motif printed on one. The two single-row steps back at the
+     quarter points are the SCALLOP - at this size a lobed edge is a one
+     pixel notch, and anything more elaborate is noise. */
+  var OGEE = [1, 2, 3, 3, 4, 5, 6, 7, 7, 8, 7, 7, 7, 8, 7, 6, 6, 5, 4, 3, 2, 1];
+  var OGEE_Y = 5;                     /* its first row inside a cushion */
+
+  /* the gold heart of it, same idea: a filled lozenge, which is the
+     fill the old motif never had */
+  var CORE = [1, 2, 3, 4, 5, 5, 4, 3, 2, 1];
+  var CORE_Y = 11;
+
+  /* One corner's scrollwork, drawn into the top left and mirrored into
+     the other three. 'g' is the grey vine hooking outward, 'o' the gold
+     leaf-lobe tucked in the crook of it - which is exactly how the
+     photograph arranges the two colours. */
+  var SCROLL = ['..ggg',
+                '.g...',
+                'g.o..',
+                'g..o.',
+                '.gg..',
+                '..g..'];
+  var SCROLL_X = 3, SCROLL_Y = 4;
+
+  function damask(c, y) {
+    var i, k, r, half, x0, x1, ch;
+
+    /* THE OGEE, as a two pixel band. One pixel is a wire and reads as
+       the diamond this is replacing; two is a drawn stroke, and a
+       drawn stroke round a shape is what a stamped damask looks like. */
+    c.fillStyle = P.pillowGold;
+    for (i = 0; i < OGEE.length; i++) {
+      half = OGEE[i];
+      r = y + OGEE_Y + i;
+      x0 = 17 - half; x1 = 16 + half;
+      c.fillRect(x0, r, Math.min(2, x1 - x0 + 1), 1);
+      c.fillRect(Math.max(x0, x1 - 1), r, Math.min(2, x1 - x0 + 1), 1);
+    }
+
+    /* THE CENTRE, filled, with a cream cross drawn back through it:
+       cream showing through gold IS the quatrefoil at this size, and it
+       is also what keeps the middle of the cushion - the brightest part
+       of it - from going over to thread. */
+    for (i = 0; i < CORE.length; i++) {
+      half = CORE[i];
+      c.fillRect(17 - half, y + CORE_Y + i, half * 2, 1);
+    }
+    /* INSET BY ONE, and that one pixel is the difference between a
+       flower and a compass rose. Cut the cream all the way out to the
+       lozenge's edge and the gold left behind is four separate arrow
+       heads pointing out of the middle; stop a pixel short and the gold
+       closes into a RING with a cream quatrefoil inside it, which is
+       what Couch ref 4's centre is. */
+    c.fillStyle = P.pillowHi;
+    c.fillRect(14, y + 15, 6, 2);
+    c.fillRect(16, y + 13, 2, 6);
+
+    /* THE VINES. Four scrolls, one to a corner, each curling AWAY from
+       the medallion - the direction matters, because four hooks curling
+       inward read as arrows pointing at the middle. */
+    for (k = 0; k < 4; k++) {
+      var mx = (k === 1 || k === 3) ? -1 : 1;
+      var my = (k === 2 || k === 3) ? -1 : 1;
+      for (i = 0; i < SCROLL.length; i++) {
+        for (r = 0; r < SCROLL[i].length; r++) {
+          ch = SCROLL[i].charAt(r);
+          if (ch === '.') continue;
+          c.fillStyle = (ch === 'g') ? P.pillowGrey : P.pillowGold;
+          c.fillRect(mx > 0 ? SCROLL_X + r : 33 - SCROLL_X - r,
+                     y + (my > 0 ? SCROLL_Y + i : 31 - SCROLL_Y - i), 1, 1);
+        }
+      }
+    }
+
+    /* and the four compass marks that were always here, which now read
+       as the little florets the print scatters between the medallion
+       and its neighbours */
+    c.fillStyle = P.pillowGoldDeep;
+    c.fillRect(16, y + 8, 2, 1); c.fillRect(16, y + 23, 2, 1);
+    c.fillRect(6, y + 15, 1, 2); c.fillRect(27, y + 15, 1, 2);
+  }
+
   function bakeStack(variant) {
     var W = 34, H = 64;
     var t = makeCanvas(W, H), c = t.ctx;
@@ -1149,21 +1240,8 @@ var Couch = (function () {
         c.fillStyle = P.pillowGold;
         c.fillRect(6, y + 4, W - 12, 1); c.fillRect(6, y + 27, W - 12, 1);
       } else if (variant === 1) {
-        /* the damask, reduced to what survives on a 34px cushion: an
-           open diamond and four dots. The first cut had a filled
-           medallion with a dotted ring round it and it read as a
-           bathroom tile - a print on a cushion is thread, and thread at
-           this size is a line and not a field. */
-        c.fillStyle = P.pillowGold;
-        for (i = 0; i < 8; i++) {
-          c.fillRect(17 - i, y + 16 - 7 + i, 1, 1); c.fillRect(16 + i, y + 16 - 7 + i, 1, 1);
-          c.fillRect(17 - i, y + 16 + 7 - i, 1, 1); c.fillRect(16 + i, y + 16 + 7 - i, 1, 1);
-        }
-        c.fillStyle = P.pillowGoldDeep;
-        c.fillRect(16, y + 8, 2, 1); c.fillRect(16, y + 23, 2, 1);
-        c.fillRect(6, y + 15, 1, 2); c.fillRect(27, y + 15, 1, 2);
-        c.fillStyle = P.pillowGrey;
-        c.fillRect(16, y + 15, 2, 2);
+        /* the ikat damask off the photographs - see the medallion above */
+        damask(c, y);
       } else {
         /* The knit, in DASHES. Ruled rows crossed by ruled verticals is
            a basket weave, and a basket at thirty-four pixels is a grid -
@@ -1262,61 +1340,126 @@ var Couch = (function () {
 
   /* ---------------------------------------------------- the popcorn
 
-     Four baked frames of one silhouette. A kernel is seven pixels
-     across and a seven pixel ball CANNOT be rotated - every angle that
-     is not a multiple of 90 degrees resamples into mush on a
-     nearest-neighbour layer, and a shape that changes outline every
-     frame reads as flicker rather than as spin. So the outline holds
-     perfectly still and what moves is the shading: the cream lobe, the
-     one brown hull pixel on the rim and the white specular all walk
-     round the shape together. Four frames is one turn, and at
-     spinRate 2.2 to 4.6 rad/s that is a kernel tumbling about twice a
-     second, which is what popcorn does.
+     ONE hand-drawn kernel per shape, turned by exact quarter turns.
 
-     Two silhouettes, because half the kernels in a bowl are round and
-     half of them are the lopsided butterfly kind. */
+     WHAT WAS HERE BEFORE was a 7px DISC with the shading walking round
+     the inside of an outline that never moved, on the argument that a
+     seven pixel ball cannot be rotated. That argument is right about
+     ARBITRARY angles - anything that is not a multiple of 90 degrees
+     resamples into mush on a nearest-neighbour layer - and wrong about
+     what follows from it, because a QUARTER turn on an odd grid is not
+     a resample at all: 9 is odd, so turning about (4.5, 4.5) maps every
+     pixel centre exactly onto another pixel centre and the sprite comes
+     back pixel for pixel.
+
+     What that buys is the whole of the owner's note. A disc with a
+     brown dot walking round the rim reads as a golf ball, and that is
+     what was on screen. What says POPCORN at this size is a LUMPY
+     OUTLINE with a cleft in it and the hull sitting down in the cleft -
+     and an outline can only be lumpy if it is allowed to turn with the
+     kernel instead of standing still while the shading slides past it.
+
+     The flicker the old comment feared was an outline changing every
+     frame at 60Hz. This changes on the quarter turn: at spinRate 2.2 to
+     4.6 rad/s that is 1.4 to 2.9 silhouette changes a second, which is
+     the exact rate the SHADING already changed at. A lump turning a
+     square corner twice a second reads as a tumble, which is what
+     popcorn does when it bounces; a landed kernel spins at 0.4x and
+     tumbles slower, as something that has stopped bouncing should.
+
+     NOTHING THE PHYSICS DEPENDS ON MOVES: the 9x9 bake, the 1px ring
+     underneath, the 3.5px collision radius, the x-4/y-4 blit and
+     popFrame are all exactly as they were, so every number the hops
+     were tuned against twice is untouched.
+
+     The paint grids, one character to the pixel:
+       W popWhite  the flesh      C popCream  a lobe turning away
+       H popHi     the specular   S popShade  a crease
+       .           outside the kernel
+     The two HULL pixels are deliberately not in the grid - they are
+     painted into the cleft AFTER the ring, so the ring dips into the
+     concavity and the hull sits at the bottom of a dark V. That V is
+     the single mark that says popcorn at seven pixels across. */
+  var POP_GRID = [
+    /* THE BUTTERFLY. Three single-pixel fingers along the top with the
+       dark dipping between them, and that is the whole trick: a seven
+       pixel shape wrapped in a one pixel ring reads as a BALL whatever
+       is painted inside it, because the ring is most of what the eye
+       gets at this size. The only way to break the ball is to make the
+       RING go in and out, and one pixel notches round the perimeter do
+       that where holes punched in the middle do not - holes read as
+       eyes. Five rounds of candidates rendered at 14x to find it. */
+    ['.W.W.W.',
+     'WHWWWWW',
+     'WWWWWWC',
+     '.WWWWWC',
+     'WWSWSWC',
+     'WWS.SC.',
+     '.W..C..'],
+    /* THE MUSHROOM: two fingers instead of three, a flatter and wider
+       cap, and the notch bitten out of the right side instead of the
+       left, so the two kernels differ in SILHOUETTE and not merely in
+       where the shading sits */
+    ['..WW.W.',
+     '.HWWWWW',
+     'WWWWWWC',
+     'WWWWWW.',
+     'WWSWSWC',
+     '.WS.SC.',
+     '..W.C..']
+  ];
+  /* the cleft, and what goes in it: the pale pip above, the kernel's
+     brown coat under it */
+  var POP_HULL = [[3, 5, 'hullPale'], [3, 6, 'hull']];
+
+  /* the cheddar clump still draws itself out of row spans - it is three
+     kernels shouldering each other and already reads as a lump, so it
+     keeps the shapes and the walking highlight it was tuned with */
   var POP_A = [[2, 3], [1, 5], [0, 7], [0, 7], [0, 7], [1, 5], [2, 3]];
   var POP_B = [[1, 4], [0, 6], [0, 7], [1, 6], [0, 7], [1, 5], [2, 4]];
-  /* the lobe, the hull and the specular, in four positions each - they
-     run round the shape in the same direction, one quarter turn apart */
   var LOBE = [[4, 4], [1, 4], [1, 1], [4, 1]];
-  var HULL = [[5, 2], [4, 5], [1, 4], [2, 1]];
-  var SPEC = [[2, 1], [1, 3], [4, 5], [5, 2]];
 
-  function bakePop(rows, f, body, lobe, shade, hiCol, hullCol) {
+  function bakePop(grid) {
     var t = makeCanvas(9, 9), c = t.ctx;
-    var i;
-    LivingRoom.rowsFill(c, rows, 1, 1, body);
-    /* the two rows nearest the light's far side, always */
-    c.fillStyle = shade;
-    for (i = rows.length - 2; i < rows.length; i++) {
-      c.fillRect(1 + rows[i][0], 1 + i, rows[i][1], 1);
-    }
-    c.fillStyle = lobe;    c.fillRect(1 + LOBE[f][0], 1 + LOBE[f][1], 2, 2);
-    c.fillStyle = hullCol; c.fillRect(1 + HULL[f][0], 1 + HULL[f][1], 1, 1);
-    c.fillStyle = hiCol;   c.fillRect(1 + SPEC[f][0], 1 + SPEC[f][1], 1, 1);
-
-    /* Cut everything back to the silhouette, then lay the 1px ring
-       UNDERNEATH it. Fattening the shape row by row would paint the
-       notch in POP_B shut, which is the one thing that tells the two
-       kernels apart. */
     var m = makeCanvas(9, 9);
-    LivingRoom.rowsFill(m.ctx, rows, 1, 1, '#ffffff');
-    c.globalCompositeOperation = 'destination-in';
-    c.drawImage(m.canvas, 0, 0);
+    var ink = { W: P.popWhite, H: P.popHi, C: P.popCream, S: P.popShade };
+    var r, k, ch;
+    for (r = 0; r < grid.length; r++) {
+      for (k = 0; k < grid[r].length; k++) {
+        ch = grid[r].charAt(k);
+        if (ch === '.') continue;
+        c.fillStyle = ink[ch];
+        c.fillRect(1 + k, 1 + r, 1, 1);
+        m.ctx.fillStyle = '#ffffff';
+        m.ctx.fillRect(1 + k, 1 + r, 1, 1);
+      }
+    }
+    /* the ring goes UNDER the kernel, which is what makes it follow
+       every concavity the grid has - including the cleft */
     c.globalCompositeOperation = 'destination-over';
     c.drawImage(LivingRoom.ringOf(m, 9, 9).canvas, 0, 0);
     c.globalCompositeOperation = 'source-over';
+    for (r = 0; r < POP_HULL.length; r++) {
+      c.fillStyle = P[POP_HULL[r][2]];
+      c.fillRect(1 + POP_HULL[r][0], 1 + POP_HULL[r][1], 1, 1);
+    }
     return t;
   }
 
   function bakePopSet() {
-    var out = [], s, f, set;
-    for (s = 0; s < 2; s++) {
-      set = [];
-      for (f = 0; f < 4; f++) {
-        set.push(bakePop(s ? POP_B : POP_A, f,
-                         P.popWhite, P.popCream, P.popShade, P.popHi, P.hull));
+    var out = [], s, f, set, t, c;
+    for (s = 0; s < POP_GRID.length; s++) {
+      set = [bakePop(POP_GRID[s])];
+      for (f = 1; f < 4; f++) {
+        t = makeCanvas(9, 9); c = t.ctx;
+        /* (4.5, 4.5) is the middle of a nine pixel sheet. Turn a square
+           corner about it and every pixel lands on a pixel: no
+           smoothing is asked for and none is needed. */
+        c.translate(4.5, 4.5);
+        c.rotate(f * Math.PI / 2);
+        c.translate(-4.5, -4.5);
+        c.drawImage(set[0].canvas, 0, 0);
+        set.push(t);
       }
       out.push(set);
     }
@@ -2180,15 +2323,22 @@ var Couch = (function () {
 
   /* ----------------------------------------------------- generation */
 
-  /* 5 tufted, 3 damask, 2 knit - and all three cream, so the mix no
-     longer decides whether the level is readable, only how varied it
-     looks. It used to: five in ten were the grey microfibre one and
-     those five were the ones a player could not see. */
+  /* 5 DAMASK, 3 tufted, 2 knit, and the five and the three have just
+     swapped. All three are cream, so the mix no longer decides whether
+     the level is readable, only how varied it looks - it used to, when
+     five in ten were the grey microfibre one and those five were the
+     ones a player could not see. What decides the weights now is the
+     photograph: three of the four throw pillows in Couch ref 1, 2 and 4
+     carry the ikat medallion and exactly one is the plain stitched one,
+     so the print the owner asked to see is the one they should see
+     most. The tufted variant stays in the mix because the thing it is
+     drawn from is in every shot too - it is just the SOFA BACK rather
+     than a pillow. */
   function makePillar(x, gapY, gapH, run) {
     var v = Math.random();
     return { type: 'pillar', x: x, w: 34,
              gapY: Math.round(gapY), gapH: Math.round(gapH),
-             variant: v < 0.5 ? 0 : (v < 0.8 ? 1 : 2),
+             variant: v < 0.5 ? 1 : (v < 0.8 ? 0 : 2),
              scored: false };
   }
 

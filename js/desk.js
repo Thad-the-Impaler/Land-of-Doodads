@@ -2213,12 +2213,45 @@ var Desk = (function () {
       app: clamp(count - 3, 0, 3),
       len: len, hy: hy,
       seed: rand(0, TAU),
-      /* THE RING. `time` is how long the screen buzzes, `amp` how hard
-         (the engine caps it at 12), and the two lines are what it shouts
-         into the SPICY slot. 1.1s and 8px: long enough to cost a plank,
-         short enough that the run is still winnable, and the engine's
-         top-up rule keeps a chain of them bounded. */
-      stun: { time: 1.1, amp: 8, say: 'RING RING!', sub: 'SOMEBODY IS CALLING' },
+      /* THE RING. `time` is how long it lasts, `amp` how hard the screen
+         buzzes (the engine caps it at 12), `roll` how far the whole room
+         tilts in degrees (the engine caps that at 8), and the two lines
+         are what it shouts into the SPICY slot.
+
+         IT WAS 1.1s AND 8px OF BUZZ AND IT COST NOTHING. A shake moves
+         all three canvases by the same offset, so the doodad and the
+         planks slide together and the one number the player is actually
+         reading - his height against the next gap - comes out of a shaken
+         frame unchanged. Forced in play and watched: the picture jitters,
+         the task does not. Which is why the amp is now 12, the whole of
+         what the engine allows, and why the amp is not the fix.
+
+         THE ROLL IS THE FIX. The stage turns about its centre, so the
+         HORIZON tilts: a gap dx ahead sits dx*sin(theta) off where the
+         eye puts it, while every pixel stays where it was drawn and
+         collision never learns about any of it. Six degrees against this
+         bay's 12px of timing room (gapMin 82 - 2*hitR - the 48 one flap
+         lifts): sin 6 is 0.105, so a plank 100px off - about 0.6s of
+         warning, the distance a decision is actually made at - reads
+         10.5px wrong at the peak and about 6.7px averaged over a swing,
+         half the budget. 1.6s at 110-172px/s is 176-275px of scroll
+         against a spacing of 186-230, so exactly ONE plank is flown
+         inside a ring and two inside a chained one. Honest price: about
+         half a plank, and about one for a chain.
+
+         It still spends no life and hides nothing - the icon is consumed
+         before hurt() is ever reached, nothing moves that the player
+         collides with, and a room visibly rolling under RING RING! is
+         unmistakable. The two candidates that were rejected both broke
+         that rule: a phone card over the lane makes a plank unseeable at
+         0.12s of warning, and shaking the scenery apart from the doodad
+         draws a plank up to 8px from where it kills you.
+
+         1.6s, not longer: the engine's top-up rule caps a chain at
+         1.6 x 1.6 = 2.56s, and the buzz's own pulse train comes out of
+         `time` for free - five 0.36s pulses at 12, 10, 9, 8 then 6px
+         where there used to be three at 8, 6 and 4. */
+      stun: { time: 1.6, amp: 12, roll: 6, say: 'RING RING!', sub: 'SOMEBODY IS CALLING' },
       /* where the 12-particle burst goes when one is touched - the ICON
          and not the doodad, so the player sees WHAT they hit. By the time
          anything can reach it the rise is long over and the icon is

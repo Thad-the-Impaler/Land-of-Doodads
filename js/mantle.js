@@ -370,12 +370,23 @@ var Mantle = (function () {
   var CTRL_HALF = 38;
 
   /* A controller's beam is longer than a remote's, and on purpose. The
-     tune hands over 18..28px of floor reach; a 27 degree lean on 20px
+     multiplier existed to buy the LEAN something to move: the tune used
+     to hand over 18..28px of floor reach, and a 27 degree lean on 20px
      of beam moves the tip six pixels, which is less than a hitbox and
-     not worth putting a banner up for. 1.6x puts the reach at 20..45
-     and the tip's travel at 9 to 21 - about a doodad wide, which is a
-     wander you have to actually read. */
-  var CTRL_STRETCH = 1.6;
+     not worth putting a banner up for. 1.6x took the reach to 20..45 and
+     the tip's travel to 9..21 - about a doodad wide, and readable.
+
+     IT COMES DOWN TO 1.25 BECAUSE THE TUNE GREW. js/levels.js now hands
+     over 40..56px of floor reach, and 1.25x puts the pad at 35..70 - its
+     longest beam is 13+70 = 83, tip at y 159, lethal to a centre from 148
+     down, which is 49 of the 128px band a doodad can ever cross a bay in:
+     38%. The lean carries that tip 32px either way on its own (70 * sin
+     27.5), four pixels more than the stretch was invented to produce, so
+     the multiplier has done its job unaided and anything above this is
+     paying for something already bought. At 1.6 the same tune would reach
+     112, cover 55% of the band and stop being a hazard you read - it would
+     be a wall. */
+  var CTRL_STRETCH = 1.25;
 
   /* The two numbers the lean itself is made of. 0.30 + 0.18 radians is
      27.5 degrees off vertical at the very worst, and the two rates sum
@@ -2031,8 +2042,27 @@ var Mantle = (function () {
       var gapH = Math.round(span * 0.34);
       var room = Math.max(1, span - gapH - 18);
       var gapY = Math.round(lidY + 8 + (i * room) / 3);
-      pvColumn(ctx, ox, lidY + 2, gapY - lidY - 2, false);
-      pvColumn(ctx, ox, gapY + gapH, shelfY - gapY - gapH, true);
+      /* WHICH PILASTER THIS IS, and the whole of the "the pillars are
+         glitchy with the brick pattern" bug. pvColumn used to hash its
+         courses on `ox`, which is WHERE THE COLUMN IS ON THE CARD - and
+         ox walks one pixel left every 45ms, so every time it ticked, all
+         eight courses were re-rolled at once. Measured on the big card:
+         the column's whole colouring changed on 37% of frames, 7.85 of
+         its 8 courses moved on each one, and a course that moved jumped
+         42 of luminance, the palette running #d2cbbf down to #5f5346.
+         That is 22 recolours a second on a 12px column of near-white
+         stone, which is exactly what sparkling stone looks like.
+
+         The key has to be the column's IDENTITY, not its position: the
+         slot index plus the number of times that slot has wrapped, so a
+         pilaster carries one number for the whole of its pass across the
+         card and the next one to appear in the same slot gets a new one.
+         The two halves get id*2 and id*2+1 rather than the same key,
+         because keyed on ox they shared it and the stack above a gap was
+         the stack below it re-run from the top. */
+      var id = i + 3 * Math.floor((s + i * period) / (period * 3));
+      pvColumn(ctx, ox, lidY + 2, gapY - lidY - 2, false, id * 2);
+      pvColumn(ctx, ox, gapY + gapH, shelfY - gapY - gapH, true, id * 2 + 1);
     }
 
     /* 5. A remote standing on the shelf between two pilasters - which
@@ -2112,15 +2142,21 @@ var Mantle = (function () {
 
   /* One little stone pilaster inside a cover. `capTop` says the black
      shelf goes on its upper end - the arris always faces the gap, here
-     as in the room. The courses take their colour off a hash of their
-     own position rather than off a counter: a three-colour cycle up a
-     12px column is a ladder, and the first pass of this card was four
-     white ladders sliding past. */
-  function pvColumn(ctx, x, y, h, capTop) {
+     as in the room. The courses take their colour off a hash rather than
+     off a counter: a three-colour cycle up a 12px column is a ladder, and
+     the first pass of this card was four white ladders sliding past.
+
+     `key` is WHICH PILASTER AND WHICH HALF, handed down by drawPreview,
+     and it is the half of the hash that must not change while the thing
+     is on screen. It used to be `x`, the column's position on the card,
+     and the stone boiled at 22Hz as it slid - see the comment at the call
+     site. Both halves of the hash are now odd 32-bit multipliers, so
+     consecutive keys separate as well as consecutive course rows do. */
+  function pvColumn(ctx, x, y, h, capTop, key) {
     if (h <= 0) return;
     var i, n, hgt;
     for (i = 0; i < h; i += 4) {
-      n = (Math.imul(i + 11, 2654435761) ^ Math.imul(x + 3, 40503)) >>> 0;
+      n = (Math.imul(i + 11, 2654435761) ^ Math.imul(key + 3, 2246822519)) >>> 0;
       hgt = Math.min(3, h - i);
       ctx.fillStyle = STONES[(n >>> 13) % STONES.length];
       ctx.fillRect(x, y + i, 12, hgt);
@@ -2160,11 +2196,19 @@ var Mantle = (function () {
      THE LENGTH. The tune's spikeCeilMin..Max and spikeFloorMin..Max
      are the reach of the SIGNAL; the remote itself is added back on
      top, because `len` is a spike's whole reach into the room and the
-     body is part of what is in the way. That puts a floor remote at 26
-     to 42px of obstruction and a ceiling one at 21 to 36 - within a
-     pixel or two of the Deck's misters, which is the right calibration
-     for a hazard that is thin: a 3px beam has to reach about as far as
-     an 11px jet to ask the same question. */
+     body is part of what is in the way. At the tune this shipped with
+     that put a floor remote at 26 to 42px of obstruction and a ceiling
+     one at 21 to 36 - the Deck's misters' numbers - and it was wrong,
+     for the reason js/levels.js now sets out at length: the gap a doodad
+     flies through is never nearer the floor than y 197 or the ceiling
+     than y 69, so a 42px beam reached 8px into the only band that
+     exists and the median beam reached none of it. The tune is 40..56
+     on the floor and 32..48 at the ceiling now, which makes a floor
+     remote 42 to 70px of obstruction and a ceiling one 32 to 58 - a
+     third of the band at the top end, nothing at all at the bottom, and
+     the shortest beam this can make is the longest the old one could.
+     A thin hazard still has to reach further than a fat one to ask the
+     same question; it now does. */
   function makeSpikes(x, side, count, maxLen, run) {
     if (side === 'floor' && run && run.late &&
         chance(clamp((run.score - LATE_SCORE) * 0.05, 0, 0.5))) {

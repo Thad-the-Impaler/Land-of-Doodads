@@ -229,8 +229,11 @@ var PlayScene = (function () {
     start();
   }
 
-  /* never leave the keyboard stuck in typing mode */
-  function exit() { Input.setTextMode(false); }
+  /* Never leave the keyboard stuck in typing mode - and never leave the
+     room tilted. Screen.updateShake runs from game.js for every scene there
+     is, so a roll this scene started would go on rolling the level select
+     for the rest of its 1.6 seconds. */
+  function exit() { Input.setTextMode(false); Screen.rollStop(); }
 
   function start() {
     state = 'ready';
@@ -263,6 +266,10 @@ var PlayScene = (function () {
     late = false;
     run = { score: 0, time: 0, late: false, scroll: 0 };
     ringing = 0; stunTime = 0; ringAmp = 0; buzzTimer = 0;
+    /* the stage itself, which is a DOM transform and so is not reset by
+       zeroing any of the above: RETRY during a ring must not start the
+       next run tilted */
+    Screen.rollStop();
     stunBanner = 0; stunSay = ''; stunSub = ''; stunFlash = 0;
     bopAt = -1;
     hungry = 0; nearestPull = 0;
@@ -975,6 +982,22 @@ var PlayScene = (function () {
     ringAmp = Math.min(ob.stun.amp, 12);
     stunTime = ob.stun.time;
     buzzTimer = 0;
+    /* THE ROLL, for a stun that asks for one with ob.stun.roll (degrees).
+       The clamp above does NOT move, and the reason is the whole reason
+       this field exists: beginFrame gives all three canvases the same
+       (shakeX, shakeY), so a shake slides the doodad and the planks
+       TOGETHER and the one number the player is reading - the doodad's
+       height against the next gap - survives it untouched. That is why
+       the ring cost about zero planks at an amp of 8 and would have cost
+       about zero at 20. Screen.roll tilts the stage instead, which tilts
+       the HORIZON: every pixel stays honest and collision never learns
+       about it, but a gap dx ahead now sits dx*sin(theta) off where the
+       eye puts it. It runs for what is LEFT of the ring, not for
+       ob.stun.time, so the swing decays to exactly zero as the buzz
+       stops - including on a top-up, where the ring is the longer
+       number. Screen caps the angle itself, for the same reason the amp
+       is capped: a punish must never make the game unplayable. */
+    if (ob.stun.roll) Screen.roll(ob.stun.roll, ringing);
     stunBanner = 1.1;
     /* ONE TENANT FOR THE SLOT AT 112/138, AND THE NEWEST NEWS WINS.
        SPICY!, SOUR! and this all shout in the same two rows for the same
@@ -1286,6 +1309,12 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    /* and the room stands straight back up. The buzz may finish out - it is
+       noise over a death that is already noisy - but a roll may not: the
+       tumble and then the score panel would play out on a tilt, and the
+       one frame it costs to snap upright lands inside this death's own
+       flash and its shake of 5. */
+    Screen.rollStop();
     flash = 0.09;
     /* Which way the body goes. Everything else in the game throws the
        doodad UP and lets it tumble back down; a head-bump cannot, because

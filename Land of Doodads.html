@@ -1062,12 +1062,17 @@ var Audio3 = (function () {
   /* Keyed by what the sound DOES, so a role swaps from synth to recording
      by appearing here and nothing at the call sites changes. `vol` is per
      sound because these two want opposite things: a fanfare you hear over
-     everything, and an in-play chirp that must sit under the game rather
-     than on top of it - NERVE fires on every plank Cookie shaves, which
-     late in a good run is every couple of seconds. */
+     everything, and an in-play chirp that must sit under the game.
+
+     NERVE went 0.30 -> 0.40 because it was not being heard at all. Mixing
+     it down was the right instinct for a sound that COULD fire every couple
+     of seconds and the wrong one for how often it actually does: nerve pays
+     for a plank threaded within SEVEN pixels and only Cookie has it, so a
+     run that is not deliberately shaving planks can go start to finish
+     without one. A sound nobody hears is not a subtle sound. */
   var SAMPLES = {
     unlock: { src: 'Assets/sounds/mkoydokoy.mp3', vol: 0.45 },
-    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.30 }
+    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.40 }
   };
 
   var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */
@@ -1184,6 +1189,39 @@ var Screen = (function () {
   var ctxBg, ctxCh, ctxFg;
   var scale = 1, dpr = 1, portrait = false;
   var shakeX = 0, shakeY = 0, shakeTime = 0, shakeAmount = 0;
+  /* THE ROLL - the whole stage tilts about its centre. See roll().
+     rollDeg  the swing's peak, in degrees, capped at ROLL_MAX
+     rollSpan what it started at, so the envelope can decay to exactly zero
+     rollLeft seconds left
+     rollNow  the angle on screen right now, which toVirtual has to undo
+     rollOn   whether the transform is currently written, so a roll that is
+              over clears the style once instead of every frame for ever */
+  var rollDeg = 0, rollSpan = 0, rollLeft = 0, rollNow = 0, rollOn = false;
+  var rollFit = 1;            /* the pull-back that keeps the tilt on screen */
+  var ROLL_MAX = 8, ROLL_HZ = 1.25;
+
+  /* How far the stage has to pull BACK to tilt without losing its corners.
+
+     A rotated box needs more room than an upright one, and the stage has
+     none: it is sized to exactly VW*scale by VH*scale inside a body with
+     overflow hidden, so on a phone in landscape - or fullscreen on a 16:9
+     display, where the whole-number fit lands exactly - it already fills
+     the viewport edge to edge. Rotating it there threw 21 virtual rows of
+     the top and bottom corners off the screen, which took the spare-life
+     succulents with it and, worse, the high and low ends of the next
+     plank's gap as it came in from the right. A punish that hides the
+     thing that is about to kill you is not a punish, it is a bug.
+
+     So the tilt scales as it turns, by exactly the factor that fits the
+     rotated box back inside the upright one. The room reads as lurching
+     away from the player rather than as the camera losing its grip, which
+     is what a telephone going off in your ear should feel like anyway.
+     480x270 is a wide box and the height is always the binding side: at
+     the Desk's peak of 5.3 degrees it is a 14% pull-back. */
+  function fitFor(deg) {
+    var a = Math.abs(deg) * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+    return Math.min(VW / (VW * cs + VH * sn), VH / (VW * sn + VH * cs));
+  }
 
   function init() {
     stage = document.getElementById('stage');
@@ -1221,16 +1259,72 @@ var Screen = (function () {
     API.portrait = portrait;
   }
 
-  /* a point from a touch or a click, in the 480x270 the game thinks in */
+  /* a point from a touch or a click, in the 480x270 the game thinks in.
+
+     It is measured from the stage's CENTRE and not from its top left, and
+     the current roll is undone on the way in, because a rotated element's
+     getBoundingClientRect() is its axis-aligned BOUNDING BOX: while the
+     room is tilting, r.left/r.width describe a box up to 28px wider than
+     the stage and a tap would land somewhere else entirely. The centre is
+     the one point rotation leaves alone, offsetWidth/offsetHeight are the
+     layout size and ignore the transform, and at rollNow 0 this is exactly
+     the old arithmetic. */
   function toVirtual(clientX, clientY) {
     var r = stage.getBoundingClientRect();
-    if (!r.width || !r.height) return null;
-    return { x: (clientX - r.left) / r.width * VW,
-             y: (clientY - r.top) / r.height * VH };
+    var w = stage.offsetWidth, h = stage.offsetHeight;
+    if (!w || !h) return null;
+    var dx = clientX - (r.left + r.width / 2);
+    var dy = clientY - (r.top + r.height / 2);
+    if (rollNow) {
+      var a = -rollNow * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+      var rx = dx * cs - dy * sn;
+      dy = dx * sn + dy * cs;
+      dx = rx;
+      /* and undo the pull-back, or a tap lands short of where it looks */
+      dx /= rollFit; dy /= rollFit;
+    }
+    return { x: (dx / w + 0.5) * VW, y: (dy / h + 0.5) * VH };
   }
 
   function shake(amount, time) {
     if (amount > shakeAmount) { shakeAmount = amount; shakeTime = time || 0.35; }
+  }
+
+  /* THE ROLL, the one thing a stun can do that a shake cannot.
+
+     A shake translates all three canvases by the same (shakeX, shakeY) -
+     see beginFrame - so the doodad and the planks move TOGETHER, and the
+     one number the player is reading, the doodad's height against the next
+     gap, comes out of a shaken frame unchanged. That is why the Desk's
+     ring cost about zero planks at an amplitude of 8 and would have cost
+     about zero at 20: the picture jitters, the task does not.
+
+     A rigid ROTATION about the stage's centre tilts the HORIZON instead.
+     Every pixel stays honest - nothing is hidden, nothing is drawn where it
+     is not, collision is untouched - but a gap dx ahead now sits dx*sin(th)
+     off where the eye expects it, and at the Desk's 12px of timing room
+     that error is most of the budget. It is applied as a CSS transform on
+     #stage, so all three layers, the HUD and the bezel turn as one piece:
+     the pixel layers are already-upscaled bitmaps by then, so nothing is
+     resampled in virtual space and the dither patterns cannot boil.
+
+     theta(t) = deg * sin(TAU*1.25*t) * (1 - t/time): two full swings over
+     1.6s, the first the biggest, settling to exactly zero as the ring ends.
+     ROLL_MAX exists for the same reason the shake's own cap does - a punish
+     must never make the game unplayable - and 8 degrees is where a plank
+     still reads. The bigger swing wins a top-up, like shake(). */
+  function roll(deg, time) {
+    if (!(deg > 0) || !(time > 0)) return;
+    if (deg < rollDeg && rollLeft > 0) return;
+    rollDeg = Math.min(deg, ROLL_MAX);
+    rollSpan = time;
+    rollLeft = time;
+  }
+
+  function rollStop() {
+    rollDeg = rollSpan = rollLeft = rollNow = 0;
+    rollFit = 1;
+    if (rollOn && stage) { stage.style.transform = ''; rollOn = false; }
   }
 
   function updateShake(dt) {
@@ -1241,6 +1335,22 @@ var Screen = (function () {
       shakeY = Math.round(rand(-a, a));
       if (shakeTime <= 0) { shakeAmount = 0; shakeX = shakeY = 0; }
     } else { shakeX = 0; shakeY = 0; }
+    if (rollLeft > 0) {
+      rollLeft -= dt;
+      if (rollLeft <= 0) rollStop();
+      else {
+        var t = rollSpan - rollLeft;
+        rollNow = rollDeg * Math.sin(TAU * ROLL_HZ * t) * (rollLeft / rollSpan);
+        rollFit = fitFor(rollNow);
+        /* two decimals is a hundredth of a degree - a twentieth of a pixel
+           across the stage, and it keeps the style string short. The scale
+           rides with it so nothing is ever rotated off the screen; see
+           fitFor. */
+        stage.style.transform = 'rotate(' + rollNow.toFixed(2) + 'deg) scale(' +
+                                rollFit.toFixed(4) + ')';
+        rollOn = true;
+      }
+    }
   }
 
   function beginFrame() {
@@ -1268,6 +1378,11 @@ var Screen = (function () {
   var API = {
     init: init, resize: resize, beginFrame: beginFrame, toVirtual: toVirtual,
     shake: shake, updateShake: updateShake, toggleFullscreen: toggleFullscreen,
+    /* roll() is asked for by a stun that carries one, and rollStop() by
+       anything that ends a run or leaves the scene: updateShake runs from
+       game.js for every scene there is, so a roll nobody cancelled would
+       go on tilting a menu for the rest of its 1.6 seconds. */
+    roll: roll, rollStop: rollStop,
     ctxBg: null, ctxCh: null, ctxFg: null, scale: 1, portrait: false
   };
   return API;
@@ -12272,12 +12387,45 @@ var Desk = (function () {
       app: clamp(count - 3, 0, 3),
       len: len, hy: hy,
       seed: rand(0, TAU),
-      /* THE RING. `time` is how long the screen buzzes, `amp` how hard
-         (the engine caps it at 12), and the two lines are what it shouts
-         into the SPICY slot. 1.1s and 8px: long enough to cost a plank,
-         short enough that the run is still winnable, and the engine's
-         top-up rule keeps a chain of them bounded. */
-      stun: { time: 1.1, amp: 8, say: 'RING RING!', sub: 'SOMEBODY IS CALLING' },
+      /* THE RING. `time` is how long it lasts, `amp` how hard the screen
+         buzzes (the engine caps it at 12), `roll` how far the whole room
+         tilts in degrees (the engine caps that at 8), and the two lines
+         are what it shouts into the SPICY slot.
+
+         IT WAS 1.1s AND 8px OF BUZZ AND IT COST NOTHING. A shake moves
+         all three canvases by the same offset, so the doodad and the
+         planks slide together and the one number the player is actually
+         reading - his height against the next gap - comes out of a shaken
+         frame unchanged. Forced in play and watched: the picture jitters,
+         the task does not. Which is why the amp is now 12, the whole of
+         what the engine allows, and why the amp is not the fix.
+
+         THE ROLL IS THE FIX. The stage turns about its centre, so the
+         HORIZON tilts: a gap dx ahead sits dx*sin(theta) off where the
+         eye puts it, while every pixel stays where it was drawn and
+         collision never learns about any of it. Six degrees against this
+         bay's 12px of timing room (gapMin 82 - 2*hitR - the 48 one flap
+         lifts): sin 6 is 0.105, so a plank 100px off - about 0.6s of
+         warning, the distance a decision is actually made at - reads
+         10.5px wrong at the peak and about 6.7px averaged over a swing,
+         half the budget. 1.6s at 110-172px/s is 176-275px of scroll
+         against a spacing of 186-230, so exactly ONE plank is flown
+         inside a ring and two inside a chained one. Honest price: about
+         half a plank, and about one for a chain.
+
+         It still spends no life and hides nothing - the icon is consumed
+         before hurt() is ever reached, nothing moves that the player
+         collides with, and a room visibly rolling under RING RING! is
+         unmistakable. The two candidates that were rejected both broke
+         that rule: a phone card over the lane makes a plank unseeable at
+         0.12s of warning, and shaking the scenery apart from the doodad
+         draws a plank up to 8px from where it kills you.
+
+         1.6s, not longer: the engine's top-up rule caps a chain at
+         1.6 x 1.6 = 2.56s, and the buzz's own pulse train comes out of
+         `time` for free - five 0.36s pulses at 12, 10, 9, 8 then 6px
+         where there used to be three at 8, 6 and 4. */
+      stun: { time: 1.6, amp: 12, roll: 6, say: 'RING RING!', sub: 'SOMEBODY IS CALLING' },
       /* where the 12-particle burst goes when one is touched - the ICON
          and not the doodad, so the player sees WHAT they hit. By the time
          anything can reach it the rise is long over and the icon is
@@ -12409,8 +12557,8 @@ var Desk = (function () {
    shutters along the very top of the room and a dark walnut coffee
    table sliding past below. Drawn from Couch ref 1-4 in Assets/Concept:
    the sectional, the cream-and-gold damask cushions, the cream knit
-   throw over the far arm, the monstera leaf in the corner of the
-   window, the chess set, the magnifying glass, and the three round
+   throw over the far arm, the chess set, the magnifying glass, and the
+   three round
    coasters - two pale wood slices and one coiled pink one - which are
    the spare lives.
 
@@ -12537,8 +12685,6 @@ var Couch = (function () {
     shutterDark:  '#6b6459',   /* the gap in a panel that is shut       */
     nightBlue:    '#7f98bf',   /* the slice of night between two slats  */
     nightDeep:    '#5c7497',   /* every fourth one, and the palm fronds */
-    leafDark:     '#2c4a2b',   /* the monstera's veins and its notches  */
-    leafMid:      '#4f7d45',   /* the monstera leaf itself              */
 
     /* THE TUFTED BACK, off Couch ref 2, and it is the bay's field: two
        thirds of the screen is these five values. They are two whole
@@ -12574,7 +12720,16 @@ var Couch = (function () {
        170s into the 190s without flattening the modelling. */
     pillowCream:  '#e8dcc0',
     pillowHi:     '#f5ecd8',
-    pillowGold:   '#c4a24c',
+    /* The brass went UP a value when the damask medallion arrived. Two
+       reasons and they point the same way. The photograph's thread is a
+       soft brass on cream, not an ochre - at #c4a24c the print was
+       darker against its own cushion than anything in Couch ref 4 is.
+       And the medallion spends luminance where the old open diamond
+       spent almost none: a gold pixel at 162 replacing lit cream at 228
+       costs the pillar body six hundredths of a value, and there are a
+       hundred of them now. At 178 the same print costs a third less and
+       the separation stays where the last round left it. */
+    pillowGold:   '#d4b258',
     pillowGoldDeep: '#957839',
     pillowShade:  '#cdbb94',   /* the face turned away from the pendant */
     pillowDeep:   '#ab9870',   /* and the last of it, at the seam       */
@@ -12629,7 +12784,8 @@ var Couch = (function () {
     popHi:        '#ffffff',
     popCream:     '#e9dcc0',
     popShade:     '#c4b48f',
-    hull:         '#5a3a1e',   /* the one brown pixel that says kernel  */
+    hull:         '#5a3a1e',   /* the kernel coat, down in the cleft    */
+    hullPale:     '#e2c15e',   /* and the pip of yellow sitting on it   */
 
     /* the hot cheddar kind */
     cheddar:      '#f0922e',
@@ -12830,11 +12986,25 @@ var Couch = (function () {
      band has a dark stretch and a light stretch rather than one
      alternating texture.
 
-     IT IS 384 AND NOT 192 BECAUSE OF THE LEAF. One monstera per tile at
-     192 put two or three of them on screen at once, all at the same
-     height, and a plant that repeats is wallpaper. At 384 there is
-     usually one and never more than two, and the panel pattern takes
-     twice as long to come round.
+     IT IS STILL 384 WITH THE LEAF GONE, AND THAT IS NOT AN OVERSIGHT.
+     The monstera used to be the reason: one leaf per tile at 192 put
+     two or three on screen at once, all at the same height, and a plant
+     that repeats is wallpaper. The owner wanted the leaf out of the
+     blinds, so it is out - and the question that leaves behind is
+     whether 384 is now just 192 printed twice, which would be a tile
+     paying double for nothing.
+
+     IT IS NOT, FOR TWO REASONS, AND I MEASURED THE SECOND ONE. The
+     panel sequence is OPEN, SHUT, SHUT, OPEN. A 192 period needs panel
+     i and panel i+2 to match, and open does not match shut, so the band
+     has a dark stretch two panels wide with the night showing either
+     side of it - exactly Couch ref 2's window - and that rhythm is 384
+     pixels long whatever is painted in it. And the palm seen through
+     the two open panels is drawn from ONE mulberry32 stream taken in
+     panel order, so the second open panel gets different fronds from
+     the first: the two 192px halves of the baked tile differ in 243
+     pixels, counted off the tile itself. Halving it would not save a
+     repeat, it would create one.
 
      IT IS A BAND, 70 ROWS DEEP, and that is the whole of this fix. It
      used to be 218 - every row from the moulding to the floor - and the
@@ -12951,41 +13121,6 @@ var Couch = (function () {
     c.fillRect(px + PANEL_W, 0, 1, SILL_Y);
   }
 
-  /* The monstera in the corner of the window. Three notches cut into
-     its right edge is the whole of what makes a 24x30 green blob read
-     as that particular plant. */
-  function monstera(c, x, y) {
-    var ROWS = [
-      [10, 4], [7, 10], [5, 14], [3, 17], [2, 19], [1, 21], [1, 22],
-      [0, 23], [0, 23], [0, 23], [0, 24], [0, 24], [0, 24], [0, 23],
-      [0, 23], [0, 22], [1, 21], [1, 20], [2, 19], [2, 17], [3, 16],
-      [4, 14], [5, 12], [6, 11], [7, 9], [8, 8], [9, 6], [10, 5],
-      [11, 3], [12, 2]
-    ];
-    var i;
-    LivingRoom.rowsOutline(c, ROWS, x, y, P.outline);
-    LivingRoom.rowsFill(c, ROWS, x, y, P.leafMid);
-    /* the midrib, and the veins running out of it to the leaf's edge */
-    c.fillStyle = P.leafDark;
-    for (i = 0; i < ROWS.length; i++) c.fillRect(x + 11, y + i, 1, 1);
-    for (i = 3; i < 26; i += 4) {
-      var half = Math.round(ROWS[i][1] / 2);
-      c.fillRect(x + 12, y + i, half - 1, 1);
-      c.fillRect(x + 11 - half + 2, y + i + 1, half - 2, 1);
-    }
-    /* the three notches, cut back to the midrib out of the right edge */
-    [[6, 5], [13, 6], [20, 5]].forEach(function (n) {
-      c.fillStyle = P.leafDark;
-      c.fillRect(x + 13, y + n[0], 11, n[1]);
-    });
-    c.globalCompositeOperation = 'destination-out';
-    [[6, 5], [13, 6], [20, 5]].forEach(function (n) {
-      c.fillStyle = '#000';
-      c.fillRect(x + 15, y + n[0] + 1, 10, n[1] - 2);
-    });
-    c.globalCompositeOperation = 'source-over';
-  }
-
   function bakeShutters() {
     var t = makeCanvas(SH_W, SH_H), c = t.ctx;
     var r = mulberry32(6120), i;
@@ -12999,18 +13134,6 @@ var Couch = (function () {
     shutterPanel(c, 97, false, r);   /* shut                     */
     shutterPanel(c, 193, false, r);  /* shut                     */
     shutterPanel(c, 289, true, r);   /* open to the night        */
-
-    /* the monstera in the corner of the open panel, on a stem that goes
-       off the left edge of the tile - a leaf floating in the middle of
-       a pane is a sticker, and a leaf on a stalk is a plant standing
-       somewhere off to the side of the room. It used to hang at local
-       y 72, which no longer exists; in Couch ref 1 and ref 4 it is in
-       the TOP corner of the window anyway. */
-    for (i = 0; i < 10; i++) {
-      c.fillStyle = i > 6 ? P.leafDark : P.leafMid;
-      c.fillRect(i, 30 + Math.round(i * 0.5), 1, 2);
-    }
-    monstera(c, 6, 14);              /* local 14..43, screen 38..67 */
 
     /* NO STEP BACK TOWARD THE WALL. There used to be a 3/16 Tint of
        P.wall over the whole tile, because the shutters were the entire
@@ -13485,6 +13608,122 @@ var Couch = (function () {
      clear of the field it passes over (backMid #67635c, 99), and a
      hundred values of internal range inside the column itself - hi 236
      down to deep 149 - so it is a modelled object on a flat one. */
+  /* ------------------------------------------- the damask medallion
+
+     GO AND LOOK AT COUCH REF 1, 2 AND 4. Three of the four throw
+     pillows in the photographs carry one print, and it is not a
+     diamond: it is a large ikat damask MEDALLION. One scalloped ogee
+     fills most of the pillow face, with a gold-filled centre carrying a
+     cream quatrefoil, grey scroll-vines curling off the four corners
+     with hooked tendrils, gold leaf-lobes between the vines, and plain
+     cream round the edge. Two threads on cream - a soft brass gold and
+     a mid grey - with the GOLD carrying the medallion and the GREY
+     carrying the vines.
+
+     WHAT WAS HERE BEFORE was a 20px open diamond in one pixel with four
+     dots and a grey centre, written down as "the damask reduced to what
+     survives on a 34px cushion". It survived, and what it read as was a
+     TILE MOTIF: no fill, no scallop, no vines, which is the whole of
+     the owner's note. The lesson that produced it - thread at this size
+     is a line and not a field - is right about the THREAD and wrong
+     about the MEDALLION, which in the photograph is a solid stamp of
+     gold with the cream drawn back out of it.
+
+     IT MUST NOT COST THE SEPARATION, which is the one thing this pillar
+     may not spend. A print is read by HUE and the separation is
+     measured in LUMINANCE, and those are two different budgets: gold
+     (#c4a24c, luminance 162) printed on the lit cream it sits on (about
+     228) moves a 34x32 cushion's mean by 0.06 of a value per pixel, so
+     the hundred-odd gold pixels below are worth about six values on a
+     body that measures 177 against a lane of 110. If a later pass ever
+     brings that under 60 the fix is to LIFT pillowGold toward the brass
+     the photograph actually shows, never to thin the medallion back
+     into a line.
+
+     The ogee, as half-widths per row from the point at the top to the
+     point at the bottom: fourteen pixels across the belly and
+     twenty-two deep, which is a medallion filling a pillow face rather
+     than a motif printed on one. The two single-row steps back at the
+     quarter points are the SCALLOP - at this size a lobed edge is a one
+     pixel notch, and anything more elaborate is noise. */
+  var OGEE = [1, 2, 3, 3, 4, 5, 6, 7, 7, 8, 7, 7, 7, 8, 7, 6, 6, 5, 4, 3, 2, 1];
+  var OGEE_Y = 5;                     /* its first row inside a cushion */
+
+  /* the gold heart of it, same idea: a filled lozenge, which is the
+     fill the old motif never had */
+  var CORE = [1, 2, 3, 4, 5, 5, 4, 3, 2, 1];
+  var CORE_Y = 11;
+
+  /* One corner's scrollwork, drawn into the top left and mirrored into
+     the other three. 'g' is the grey vine hooking outward, 'o' the gold
+     leaf-lobe tucked in the crook of it - which is exactly how the
+     photograph arranges the two colours. */
+  var SCROLL = ['..ggg',
+                '.g...',
+                'g.o..',
+                'g..o.',
+                '.gg..',
+                '..g..'];
+  var SCROLL_X = 3, SCROLL_Y = 4;
+
+  function damask(c, y) {
+    var i, k, r, half, x0, x1, ch;
+
+    /* THE OGEE, as a two pixel band. One pixel is a wire and reads as
+       the diamond this is replacing; two is a drawn stroke, and a
+       drawn stroke round a shape is what a stamped damask looks like. */
+    c.fillStyle = P.pillowGold;
+    for (i = 0; i < OGEE.length; i++) {
+      half = OGEE[i];
+      r = y + OGEE_Y + i;
+      x0 = 17 - half; x1 = 16 + half;
+      c.fillRect(x0, r, Math.min(2, x1 - x0 + 1), 1);
+      c.fillRect(Math.max(x0, x1 - 1), r, Math.min(2, x1 - x0 + 1), 1);
+    }
+
+    /* THE CENTRE, filled, with a cream cross drawn back through it:
+       cream showing through gold IS the quatrefoil at this size, and it
+       is also what keeps the middle of the cushion - the brightest part
+       of it - from going over to thread. */
+    for (i = 0; i < CORE.length; i++) {
+      half = CORE[i];
+      c.fillRect(17 - half, y + CORE_Y + i, half * 2, 1);
+    }
+    /* INSET BY ONE, and that one pixel is the difference between a
+       flower and a compass rose. Cut the cream all the way out to the
+       lozenge's edge and the gold left behind is four separate arrow
+       heads pointing out of the middle; stop a pixel short and the gold
+       closes into a RING with a cream quatrefoil inside it, which is
+       what Couch ref 4's centre is. */
+    c.fillStyle = P.pillowHi;
+    c.fillRect(14, y + 15, 6, 2);
+    c.fillRect(16, y + 13, 2, 6);
+
+    /* THE VINES. Four scrolls, one to a corner, each curling AWAY from
+       the medallion - the direction matters, because four hooks curling
+       inward read as arrows pointing at the middle. */
+    for (k = 0; k < 4; k++) {
+      var mx = (k === 1 || k === 3) ? -1 : 1;
+      var my = (k === 2 || k === 3) ? -1 : 1;
+      for (i = 0; i < SCROLL.length; i++) {
+        for (r = 0; r < SCROLL[i].length; r++) {
+          ch = SCROLL[i].charAt(r);
+          if (ch === '.') continue;
+          c.fillStyle = (ch === 'g') ? P.pillowGrey : P.pillowGold;
+          c.fillRect(mx > 0 ? SCROLL_X + r : 33 - SCROLL_X - r,
+                     y + (my > 0 ? SCROLL_Y + i : 31 - SCROLL_Y - i), 1, 1);
+        }
+      }
+    }
+
+    /* and the four compass marks that were always here, which now read
+       as the little florets the print scatters between the medallion
+       and its neighbours */
+    c.fillStyle = P.pillowGoldDeep;
+    c.fillRect(16, y + 8, 2, 1); c.fillRect(16, y + 23, 2, 1);
+    c.fillRect(6, y + 15, 1, 2); c.fillRect(27, y + 15, 1, 2);
+  }
+
   function bakeStack(variant) {
     var W = 34, H = 64;
     var t = makeCanvas(W, H), c = t.ctx;
@@ -13552,21 +13791,8 @@ var Couch = (function () {
         c.fillStyle = P.pillowGold;
         c.fillRect(6, y + 4, W - 12, 1); c.fillRect(6, y + 27, W - 12, 1);
       } else if (variant === 1) {
-        /* the damask, reduced to what survives on a 34px cushion: an
-           open diamond and four dots. The first cut had a filled
-           medallion with a dotted ring round it and it read as a
-           bathroom tile - a print on a cushion is thread, and thread at
-           this size is a line and not a field. */
-        c.fillStyle = P.pillowGold;
-        for (i = 0; i < 8; i++) {
-          c.fillRect(17 - i, y + 16 - 7 + i, 1, 1); c.fillRect(16 + i, y + 16 - 7 + i, 1, 1);
-          c.fillRect(17 - i, y + 16 + 7 - i, 1, 1); c.fillRect(16 + i, y + 16 + 7 - i, 1, 1);
-        }
-        c.fillStyle = P.pillowGoldDeep;
-        c.fillRect(16, y + 8, 2, 1); c.fillRect(16, y + 23, 2, 1);
-        c.fillRect(6, y + 15, 1, 2); c.fillRect(27, y + 15, 1, 2);
-        c.fillStyle = P.pillowGrey;
-        c.fillRect(16, y + 15, 2, 2);
+        /* the ikat damask off the photographs - see the medallion above */
+        damask(c, y);
       } else {
         /* The knit, in DASHES. Ruled rows crossed by ruled verticals is
            a basket weave, and a basket at thirty-four pixels is a grid -
@@ -13665,61 +13891,126 @@ var Couch = (function () {
 
   /* ---------------------------------------------------- the popcorn
 
-     Four baked frames of one silhouette. A kernel is seven pixels
-     across and a seven pixel ball CANNOT be rotated - every angle that
-     is not a multiple of 90 degrees resamples into mush on a
-     nearest-neighbour layer, and a shape that changes outline every
-     frame reads as flicker rather than as spin. So the outline holds
-     perfectly still and what moves is the shading: the cream lobe, the
-     one brown hull pixel on the rim and the white specular all walk
-     round the shape together. Four frames is one turn, and at
-     spinRate 2.2 to 4.6 rad/s that is a kernel tumbling about twice a
-     second, which is what popcorn does.
+     ONE hand-drawn kernel per shape, turned by exact quarter turns.
 
-     Two silhouettes, because half the kernels in a bowl are round and
-     half of them are the lopsided butterfly kind. */
+     WHAT WAS HERE BEFORE was a 7px DISC with the shading walking round
+     the inside of an outline that never moved, on the argument that a
+     seven pixel ball cannot be rotated. That argument is right about
+     ARBITRARY angles - anything that is not a multiple of 90 degrees
+     resamples into mush on a nearest-neighbour layer - and wrong about
+     what follows from it, because a QUARTER turn on an odd grid is not
+     a resample at all: 9 is odd, so turning about (4.5, 4.5) maps every
+     pixel centre exactly onto another pixel centre and the sprite comes
+     back pixel for pixel.
+
+     What that buys is the whole of the owner's note. A disc with a
+     brown dot walking round the rim reads as a golf ball, and that is
+     what was on screen. What says POPCORN at this size is a LUMPY
+     OUTLINE with a cleft in it and the hull sitting down in the cleft -
+     and an outline can only be lumpy if it is allowed to turn with the
+     kernel instead of standing still while the shading slides past it.
+
+     The flicker the old comment feared was an outline changing every
+     frame at 60Hz. This changes on the quarter turn: at spinRate 2.2 to
+     4.6 rad/s that is 1.4 to 2.9 silhouette changes a second, which is
+     the exact rate the SHADING already changed at. A lump turning a
+     square corner twice a second reads as a tumble, which is what
+     popcorn does when it bounces; a landed kernel spins at 0.4x and
+     tumbles slower, as something that has stopped bouncing should.
+
+     NOTHING THE PHYSICS DEPENDS ON MOVES: the 9x9 bake, the 1px ring
+     underneath, the 3.5px collision radius, the x-4/y-4 blit and
+     popFrame are all exactly as they were, so every number the hops
+     were tuned against twice is untouched.
+
+     The paint grids, one character to the pixel:
+       W popWhite  the flesh      C popCream  a lobe turning away
+       H popHi     the specular   S popShade  a crease
+       .           outside the kernel
+     The two HULL pixels are deliberately not in the grid - they are
+     painted into the cleft AFTER the ring, so the ring dips into the
+     concavity and the hull sits at the bottom of a dark V. That V is
+     the single mark that says popcorn at seven pixels across. */
+  var POP_GRID = [
+    /* THE BUTTERFLY. Three single-pixel fingers along the top with the
+       dark dipping between them, and that is the whole trick: a seven
+       pixel shape wrapped in a one pixel ring reads as a BALL whatever
+       is painted inside it, because the ring is most of what the eye
+       gets at this size. The only way to break the ball is to make the
+       RING go in and out, and one pixel notches round the perimeter do
+       that where holes punched in the middle do not - holes read as
+       eyes. Five rounds of candidates rendered at 14x to find it. */
+    ['.W.W.W.',
+     'WHWWWWW',
+     'WWWWWWC',
+     '.WWWWWC',
+     'WWSWSWC',
+     'WWS.SC.',
+     '.W..C..'],
+    /* THE MUSHROOM: two fingers instead of three, a flatter and wider
+       cap, and the notch bitten out of the right side instead of the
+       left, so the two kernels differ in SILHOUETTE and not merely in
+       where the shading sits */
+    ['..WW.W.',
+     '.HWWWWW',
+     'WWWWWWC',
+     'WWWWWW.',
+     'WWSWSWC',
+     '.WS.SC.',
+     '..W.C..']
+  ];
+  /* the cleft, and what goes in it: the pale pip above, the kernel's
+     brown coat under it */
+  var POP_HULL = [[3, 5, 'hullPale'], [3, 6, 'hull']];
+
+  /* the cheddar clump still draws itself out of row spans - it is three
+     kernels shouldering each other and already reads as a lump, so it
+     keeps the shapes and the walking highlight it was tuned with */
   var POP_A = [[2, 3], [1, 5], [0, 7], [0, 7], [0, 7], [1, 5], [2, 3]];
   var POP_B = [[1, 4], [0, 6], [0, 7], [1, 6], [0, 7], [1, 5], [2, 4]];
-  /* the lobe, the hull and the specular, in four positions each - they
-     run round the shape in the same direction, one quarter turn apart */
   var LOBE = [[4, 4], [1, 4], [1, 1], [4, 1]];
-  var HULL = [[5, 2], [4, 5], [1, 4], [2, 1]];
-  var SPEC = [[2, 1], [1, 3], [4, 5], [5, 2]];
 
-  function bakePop(rows, f, body, lobe, shade, hiCol, hullCol) {
+  function bakePop(grid) {
     var t = makeCanvas(9, 9), c = t.ctx;
-    var i;
-    LivingRoom.rowsFill(c, rows, 1, 1, body);
-    /* the two rows nearest the light's far side, always */
-    c.fillStyle = shade;
-    for (i = rows.length - 2; i < rows.length; i++) {
-      c.fillRect(1 + rows[i][0], 1 + i, rows[i][1], 1);
-    }
-    c.fillStyle = lobe;    c.fillRect(1 + LOBE[f][0], 1 + LOBE[f][1], 2, 2);
-    c.fillStyle = hullCol; c.fillRect(1 + HULL[f][0], 1 + HULL[f][1], 1, 1);
-    c.fillStyle = hiCol;   c.fillRect(1 + SPEC[f][0], 1 + SPEC[f][1], 1, 1);
-
-    /* Cut everything back to the silhouette, then lay the 1px ring
-       UNDERNEATH it. Fattening the shape row by row would paint the
-       notch in POP_B shut, which is the one thing that tells the two
-       kernels apart. */
     var m = makeCanvas(9, 9);
-    LivingRoom.rowsFill(m.ctx, rows, 1, 1, '#ffffff');
-    c.globalCompositeOperation = 'destination-in';
-    c.drawImage(m.canvas, 0, 0);
+    var ink = { W: P.popWhite, H: P.popHi, C: P.popCream, S: P.popShade };
+    var r, k, ch;
+    for (r = 0; r < grid.length; r++) {
+      for (k = 0; k < grid[r].length; k++) {
+        ch = grid[r].charAt(k);
+        if (ch === '.') continue;
+        c.fillStyle = ink[ch];
+        c.fillRect(1 + k, 1 + r, 1, 1);
+        m.ctx.fillStyle = '#ffffff';
+        m.ctx.fillRect(1 + k, 1 + r, 1, 1);
+      }
+    }
+    /* the ring goes UNDER the kernel, which is what makes it follow
+       every concavity the grid has - including the cleft */
     c.globalCompositeOperation = 'destination-over';
     c.drawImage(LivingRoom.ringOf(m, 9, 9).canvas, 0, 0);
     c.globalCompositeOperation = 'source-over';
+    for (r = 0; r < POP_HULL.length; r++) {
+      c.fillStyle = P[POP_HULL[r][2]];
+      c.fillRect(1 + POP_HULL[r][0], 1 + POP_HULL[r][1], 1, 1);
+    }
     return t;
   }
 
   function bakePopSet() {
-    var out = [], s, f, set;
-    for (s = 0; s < 2; s++) {
-      set = [];
-      for (f = 0; f < 4; f++) {
-        set.push(bakePop(s ? POP_B : POP_A, f,
-                         P.popWhite, P.popCream, P.popShade, P.popHi, P.hull));
+    var out = [], s, f, set, t, c;
+    for (s = 0; s < POP_GRID.length; s++) {
+      set = [bakePop(POP_GRID[s])];
+      for (f = 1; f < 4; f++) {
+        t = makeCanvas(9, 9); c = t.ctx;
+        /* (4.5, 4.5) is the middle of a nine pixel sheet. Turn a square
+           corner about it and every pixel lands on a pixel: no
+           smoothing is asked for and none is needed. */
+        c.translate(4.5, 4.5);
+        c.rotate(f * Math.PI / 2);
+        c.translate(-4.5, -4.5);
+        c.drawImage(set[0].canvas, 0, 0);
+        set.push(t);
       }
       out.push(set);
     }
@@ -14583,15 +14874,22 @@ var Couch = (function () {
 
   /* ----------------------------------------------------- generation */
 
-  /* 5 tufted, 3 damask, 2 knit - and all three cream, so the mix no
-     longer decides whether the level is readable, only how varied it
-     looks. It used to: five in ten were the grey microfibre one and
-     those five were the ones a player could not see. */
+  /* 5 DAMASK, 3 tufted, 2 knit, and the five and the three have just
+     swapped. All three are cream, so the mix no longer decides whether
+     the level is readable, only how varied it looks - it used to, when
+     five in ten were the grey microfibre one and those five were the
+     ones a player could not see. What decides the weights now is the
+     photograph: three of the four throw pillows in Couch ref 1, 2 and 4
+     carry the ikat medallion and exactly one is the plain stitched one,
+     so the print the owner asked to see is the one they should see
+     most. The tufted variant stays in the mix because the thing it is
+     drawn from is in every shot too - it is just the SOFA BACK rather
+     than a pillow. */
   function makePillar(x, gapY, gapH, run) {
     var v = Math.random();
     return { type: 'pillar', x: x, w: 34,
              gapY: Math.round(gapY), gapH: Math.round(gapH),
-             variant: v < 0.5 ? 0 : (v < 0.8 ? 1 : 2),
+             variant: v < 0.5 ? 1 : (v < 0.8 ? 0 : 2),
              scored: false };
   }
 
@@ -15282,12 +15580,23 @@ var Mantle = (function () {
   var CTRL_HALF = 38;
 
   /* A controller's beam is longer than a remote's, and on purpose. The
-     tune hands over 18..28px of floor reach; a 27 degree lean on 20px
+     multiplier existed to buy the LEAN something to move: the tune used
+     to hand over 18..28px of floor reach, and a 27 degree lean on 20px
      of beam moves the tip six pixels, which is less than a hitbox and
-     not worth putting a banner up for. 1.6x puts the reach at 20..45
-     and the tip's travel at 9 to 21 - about a doodad wide, which is a
-     wander you have to actually read. */
-  var CTRL_STRETCH = 1.6;
+     not worth putting a banner up for. 1.6x took the reach to 20..45 and
+     the tip's travel to 9..21 - about a doodad wide, and readable.
+
+     IT COMES DOWN TO 1.25 BECAUSE THE TUNE GREW. js/levels.js now hands
+     over 40..56px of floor reach, and 1.25x puts the pad at 35..70 - its
+     longest beam is 13+70 = 83, tip at y 159, lethal to a centre from 148
+     down, which is 49 of the 128px band a doodad can ever cross a bay in:
+     38%. The lean carries that tip 32px either way on its own (70 * sin
+     27.5), four pixels more than the stretch was invented to produce, so
+     the multiplier has done its job unaided and anything above this is
+     paying for something already bought. At 1.6 the same tune would reach
+     112, cover 55% of the band and stop being a hazard you read - it would
+     be a wall. */
+  var CTRL_STRETCH = 1.25;
 
   /* The two numbers the lean itself is made of. 0.30 + 0.18 radians is
      27.5 degrees off vertical at the very worst, and the two rates sum
@@ -16943,8 +17252,27 @@ var Mantle = (function () {
       var gapH = Math.round(span * 0.34);
       var room = Math.max(1, span - gapH - 18);
       var gapY = Math.round(lidY + 8 + (i * room) / 3);
-      pvColumn(ctx, ox, lidY + 2, gapY - lidY - 2, false);
-      pvColumn(ctx, ox, gapY + gapH, shelfY - gapY - gapH, true);
+      /* WHICH PILASTER THIS IS, and the whole of the "the pillars are
+         glitchy with the brick pattern" bug. pvColumn used to hash its
+         courses on `ox`, which is WHERE THE COLUMN IS ON THE CARD - and
+         ox walks one pixel left every 45ms, so every time it ticked, all
+         eight courses were re-rolled at once. Measured on the big card:
+         the column's whole colouring changed on 37% of frames, 7.85 of
+         its 8 courses moved on each one, and a course that moved jumped
+         42 of luminance, the palette running #d2cbbf down to #5f5346.
+         That is 22 recolours a second on a 12px column of near-white
+         stone, which is exactly what sparkling stone looks like.
+
+         The key has to be the column's IDENTITY, not its position: the
+         slot index plus the number of times that slot has wrapped, so a
+         pilaster carries one number for the whole of its pass across the
+         card and the next one to appear in the same slot gets a new one.
+         The two halves get id*2 and id*2+1 rather than the same key,
+         because keyed on ox they shared it and the stack above a gap was
+         the stack below it re-run from the top. */
+      var id = i + 3 * Math.floor((s + i * period) / (period * 3));
+      pvColumn(ctx, ox, lidY + 2, gapY - lidY - 2, false, id * 2);
+      pvColumn(ctx, ox, gapY + gapH, shelfY - gapY - gapH, true, id * 2 + 1);
     }
 
     /* 5. A remote standing on the shelf between two pilasters - which
@@ -17024,15 +17352,21 @@ var Mantle = (function () {
 
   /* One little stone pilaster inside a cover. `capTop` says the black
      shelf goes on its upper end - the arris always faces the gap, here
-     as in the room. The courses take their colour off a hash of their
-     own position rather than off a counter: a three-colour cycle up a
-     12px column is a ladder, and the first pass of this card was four
-     white ladders sliding past. */
-  function pvColumn(ctx, x, y, h, capTop) {
+     as in the room. The courses take their colour off a hash rather than
+     off a counter: a three-colour cycle up a 12px column is a ladder, and
+     the first pass of this card was four white ladders sliding past.
+
+     `key` is WHICH PILASTER AND WHICH HALF, handed down by drawPreview,
+     and it is the half of the hash that must not change while the thing
+     is on screen. It used to be `x`, the column's position on the card,
+     and the stone boiled at 22Hz as it slid - see the comment at the call
+     site. Both halves of the hash are now odd 32-bit multipliers, so
+     consecutive keys separate as well as consecutive course rows do. */
+  function pvColumn(ctx, x, y, h, capTop, key) {
     if (h <= 0) return;
     var i, n, hgt;
     for (i = 0; i < h; i += 4) {
-      n = (Math.imul(i + 11, 2654435761) ^ Math.imul(x + 3, 40503)) >>> 0;
+      n = (Math.imul(i + 11, 2654435761) ^ Math.imul(key + 3, 2246822519)) >>> 0;
       hgt = Math.min(3, h - i);
       ctx.fillStyle = STONES[(n >>> 13) % STONES.length];
       ctx.fillRect(x, y + i, 12, hgt);
@@ -17072,11 +17406,19 @@ var Mantle = (function () {
      THE LENGTH. The tune's spikeCeilMin..Max and spikeFloorMin..Max
      are the reach of the SIGNAL; the remote itself is added back on
      top, because `len` is a spike's whole reach into the room and the
-     body is part of what is in the way. That puts a floor remote at 26
-     to 42px of obstruction and a ceiling one at 21 to 36 - within a
-     pixel or two of the Deck's misters, which is the right calibration
-     for a hazard that is thin: a 3px beam has to reach about as far as
-     an 11px jet to ask the same question. */
+     body is part of what is in the way. At the tune this shipped with
+     that put a floor remote at 26 to 42px of obstruction and a ceiling
+     one at 21 to 36 - the Deck's misters' numbers - and it was wrong,
+     for the reason js/levels.js now sets out at length: the gap a doodad
+     flies through is never nearer the floor than y 197 or the ceiling
+     than y 69, so a 42px beam reached 8px into the only band that
+     exists and the median beam reached none of it. The tune is 40..56
+     on the floor and 32..48 at the ceiling now, which makes a floor
+     remote 42 to 70px of obstruction and a ceiling one 32 to 58 - a
+     third of the band at the top end, nothing at all at the bottom, and
+     the shortest beam this can make is the longest the old one could.
+     A thin hazard still has to reach further than a fat one to ask the
+     same question; it now does. */
   function makeSpikes(x, side, count, maxLen, run) {
     if (side === 'floor' && run && run.late &&
         chance(clamp((run.score - LATE_SCORE) * 0.05, 0, 0.5))) {
@@ -18801,21 +19143,37 @@ var Whiteboard = (function () {
      an integer rect. */
   function bakeRosette(flip) {
     var t = makeCanvas(20, 22), c = t.ctx;
-    if (flip) { c.translate(0, 21); c.scale(1, -1); }
+    /* mirror about the WHOLE 22-row space (y -> 21 - y) and not about 21
+       (y -> 20 - y) as this did, so that bakePot can flip on the same
+       axis and the two halves of the drawing stay a mirror of each other.
+       On the old axis the bottom row of the space had nowhere to land. */
+    if (flip) { c.translate(0, 22); c.scale(1, -1); }
     /* FOUR rings of 2px leaf arcs round a centre at (10, 10), and the
-       geometry is the Garden's exactly, shifted down three rows into
-       this bay's taller space. PlayScene paints the HUD life and the save
+       geometry is the Garden's exactly, shifted down TWO rows into this
+       bay's taller space. PlayScene paints the HUD life and the save
        burst in these pigments, so the thing on the board has to be that
        plant and not another - and an earlier version here hollowed every
        leaf out to board white to make it look DRAWN, which turned the
        rosette into a stack of empty brackets and read as a ziggurat. What
        says "drawn" is the pot being an outline and the whole thing being
-       flat; the plant itself has to stay the plant. */
+       flat; the plant itself has to stay the plant.
+
+       IT WAS THREE ROWS AND IS NOW TWO, which is the second half of the
+       proportion fix described over bakePot. At three the rosette's ink
+       ran rows 6..15 and the pot's mouth is rows 13..14, so the plant
+       sank THREE rows into the pot and swallowed the rim and the widest
+       course of the body with it: six rows of pot were left showing. The
+       Garden's plant covers exactly two rows of its pot and leaves seven.
+       Two rows does the same here, and the flip comes out right for free -
+       the transform is y -> 21 - y, so a rosette at 5..14 lands at 7..16
+       against an upturned pot whose rim is row 8, which is the same two
+       rows of overlap seen the other way up (the mirror is y -> 21 - y,
+       and the upturned pot's rim lands on rows 7 and 8). */
     var rings = [
-      { y: 13, xs: [[3, 4], [13, 4]], col: P.sucDark },
-      { y: 11, xs: [[4, 4], [12, 4], [8, 4]], col: P.sucMid },
-      { y: 9,  xs: [[6, 3], [11, 3]], col: P.sucMid },
-      { y: 7,  xs: [[8, 4]], col: P.sucHi }
+      { y: 12, xs: [[3, 4], [13, 4]], col: P.sucDark },
+      { y: 10, xs: [[4, 4], [12, 4], [8, 4]], col: P.sucMid },
+      { y: 8,  xs: [[6, 3], [11, 3]], col: P.sucMid },
+      { y: 6,  xs: [[8, 4]], col: P.sucHi }
     ];
     rings.forEach(function (ring) {
       ring.xs.forEach(function (p) {
@@ -18828,36 +19186,89 @@ var Whiteboard = (function () {
         c.fillStyle = P.sucTip;  c.fillRect(p[0] + p[1] - 1, ring.y, 1, 1);
       });
     });
-    c.fillStyle = P.sucHi;  c.fillRect(9, 7, 2, 2);
-    c.fillStyle = P.sucTip; c.fillRect(9, 6, 2, 1);
+    c.fillStyle = P.sucHi;  c.fillRect(9, 6, 2, 2);
+    c.fillStyle = P.sucTip; c.fillRect(9, 5, 2, 1);
     return t;
   }
 
+  /* The pot's width on a given body row, as ONE function, so the walls,
+     the rim and the closed far end cannot disagree about how wide the pot
+     is anywhere.
+
+     THE TAPER WAS 0.45 A ROW AND IS NOW 0.15, which is the owner's note
+     that "the succulent looks too big for its pot". It was not the plant:
+     measured off the baked tiles side by side with the Garden's, both
+     rosettes are 16px wide and 10 rows of ink, pixel for pixel the same
+     plant. The pot was the problem. At 0.45 the inset ran 0,0,1,1,2,2,3,3,4
+     so the body went 12,12,10,10,8,8,6,6,4 and closed on a 6px foot: under
+     a 16px rosette that is a cone, not a pot, and the ratio of plant to
+     visible pot came out 16:6. The Garden's pot does not taper at all -
+     it is a straight 12 under the same 16px rosette, 16:12 - so a drawn
+     version of the same power-up has to land near 12 too, or it is not
+     that plant in marker, it is a different plant.
+
+     0.15 gives 0,0,0,0,1,1,1,1,1: a body of 12 that steps in once to 10
+     near the foot. That keeps a taper - a marker pot with parallel sides
+     reads as a tin - while leaving the silhouette the Garden's. The rim
+     stays 14 because the pot here is a hollow outline with the board
+     showing through it and carries perhaps a third of the Garden pot's
+     ink; a slightly wider lip buys back the weight the hollow gives up. */
+  function potInset(row) { return Math.round(row * 0.15); }
+
   /* the pot, 20x22 shared space. `over` draws it upside down at the top
-     of the space for the one hanging under the rail. */
+     of the space for the one hanging under the rail.
+
+     IT FLIPS ON THE TRANSFORM NOW, exactly as bakeRosette does, because
+     flipping it by arithmetic got the mirror wrong. The old version drew
+     the body with `row = 8 - i` from the top of the space and then put
+     the rim one row PAST the body at rows 8 and 9, so the upturned pot
+     spanned ten rows against the upright one's nine - and the rosette,
+     which mirrors about row 21, came down far enough to cover the whole
+     of it. The upturned pot's mouth is the widest course it has and the
+     one thing that says a plant could ever have been in it, and it was
+     entirely hidden. Mirroring the identical upright drawing puts the
+     mouth at rows 7-8 with the same two rows of overlap the low one has,
+     and seven rows of pot showing on both. A baked tile is blitted as one
+     piece whichever way up it was made, and nothing resamples, because
+     every mark in here is an integer rect. */
   function bakePot(over) {
     var t = makeCanvas(20, 22), c = t.ctx;
-    var top = over ? 0 : 13;
-    var i, row;
+    if (over) { c.translate(0, 22); c.scale(1, -1); }
+    var top = 13, i, inset, x0, w;
     /* nine rows of tapering pot, drawn as a 2px outline with the board
-       left showing through it. `over` flips the taper as well as the
-       position - a pot drawn upside down tapers the other way or it is
-       not a pot, it is a bucket. */
+       left showing through it. The flip takes the taper with it - a pot
+       drawn upside down tapers the other way or it is not a pot, it is a
+       bucket.
+
+       AND THE INSIDE IS LEFT TRANSPARENT, where it used to be filled with
+       P.board. "The board showing through" is what the pot is for, and a
+       rect of the raw board pigment is not that: the room's light is
+       baked into the backdrop before an obstacle is drawn over it, so the
+       fill was the UNLIT board laid on top of the lit one. Measured in
+       play with a succulent sketched low at FLOOR - 17, where the skirting
+       gloom has the board down at luminance 119, the inside of the pot came
+       back at 215 - a 96-step white block eight pixels wide sitting inside
+       the drawing, which is what made the pot read as a solid object
+       rather than as a thing somebody drew, and no amount of fixing the
+       proportion would have fixed that. Transparent costs nothing: the
+       pot is baked, so the board behind it arrives already lit and the
+       ghost marks it crosses show through the way marker does. */
     for (i = 0; i < 9; i++) {
-      row = over ? 8 - i : i;
-      var inset = Math.round(row * 0.45);
-      var x0 = 4 + inset, w = 12 - inset * 2;
+      inset = potInset(i);
+      x0 = 4 + inset; w = 12 - inset * 2;
       c.fillStyle = P.potOrange;
       c.fillRect(x0, top + i, 2, 1);
       c.fillRect(x0 + w - 2, top + i, 2, 1);
-      c.fillStyle = P.board;
-      c.fillRect(x0 + 2, top + i, w - 4, 1);
     }
     /* the rim, which is the end of the pot the plant comes out of */
-    c.fillStyle = P.potOrange; c.fillRect(3, top + (over ? 8 : 0), 14, 2);
-    c.fillStyle = P.potHi;     c.fillRect(4, top + (over ? 9 : 0), 12, 1);
-    /* and the far end */
-    c.fillStyle = P.potOrange; c.fillRect(7, top + (over ? 0 : 8), 6, 1);
+    c.fillStyle = P.potOrange; c.fillRect(3, top, 14, 2);
+    c.fillStyle = P.potHi;     c.fillRect(4, top, 12, 1);
+    /* and the far end, closed across whatever the taper left at row 8
+       rather than across a hard-coded 6 - the old 6 was narrower than the
+       walls it was supposed to join and left the foot open at the corners */
+    inset = potInset(8);
+    c.fillStyle = P.potOrange;
+    c.fillRect(4 + inset, top + 8, 12 - inset * 2, 1);
     return t;
   }
 
@@ -20202,11 +20613,46 @@ var Levels = (function () {
          because they are slow, predictable and meant to be read rather
          than reacted to. Their reach is a spike length, so these are the
          Deck's numbers: a beam that can cross half the gap and switch off
-         is fair in a way a beam that merely sits there is not. */
+         is fair in a way a beam that merely sits there is not.
+
+         THE NUMBERS WERE WRONG AND THE OWNER SAW IT: "extend the range of
+         the lasers so they have more of an effect on the player". The old
+         16/26 and 18/28 were the shortest spikes in the game and the
+         measurement says why they could not matter. spawnAhead keeps every
+         gap inside CEIL+34 .. FLOOR-34, so with HIT_R 11 a doodad crossing
+         a bay has its CENTRE somewhere in y 69..197 - a band 128px tall,
+         and nowhere else. js/mantle.js adds the remote's own body back on
+         (10 at the ceiling, 14 on the shelf) and draws the reach at
+         rand(0.7*maxLen, maxLen). At the old tune the longest floor beam
+         was 14+28 = 42, tip at y 200, lethal to a centre at 189 or below:
+         8px of the 128, 6% of the band. The MEDIAN beam tipped out at 208
+         and 52 - outside the band at both ends - so the typical remote was
+         geometrically incapable of touching a doodad flying through any
+         gap. It was a 25px stub with a thread of red on it.
+
+         At 32/48 and 40/56: the longest floor beam is 14+56 = 70, tip 172,
+         lethal from 161 down - 36px, 28% of the band; the median is 55,
+         tip 187, 16%. The longest ceiling beam is 10+48 = 58, tip 82,
+         lethal to 93 - 24px, 19%; the median 44, tip 68, 8%. The SHORTEST
+         beam this tune can make (0.7*40+14 = 42) is the old tune's
+         longest.
+
+         WHAT IS LEFT TO FLY THROUGH. spawnAhead admits ONE makeSpikes per
+         bay on ONE side, and Mantle.makeSpikes puts both heads of a pair on
+         the side it was handed, so a ceiling beam and a floor beam never
+         share a bay and the 90px of daylight the two longest would leave is
+         hypothetical. The real worst case is one longest floor beam after
+         the lowest gap: a centre at 197 has to be at 161 by the beam column
+         about 100px (0.57s) later, a 36px climb inside one 48px flap; and
+         the longest ceiling beam after the highest gap asks for a 24px
+         drop, which gravity 1180 gives in 0.2s. It stays readable because
+         the beam is keyed to ob.x - the same beam every frame - it is
+         lethal for only 63px of every 300px of scroll, and the LED arms at
+         0.50 with aim dots at 0.58 before it bites at 0.64. */
       spikeScore: 8,
       spikeChance: 0.34, spikeChanceMax: 0.68,
-      spikeCeilMin: 16, spikeCeilMax: 26,
-      spikeFloorMin: 18, spikeFloorMax: 28,
+      spikeCeilMin: 32, spikeCeilMax: 48,
+      spikeFloorMin: 40, spikeFloorMax: 56,
       /* RGB pixels off the screen from 6 */
       dropScore: 6,
       dropEvery: 2.3, dropEveryMin: 1.05, dropEveryRamp: 0.03,
@@ -23235,8 +23681,11 @@ var PlayScene = (function () {
     start();
   }
 
-  /* never leave the keyboard stuck in typing mode */
-  function exit() { Input.setTextMode(false); }
+  /* Never leave the keyboard stuck in typing mode - and never leave the
+     room tilted. Screen.updateShake runs from game.js for every scene there
+     is, so a roll this scene started would go on rolling the level select
+     for the rest of its 1.6 seconds. */
+  function exit() { Input.setTextMode(false); Screen.rollStop(); }
 
   function start() {
     state = 'ready';
@@ -23269,6 +23718,10 @@ var PlayScene = (function () {
     late = false;
     run = { score: 0, time: 0, late: false, scroll: 0 };
     ringing = 0; stunTime = 0; ringAmp = 0; buzzTimer = 0;
+    /* the stage itself, which is a DOM transform and so is not reset by
+       zeroing any of the above: RETRY during a ring must not start the
+       next run tilted */
+    Screen.rollStop();
     stunBanner = 0; stunSay = ''; stunSub = ''; stunFlash = 0;
     bopAt = -1;
     hungry = 0; nearestPull = 0;
@@ -23981,6 +24434,22 @@ var PlayScene = (function () {
     ringAmp = Math.min(ob.stun.amp, 12);
     stunTime = ob.stun.time;
     buzzTimer = 0;
+    /* THE ROLL, for a stun that asks for one with ob.stun.roll (degrees).
+       The clamp above does NOT move, and the reason is the whole reason
+       this field exists: beginFrame gives all three canvases the same
+       (shakeX, shakeY), so a shake slides the doodad and the planks
+       TOGETHER and the one number the player is reading - the doodad's
+       height against the next gap - survives it untouched. That is why
+       the ring cost about zero planks at an amp of 8 and would have cost
+       about zero at 20. Screen.roll tilts the stage instead, which tilts
+       the HORIZON: every pixel stays honest and collision never learns
+       about it, but a gap dx ahead now sits dx*sin(theta) off where the
+       eye puts it. It runs for what is LEFT of the ring, not for
+       ob.stun.time, so the swing decays to exactly zero as the buzz
+       stops - including on a top-up, where the ring is the longer
+       number. Screen caps the angle itself, for the same reason the amp
+       is capped: a punish must never make the game unplayable. */
+    if (ob.stun.roll) Screen.roll(ob.stun.roll, ringing);
     stunBanner = 1.1;
     /* ONE TENANT FOR THE SLOT AT 112/138, AND THE NEWEST NEWS WINS.
        SPICY!, SOUR! and this all shout in the same two rows for the same
@@ -24292,6 +24761,12 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    /* and the room stands straight back up. The buzz may finish out - it is
+       noise over a death that is already noisy - but a roll may not: the
+       tumble and then the score panel would play out on a tilt, and the
+       one frame it costs to snap upright lands inside this death's own
+       flash and its shake of 5. */
+    Screen.rollStop();
     flash = 0.09;
     /* Which way the body goes. Everything else in the game throws the
        doodad UP and lets it tumble back down; a head-bump cannot, because

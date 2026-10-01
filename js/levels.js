@@ -362,11 +362,46 @@ var Levels = (function () {
          because they are slow, predictable and meant to be read rather
          than reacted to. Their reach is a spike length, so these are the
          Deck's numbers: a beam that can cross half the gap and switch off
-         is fair in a way a beam that merely sits there is not. */
+         is fair in a way a beam that merely sits there is not.
+
+         THE NUMBERS WERE WRONG AND THE OWNER SAW IT: "extend the range of
+         the lasers so they have more of an effect on the player". The old
+         16/26 and 18/28 were the shortest spikes in the game and the
+         measurement says why they could not matter. spawnAhead keeps every
+         gap inside CEIL+34 .. FLOOR-34, so with HIT_R 11 a doodad crossing
+         a bay has its CENTRE somewhere in y 69..197 - a band 128px tall,
+         and nowhere else. js/mantle.js adds the remote's own body back on
+         (10 at the ceiling, 14 on the shelf) and draws the reach at
+         rand(0.7*maxLen, maxLen). At the old tune the longest floor beam
+         was 14+28 = 42, tip at y 200, lethal to a centre at 189 or below:
+         8px of the 128, 6% of the band. The MEDIAN beam tipped out at 208
+         and 52 - outside the band at both ends - so the typical remote was
+         geometrically incapable of touching a doodad flying through any
+         gap. It was a 25px stub with a thread of red on it.
+
+         At 32/48 and 40/56: the longest floor beam is 14+56 = 70, tip 172,
+         lethal from 161 down - 36px, 28% of the band; the median is 55,
+         tip 187, 16%. The longest ceiling beam is 10+48 = 58, tip 82,
+         lethal to 93 - 24px, 19%; the median 44, tip 68, 8%. The SHORTEST
+         beam this tune can make (0.7*40+14 = 42) is the old tune's
+         longest.
+
+         WHAT IS LEFT TO FLY THROUGH. spawnAhead admits ONE makeSpikes per
+         bay on ONE side, and Mantle.makeSpikes puts both heads of a pair on
+         the side it was handed, so a ceiling beam and a floor beam never
+         share a bay and the 90px of daylight the two longest would leave is
+         hypothetical. The real worst case is one longest floor beam after
+         the lowest gap: a centre at 197 has to be at 161 by the beam column
+         about 100px (0.57s) later, a 36px climb inside one 48px flap; and
+         the longest ceiling beam after the highest gap asks for a 24px
+         drop, which gravity 1180 gives in 0.2s. It stays readable because
+         the beam is keyed to ob.x - the same beam every frame - it is
+         lethal for only 63px of every 300px of scroll, and the LED arms at
+         0.50 with aim dots at 0.58 before it bites at 0.64. */
       spikeScore: 8,
       spikeChance: 0.34, spikeChanceMax: 0.68,
-      spikeCeilMin: 16, spikeCeilMax: 26,
-      spikeFloorMin: 18, spikeFloorMax: 28,
+      spikeCeilMin: 32, spikeCeilMax: 48,
+      spikeFloorMin: 40, spikeFloorMax: 56,
       /* RGB pixels off the screen from 6 */
       dropScore: 6,
       dropEvery: 2.3, dropEveryMin: 1.05, dropEveryRamp: 0.03,

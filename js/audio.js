@@ -180,12 +180,17 @@ var Audio3 = (function () {
   /* Keyed by what the sound DOES, so a role swaps from synth to recording
      by appearing here and nothing at the call sites changes. `vol` is per
      sound because these two want opposite things: a fanfare you hear over
-     everything, and an in-play chirp that must sit under the game rather
-     than on top of it - NERVE fires on every plank Cookie shaves, which
-     late in a good run is every couple of seconds. */
+     everything, and an in-play chirp that must sit under the game.
+
+     NERVE went 0.30 -> 0.40 because it was not being heard at all. Mixing
+     it down was the right instinct for a sound that COULD fire every couple
+     of seconds and the wrong one for how often it actually does: nerve pays
+     for a plank threaded within SEVEN pixels and only Cookie has it, so a
+     run that is not deliberately shaving planks can go start to finish
+     without one. A sound nobody hears is not a subtle sound. */
   var SAMPLES = {
     unlock: { src: 'Assets/sounds/mkoydokoy.mp3', vol: 0.45 },
-    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.30 }
+    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.40 }
   };
 
   var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */

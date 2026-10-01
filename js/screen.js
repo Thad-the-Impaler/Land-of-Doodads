@@ -13,6 +13,39 @@ var Screen = (function () {
   var ctxBg, ctxCh, ctxFg;
   var scale = 1, dpr = 1, portrait = false;
   var shakeX = 0, shakeY = 0, shakeTime = 0, shakeAmount = 0;
+  /* THE ROLL - the whole stage tilts about its centre. See roll().
+     rollDeg  the swing's peak, in degrees, capped at ROLL_MAX
+     rollSpan what it started at, so the envelope can decay to exactly zero
+     rollLeft seconds left
+     rollNow  the angle on screen right now, which toVirtual has to undo
+     rollOn   whether the transform is currently written, so a roll that is
+              over clears the style once instead of every frame for ever */
+  var rollDeg = 0, rollSpan = 0, rollLeft = 0, rollNow = 0, rollOn = false;
+  var rollFit = 1;            /* the pull-back that keeps the tilt on screen */
+  var ROLL_MAX = 8, ROLL_HZ = 1.25;
+
+  /* How far the stage has to pull BACK to tilt without losing its corners.
+
+     A rotated box needs more room than an upright one, and the stage has
+     none: it is sized to exactly VW*scale by VH*scale inside a body with
+     overflow hidden, so on a phone in landscape - or fullscreen on a 16:9
+     display, where the whole-number fit lands exactly - it already fills
+     the viewport edge to edge. Rotating it there threw 21 virtual rows of
+     the top and bottom corners off the screen, which took the spare-life
+     succulents with it and, worse, the high and low ends of the next
+     plank's gap as it came in from the right. A punish that hides the
+     thing that is about to kill you is not a punish, it is a bug.
+
+     So the tilt scales as it turns, by exactly the factor that fits the
+     rotated box back inside the upright one. The room reads as lurching
+     away from the player rather than as the camera losing its grip, which
+     is what a telephone going off in your ear should feel like anyway.
+     480x270 is a wide box and the height is always the binding side: at
+     the Desk's peak of 5.3 degrees it is a 14% pull-back. */
+  function fitFor(deg) {
+    var a = Math.abs(deg) * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+    return Math.min(VW / (VW * cs + VH * sn), VH / (VW * sn + VH * cs));
+  }
 
   function init() {
     stage = document.getElementById('stage');
@@ -50,16 +83,72 @@ var Screen = (function () {
     API.portrait = portrait;
   }
 
-  /* a point from a touch or a click, in the 480x270 the game thinks in */
+  /* a point from a touch or a click, in the 480x270 the game thinks in.
+
+     It is measured from the stage's CENTRE and not from its top left, and
+     the current roll is undone on the way in, because a rotated element's
+     getBoundingClientRect() is its axis-aligned BOUNDING BOX: while the
+     room is tilting, r.left/r.width describe a box up to 28px wider than
+     the stage and a tap would land somewhere else entirely. The centre is
+     the one point rotation leaves alone, offsetWidth/offsetHeight are the
+     layout size and ignore the transform, and at rollNow 0 this is exactly
+     the old arithmetic. */
   function toVirtual(clientX, clientY) {
     var r = stage.getBoundingClientRect();
-    if (!r.width || !r.height) return null;
-    return { x: (clientX - r.left) / r.width * VW,
-             y: (clientY - r.top) / r.height * VH };
+    var w = stage.offsetWidth, h = stage.offsetHeight;
+    if (!w || !h) return null;
+    var dx = clientX - (r.left + r.width / 2);
+    var dy = clientY - (r.top + r.height / 2);
+    if (rollNow) {
+      var a = -rollNow * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+      var rx = dx * cs - dy * sn;
+      dy = dx * sn + dy * cs;
+      dx = rx;
+      /* and undo the pull-back, or a tap lands short of where it looks */
+      dx /= rollFit; dy /= rollFit;
+    }
+    return { x: (dx / w + 0.5) * VW, y: (dy / h + 0.5) * VH };
   }
 
   function shake(amount, time) {
     if (amount > shakeAmount) { shakeAmount = amount; shakeTime = time || 0.35; }
+  }
+
+  /* THE ROLL, the one thing a stun can do that a shake cannot.
+
+     A shake translates all three canvases by the same (shakeX, shakeY) -
+     see beginFrame - so the doodad and the planks move TOGETHER, and the
+     one number the player is reading, the doodad's height against the next
+     gap, comes out of a shaken frame unchanged. That is why the Desk's
+     ring cost about zero planks at an amplitude of 8 and would have cost
+     about zero at 20: the picture jitters, the task does not.
+
+     A rigid ROTATION about the stage's centre tilts the HORIZON instead.
+     Every pixel stays honest - nothing is hidden, nothing is drawn where it
+     is not, collision is untouched - but a gap dx ahead now sits dx*sin(th)
+     off where the eye expects it, and at the Desk's 12px of timing room
+     that error is most of the budget. It is applied as a CSS transform on
+     #stage, so all three layers, the HUD and the bezel turn as one piece:
+     the pixel layers are already-upscaled bitmaps by then, so nothing is
+     resampled in virtual space and the dither patterns cannot boil.
+
+     theta(t) = deg * sin(TAU*1.25*t) * (1 - t/time): two full swings over
+     1.6s, the first the biggest, settling to exactly zero as the ring ends.
+     ROLL_MAX exists for the same reason the shake's own cap does - a punish
+     must never make the game unplayable - and 8 degrees is where a plank
+     still reads. The bigger swing wins a top-up, like shake(). */
+  function roll(deg, time) {
+    if (!(deg > 0) || !(time > 0)) return;
+    if (deg < rollDeg && rollLeft > 0) return;
+    rollDeg = Math.min(deg, ROLL_MAX);
+    rollSpan = time;
+    rollLeft = time;
+  }
+
+  function rollStop() {
+    rollDeg = rollSpan = rollLeft = rollNow = 0;
+    rollFit = 1;
+    if (rollOn && stage) { stage.style.transform = ''; rollOn = false; }
   }
 
   function updateShake(dt) {
@@ -70,6 +159,22 @@ var Screen = (function () {
       shakeY = Math.round(rand(-a, a));
       if (shakeTime <= 0) { shakeAmount = 0; shakeX = shakeY = 0; }
     } else { shakeX = 0; shakeY = 0; }
+    if (rollLeft > 0) {
+      rollLeft -= dt;
+      if (rollLeft <= 0) rollStop();
+      else {
+        var t = rollSpan - rollLeft;
+        rollNow = rollDeg * Math.sin(TAU * ROLL_HZ * t) * (rollLeft / rollSpan);
+        rollFit = fitFor(rollNow);
+        /* two decimals is a hundredth of a degree - a twentieth of a pixel
+           across the stage, and it keeps the style string short. The scale
+           rides with it so nothing is ever rotated off the screen; see
+           fitFor. */
+        stage.style.transform = 'rotate(' + rollNow.toFixed(2) + 'deg) scale(' +
+                                rollFit.toFixed(4) + ')';
+        rollOn = true;
+      }
+    }
   }
 
   function beginFrame() {
@@ -97,6 +202,11 @@ var Screen = (function () {
   var API = {
     init: init, resize: resize, beginFrame: beginFrame, toVirtual: toVirtual,
     shake: shake, updateShake: updateShake, toggleFullscreen: toggleFullscreen,
+    /* roll() is asked for by a stun that carries one, and rollStop() by
+       anything that ends a run or leaves the scene: updateShake runs from
+       game.js for every scene there is, so a roll nobody cancelled would
+       go on tilting a menu for the rest of its 1.6 seconds. */
+    roll: roll, rollStop: rollStop,
     ctxBg: null, ctxCh: null, ctxFg: null, scale: 1, portrait: false
   };
   return API;
