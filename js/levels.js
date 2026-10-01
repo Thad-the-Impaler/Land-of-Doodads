@@ -1,10 +1,25 @@
 /* ------------------------------------------------------------------
    Land of Doodads - rooms and levels
-   Locked placeholders stand in for what has not been built yet, so the
-   carousels read the way they will once there is more to pick from: two
-   rooms either side of the BACKYARD, and one bay to the left of THE COOP.
-   The five built levels run in the order they are earned in, each one
-   gated on the one before it.
+
+   Nine built bays in two rooms, run in the order they are earned in,
+   each one gated on the one before it: the BACKYARD's five, and then
+   the LIVING ROOM's four.
+
+   ONE locked placeholder is left, and it stands to the RIGHT of the
+   last real room. The one that used to sit to the LEFT of the Backyard
+   has retired: it was there to say "there will be more of these", which
+   two rooms now say for themselves, and nothing can stand to the left of
+   1-1 once the row is a sequence rather than a shelf. The right-hand
+   placeholder stays as the promise of the Bar and the Table, and because
+   the carousel wants a stop past the last thing you can play.
+
+   A ROOM can now be gated on a score, exactly the way a level is and
+   resolved by the same reachedOn(): `unlock: { room, level, score }`.
+   `locked` still means NEVER BUILT and is only on the placeholder.
+   The difference matters, and it is the whole of the Living Room's
+   secrecy: a level behind a shut door shows NOTHING - not its name, not
+   its cover, not its price - because Levels.levelsOf() does not hand the
+   carousel the real bays at all until the room is open.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -200,18 +215,261 @@ var Levels = (function () {
     }
   };
 
+  /* ================================================== THE LIVING ROOM
+
+     Indoors, after dark, and the first room where the CEILING KILLS. That
+     is one rule for four bays and it is published by js/livingroom.js as
+     LivingRoom.CEIL_KILLS, which every one of the four art modules exports
+     as its own CEIL_KILLS - so the engine reads a boolean off the level and
+     never asks which level it is.
+
+     What that rule costs, in numbers: gapMin holds at 80 to 82 rather than
+     falling to the Backyard's 78. A flap lifts the doodad 48px and the
+     hitbox is 22 across, so 78 leaves 8px to time a flap in - which is the
+     tightest the game goes, and it was tuned for a room where overshooting
+     upward merely bounced. Here overshooting upward ends the run, so the
+     two or four pixels back are the room's entry fee, paid once, and the
+     difficulty is spent on the hazards instead. */
+
+  var DESK = {
+    id: 'desk',
+    name: 'THE DESK',
+    code: '2-1',
+    /* NO `unlock` of its own, deliberately. The room's gate IS this bay's
+       price - 20 in the Construction Zone opens the door and the first bay
+       behind it together - and two fields that both have to say "20 in the
+       Construction Zone" would one day not. */
+    blurb: ['THREE SCREENS, FOUR DRAWERS.', 'SOMETHING IS ALWAYS RINGING.'],
+    art: Desk,
+    tune: {
+      /* the room's first bay opens at about the Garden's pace: the ceiling
+         is the new thing to learn and it does not need company */
+      speedStart: 110, speedMax: 172, speedRamp: 0.82,
+      gapStart: 108, gapMin: 82, gapRamp: 0.30,
+      spacingStart: 230, spacingMin: 186, spacingRamp: 0.43,
+      gapDrift: 50,
+      /* The app icons. They are spikes, because a spike is a thing fixed to
+         an edge of the room that you fly past - and these pop out of the
+         monitors, which is exactly that. They carry ob.stun rather than
+         killing: see the ring in js/scene_play.js. */
+      spikeScore: 10,
+      spikeChance: 0.26, spikeChanceMax: 0.58,
+      spikeCeilMin: 14, spikeCeilMax: 22,
+      spikeFloorMin: 14, spikeFloorMax: 22,
+      /* books off the shelves from 7, and one in twelve or so is a breath
+         mint - the minty-spicy drop, which is the heat under another name */
+      dropScore: 7,
+      dropEvery: 2.5, dropEveryMin: 1.15, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      spicyChance: 0.08,
+      /* the coffee cup: a spare life, as rare as the Deck's succulent. The
+         quarter is worth +5 and is the ART's own roll, not a tune key, for
+         the reason js/construction.js gives about its gear: a coin that the
+         art does not know about gets a book's width and a book's shadow. */
+      boonChance: 0.030, boonGap: 10
+    }
+  };
+
+  var COUCH = {
+    id: 'couch',
+    name: 'THE COUCH',
+    code: '2-2',
+    unlock: { room: 'livingroom', level: 'desk', score: 20 },
+    blurb: ['SOMEBODY MADE POPCORN.', 'NOBODY SWEPT UP.'],
+    art: Couch,
+    tune: {
+      speedStart: 112, speedMax: 174, speedRamp: 0.83,
+      gapStart: 106, gapMin: 82, gapRamp: 0.31,
+      spacingStart: 228, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 52,
+      /* The spikes are the quiet hazard here, because the popcorn is the
+         loud one. 0.52 at the ceiling against the Desk's 0.58: the bottom
+         of this room fills up on its own and does not need help. */
+      spikeScore: 12,
+      spikeChance: 0.24, spikeChanceMax: 0.52,
+      spikeCeilMin: 14, spikeCeilMax: 22,
+      spikeFloorMin: 16, spikeFloorMax: 24,
+      /* THE POPCORN. The kernels do not splat - js/couch.js takes the
+         drop's motion over with art.stepDrop and bounces them off the
+         cushions, the floor, the pillars and each other. Which is why
+         dropScore is 4: the level's signature has to start early enough
+         to BE the level, the way the Construction Zone's saws start at 6.
+         dropFallMax is 24 rather than 30 so a kernel arrives with
+         something left to bounce with.
+
+         WHY THESE NUMBERS AND NOT THE BACKYARD'S. The owner asked for
+         popcorn "collecting at the bottom of the screen, bouncing off the
+         floor, pillars, and each other", and the first tune delivered
+         none of the three: measured on a 38s run, 2.09 kernels on screen
+         and 0.72 of them landed, and over 300 simulated seconds exactly
+         three kernel-on-kernel contacts totalling 0.05s. No carpet, and
+         the bounce the request names by name was never once seen.
+
+         THE SPAWN WINDOW IS THE FIX, NOT THE RATE. At the Backyard's
+         dropAhead 104..200 a kernel is born at x 280..376, lands at x
+         6..102 at speedMax and is culled at -77 half a second to a second
+         later - so NO rate builds a carpet, it only puts more kernels in
+         the AIR, and the air is where they kill: a kernel from 280 crosses
+         the doodad's own column at y 60..90, which is head height for
+         anything flying properly. 12..112 puts them down at x 80..180 at
+         speedMax and 180..280 at speedStart, a full second AHEAD of the
+         doodad, so each one hops for 1.5 to 3.2 seconds where the player
+         is looking instead of 0.5 to 2.5 under their feet, and nothing
+         crosses the lane at the player's x above about y 150.
+
+         Then the rate, on top of that window: 0.9 down to 0.40 at 0.04 a
+         second, so the floor arrives 12.5s into a run, about a second
+         after the kernels arm at score 4. 0.40 rather than 0.25 or 0.32 -
+         at 0.32 a non-dodging test doodad died at 16, 17 and 24 seconds
+         against 18..38 at the old tune, with five kernels in the air at
+         once, which is a different level and not a harsher one. Measured
+         at 0.40 over two 38s runs: 5.7 on screen, 2.7 landed, 7.4 and 3.5
+         in the last ten seconds, peaks of 11 and 7, and 86 kernel-kernel
+         contacts a run totalling 1.4s. Harsh, which is what was asked
+         for; the landed carpet is in front of the player, a kernel's box
+         is 6x6 and the re-launch apex is fixed, so it is learnable. */
+      dropScore: 4,
+      dropEvery: 0.9, dropEveryMin: 0.40, dropEveryRamp: 0.04,
+      dropAheadMin: 12, dropAheadMax: 112,
+      dropFallMin: 4, dropFallMax: 24,
+      /* Hot cheddar popcorn is the heat; the marshmallow is the art's own
+         +5, like the quarter next door. 0.045 against the Desk's 0.075
+         because the roll is per drop and the drops now come twice as
+         often: one cheddar every ~9 seconds, which is where it was, and
+         it is the escape hatch from the carpet because hot kernels smash
+         on contact. The marshmallow's own gap is js/couch.js's. */
+      spicyChance: 0.045,
+      /* and the spare life is a wooden coaster off the coffee table */
+      boonChance: 0.032, boonGap: 10
+    }
+  };
+
+  var MANTLE = {
+    id: 'mantle',
+    name: 'THE MANTLE',
+    code: '2-3',
+    unlock: { room: 'livingroom', level: 'couch', score: 20 },
+    blurb: ['BLACK PAINT AND A BIG SCREEN.', 'THE REMOTES ARE STILL AIMING.'],
+    art: Mantle,
+    tune: {
+      speedStart: 114, speedMax: 176, speedRamp: 0.84,
+      gapStart: 104, gapMin: 80, gapRamp: 0.31,
+      spacingStart: 226, spacingMin: 182, spacingRamp: 0.45,
+      gapDrift: 54,
+      /* The signal lasers. They lead the level the way the Garden leads on
+         mint - in from 8, and by the end two bays in three have one -
+         because they are slow, predictable and meant to be read rather
+         than reacted to. Their reach is a spike length, so these are the
+         Deck's numbers: a beam that can cross half the gap and switch off
+         is fair in a way a beam that merely sits there is not. */
+      spikeScore: 8,
+      spikeChance: 0.34, spikeChanceMax: 0.68,
+      spikeCeilMin: 16, spikeCeilMax: 26,
+      spikeFloorMin: 18, spikeFloorMax: 28,
+      /* RGB pixels off the screen from 6 */
+      dropScore: 6,
+      dropEvery: 2.3, dropEveryMin: 1.05, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      /* The owner asked for a sour and a bonus drop here and left the
+         choice open. SOUR, and no spicy at all - the Canopy's shape. The
+         reason is the lasers: this bay's hazard is a thin line that is
+         either on you or not, so the power-up worth having is the one that
+         makes the doodad SMALLER, and the one worth not having is the one
+         that makes the room 1.55x faster while a beam is sweeping it. The
+         +5 is the art's own roll again. */
+      sourChance: 0.085,
+      /* the spare life is a battery off the shelf */
+      boonChance: 0.032, boonGap: 10,
+      /* The controllers. Everything above this score is a remote: slow,
+         straight, predictable. From here the game pads join in and their
+         beams DRIFT, which is the first unpredictable hazard in the room -
+         so it gets its own heads-up, art.WARN.late, and the makers learn
+         about it through run.late. Nothing may get more lethal without
+         that pair. 18 is late enough to be most of a good run in. */
+      lateScore: 18
+    }
+  };
+
+  var WHITEBOARD = {
+    id: 'whiteboard',
+    name: 'THE WHITEBOARD',
+    code: '2-4',
+    unlock: { room: 'livingroom', level: 'mantle', score: 20 },
+    blurb: ['NOTHING ON IT WAS EVER ERASED.', 'THE MAGNETS HOLD IT ALL DOWN.'],
+    art: Whiteboard,
+    tune: {
+      /* the room's last bay, and the fastest thing in the game alongside
+         the Canopy's ceiling of 178 */
+      speedStart: 116, speedMax: 178, speedRamp: 0.86,
+      gapStart: 102, gapMin: 80, gapRamp: 0.32,
+      spacingStart: 224, spacingMin: 180, spacingRamp: 0.46,
+      gapDrift: 56,
+      /* the dry-erase lines, and there are a great many of them: 0.76 is
+         second only to the Construction Zone's saws */
+      spikeScore: 7,
+      spikeChance: 0.40, spikeChanceMax: 0.76,
+      spikeCeilMin: 16, spikeCeilMax: 26,
+      spikeFloorMin: 18, spikeFloorMax: 28,
+      /* the magnets, spinning flat, from 5 */
+      dropScore: 5,
+      dropEvery: 2.1, dropEveryMin: 0.98, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      /* THE ONLY LEVEL THAT SHEDS BOTH. Every power-up in the game is
+         drawn on this board in marker - the pepper, the lime, the
+         succulent and the golden apple - so it is the one bay where the
+         heat and the sour can both be running, and drawGauge in
+         js/scene_play.js grew a `y` for it: the lime's gauge moves to 92
+         rather than standing down. Each is a shade rarer than it would be
+         alone, because two power-ups at the same rate is twice as many
+         power-ups. */
+      spicyChance: 0.07,
+      sourChance: 0.07,
+      /* and the drawn succulent, the least rare spare life in the game,
+         because everything else here is worse */
+      boonChance: 0.034, boonGap: 10,
+      /* the markers come off the tray and start drawing */
+      lateScore: 16
+    }
+  };
+
   var LOCKED_LEVEL = { id: 'locked', name: '? ? ?', code: '', locked: true,
                        blurb: ['SOMETHING IS BEING BUILT', 'OUT HERE. NOT YET.'] };
 
-  var ROOMS = [
-    { id: 'locked-a', name: '? ? ?', locked: true, levels: [LOCKED_LEVEL, LOCKED_LEVEL, LOCKED_LEVEL] },
+  /* What a shut room hands the carousel instead of its own bays. THREE of
+     them, not four: the number of cards behind a door must not be readable
+     off the front of it, and three is what every placeholder has always
+     shown. Frozen once, because it is handed out on every frame the level
+     select draws. */
+  var LOCKED_THREE = [LOCKED_LEVEL, LOCKED_LEVEL, LOCKED_LEVEL];
+
+  var BACKYARD = {
+    id: 'backyard', name: 'BACKYARD', locked: false,
+    levels: [COOP, GARDEN, DECK, CANOPY, CONSTRUCTION],
     /* startLevel is THE COOP, not the middle of the row: the carousel
        defaults to the middle of whatever it is given, which with five bays
-       would open the room on a level nobody has earned yet. The Backyard
-       has no locked placeholder any more - these five are the room. */
-    { id: 'backyard', name: 'BACKYARD', locked: false,
-      levels: [COOP, GARDEN, DECK, CANOPY, CONSTRUCTION], startLevel: 0 },
-    { id: 'locked-b', name: '? ? ?', locked: true, levels: [LOCKED_LEVEL, LOCKED_LEVEL, LOCKED_LEVEL] }
+       would open the room on a level nobody has earned yet. */
+    startLevel: 0
+  };
+
+  var LIVINGROOM = {
+    id: 'livingroom', name: 'LIVING ROOM',
+    /* A room earned, not built-later: the same shape a level's gate has,
+       resolved by the same reachedOn(). THE DESK carries no gate of its own
+       because this IS its price - the room and its first bay open on one
+       plank, and two fields that have to agree would one day not. */
+    unlock: { room: 'backyard', level: 'construction', score: 20 },
+    levels: [DESK, COUCH, MANTLE, WHITEBOARD],
+    /* opens on THE DESK, as the Backyard opens on THE COOP */
+    startLevel: 0
+  };
+
+  var ROOMS = [
+    BACKYARD,
+    LIVINGROOM,
+    { id: 'locked-b', name: '? ? ?', locked: true, levels: LOCKED_THREE }
   ];
 
   /* ------------------------------------------------------------ unlocks
@@ -252,24 +510,44 @@ var Levels = (function () {
     return v;
   }
 
-  /* bank a run's score, and report any level it just opened. asks what the
-     jump CROSSED, not what it landed on: the spicy power-up scores +2 and
-     can step straight over the threshold. */
+  /* Bank a run's score, and report everything it just opened.
+
+     Asks what the jump CROSSED, not what it landed on: the spicy power-up
+     scores +2 and the gold +5, either of which can step straight over a
+     threshold.
+
+     Returns a list of { kind: 'room' | 'level', it: object }, ROOMS FIRST.
+     A score can open a room and a bay in the same instant - 20 in the
+     Construction Zone opens the Living Room, and THE DESK comes with it -
+     and the room is the bigger news, so it goes to the front of the banner
+     queue. The shape is tagged rather than two lists because PlayScene's
+     queue already carries ('level', lv) and ('doodad', d) pairs and knew
+     how to announce a third kind the moment there was one. */
   function noteScore(room, level, score) {
     var before = reachedOn(room, level);
     if (score <= before) return [];
     var k = reachedKey(room, level);
     reachedCache[k] = score;
     Save.set(k, score);
-    var won = [];
+    var out = [], seen = [];
+    /* the rooms this score just unlocked */
+    ROOMS.forEach(function (r) {
+      var u = r.unlock;
+      if (!u || u.room !== room.id || u.level !== level.id) return;
+      if (u.score > before && u.score <= score) out.push({ kind: 'room', it: r });
+    });
+    /* then the bays, exactly as before */
     ROOMS.forEach(function (r) {
       r.levels.forEach(function (lv) {
         var u = lv.unlock;
         if (!u || u.room !== room.id || u.level !== level.id) return;
-        if (u.score > before && u.score <= score && won.indexOf(lv) < 0) won.push(lv);
+        if (u.score > before && u.score <= score && seen.indexOf(lv) < 0) {
+          seen.push(lv);
+          out.push({ kind: 'level', it: lv });
+        }
       });
     });
-    return won;
+    return out;
   }
 
   function roomById(id) {
@@ -282,15 +560,82 @@ var Levels = (function () {
     return null;
   }
 
-  /* `locked` means never built. `unlock` means built but not yet earned. */
+  /* which room a level belongs to. Private: nothing outside needs it, and
+     every caller that thinks it does wants levelsOf() or roomOpen(). */
+  function roomOf(level) {
+    for (var i = 0; i < ROOMS.length; i++) {
+      if (ROOMS[i].levels.indexOf(level) >= 0) return ROOMS[i];
+    }
+    return null;
+  }
+
+  /* ------------------------------------------------------------- rooms
+
+     A room has the same two states a level has, and the same two fields
+     say which: `locked` is NEVER BUILT - the one remaining placeholder -
+     and `unlock` is built but not yet earned. One field, one source of
+     truth: a room with an unlock it has not met is SECRET, and secret
+     means the player can deduce nothing at all from the level select.
+
+     IMP11 opens it along with everything else, because a passkey that
+     opened every doodad and every level but left a room shut would be a
+     passkey with an exception nobody could guess. */
+  function roomOpen(room) {
+    if (!room || room.locked) return false;
+    if (!room.unlock) return true;
+    if (Doodads.masterKey()) return true;
+    var r = roomById(room.unlock.room);
+    var lv = levelById(r, room.unlock.level);
+    if (!r || !lv) return true;
+    return reachedOn(r, lv) >= room.unlock.score;
+  }
+
+  /* What the level select may SHOW of a room. An open room hands over its
+     real bays; a shut one hands over three placeholders, which is the whole
+     of the secrecy - drawCard is never passed a Living Room level while the
+     door is shut, so it cannot draw a cover, a name, a code, a high score
+     or a price even by accident. */
+  function levelsOf(room) {
+    return roomOpen(room) ? room.levels : LOCKED_THREE;
+  }
+
+  /* `locked` means never built. `unlock` means built but not yet earned.
+     And a bay in a shut room is shut whatever its own field says - THE DESK
+     has no `unlock` of its own precisely because the room carries it. */
   function isUnlocked(level) {
     if (!level || level.locked) return false;
+    var rm = roomOf(level);
+    if (rm && !roomOpen(rm)) return false;
     if (!level.unlock) return true;
     if (Doodads.masterKey()) return true;
     var r = roomById(level.unlock.room);
     var lv = levelById(r, level.unlock.level);
     if (!r || !lv) return true;
     return reachedOn(r, lv) >= level.unlock.score;
+  }
+
+  /* IS THIS LEVEL SOMEBODY'S KEY?
+
+     A shut room says nothing about itself, so the one clue in the game
+     lives on the thing you have to beat rather than on the door: THE
+     CONSTRUCTION ZONE's own card says SCORE 20 HERE / OPENS ? ? ?, and
+     `? ? ?` is the same glyph as the plate to the right of the Backyard.
+     That is the one connection the player is allowed to make, and it
+     vanishes the frame the room opens.
+
+     Returns the first room still shut whose gate names this level, as
+     { score, have, room }, or null. */
+  function keyFor(level) {
+    if (!level) return null;
+    var rm = roomOf(level);
+    if (!rm) return null;
+    for (var i = 0; i < ROOMS.length; i++) {
+      var r = ROOMS[i], u = r.unlock;
+      if (!u || u.room !== rm.id || u.level !== level.id) continue;
+      if (roomOpen(r)) continue;
+      return { score: u.score, have: reachedOn(rm, level), room: r };
+    }
+    return null;
   }
 
   /* What a locked-but-earnable level costs, for the level select card.
@@ -312,6 +657,21 @@ var Levels = (function () {
 
   function refresh() { reachedCache = {}; }
 
+  function playable() {
+    var out = [];
+    ROOMS.forEach(function (room, ri) {
+      if (room.locked) return;
+      room.levels.forEach(function (lv, li) {
+        if (!lv.locked) out.push({ room: room, level: lv, roomIndex: ri, levelIndex: li });
+      });
+    });
+    return out;
+  }
+
+  function shown() {
+    return playable().filter(function (e) { return roomOpen(e.room); });
+  }
+
   /* bake every built level's tiles once at boot */
   function buildArt() {
     var done = [];
@@ -326,13 +686,21 @@ var Levels = (function () {
 
   return {
     rooms: ROOMS,
-    startRoom: 1,
+    /* the BACKYARD, which is now the first room in the list rather than
+       the middle one: the left-hand placeholder has gone */
+    startRoom: 0,
     coop: COOP,
     garden: GARDEN,
     deck: DECK,
     canopy: CANOPY,
     construction: CONSTRUCTION,
+    livingroom: LIVINGROOM,
+    desk: DESK,
+    couch: COUCH,
+    mantle: MANTLE,
+    whiteboard: WHITEBOARD,
     reachedOn: reachedOn, noteScore: noteScore,
+    roomOpen: roomOpen, levelsOf: levelsOf, keyFor: keyFor,
     isUnlocked: isUnlocked, requirement: requirement, refresh: refresh,
     buildArt: buildArt,
     /* Every level that is BUILT, in menu order - deliberately not filtered
@@ -340,15 +708,14 @@ var Levels = (function () {
        walking this list, and gating it on isUnlocked would send it back
        through Doodads for the passkey and loop. Callers that want only the
        earned ones filter with Levels.isUnlocked themselves. */
-    playable: function () {
-      var out = [];
-      ROOMS.forEach(function (room, ri) {
-        if (room.locked) return;
-        room.levels.forEach(function (lv, li) {
-          if (!lv.locked) out.push({ room: room, level: lv, roomIndex: ri, levelIndex: li });
-        });
-      });
-      return out;
-    }
+    playable: playable,
+    /* Every level the player is allowed to KNOW ABOUT: playable() minus
+       the bays behind a shut door. The High Scores screen pages through
+       this rather than through playable(), for two reasons - a table for a
+       level nobody has heard of is a spoiler, and Scores.table() WRITES a
+       table the first time it is read, so merely paging past THE DESK
+       would materialise 'scores.livingroom.desk' in the save file and the
+       secret would be sitting in localStorage. */
+    shown: shown
   };
 })();

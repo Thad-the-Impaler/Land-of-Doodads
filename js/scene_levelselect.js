@@ -10,9 +10,15 @@ var LevelSelectScene = (function () {
 
   var t = 0, scroll = 0;
   var focus = 'room';                 /* 'room' then 'level' */
-  var roomIndex = 1, levelIndex = 1;
+  var roomIndex = 0, levelIndex = 0;
   var slideRoom = 0, slideLevel = 0;  /* animated offsets for carousel movement */
   var denyShake = 0;
+  /* Rooms that have come open since the player last looked at them, by id.
+     The doodad stalls have had this since there were doodads to earn, and
+     for the same reason: a plate that has read `? ? ?` for a hundred runs
+     reads as permanent scenery, and without a tag on it nobody ever finds
+     out it stopped saying that. Its twin save key is the stalls' 'seen'. */
+  var freshRooms = [];
 
   var CARD = { w: 126, h: 150, y: 66 };
   var SIDE = { w: 88, h: 112, y: 85 };
@@ -32,9 +38,17 @@ var LevelSelectScene = (function () {
   function room(i) { return Levels.rooms[clamp(i, 0, Levels.rooms.length - 1)]; }
   /* undefined outside the list, so the side slots stay empty at the ends */
   function roomAt(i) { return Levels.rooms[i]; }
+  /* EVERY read of a room's bays on this screen goes through Levels.levelsOf,
+     never through room.levels. A shut room hands over three placeholders
+     instead of its own cards, so a level behind a door the player has not
+     opened cannot reach drawCard, cannot reach drawPreview, and cannot be
+     counted - the number of bays in there is not readable off the front of
+     it either. */
+  function levelsIn(ri) { return Levels.levelsOf(room(ri)); }
+
   function level(ri, li) {
-    var r = room(ri);
-    return r.levels[clamp(li, 0, r.levels.length - 1)];
+    var list = levelsIn(ri);
+    return list[clamp(li, 0, list.length - 1)];
   }
 
   function enter(params) {
@@ -44,6 +58,68 @@ var LevelSelectScene = (function () {
     focus = (params && params.focus) || 'room';
     slideRoom = slideLevel = 0;
     denyShake = 0;
+    markFreshRooms();
+  }
+
+  /* Game calls this when the unlock state changes under the scene - which
+     on this screen means IMP11 typed into it. The plate flips from `? ? ?`
+     to LIVING ROOM and is tagged NEW in the same frame, because a room that
+     opens while you are looking at it is exactly as new as one that opens
+     mid-run. */
+  function refresh() {
+    Levels.refresh();
+    markFreshRooms();
+  }
+
+  function markFreshRooms() {
+    var seen = Save.get('seen.rooms', []);
+    if (!Array.isArray(seen)) seen = [];
+    freshRooms = [];
+    for (var i = 0; i < Levels.rooms.length; i++) {
+      var r = Levels.rooms[i];
+      /* Only a room that had to be EARNED can be new. The Backyard was
+         never unlocked, it was always the room you were standing in - and
+         `unlock` rather than a score is the question, for the same reason
+         the stalls ask for a requirement: not every lock is a score. */
+      if (r.unlock && Levels.roomOpen(r) && seen.indexOf(r.id) < 0) freshRooms.push(r.id);
+    }
+  }
+
+  /* The tag comes off a room on MOVEMENT or on COMMITMENT, whichever
+     happens first - moveRoom below, focusLevels and exit here.
+
+     Movement alone was not enough. A room can come open while the
+     carousel is already sitting on it (IMP11 typed into this screen, or a
+     run that crosses 20 and drops the player back onto the plate they
+     were last on), and then there is no move left to make: the player
+     reads LIVING ROOM, goes down into its cards, plays all four, and the
+     gold tab is still there the next time and the time after that, for
+     ever. Going down to the cards is a reading of the name every bit as
+     much as arriving on it is, and so is walking away from the screen. */
+  function clearNewRoom(r) {
+    if (!r) return;
+    var at = freshRooms.indexOf(r.id);
+    if (at < 0) return;
+    freshRooms.splice(at, 1);
+    var seen = Save.get('seen.rooms', []);
+    if (!Array.isArray(seen)) seen = [];
+    if (seen.indexOf(r.id) < 0) { seen.push(r.id); Save.set('seen.rooms', seen); }
+  }
+
+  /* Down from the plate to the cards, from wherever the focus was. Every
+     way of getting there goes through here - the down key, ENTER on an
+     open room, and a finger on a card - so the tag comes off on all three
+     and not just on the one that happened to be tested. */
+  function focusLevels() {
+    if (focus === 'room') clearNewRoom(room(roomIndex));
+    focus = 'level';
+  }
+
+  /* Game.goInstant calls this if a scene has one. The last chance to take
+     the tag off: a player who opened the room, looked at it and pressed
+     ESC has still read the name. */
+  function exit() {
+    clearNewRoom(room(roomIndex));
   }
 
   function moveRoom(dir) {
@@ -51,15 +127,23 @@ var LevelSelectScene = (function () {
     if (next < 0 || next >= Levels.rooms.length) { deny(); return; }
     roomIndex = next;
     var r = room(roomIndex);
-    levelIndex = r.startLevel === undefined ? Math.floor(r.levels.length / 2) : r.startLevel;
+    var list = levelsIn(roomIndex);
+    /* startLevel is a statement about a room's OWN bays - "open on THE
+       COOP", "open on THE DESK" - so it only means anything once the player
+       can see them. A shut room is three placeholders and opens on the
+       middle one, exactly as the built-later placeholder always has. */
+    var open = Levels.roomOpen(r);
+    levelIndex = (open && r.startLevel !== undefined) ? r.startLevel
+                                                      : Math.floor(list.length / 2);
     slideRoom = dir * 26;
+    clearNewRoom(r);
     Audio3.play('move');
   }
 
   function moveLevel(dir) {
-    var r = room(roomIndex);
+    var list = levelsIn(roomIndex);
     var next = levelIndex + dir;
-    if (next < 0 || next >= r.levels.length) { deny(); return; }
+    if (next < 0 || next >= list.length) { deny(); return; }
     levelIndex = next;
     slideLevel = dir * 34;
     Audio3.play('move');
@@ -89,16 +173,19 @@ var LevelSelectScene = (function () {
     if (tg) {
       if (tg.id === 'back') { Audio3.play('back'); Game.go(TitleScene, {}); return; }
       if (tg.id === 'room') { focus = 'room'; moveRoom(tg.i); }
-      else if (tg.id === 'card') { focus = 'level'; if (tg.i) moveLevel(tg.i); }
+      else if (tg.id === 'card') { focusLevels(); if (tg.i) moveLevel(tg.i); }
     }
 
     if (focus === 'room') {
       if (Input.nav('left')) moveRoom(-1);
       if (Input.nav('right')) moveRoom(1);
-      if (Input.nav('down')) { focus = 'level'; Audio3.play('move'); }
+      if (Input.nav('down')) { focusLevels(); Audio3.play('move'); }
       if (Input.hit('confirm')) {
-        if (room(roomIndex).locked) deny();
-        else { focus = 'level'; Audio3.play('select'); }
+        /* a shut room refuses exactly the way the placeholder does: there is
+           nothing in there to pick, and saying so with a shake is the whole
+           of what the player is told */
+        if (!Levels.roomOpen(room(roomIndex))) deny();
+        else { focusLevels(); Audio3.play('select'); }
       }
       if (Input.hit('back')) { Audio3.play('back'); Game.go(TitleScene, {}); }
     } else {
@@ -210,9 +297,9 @@ var LevelSelectScene = (function () {
               colour: (focus === 'room' && !UI.touch()) ? UI.C.ink : UI.C.inkFaint });
 
     /* ---- levels ---- */
-    var r = room(roomIndex);
-    var leftLv = levelIndex > 0 ? r.levels[levelIndex - 1] : null;
-    var rightLv = levelIndex < r.levels.length - 1 ? r.levels[levelIndex + 1] : null;
+    var bays = levelsIn(roomIndex);
+    var leftLv = levelIndex > 0 ? bays[levelIndex - 1] : null;
+    var rightLv = levelIndex < bays.length - 1 ? bays[levelIndex + 1] : null;
 
     if (leftLv) { drawCard(ctx, leftLv, L.cardL, false, -1); hit(L.cardL, 'card', -1); }
     if (rightLv) { drawCard(ctx, rightLv, L.cardR, false, 1); hit(L.cardR, 'card', 1); }
@@ -267,15 +354,60 @@ var LevelSelectScene = (function () {
         edge: Input.hovering('room', dir) ? UI.C.goldDark : UI.C.inkFaint
       });
     }
-    var colour = r.locked ? UI.C.inkFaint : (big ? UI.C.ink : UI.C.inkDim);
-    if (r.locked && big) {
+    /* A room that has not been earned is a PLACEHOLDER in every pixel. It
+       is drawn by the same branch that draws the never-built one, and it
+       does not even carry its own name: the plate reads `? ? ?`, which is
+       the same glyph the Construction Zone's card points at. A room that
+       named itself while refusing to open would have told the player more
+       than it was asked to. */
+    var shut = !Levels.roomOpen(r);
+    var nm = shut ? '? ? ?' : r.name;
+    var colour = shut ? UI.C.inkFaint : (big ? UI.C.ink : UI.C.inkDim);
+    var tagged = !shut && freshRooms.indexOf(r.id) >= 0;
+    /* THE NAME IS NEVER SHOVED FOR THE TAG. The plate is 152 wide and
+       LIVING ROOM is 130 of it at scale 2, so a tag parked INSIDE the
+       frame has to come out of the name: it covered the OM, and the 13px
+       shove that was supposed to get out of its way pushed the L off the
+       left edge instead. Both ends overflowed to make room for 23 pixels
+       of gold.
+
+       So the tag hangs off the CORNER - see drawNewTab - and the name
+       keeps the whole plate and stays centred in it, which is fitTitle's
+       own rule: a size that fits on its own terms, never a squeeze. The
+       padlock's shove stays, because a padlock is drawn ON the plate and
+       a shut room cannot be tagged anyway. */
+    if (shut && big) {
       UI.padlock(ctx, x + w / 2 - 22, y + h / 2, 1, UI.C.inkDim);
-      UI.text(ctx, r.name, x + w / 2 + 8, y + 9, { align: 'center', scale: 2, colour: colour });
+      UI.text(ctx, nm, x + w / 2 + 8, y + 9, { align: 'center', scale: 2, colour: colour });
     } else if (big) {
-      UI.text(ctx, r.name, x + w / 2, y + 9, { align: 'center', scale: 2, colour: colour });
+      UI.text(ctx, nm, x + w / 2, y + 9, { align: 'center', scale: 2, colour: colour });
     } else {
-      UI.text(ctx, r.name, x + w / 2, y + 12, { align: 'center', colour: colour });
+      UI.text(ctx, nm, x + w / 2, y + 12, { align: 'center', colour: colour });
     }
+    /* and the tag, on the centre plate or on a side slot - wherever the
+       room happens to be sitting when the player next opens this screen */
+    if (tagged) drawNewTab(ctx, x, y, w);
+  }
+
+  /* The charselect's NEW tab, to the pixel: a 23x9 gold-edged box in the
+     top right corner of whatever it is tagging. Copied rather than shared
+     because it is nine fillRects, and the alternative is a UI helper that
+     exists to be called from two places with the same three numbers.
+
+     ON A ROOM PLATE IT STRADDLES THE FRAME rather than sitting inside it.
+     A stall has empty board to spare in its corner; a plate that is 152
+     wide and carries a 130px name has none, and a tab parked inside it
+     ate two letters. Hung off the corner at y = sy - 4 it occupies rows
+     sy-4 .. sy+4, and the name's rows start at sy+9, so the two never
+     meet. Nothing is lost above it either: the ROOM caption over the
+     plate is centred and never reaches the right-hand end. */
+  function drawNewTab(ctx, sx, sy, sw) {
+    var x = sx + sw - 26, y = sy - 4;
+    ctx.fillStyle = UI.C.goldDark; ctx.fillRect(x, y, 23, 9);
+    ctx.fillStyle = UI.C.gold;
+    ctx.fillRect(x, y, 23, 1); ctx.fillRect(x, y + 8, 23, 1);
+    ctx.fillRect(x, y, 1, 9); ctx.fillRect(x + 22, y, 1, 9);
+    UI.text(ctx, 'NEW', x + 11, y + 1, { align: 'center', colour: UI.C.ink, shadow: null });
   }
 
   /* `dir` is -1 / 0 / +1, which side of the carousel this card is on. Only a
@@ -336,6 +468,37 @@ var LevelSelectScene = (function () {
         if (fw > 0) {
           ctx.fillStyle = UI.C.goldDark; ctx.fillRect(bx + 1, by + 1, fw, 3);
           ctx.fillStyle = UI.C.gold;     ctx.fillRect(bx + 1, by + 1, fw, 1);
+        }
+      }
+    }
+
+    /* THE ONE CLUE, and it lives on the KEY rather than on the door.
+
+       A level that is somebody's gate says so on its own cover: SCORE 20
+       HERE / OPENS ? ? ?, with the same progress bar a locked card uses.
+       `? ? ?` is the same glyph as the plate to the right of the Backyard,
+       and that is the one connection the player is allowed to make - it
+       never names the room, never shows a cover and never says how many
+       bays are behind it. It is on an OPEN card, because a card you cannot
+       play yet has its own price to announce and cannot carry somebody
+       else's too; and it is on the BIG card only, for the room. It
+       disappears the frame the door opens, because Levels.keyFor stops
+       finding a shut room to point at. */
+    if (open && big) {
+      var kf = Levels.keyFor(lv);
+      if (kf) {
+        Tint.rect(ctx, px, py + ph - 26, pw, 26, UI.C.darker, 8);
+        UI.text(ctx, 'SCORE ' + kf.score + ' HERE', px + pw / 2, py + ph - 26,
+                { align: 'center', colour: UI.C.gold });
+        UI.text(ctx, 'OPENS ? ? ?', px + pw / 2, py + ph - 16,
+                { align: 'center', colour: UI.C.inkDim });
+        var kw = pw - 24, kx = px + 12, ky = py + ph - 6;
+        ctx.fillStyle = UI.C.inkFaint; ctx.fillRect(kx, ky, kw, 5);
+        ctx.fillStyle = UI.C.darker;   ctx.fillRect(kx + 1, ky + 1, kw - 2, 3);
+        var kfw = Math.round((kw - 2) * clamp(kf.have / kf.score, 0, 1));
+        if (kfw > 0) {
+          ctx.fillStyle = UI.C.goldDark; ctx.fillRect(kx + 1, ky + 1, kfw, 3);
+          ctx.fillStyle = UI.C.gold;     ctx.fillRect(kx + 1, ky + 1, kfw, 1);
         }
       }
     }
@@ -470,6 +633,7 @@ var LevelSelectScene = (function () {
     ctx.fillStyle = P.beamDark; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 9, y, 1, h);
   }
 
-  return { enter: enter, update: update, drawBg: drawBg, drawFg: drawFg,
+  return { enter: enter, exit: exit, refresh: refresh, update: update,
+           drawBg: drawBg, drawFg: drawFg,
            targets: function () { return hot; } };
 })();

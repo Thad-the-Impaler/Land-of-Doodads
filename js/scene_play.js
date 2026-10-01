@@ -17,6 +17,18 @@ var PlayScene = (function () {
   var art = null, FX = null;
   var CEIL = 0, FLOOR = 0;
 
+  /* Whether the ceiling ENDS THE RUN or merely stops the doodad. The
+     Backyard's rafters are solid but survivable; every Living Room level
+     publishes CEIL_KILLS and in there the lid is the floor upside down.
+     Bound off the art in enter(), like CEIL and FLOOR, so the rule is a
+     field on the level and never a check on its name - and so the five
+     Backyard levels come out bit for bit the same, because !!undefined is
+     false. `ceilHit` is set by updatePlayer and spent by collide(): a flag
+     rather than a second test, so float error in CEIL + hr - hr can never
+     lose a death the player has already seen happen. */
+  var CEIL_KILLS = false;
+  var ceilHit = false;
+
   var GRAVITY   = 1180;
   var FLAP      = -338;
   var MAX_FALL  = 545;
@@ -102,6 +114,11 @@ var PlayScene = (function () {
   var shrivel = 0;             /* the same thing eased - and the ONE number
                                   both the hitbox and the drawn body read */
   var sourFlash = 0, sourBanner = 0;
+  /* Which row each gauge is standing in, 80 or 92. There are two rows
+     because the Whiteboard is the first bay that sheds both drops, and
+     the row is a FIXED PROPERTY of a running power-up rather than
+     something recomputed off the other one every frame - see grabSpicy. */
+  var spicySlot = 80, sourSlot = 80;
   var streaks = [];            /* speed lines, only drawn while hot */
   var unlocked = [];           /* doodads this run has earned */
   var unlockBanner = 0;
@@ -116,6 +133,41 @@ var PlayScene = (function () {
      plant from a different level. The Garden's own defaults sit here. */
   var boonName = 'SUCCULENT';
   var spikeArmed = false;
+  /* The third armed slot, beside spikeArmed and dropArmed: a level may name
+     a score at which it starts doing something WORSE than it has been doing
+     (tune.lateScore), and `late` is how the makers find out. No maker may
+     make a hazard more lethal than the ones before it without a warning;
+     run.late is the licence, and art.WARN.late is the warning. A level
+     without the key never sees either. */
+  var late = false;
+  /* How far along the run is, rebuilt once a frame and handed to every
+     maker as its trailing argument. It is the ONLY way an art module learns
+     this: a module may cache `scroll` in drawBackdrop to phase an animation,
+     the way the Deck keys its misters off the world, but never to decide how
+     hard to be. The five Backyard makers declare fewer parameters and ignore
+     it entirely.
+
+     `scroll` is in here for a reason worth writing down. A module that
+     caches the scroll in drawBackdrop has cached it during RENDER, which is
+     a frame behind anything that reads it from update - and the makers run
+     in update. The Mantle shipped that mistake and it was not cosmetic:
+     collision tested a laser against the previous frame's phase, so for
+     1.1% of tested frames the beam you could be killed by and the beam
+     drawn on the screen were on opposite sides of the lethal window. A
+     maker that needs to know where the world is reads it HERE, from the
+     live value, in the same pass that spawned it. */
+  var run = { score: 0, time: 0, late: false, scroll: 0 };
+  /* ob.stun: a hazard that punishes without killing.
+     ringing  seconds of buzz left, topped up the way the heat is
+     stunTime  what the current ringing started at, so the pulses decay
+     ringAmp   how hard, in pixels, capped at 12 by stun()
+     buzzTimer countdown to the next pulse - see the BUZZ note in update() */
+  var ringing = 0, stunTime = 0, ringAmp = 0, buzzTimer = 0;
+  var stunBanner = 0, stunSay = '', stunSub = '', stunFlash = 0;
+  var BUZZ = 0.36;
+  /* the last time a drop came off the floor, so a carpet of popcorn all
+     landing in the same frame is one tick and not fifteen */
+  var bopAt = -1;
   var hungry = 0;              /* things his hunger has hold of this frame */
   var nearestPull = 0;         /* how close the closest of them is, 0..1   */
   var planksUp = 0;            /* planks spawned, for the one he hides on  */
@@ -133,6 +185,11 @@ var PlayScene = (function () {
   var nerveX = 0, nerveY = 0, nerveGain = 1;
   var goldPop = 0;             /* and the one for a gold can caught        */
   var goldX = 0, goldY = 0;
+  /* and what the level calls it. A can, a gear, a quarter and a marshmallow
+     are all the same +5, and shouting GOLD over a coin somebody just caught
+     names a metal nobody saw. The art says so with ob.name; the Backyard's
+     three levels say nothing and get the word they always had. */
+  var goldName = 'GOLD';
   var watchY0 = 0, watchY1 = 0, watchA = 0;   /* the gap she can see coming */
   var trotting = 0;            /* seconds of floor under a doodad that can */
   var tune, level, roomRef, doodad;
@@ -165,6 +222,7 @@ var PlayScene = (function () {
     FX = art.FX;
     CEIL = art.CEIL;
     FLOOR = art.FLOOR;
+    CEIL_KILLS = !!art.CEIL_KILLS;
     tune = level.tune;
     doodad = Game.doodad();
     prePause = 'play';
@@ -188,6 +246,7 @@ var PlayScene = (function () {
     spicyGap = 0; goldGap = 0; sourGap = 0;
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
     sour = 0; shrivel = 0; sourFlash = 0; sourBanner = 0;
+    spicySlot = 80; sourSlot = 80;
     unlocked.length = 0; unlockBanner = 0; wonLevels.length = 0;
     /* Lives never carry between runs: start() is what RETRY calls, so a
        lucky run would otherwise hand every retry after it a free save.
@@ -199,6 +258,13 @@ var PlayScene = (function () {
     bannerQueue.length = 0;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
     boonName = 'SUCCULENT';
+    goldName = 'GOLD';
+    ceilHit = false;
+    late = false;
+    run = { score: 0, time: 0, late: false, scroll: 0 };
+    ringing = 0; stunTime = 0; ringAmp = 0; buzzTimer = 0;
+    stunBanner = 0; stunSay = ''; stunSub = ''; stunFlash = 0;
+    bopAt = -1;
     hungry = 0; nearestPull = 0;
     nervePop = 0; goldPop = 0; trotting = 0;
     watchY0 = watchY1 = watchA = 0;
@@ -305,7 +371,7 @@ var PlayScene = (function () {
     var fall = rand(tune.dropFallMin, tune.dropFallMax);
     /* anything that is there to be CAUGHT drifts down slower, so it has a
        chance of being taken rather than merely dodged */
-    var ob = art.makeDrop(x, spicy, (spicy || gold || lime) ? fall * 0.78 : fall);
+    var ob = art.makeDrop(x, spicy, (spicy || gold || lime) ? fall * 0.78 : fall, run);
     /* Set after the maker returns, the way a plank's `meet` is: makeDrop
        keeps the signature it has, and a level that grows neither of these
        never learns they exist. `spicy` still goes IN because the art sizes
@@ -598,6 +664,12 @@ var PlayScene = (function () {
     for (var i = 0; i < obstacles.length; i++) {
       var ob = obstacles[i];
       if (ob.type !== 'drop' || ob.broken > 0) continue;
+      /* Pepper's line marks where the sky WILL land. A drop that has already
+         touched the floor and is still live - a kernel rolling about in the
+         bottom of the room - has landed, so there is nothing left to
+         foresee, and a line drawn to it is a line drawn to the floor. The
+         art sets ob.landed; the engine only reads it. */
+      if (ob.landed) continue;
       if (ob.x < player.x - 24) continue;
       out.push(ob);
     }
@@ -770,8 +842,22 @@ var PlayScene = (function () {
     score += GOLD_BONUS;
     scorePop = 0.42;
     goldPop = 0.6;
-    goldX = clamp(ob.x, 30, VW - 30);
+    /* THE CLAMP IS THE CAPTION'S OWN HALF WIDTH, not a flat 30. It was
+       30, which is the right number for a six letter name and wrong for
+       anything longer: the Couch had to shorten MARSHMALLOW to MALLOW
+       for it, and the Mantle's CAPYBARA hit it next - 'CAPYBARA +5'
+       measures 65, so a capybara caught at the left edge drew its C
+       from x -2.5 and lost half the glyph. Measuring the string is the
+       fix that holds for every level after this one as well: a bay may
+       call its bonus whatever the thing in the photograph actually is
+       and the shout stays on screen. The +2 is the drop shadow, and the
+       lower bound keeps a caption wider than the screen centred rather
+       than inverting the clamp. */
+    var goldHalf = Math.min(VW / 2,
+                            Math.ceil(Font.measure((ob.name || 'GOLD') + ' +' + GOLD_BONUS, 1) / 2) + 2);
+    goldX = clamp(ob.x, goldHalf, VW - goldHalf);
     goldY = Math.max(CEIL + 6, ob.y - 14);
+    goldName = ob.name || 'GOLD';
     Audio3.play('scoreHot');
     for (var i = 0; i < 20; i++) {
       var a = rand(0, TAU), sp = rand(30, 150);
@@ -836,6 +922,19 @@ var PlayScene = (function () {
       player.y = Math.min(player.y, FLOOR - HIT_R - 14);
       player.vy = -250;
     }
+    /* And a save on the ceiling has to get off THAT, for the same reason.
+       50 is one flap (48) plus two: the thumb that just put the doodad into
+       the moulding is already flapping again, and flap() SETS vy rather than
+       adding to it, so a downward shove would be erased by that reflex
+       before it moved anything. Dropped by a flap's worth it cannot be. The
+       column underneath has just been cleared by SAVE_BEHIND/SAVE_AHEAD, so
+       there is nothing down there to be dropped onto. Full-size HIT_R for
+       the reason the ground branch gives: this is a lift clear of trouble
+       and not a collision test. */
+    if (cause === 'ceiling') {
+      player.y = Math.max(player.y, CEIL + HIT_R + 50);
+      player.vy = 0;
+    }
     for (var k = 0; k < 22; k++) {
       var a = rand(0, TAU), sp = rand(40, 150);
       particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
@@ -854,14 +953,79 @@ var PlayScene = (function () {
     }
   }
 
+  /* --------------------------------------------------------- the ring
+
+     A hazard that costs you nothing and ruins everything. An obstacle - any
+     obstacle that is not a drop and not a boon - may carry
+
+       ob.stun = { time: seconds, amp: px, say: 'HEADING', sub: 'second line' }
+
+     and flying into it shakes the screen instead of ending the run. Nothing
+     about lives, score or state changes; the doodad, gravity, the flap and
+     the hitbox are all exactly as they were. What it takes is the player's
+     ability to read the next three seconds of the level, which in a game
+     where the whole skill is reading the next three seconds is plenty.
+
+     The heat's top-up rule, because it is the right rule for anything that
+     can arrive twice: a second one extends rather than restarting, the
+     total is bounded, and a chain of them always ends. */
+  function stun(ob) {
+    ringing = ringing > 0 ? Math.min(ob.stun.time * 1.6, ringing + ob.stun.time * 0.6)
+                          : ob.stun.time;
+    ringAmp = Math.min(ob.stun.amp, 12);
+    stunTime = ob.stun.time;
+    buzzTimer = 0;
+    stunBanner = 1.1;
+    /* ONE TENANT FOR THE SLOT AT 112/138, AND THE NEWEST NEWS WINS.
+       SPICY!, SOUR! and this all shout in the same two rows for the same
+       1.1 seconds, and until the Living Room no level could shed two of
+       them: the Whiteboard sheds both drops and the Desk is the first bay
+       with a stun, so two captions landed on top of each other and read
+       as mush. A banner is 1.1s of NEWS, and two pieces of news inside
+       one second mean the player wants the later one - the gauges go on
+       showing that both power-ups are still running, which is the part
+       that is a state rather than an announcement. */
+    spicyBanner = 0; sourBanner = 0;
+    stunSay = ob.stun.say || 'OOF!';
+    stunSub = ob.stun.sub || '';
+    stunFlash = 0.08;
+    Audio3.play('ring');
+    /* the thing coming apart where it was touched. `ob.y === undefined` is
+       a pillar-or-spike-shaped obstacle, which has no centre height of its
+       own, so the burst goes where the doodad is instead. */
+    for (var i = 0; i < 12; i++) {
+      particles.push({ x: ob.x + ob.w / 2, y: ob.y === undefined ? player.y : ob.y,
+                       vx: rand(-70, 70), vy: rand(-60, -10),
+                       life: rand(0.2, 0.5), g: 200,
+                       col: chance(0.5) ? FX.splatHi : FX.splat });
+    }
+  }
+
   /* --------------------------------------------------------- the heat */
 
   function grabSpicy(ob) {
     /* a second one part way through tops the heat up rather than
        restarting it, so a lucky pair is worth chasing */
+    var wasHot = spicy > 0;
     spicy = spicy > 0 ? Math.min(SPICY_TIME * 1.6, spicy + SPICY_TIME * 0.6) : SPICY_TIME;
     spicyFlash = 0.14;
     spicyBanner = 1.1;
+    /* the banner slot has one tenant - see stun() */
+    sourBanner = 0; stunBanner = 0;
+    /* A GAUGE TAKES ITS ROW WHEN IT IS CAUGHT AND KEEPS IT UNTIL IT DIES.
+       Both gauges used to work out their y every frame from whether the
+       OTHER one was live, so on the Whiteboard the lime and its caption
+       jumped 12px the moment the heat faded - a bar that moves while it
+       is counting down reads as a glitch, not as a layout. The row is
+       decided once, here, from what is on screen at the moment of the
+       catch: take 80 unless the lime already has it, in which case drop
+       to 92. A top-up does not re-decide, because the bar is already
+       somewhere and the player is already watching it there.
+       The test is `sour > 0` rather than the eased `shrivel`, which is
+       what the drawing side reads: shrivel is a frame behind, and two
+       drops taken in the SAME frame would otherwise both claim 80 and
+       stay there for the whole seven seconds. */
+    if (!wasHot) spicySlot = (sour > 0 && sourSlot === 80) ? 92 : 80;
     Screen.shake(4.5, 0.4);
     Audio3.play('spicy');
     for (var i = 0; i < 26; i++) {
@@ -887,9 +1051,14 @@ var PlayScene = (function () {
 
   function grabSour(ob) {
     /* a pair tops the lime up rather than restarting it, as the heat does */
+    var wasSmall = sour > 0;
     sour = sour > 0 ? Math.min(SOUR_TIME * 1.6, sour + SOUR_TIME * 0.6) : SOUR_TIME;
     sourFlash = 0.14;
     sourBanner = 1.1;
+    /* the banner slot has one tenant - see stun() */
+    spicyBanner = 0; stunBanner = 0;
+    /* grabSpicy's mirror image, off the heat instead of off the lime */
+    if (!wasSmall) sourSlot = (spicy > 0 && spicySlot === 80) ? 92 : 80;
     /* smaller and longer than a hit's shake. Screen.shake decays over its
        own time, so this reads as the whole room buzzing rather than as
        something having gone wrong - which is the point of a sour face. */
@@ -968,7 +1137,7 @@ var PlayScene = (function () {
       var bottom = FLOOR - 34 - gapH;
       var gapY = clamp(lastGapY + rand(-tune.gapDrift, tune.gapDrift), top, bottom);
       lastGapY = gapY;
-      var plank = art.makePillar(spawnCursor, gapY, gapH);
+      var plank = art.makePillar(spawnCursor, gapY, gapH, run);
       /* Somebody is hiding behind one particular plank. The level says
          which one, the roster says who, and neither has to know about the
          other - so a second level could hide a second doodad by adding one
@@ -988,15 +1157,15 @@ var PlayScene = (function () {
         var lo = onCeiling ? (tune.spikeCeilMin || 13) : (tune.spikeFloorMin || 15);
         var hi = onCeiling ? (tune.spikeCeilMax || 21) : (tune.spikeFloorMax || 27);
         admit(art.makeSpikes(mid + rand(-14, 14), onCeiling ? 'ceil' : 'floor',
-                             randInt(3, 6), randInt(lo, hi)));
+                             randInt(3, 6), randInt(lo, hi), run));
       }
-      if (chance(0.55)) admit(art.makeLitter(mid + rand(-40, 40)));
+      if (chance(0.55)) admit(art.makeLitter(mid + rand(-40, 40), run));
 
       /* the succulent: rare, never twice in quick succession, and only on
          a level whose art actually grows one */
       if (boonGap > 0) boonGap--;
       else if (art.makeBoon && tune.boonChance && chance(tune.boonChance)) {
-        admit(art.makeBoon(mid + rand(-30, 30)));
+        admit(art.makeBoon(mid + rand(-30, 30), run));
         boonGap = tune.boonGap || 5;
       }
 
@@ -1058,8 +1227,25 @@ var PlayScene = (function () {
 
     var br = bodyR();
 
-    /* the rafters are solid but survivable */
-    if (player.y - br < CEIL) {
+    /* The lid. In the Backyard the rafters are solid but survivable; in the
+       Living Room they end the run, and the two paths share exactly one
+       thing - the doodad is stopped either way.
+
+       The WALL is still here under CEIL_KILLS even though the death is in
+       collide(), because during a save's grace hurt() returns false, and a
+       doodad flapping under a ceiling with nothing holding it in would
+       simply leave through the top of the screen. It stops at the HITBOX
+       radius rather than the drawn one: the floor kills at the hitbox, and
+       the two edges of the room have no business using different numbers -
+       so both use the forgiving one. */
+    var hr = hitR();
+    if (CEIL_KILLS) {
+      ceilHit = player.y - hr < CEIL;
+      if (ceilHit) {
+        player.y = CEIL + hr;
+        if (player.vy < 0) player.vy = 0;
+      }
+    } else if (player.y - br < CEIL) {
       player.y = CEIL + br;
       if (player.vy < 0) player.vy *= -0.18;
     }
@@ -1101,7 +1287,12 @@ var PlayScene = (function () {
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
     flash = 0.09;
-    player.vy = cause === 'ground' ? -95 : -170;
+    /* Which way the body goes. Everything else in the game throws the
+       doodad UP and lets it tumble back down; a head-bump cannot, because
+       there is nowhere up to go - so it drops instead, and falls the whole
+       height of the room to land(). Positive, not zero: a doodad that
+       merely stops dead under the moulding reads as the game freezing. */
+    player.vy = cause === 'ceiling' ? 60 : (cause === 'ground' ? -95 : -170);
     player.spin = rand(3.2, 5.4) * (chance(0.5) ? -1 : 1);
     Audio3.play('hit');
     Screen.shake(5, 0.4);
@@ -1139,13 +1330,21 @@ var PlayScene = (function () {
      reached it, whatever happens next. A doubled score can step straight
      over a threshold, so this asks what the jump crossed, not what it
      landed on.                                                        */
+  /* `opened` is a list of { kind, it } now, because a score can open a
+     whole ROOM as well as a bay - 20 in the Construction Zone is the price
+     of the Living Room - and rooms come first in the list so the bigger
+     news is announced first. The results screen's own list stays what it
+     always was: levels only, because 'LEVEL UNLOCKED' at the end of a run
+     is a line about a card you can go and press. */
   function checkUnlocks() {
     var opened = Levels.noteScore(roomRef, level, score);
     for (var n = 0; n < opened.length; n++) {
-      if (wonLevels.indexOf(opened[n]) < 0) wonLevels.push(opened[n]);
+      if (opened[n].kind === 'level' && wonLevels.indexOf(opened[n].it) < 0) {
+        wonLevels.push(opened[n].it);
+      }
     }
     if (opened.length && !Doodads.masterKey()) {
-      for (var z = 0; z < opened.length; z++) announce('level', opened[z]);
+      for (var z = 0; z < opened.length; z++) announce(opened[z].kind, opened[z].it);
       Audio3.play('unlock');
       Screen.shake(2.5, 0.3);
       for (var q = 0; q < 26; q++) {
@@ -1258,7 +1457,22 @@ var PlayScene = (function () {
       }
       if (!hit) continue;
       if (ob.type === 'boon') { takeBoon(ob); obstacles.splice(i, 1); continue; }
-      if (ob.type !== 'drop') { if (hurt('obstacle')) return; continue; }
+      if (ob.type !== 'drop') {
+        /* A hazard that only RINGS. It is read before hurt(), so a level
+           can have both kinds of obstacle in the air at once and the engine
+           never has to ask which level it is; the grace after a save covers
+           this one too, and during it the thing is left standing, because a
+           hazard you cannot be hurt by is a hazard you have not met yet.
+           Outside the grace it is consumed on contact - one icon, one ring. */
+        if (ob.stun) {
+          if (invuln > 0) continue;
+          stun(ob);
+          obstacles.splice(i, 1);
+          continue;
+        }
+        if (hurt('obstacle')) return;
+        continue;
+      }
       /* Every gift is taken before the heat gets a chance to smash through,
          or a hot run would destroy the very can and lime it is flying into -
          the reward for a good run turned into a way of losing one. */
@@ -1269,6 +1483,11 @@ var PlayScene = (function () {
       if (hurt('drop')) return;
     }
     if (player.y + hr >= FLOOR) hurt('ground');
+    /* and the other edge of the room, in the rooms that have one. The flag
+       was set by updatePlayer this same frame; it is spent here so that a
+       head-bump is one death and not one per frame spent held against the
+       moulding. */
+    if (ceilHit) { ceilHit = false; hurt('ceiling'); }
   }
 
   /* --------------------------------------------------------- update */
@@ -1301,6 +1520,8 @@ var PlayScene = (function () {
     if (spicyBanner > 0) spicyBanner -= dt;
     if (sourFlash > 0) sourFlash -= dt;
     if (sourBanner > 0) sourBanner -= dt;
+    if (stunFlash > 0) stunFlash -= dt;
+    if (stunBanner > 0) stunBanner -= dt;
     if (hazardWarn > 0) hazardWarn -= dt;
     if (unlockBanner > 0) {
       unlockBanner -= dt;
@@ -1336,7 +1557,22 @@ var PlayScene = (function () {
       player.angle = Math.sin(readyPulse * 2.6) * 0.06;
       player.flapTimer = Math.sin(readyPulse * 2.6) > 0.55 ? 0.1 : 0;
       if (!Game.locked()) {
-        if (Input.hit('up')) { state = 'play'; player.vy = 0; flap(); }
+        if (Input.hit('up')) {
+          state = 'play'; player.vy = 0; flap();
+          /* The one hazard in the game that is not spawned and therefore
+             cannot arm: the room itself. It is said on the first flap of
+             every run rather than once ever, because it is the rule that
+             ends runs and a player coming back after a week has forgotten
+             it. No 'warn' tone - the attention is already on the screen, the
+             doodad has just left the ground, and a chime over GET READY
+             ending reads as something having gone wrong. 2.4s is over well
+             before the first plank arrives, which is about 3.8s at
+             speedStart. */
+          if (CEIL_KILLS && art.WARN && art.WARN.ceil && hazardWarn <= 0) {
+            warnLines = art.WARN.ceil;
+            hazardWarn = 2.4;
+          }
+        }
         if (Input.hit('back')) { Audio3.play('back'); Game.go(CharSelectScene, {}); }
         if (Input.hit('pause')) {
           prePause = 'ready'; state = 'paused';
@@ -1370,10 +1606,40 @@ var PlayScene = (function () {
         sour -= dt;
         if (sour <= 0) { sour = 0; Audio3.play('cooldown'); }
       }
+      /* The buzz, as a train of short pulses rather than one long shake.
+         Screen.shake's amplitude decays as amount * shakeTime / 0.35, so a
+         single 1.1-second call STARTS at three times its own amount and
+         reads as something breaking; a pulse every 0.36s with a shakeTime
+         of 0.36 reads as a vibration motor, which is the thing being
+         imitated. Three of them over 1.1s, decaying with what is left of
+         the ring: 8, 6 then 4px for an amp of 8.
+         And they never swallow each other, although shake() keeps only the
+         bigger amount: Screen.updateShake runs at js/game.js:85 and
+         scene.update at :110, so by the time the next pulse is asked for
+         the last one has already expired and zeroed shakeAmount. */
+      if (ringing > 0) {
+        ringing -= dt;
+        buzzTimer -= dt;
+        if (buzzTimer <= 0) {
+          buzzTimer = BUZZ;
+          Screen.shake(ringAmp * (0.35 / BUZZ) *
+                       clamp(0.5 + 0.5 * ringing / stunTime, 0, 1), BUZZ);
+        }
+      }
       speed = d.speed * (spicy > 0 ? SPICY_SPEED : 1);
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
+      /* The late phase, armed once and never disarmed. It is read AFTER
+         moveObstacles, because that is what banks the plank that just
+         crossed the threshold, and BEFORE `run` is built, so the very first
+         maker call of the phase already knows. */
+      if (!late && tune.lateScore !== undefined && score >= tune.lateScore) {
+        late = true;
+        var wl = art.WARN && art.WARN.late;
+        if (wl && hazardWarn <= 0) { warnLines = wl; hazardWarn = 2.4; Audio3.play('warn'); }
+      }
+      run = { score: score, time: runTime, late: late, scroll: scroll };
       spawnAhead();
       spawnDrops(dt, d);
       updatePlayer(dt);
@@ -1439,6 +1705,34 @@ var PlayScene = (function () {
         if (ob.broken > 0) {
           ob.broken -= dt;
           if (ob.broken <= 0) { obstacles.splice(i, 1); continue; }
+        } else if (art.stepDrop) {
+          /* The level moves its own drop. Everything a falling thing does
+             in the Backyard is four lines - gravity, position, spin, and
+             splat on the ground - and the Couch's popcorn does not splat
+             on the ground, it bounces off it. So the level may take the
+             four lines over, for ONE drop at a time: the one it is handed.
+             It may READ the other obstacles (and ask rectsFor for a
+             pillar's boxes) but never splice or write them. The loop walks
+             backwards and scrolls each obstacle as it reaches it, so a
+             pillar at a lower index is at most one frame - 6px at the worst
+             dt the game allows - stale to a drop testing against it; the
+             Deck accepted exactly that staleness for its mister clock.
+             Returning true lands the drop, which is the ordinary splat. */
+          if (art.stepDrop(ob, dt, obstacles)) landDrop(ob);
+          /* A flag the level sets when its drop has just come off something.
+             The SOUND stays in the engine, because no art module calls
+             Audio3 - and it is rate limited, because a dozen kernels can
+             land in the same frame and a dozen ticks at once is a crack. */
+          if (ob.bounced) {
+            ob.bounced = false;
+            for (var b = 0; b < 2; b++) {
+              particles.push({ x: ob.x, y: ob.y + 3,
+                               vx: rand(-50, 50) - speed * 0.1, vy: rand(-50, -20),
+                               life: rand(0.15, 0.3), g: 300,
+                               col: chance(0.5) ? FX.ground : FX.groundHi });
+            }
+            if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
+          }
         } else {
           ob.vy += art.DROP_GRAV * dt;
           ob.y += ob.vy * dt;
@@ -1641,6 +1935,15 @@ var PlayScene = (function () {
       ctx.fillRect(0, 0, VW, VH);
       ctx.globalAlpha = qa;
     }
+    if (stunFlash > 0) {
+      /* shorter and paler than the other three: this is a jolt, not an
+         event, and the run is carrying straight on underneath it */
+      var ra = ctx.globalAlpha;
+      ctx.globalAlpha = ra * clamp(stunFlash / 0.08, 0, 1) * 0.6;
+      ctx.fillStyle = '#ffe9e4';
+      ctx.fillRect(0, 0, VW, VH);
+      ctx.globalAlpha = ra;
+    }
 
     /* score */
     if (state !== 'dead') {
@@ -1658,6 +1961,7 @@ var PlayScene = (function () {
       drawLives(ctx);
       drawSpicy(ctx);
       drawSour(ctx);
+      if (stunBanner > 0) drawStun(ctx);
       if (nervePop > 0) drawNerve(ctx);
       if (goldPop > 0) drawGold(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
@@ -1714,7 +2018,9 @@ var PlayScene = (function () {
     var k = clamp(goldPop / 0.6, 0, 1);
     var ga = ctx.globalAlpha;
     ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
-    UI.text(ctx, 'GOLD +' + GOLD_BONUS, goldX, goldY - (1 - k) * 15,
+    /* the level's own word for it, in the score's gold either way: the
+       colour is what says "+5", the word is only what says what it was */
+    UI.text(ctx, (goldName || 'GOLD') + ' +' + GOLD_BONUS, goldX, goldY - (1 - k) * 15,
             { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
     ctx.globalAlpha = ga;
   }
@@ -1762,22 +2068,30 @@ var PlayScene = (function () {
     if (heat < 0.02) return;
     /* the last stretch blinks, so running out is never a surprise */
     if (spicy > 0 && spicy < 1.8 && Math.floor(t * 8) % 2 === 0) return;
+    /* The lime may be up too, and it no longer changes a word of this: the
+       caption stands beside its own bar now, so each power-up names itself
+       on its own row and neither has to know the other is there. */
     drawGauge(ctx, clamp(spicy / SPICY_TIME, 0, 1), heat, SPICY_GAUGE,
-              'SPICY  X' + SPICY_MULT);
+              'SPICY  X' + SPICY_MULT, spicySlot);
   }
 
   /* The gauge body, shared by the heat and the lime: panel, three fill rows,
-     a bright tip and a label under it. Both draw at the same y, because no
-     level grows both - belt and braces, the lime's gauge stands down while
-     the heat's is up, and a level that ever wants the pair should give the
-     second one y 92 rather than share the slot. */
+     a bright tip and a label beside it. `y` defaults to 80, which is the
+     slot both used to share - and the old comment here said that a level
+     wanting the pair at once should give the second one y 92 rather than
+     stand it down. THE WHITEBOARD grows both, so there are two rows now
+     and each caller passes its own: spicySlot and sourSlot, claimed at
+     the moment of the catch and held until the power-up dies. A row
+     worked out per frame from what else was live meant a bar that moved
+     while it was counting down. */
   var SPICY_GAUGE = { panel: '#2a1008', edge: '#6b2a12', base: '#c8452a',
                       mid: '#f0722c', top: '#ffd08a', label: '#ff8a3c' };
   var SOUR_GAUGE  = { panel: '#10240a', edge: '#2d5c1c', base: '#3f7a2a',
                       mid: '#6fb838', top: '#d6ff7a', label: '#8fd44a' };
 
-  function drawGauge(ctx, k, alpha, cols, label) {
-    var w = 104, x = Math.round((VW - w) / 2), y = 80;
+  function drawGauge(ctx, k, alpha, cols, label, y) {
+    var w = 104, x = Math.round((VW - w) / 2);
+    if (y === undefined) y = 80;
     var fill = Math.max(0, Math.round((w - 2) * k));
     var ga = ctx.globalAlpha;
     ctx.globalAlpha = ga * clamp(alpha, 0, 1);
@@ -1786,8 +2100,29 @@ var PlayScene = (function () {
     ctx.fillStyle = cols.mid;  ctx.fillRect(x + 1, y + 1, fill, 3);
     ctx.fillStyle = cols.top;  ctx.fillRect(x + 1, y + 1, fill, 1);
     ctx.fillStyle = '#fff3d0'; ctx.fillRect(x + 1, y + 1, Math.min(fill, 2), 4);
-    UI.text(ctx, label, VW / 2, y + 11,
-            { align: 'center', colour: cols.label, shadow: UI.C.shadow });
+    /* THE CAPTION STANDS BESIDE ITS BAR, NOT UNDER IT, BECAUSE UNDER IT IS
+       NOT FREE. Two things wanted the rows beneath the gauges. A caption at
+       y + 11 is 7 rows tall, so two stacked bars could not both carry one -
+       the upper caption landed exactly where the lower panel goes - and
+       the pair worked around that by sharing a single line written by the
+       LOWER bar. But the lower bar has no clear air under it either:
+       SPICY!, SOUR! and RING RING! all shout at 112 and rise 11 rows as
+       they fade, and a scale-3 heading with a 3px outline and a 3px wave
+       owns rows 94..133 for the whole 1.1 seconds it is up. The pair's one
+       caption sat at 103..109, dead inside it, and was mush exactly when
+       the player looked at it; even the single bar's caption at 91 was
+       grazed by the outline.
+       Beside the bar nothing is contested. The panel is 104 wide and
+       centred, so x 0..186 at gauge height is empty on every level and in
+       every HUD state - the lives are at y 9, the score and the chase line
+       stop at 73. Right-aligned at the panel's edge and on the bar's own
+       rows, which means each bar names itself, two of them read as two
+       labelled rows, there is no order to get wrong, and a caption never
+       moves while its power-up is counting down. */
+    if (label) {
+      UI.text(ctx, label, x - 5, y,
+              { align: 'right', colour: cols.label, shadow: UI.C.shadow });
+    }
     ctx.globalAlpha = ga;
   }
 
@@ -1806,9 +2141,36 @@ var PlayScene = (function () {
       ctx.globalAlpha = a;
     }
 
-    if (shrivel < 0.02 || heat > 0.02) return;
+    if (shrivel < 0.02) return;
     if (sour > 0 && sour < 1.8 && Math.floor(t * 8) % 2 === 0) return;
-    drawGauge(ctx, clamp(sour / SOUR_TIME, 0, 1), shrivel, SOUR_GAUGE, 'SOUR  SMALL');
+    /* It no longer stands down for the heat, it takes the other row: a
+       level that sheds both - the Whiteboard does - wants to be able to
+       see both running out. The row was `both ? 92 : 80`, worked out
+       afresh every frame, so the bar and its caption jumped 12px the
+       instant the heat's alpha fell under 0.02 and left the lime looking
+       like a glitch. It now stands wherever it was standing when it was
+       caught, and only grabSour moves it. */
+    drawGauge(ctx, clamp(sour / SOUR_TIME, 0, 1), shrivel, SOUR_GAUGE,
+              'SOUR  SMALL', sourSlot);
+  }
+
+  /* The shout when something rings: the SPICY slot, with the same lift and
+     the same fade, because it is the same kind of news - a thing just
+     happened to you in the middle of the screen. The level supplies both
+     lines, so RING RING! here and whatever the next one of these is
+     elsewhere, and the engine never has to know which level it is in. */
+  function drawStun(ctx) {
+    if (state === 'entry') return;
+    var lift = (1.1 - stunBanner) * 11;
+    var a = ctx.globalAlpha;
+    ctx.globalAlpha = a * clamp(stunBanner / 0.6, 0, 1);
+    /* the wave is faster and shallower than SPICY!'s - it is a rattle,
+       not a flourish */
+    UI.heading(ctx, stunSay, VW / 2, 112 - lift, 3,
+               { colour: '#ffe9e4', outline: '#5a1e1e', wave: t * 14, waveAmp: 1.6 });
+    UI.text(ctx, stunSub, VW / 2, 138 - lift,
+            { align: 'center', colour: '#ffb3a7', shadow: UI.C.shadow });
+    ctx.globalAlpha = a;
   }
 
   /* something just came unlocked, mid-flight */
@@ -1818,10 +2180,22 @@ var PlayScene = (function () {
     if (!head) return;
     var lvl = head.kind === 'level' ? head.it : null;
     var d = head.kind === 'doodad' ? head.it : null;
+    var rm = head.kind === 'room' ? head.it : null;
     var a = clamp(unlockBanner / 0.6, 0, 1);
     var ga = ctx.globalAlpha;
     ctx.globalAlpha = ga * a;
-    if (lvl) {
+    if (rm) {
+      /* A whole room, which is the biggest thing a score has ever opened -
+         and it happens MID-RUN, which is where it belongs: the plank that
+         paid for it is the one that just went past. Game.selection is
+         deliberately not touched, so RETRY still retries the bay being
+         played and the player goes and finds the new room themselves. */
+      UI.heading(ctx, 'ROOM UNLOCKED', VW / 2, 96, 2, { colour: UI.C.gold, outline: UI.C.shadow });
+      UI.heading(ctx, rm.name, VW / 2, 116, 3,
+                 { colour: UI.C.ink, outline: UI.C.shadow, wave: t * 8, waveAmp: 1.2 });
+      UI.text(ctx, 'OPEN ON THE LEVEL SELECT', VW / 2, 142,
+              { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    } else if (lvl) {
       UI.heading(ctx, 'LEVEL UNLOCKED', VW / 2, 96, 2, { colour: UI.C.gold, outline: UI.C.shadow });
       UI.heading(ctx, lvl.name, VW / 2, 116, 3,
                  { colour: UI.C.ink, outline: UI.C.shadow, wave: t * 8, waveAmp: 1.2 });
@@ -1846,7 +2220,7 @@ var PlayScene = (function () {
 
   /* the one-off heads up when the rafters start letting go */
   function drawHazardWarning(ctx) {
-    if (state === 'entry' || spicyBanner > 0 || sourBanner > 0) return;
+    if (state === 'entry' || spicyBanner > 0 || sourBanner > 0 || stunBanner > 0) return;
     if (Math.floor(hazardWarn * 6) % 2) return;
     var w = warnLines;
     if (!w) return;
@@ -1854,21 +2228,29 @@ var PlayScene = (function () {
     UI.text(ctx, w[1], VW / 2, 124, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
   }
 
-  /* the line under the score: who you are chasing on the table */
+  /* The line under the score: who you are chasing on the table.
+
+     Every line here carries a shadow. Without one the dim grey of NEXT
+     sits on whatever the level's wall happens to be, and in a LIGHT room -
+     a whiteboard, a plaster ceiling - it disappears entirely. The score
+     above it has had an outline since the first level for the same reason;
+     this is general, not the Whiteboard's special case. */
   function drawChase(ctx, y) {
     if (state === 'dead' || state === 'entry') return;
     if (passedTimer > 0) {
       if (Math.floor(passedTimer * 8) % 2 || passedTimer < 1.0) {
         /* no triangle: one lives in a pad and means "move this way" */
-        UI.text(ctx, 'PASSED ' + passedName, VW / 2, y, { align: 'center', colour: UI.C.gold });
+        UI.text(ctx, 'PASSED ' + passedName, VW / 2, y,
+                { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
       }
       return;
     }
     if (target) {
       UI.text(ctx, 'NEXT  ' + target.name + ' ' + target.score, VW / 2, y,
-              { align: 'center', colour: UI.C.inkDim });
+              { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
     } else if (board.length && score > 0) {
-      UI.text(ctx, '\u2605 HIGH SCORE \u2605', VW / 2, y, { align: 'center', colour: UI.C.gold });
+      UI.text(ctx, '\u2605 HIGH SCORE \u2605', VW / 2, y,
+              { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
     }
   }
 
@@ -2085,6 +2467,8 @@ var PlayScene = (function () {
     inspect: function () { return { state: state, player: player, obstacles: obstacles,
                                     score: score, runTime: runTime, rank: rank,
                                     spicy: spicy, heat: heat, dropArmed: dropArmed,
+                                    ceilKills: CEIL_KILLS, ringing: ringing,
+                                    late: late,
                                     sour: sour, shrivel: shrivel, hitR: hitR(),
                                     bodyR: bodyR(),
                                     unlocked: unlocked.map(function (d) { return d.id; }),

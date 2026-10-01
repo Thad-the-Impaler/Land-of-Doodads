@@ -30,7 +30,12 @@ var ScoresScene = (function () {
 
   function enter() {
     t = 0;
-    list = Levels.playable();
+    /* shown(), not playable(): a room that has not been earned keeps its
+       bays to itself, and this screen is the one place a name could leak
+       out of a shut door. It would also be the place that BUILT the leak -
+       Scores.table() writes a table the first time it is read, so paging
+       past a secret level would put its key in the save file. */
+    list = Levels.shown();
     index = 0;
     /* open on whichever level was played last */
     for (var i = 0; i < list.length; i++) {

@@ -139,6 +139,24 @@ var Audio3 = (function () {
     nerve:   function () { tone({ from: 990, to: 1480, dur: 0.06, type: 'square', vol: 0.09 });
                            tone({ from: 1480, to: 1980, dur: 0.07, type: 'triangle', vol: 0.07, delay: 0.05 });
                            noise({ freq: 3200, dur: 0.08, vol: 0.05, q: 1.6 }); },
+    /* an old telephone bell, for anything that stuns rather than kills: two
+       squares a fifth apart, struck three times in a trill and then the
+       trill again, which is what a bell striker actually does. Named for the
+       sound and not for the level, like every other entry here. */
+    ring:    function () { tone({ from: 1180, dur: 0.11, type: 'square', vol: 0.09 });
+                           tone({ from: 1560, dur: 0.11, type: 'square', vol: 0.06 });
+                           tone({ from: 1180, dur: 0.11, type: 'square', vol: 0.09, delay: 0.07 });
+                           tone({ from: 1560, dur: 0.11, type: 'square', vol: 0.06, delay: 0.07 });
+                           tone({ from: 1180, dur: 0.11, type: 'square', vol: 0.09, delay: 0.14 });
+                           tone({ from: 1560, dur: 0.11, type: 'square', vol: 0.06, delay: 0.14 });
+                           tone({ from: 1180, dur: 0.11, type: 'square', vol: 0.09, delay: 0.28 });
+                           tone({ from: 1560, dur: 0.11, type: 'square', vol: 0.06, delay: 0.28 });
+                           noise({ freq: 3600, dur: 0.1, vol: 0.03, q: 1.8 }); },
+    /* a dry tick for a drop coming off the floor. It fires on every bounce
+       of every kernel, so it is the quietest thing in this table by some way
+       and has no tone under it at all - a pitch heard fifteen times in two
+       seconds becomes a melody nobody wrote. */
+    bop:     function () { noise({ freq: 1100, dur: 0.04, vol: 0.06, q: 1.4 }); },
     cooldown:function () { tone({ from: 784, to: 330, dur: 0.3, type: 'triangle', vol: 0.11 });
                            noise({ freq: 900, dur: 0.3, vol: 0.06, q: 0.5 }); },
     start:   function () { tone({ from: 392, to: 392, dur: 0.08, type: 'square', vol: 0.12 });
