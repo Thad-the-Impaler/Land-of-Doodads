@@ -454,10 +454,13 @@ Every sound in the game is a couple of oscillators - a square wave, a filtered
 noise burst, no files - which is what keeps the whole thing a handful of
 scripts. `M` mutes, and the choice is saved.
 
-There is exactly one exception. **An unlock plays a recording**, because the
-moment a stall comes open is the one moment worth a voice rather than an
-arpeggio, and no arrangement of square waves was going to be that. It fires
-for a doodad and for a level alike, and for the master passkey.
+There are two exceptions, both recordings. **An unlock plays one**, because the
+moment a stall comes open is worth a voice rather than an arpeggio, and no
+arrangement of square waves was going to be that; it fires for a doodad and a
+level alike, and for the master passkey. **Cookie's nerve plays the other**,
+every time she shaves a plank close enough to score double. That one is mixed
+well under the first - a fanfare happens a handful of times in a save, a
+threaded plank happens every couple of seconds in a good run.
 
 The chiptune fanfare it replaced is still in the file and still wired up: if
 the recording has not finished decoding, or the browser will not take it, or
@@ -466,12 +469,14 @@ game never goes quiet because of an asset. It is also one at a time - a score
 that opens a level *and* a doodad in the same frame restarts the clip rather
 than layering two of it.
 
-The source is `Extra Sounds/Mkoydokoy.caf`, which is Opus inside a CoreAudio
-container and plays in nothing but Safari; `Assets/sounds/mkoydokoy.mp3` is the
-web-playable copy the game actually loads, trimmed of its lead-in and brought
-up to a -1.5dB peak. The single-file build inlines it as a data uri the same
+The sources live in `Extra Sounds/` in the formats they arrived in - one is
+Opus inside a CoreAudio container, which plays in nothing but Safari, and one
+is the audio track of an `.mp4` - and `Assets/sounds/` holds the web-playable
+copies the game actually loads, each trimmed of its silence and brought up to
+about a -1.5dB peak. The single-file build inlines them as data uris the same
 way it does the sprite frames, because a `file://` page may not fetch its
-neighbours.
+neighbours; `SOUND_ROLES` in that script is the one place a filename meets the
+role it plays under.
 
 ## High scores
 

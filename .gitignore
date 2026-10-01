@@ -1,14 +1,12 @@
 # macOS finder droppings
 .DS_Store
 
-# The level references are photographs of an actual back garden, deck and
-# house. This repository is public, the game does not need them to build
-# or run, and nothing under tools/ reads them. Delete these lines if you
-# would rather publish them.
-Assets/Concept/Garden ref.HEIC
-Assets/Concept/Deck ref 1.jpeg
-Assets/Concept/Deck ref 2.jpeg
-Assets/Concept/Canopy ref.jpeg
-Assets/Concept/Construction Zone ref 1.jpeg
-Assets/Concept/Construction Zone ref 2.HEIC
-Assets/Concept/Construction Zone ref 3.HEIC
+# The level references are photographs of an actual house, garden and the
+# rooms inside it, and they arrive a roomful at a time. This repository is
+# public, the game does not need them to build or run, and nothing under
+# tools/ reads them - so the whole folder is out and the one drawing that
+# is NOT a photograph is let back in by name. A new reference photo is
+# therefore private by default rather than private only if somebody
+# remembers to add a line here.
+Assets/Concept/*
+!Assets/Concept/level select layout.jpg

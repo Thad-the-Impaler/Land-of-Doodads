@@ -159,10 +159,16 @@ var Audio3 = (function () {
      on somebody's file:// page, play() falls through to it. The biggest
      moment in the game never goes silent because of an asset.          */
 
-  var SAMPLES = { unlock: 'Assets/sounds/mkoydokoy.mp3' };
-  var SAMPLE_VOL = 0.45;        /* peaks at -1.5dB, so this sits it just
-                                   above the loudest blip, which is what a
-                                   fanfare is for */
+  /* Keyed by what the sound DOES, so a role swaps from synth to recording
+     by appearing here and nothing at the call sites changes. `vol` is per
+     sound because these two want opposite things: a fanfare you hear over
+     everything, and an in-play chirp that must sit under the game rather
+     than on top of it - NERVE fires on every plank Cookie shaves, which
+     late in a good run is every couple of seconds. */
+  var SAMPLES = {
+    unlock: { src: 'Assets/sounds/mkoydokoy.mp3', vol: 0.45 },
+    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.30 }
+  };
 
   var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */
   var buffers = {};             /* name -> AudioBuffer, decoded once ctx  */
@@ -173,7 +179,7 @@ var Audio3 = (function () {
      neighbours */
   function sampleSrc(name) {
     var inlined = window.DOODAD_SOUNDS;
-    return (inlined && inlined[name]) || SAMPLES[name];
+    return (inlined && inlined[name]) || (SAMPLES[name] && SAMPLES[name].src);
   }
 
   function loadSample(name) {
@@ -238,7 +244,7 @@ var Audio3 = (function () {
     var src = ctx.createBufferSource();
     src.buffer = buffers[name];
     var gain = ctx.createGain();
-    gain.gain.value = SAMPLE_VOL;
+    gain.gain.value = SAMPLES[name].vol;
     src.connect(gain); gain.connect(master);
     src.onended = function () { if (sounding[name] === src) sounding[name] = null; };
     src.start();
