@@ -340,8 +340,19 @@ var Levels = (function () {
          it is the escape hatch from the carpet because hot kernels smash
          on contact. The marshmallow's own gap is js/couch.js's. */
       spicyChance: 0.045,
-      /* and the spare life is a wooden coaster off the coffee table */
-      boonChance: 0.032, boonGap: 10
+      /* THE COASTERS ARE COMMONER THAN ANY OTHER SPARE LIFE, on purpose.
+         A boon stands on the floor band, and on this level the floor band
+         is the popcorn carpet: a coaster at FLOOR-9 is a dive through a
+         crowd of hopping kernels, and a fair share of those dives fail.
+         The engine's spacing is boonGap plus a geometric wait of
+         1/boonChance planks, so the other Living Room bays run 10 + 1/0.030
+         .. 1/0.034 = 39 to 43 planks between spare lives and the Backyard
+         39 to 46. 0.045 puts this one at 10 + 22 = 32 planks, a fifth
+         closer than the next commonest in the game - which, with maybe a
+         third of them unreachable behind the kernels, lands the ones a
+         player actually gets about where every other bay's are. boonGap
+         stays at 10 so two can never arrive together. */
+      boonChance: 0.045, boonGap: 10
     }
   };
 

@@ -38,13 +38,19 @@
    the ninth screen.
 
    THE CEILING KILLS IN HERE, which is the room's rule and not this
-   level's, and up at the top of the screen this bay is the one that
-   touches the room's ceiling: the board hangs off a frame, and a frame
-   that stopped short of the moulding would float. bakeCeiling takes a
-   railPainter for exactly that, and it is allowed rows 20 to 23 and
-   nothing else. The plaster, the pendant and the air register stay the
-   room's. The rail over your head is the kill line, and the second flap
-   is the mistake this level punishes.
+   level's - but the band across the top of this bay is THIS LEVEL'S and
+   not the room's. The room's plaster-and-pendant band came off the
+   Ceiling reference photographs, which the owner is keeping for a
+   Ceiling level; the Desk and the Couch still wear it, the Mantle and
+   this bay do not. What a whiteboard on a rolling frame actually has
+   over it is in Whiteboard ref 1: the frame's top rail - a fat
+   aluminium extrusion with a hanger bracket in the middle, hinge plates
+   where the panel pivots, scraps of blue tape stuck to it - and behind
+   and above the rail, the dim room the board is standing in. bakeTop
+   builds that, 240x24 on the room's own tile beat, with the rail's
+   underside on the kill line; drawCeiling lays it. The rail over your
+   head is the kill line, and the second flap is the mistake this level
+   punishes.
 
    THE SIGNATURE IS THAT EVERYTHING IS DRAWN IN MARKER. Every power-up
    in the game shows up on this board as a dry-erase sketch of itself -
@@ -130,13 +136,20 @@ var Whiteboard = (function () {
     ghost:      '#c3c7c6',   /* 197: what was never quite erased        */
     seam:       '#c0c5c3',   /* the panel joint, one per tile           */
 
-    /* ---- the frame. Four rows of extrusion at the ceiling and six at
+    /* ---- the frame. Ten rows of extrusion at the ceiling and six at
        the tray, and that is all the aluminium left in the bay: the posts
-       are black marker now. See bakeBar. */
+       are black marker now. See bakeBar and bakeTop. */
     alumLit:    '#dfe2e6',
     alumMid:    '#b4b9bf',
     alumDark:   '#80868d',
     groove:     '#4f545b',   /* the rail's channel and the tray's        */
+    /* ---- the room behind the top rail, out of the lamps. Two tones
+       twelve apart, ramped row by row in bakeTop so the band above the
+       rail has no edge in it; both sit far under the board (226) and far
+       over the ink (23), so neither can be mistaken for a stroke. */
+    beyond:     '#30323a',   /* 51: the wall behind the board, at the rail */
+    beyondDeep: '#24262c',   /* 38: the same wall at the very top of the screen */
+    tape:       '#2e8ed9',   /* the blue painter's tape on the rail - barBlue */
     capBlack:   '#1f2124',   /* the lost marker cap lying in the tray    */
     capHi:      '#4a4d52',
     outline:    '#1c1e22',
@@ -320,7 +333,8 @@ var Whiteboard = (function () {
        start at, and a player who does not learn that will keep reading a
        half-drawn stroke as a half-length one. */
     late:  ['▲ MARKERS ▲', 'THEY START WHERE YOU FLY'],
-    ceil:  LivingRoom.WARN_CEIL
+    /* the lid here is the frame's top rail, not a ceiling - see bakeTop */
+    ceil:  ['▲ THE FRAME ENDS HERE ▲', 'THE TOP RAIL IS SOLID']
   };
 
   /* the thirteen colours the generic level-select window would use. This
@@ -442,27 +456,86 @@ var Whiteboard = (function () {
 
   /* ---------------------------------------------------- the top rail
 
-     The ONE thing this bay is allowed to change about the room's ceiling,
-     and only rows 20 to 23 of it. LivingRoom.bakeCeiling calls this LAST,
-     after the plaster, the pendant, the register and the crown moulding
-     are down, which is why it may paint over the crown rows - and it
-     stops at row 23, because row 23 sits on the kill line and what sits
-     on the kill line has to stay a hard dark edge whatever is above it.
+     This bay's own ceiling band - 240x24 like the room's, so it tiles on
+     the same beat, with the kill line on row 23 - built out of
+     Whiteboard ref 1 and nothing else. From the top down:
 
-     Four rows, which is exactly an aluminium extrusion seen edge on:
-     the lit top face, the body, the body again, and the groove the board
-     is clamped into. The plaster and the crown are still up there above
-     it, so the room's ceiling is the room's and the rail is the board's. */
-  function railPainter(c, x, y, w, h) {
-    c.fillStyle = P.alumLit;  c.fillRect(x, y, w, 1);
-    c.fillStyle = P.alumMid;  c.fillRect(x, y + 1, w, 2);
-    c.fillStyle = P.groove;   c.fillRect(x, y + 3, w, 1);
-    /* the pan head screws along it, one every 48px, pressed into the
-       body rather than standing off it - nothing solid may leave the band */
-    for (var i = 16; i < w; i += 48) {
-      c.fillStyle = P.alumDark; c.fillRect(x + i, y + 1, 2, 2);
-      c.fillStyle = P.alumLit;  c.fillRect(x + i, y + 1, 1, 1);
+       rows 0..13   THE ROOM BEHIND THE BOARD. The board stands on a
+                    rolling frame in a dim room, so what shows over the
+                    rail is the wall behind it, out of the lamps: a ramp
+                    from beyondDeep at the top of the screen to beyond at
+                    the rail, painted row by row so the band has no edge
+                    of its own (0.9 of luminance a row), with the room's
+                    one-in-forty plaster tooth on it.
+       rows 14..22  THE RAIL: a fat aluminium extrusion seen from the
+                    front. Its lit top edge, six rows of face, the rounded
+                    dark underside, and the shadow line where it overhangs
+                    the board. On it, per tile: the hanger bracket in the
+                    middle that the board hangs from in the photograph, a
+                    hinge plate either side where the panel pivots on its
+                    frame, and two scraps of blue painter's tape - all
+                    PRESSED INTO the face, nothing standing off it.
+       row 23       the outline, on the kill line. 30 of luminance over a
+                    board at 226: the hardest edge in the bay, which is
+                    what the row that ends the run has to be.
+
+     The two shadow strips that make the rail read as an OVERHANG are
+     laid by drawCeiling exactly as they were - the room's crown strip
+     and this bay's 40-row railShade - so rows 24 onward carry the shade
+     they were measured with. */
+  function bakeTop() {
+    var W = 240, t = makeCanvas(W, CEIL), c = t.ctx;
+    var r = mulberry32(3177);
+    var x, y, i;
+
+    /* the room behind: a ramp, then tooth */
+    c.fillStyle = P.beyondDeep; c.fillRect(0, 0, W, 14);
+    for (y = 0; y < 14; y++) {
+      c.fillStyle = LivingRoom.rgba(P.beyond, (y + 0.5) / 14);
+      c.fillRect(0, y, W, 1);
     }
+    for (y = 0; y < 14; y++) {
+      for (x = 0; x < W; x++) {
+        if (r() > 0.025) continue;
+        c.fillStyle = r() < 0.5 ? P.beyondDeep : P.groove;
+        c.fillRect(x, y, 1, 1);
+      }
+    }
+
+    /* the extrusion */
+    c.fillStyle = P.alumLit;  c.fillRect(0, 14, W, 1);
+    c.fillStyle = P.alumMid;  c.fillRect(0, 15, W, 6);
+    c.fillStyle = P.alumDark; c.fillRect(0, 21, W, 1);
+    c.fillStyle = P.groove;   c.fillRect(0, 22, W, 1);
+
+    /* the hanger bracket, centred on the tile: a darker plate with a
+       lit top edge and two screws, the thing ref 1 has at the top
+       middle of the board */
+    c.fillStyle = P.alumDark; c.fillRect(114, 15, 12, 6);
+    c.fillStyle = P.alumLit;  c.fillRect(114, 15, 12, 1);
+    c.fillStyle = P.groove;   c.fillRect(116, 18, 2, 2); c.fillRect(122, 18, 2, 2);
+
+    /* two hinge plates, a knuckle down the middle of each */
+    [40, 200].forEach(function (hx) {
+      c.fillStyle = P.alumDark; c.fillRect(hx, 15, 8, 6);
+      c.fillStyle = P.alumLit;  c.fillRect(hx + 3, 15, 2, 6);
+      c.fillStyle = P.groove;   c.fillRect(hx + 1, 17, 1, 1); c.fillRect(hx + 6, 17, 1, 1);
+    });
+
+    /* and the blue tape, which is in all four photographs */
+    c.fillStyle = P.tape;
+    c.fillRect(20, 16, 7, 2);
+    c.fillRect(156, 17, 6, 2);
+
+    /* the pan head screws along the face, one every 48px, pressed in */
+    for (i = 70; i < W; i += 48) {
+      if (Math.abs(i - 120) < 10) continue;
+      c.fillStyle = P.alumDark; c.fillRect(i, 17, 2, 2);
+      c.fillStyle = P.alumLit;  c.fillRect(i, 17, 1, 1);
+    }
+
+    c.fillStyle = P.outline;  c.fillRect(0, 23, W, 1);
+    return t;
   }
 
   /* =================================================== THE RAMBLINGS
@@ -1650,9 +1723,8 @@ var Whiteboard = (function () {
 
   function build() {
     LivingRoom.build();
-    /* the one bay that paints the room's ceiling, and only four rows of
-       it: see railPainter */
-    T.ceiling = LivingRoom.bakeCeiling(railPainter);
+    /* this bay's own band over the board: see bakeTop */
+    T.top     = bakeTop();
     T.board   = [bakeBoard(0), bakeBoard(1), bakeBoard(2)];
     T.glare   = bakeGlare();
     T.floor   = bakeFloor();
@@ -1746,14 +1818,18 @@ var Whiteboard = (function () {
 
   function drawMenuBackdrop(ctx, scroll) { LivingRoom.drawMenuBackdrop(ctx, scroll); }
 
-  /* The room's ceiling with this bay's rail baked into its bottom four
-     rows, and then the two shades that make the rail read as an
-     OVERHANG rather than as a stripe. On a dark level the moulding's own
-     shadow does that job for free; on a white board a hard edge needs a
-     hard shadow under it or the board simply runs up into the ceiling
-     and the kill line disappears. */
+  /* This bay's own band - the room behind the board and the frame's top
+     rail, see bakeTop - tiled on the room's 240 beat, and then the two
+     shades that make the rail read as an OVERHANG rather than as a
+     stripe: the room's own crown strip, kept as it is so the rows under
+     the rail carry the shade they were measured with, and this bay's
+     railShade. On a dark level the moulding's own shadow does that job
+     for free; on a white board a hard edge needs a hard shadow under it
+     or the board simply runs up into the ceiling and the kill line
+     disappears. No pendant pools: there is no pendant up here. */
   function drawCeiling(ctx, scroll) {
-    LivingRoom.drawCeiling(ctx, scroll, T.ceiling);
+    tileX(ctx, T.top.canvas, scroll, 0);
+    ctx.drawImage(LivingRoom.tiles.crownShade.canvas, 0, CEIL);
     ctx.drawImage(T.railShade.canvas, 0, CEIL);
   }
 
@@ -2295,12 +2371,14 @@ var Whiteboard = (function () {
     ctx.fillStyle = P.barHi;   ctx.fillRect(mgx, mgy, 9, 1);
     ctx.fillStyle = P.shade;   ctx.fillRect(mgx + 1, mgy + 3, 10, 1);
 
-    /* 3. the ceiling strip, and the bay's own rail under it */
-    ctx.fillStyle = R.plasterMid; ctx.fillRect(x, y, w, railY - y - 3);
-    ctx.fillStyle = R.crown;      ctx.fillRect(x, railY - 3, w, 1);
-    ctx.fillStyle = P.alumLit;    ctx.fillRect(x, railY - 2, w, 1);
-    ctx.fillStyle = P.alumMid;    ctx.fillRect(x, railY - 1, w, 1);
-    ctx.fillStyle = P.groove;     ctx.fillRect(x, railY, w, 1);
+    /* 3. the dim room behind the board, and the frame's top rail under
+       it - the level's own band, see bakeTop, with the hanger bracket
+       in the middle */
+    ctx.fillStyle = P.beyond;     ctx.fillRect(x, y, w, railY - y - 3);
+    ctx.fillStyle = P.alumLit;    ctx.fillRect(x, railY - 3, w, 1);
+    ctx.fillStyle = P.alumMid;    ctx.fillRect(x, railY - 2, w, 2);
+    ctx.fillStyle = P.alumDark;   ctx.fillRect(x + Math.round(w / 2) - 3, railY - 2, 6, 2);
+    ctx.fillStyle = P.outline;    ctx.fillRect(x, railY, w, 1);
     Tint.rect(ctx, x, railY + 1, w, 4, P.shade, 5);
 
     /* 4. two posts with their black caps, sliding past with a gap */

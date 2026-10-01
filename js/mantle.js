@@ -38,6 +38,30 @@
    spare life stands on the shelf and never off the moulding, and why
    the beam that comes DOWN is the shorter of the two.
 
+   THE TOP OF THIS BAY IS THE TOP OF THE TELEVISION, not the room's
+   ceiling. The room's plaster-and-pendant band was taken off the
+   Ceiling reference photographs, and the owner says those are for a
+   Ceiling level of their own; the Desk and the Couch keep the band, the
+   Mantle and the Whiteboard do not. What a television on a stone wall
+   actually has above it is in Mantle ref 2 and 4: more of the same
+   ledger stone, climbing past the top bezel. So the band here is three
+   courses of the shelf's own stone, in shadow, and under them the top
+   bezel of the panel - and the bezel's bottom edge is the kill line.
+   bakeTop builds it and drawCeiling lays it; the room's bakeCeiling is
+   not called from this file any more.
+
+   DAYLIGHT, IN THE GLASS. Mantle ref 1-4 were shot at night under a
+   floor lamp and the first cut of the reflection came out tungsten:
+   amber boards, a brown ceiling. The owner asked for a little more
+   daylight in the hue - a white-balance change, not a time of day - and
+   in a dark television the only thing that CAN change is what the glass
+   is reflecting. So the reflected room is cooler now, the same
+   luminance to within a point in every pigment (the lane's measured
+   steps depend on the luminance and not on the hue, and they survive),
+   and ref 3 supplied the one thing that says daylight out loud: the
+   plantation shutters reflected in the top left of the panel, with pale
+   light between the slats.
+
    Same discipline as js/deck.js and js/construction.js: every pixel in
    here is generated and baked once, and ANY shade laid over something
    that scrolls is a flat Tint or a baked sheet, never a Dither. The
@@ -96,18 +120,35 @@ var Mantle = (function () {
     screenDeep:   '#0f1013',
     screenMid:    '#16181c',
     screenLo:     '#1e2024',
-    reflCeil:     '#2c2823',
+    /* THE REFLECTED ROOM, WHITE-BALANCED FOR DAYLIGHT. Every pigment
+       below that moved kept its luminance to within a point and lost
+       its orange: reflCeil was #2c2823 (44,40,35), reflFloor #3a332b
+       (58,51,43), reflFloorWarm #413830, reflFloorHi #4a4238, reflSeam
+       #2c2621, reflThrow #4c463e, reflPillow #7d7668 - a red-minus-blue
+       of 9 to 15 on everything, which is a tungsten bulb. They are now
+       within 2 to 9 of neutral. The two pendant pools on the boards
+       (reflFloorLit, reflGlint) stay warm because they are LAMPS, and
+       took only a third of the shift. */
+    reflCeil:     '#292929',
     reflWall:     '#232326',
     reflCouch:    '#34363a',
     reflCushion:  '#3f4146',
-    reflPillow:   '#7d7668',   /* ref 3's cream pillows, two tones down */
-    reflThrow:    '#4c463e',
-    reflFloor:    '#3a332b',
-    reflFloorWarm:'#413830',   /* every other board, a shade warmer     */
-    reflFloorHi:  '#4a4238',
-    reflFloorLit: '#7b6a52',   /* the boards directly under a pendant   */
-    reflSeam:     '#2c2621',   /* a plank joint, four luminance down    */
-    reflGlint:    '#a8946f',   /* satin oak throwing a pendant back     */
+    reflPillow:   '#7b776d',   /* ref 3's cream pillows, two tones down */
+    reflThrow:    '#4a4741',
+    reflFloor:    '#38342f',
+    reflFloorWarm:'#3f3a34',   /* every other board, a shade warmer     */
+    reflFloorHi:  '#48443e',
+    reflFloorLit: '#776b57',   /* the boards directly under a pendant   */
+    reflSeam:     '#2a2824',   /* a plank joint, four luminance down    */
+    reflGlint:    '#a3977d',   /* satin oak throwing a pendant back     */
+    /* the shutters reflected in the top left of the panel - Mantle ref 3
+       - and the daylight between their slats. Both sit well under the
+       stone (reflDay is 107 before the glass takes its step back; the
+       stone's body measures 129 and the pillows already in here are 119),
+       so the rule that nothing in the reflection may approach the stone
+       holds. */
+    reflShutter:  '#51555a',
+    reflDay:      '#666c74',
     reflTable:    '#241f1a',   /* the walnut table, ref 1 centre        */
     reflTableTop: '#3b3128',
     reflPlant:    '#39422f',
@@ -290,7 +331,9 @@ var Mantle = (function () {
     drop:  ['▼ DEAD PIXELS ▼', 'THE PICTURE IS COMING APART'],
     spike: ['▲ REMOTES ▲', 'SOMEBODY IS SITTING ON THEM'],
     late:  ['▲ CONTROLLERS ▲', 'THESE ONES WANDER'],
-    ceil:  LivingRoom.WARN_CEIL
+    /* the lid here is the television's own top bezel, not a ceiling - see
+       bakeTop */
+    ceil:  ['▲ THE SCREEN ENDS HERE ▲', 'THE TOP BEZEL IS SOLID']
   };
 
   /* the thirteen colours the generic level-select window would use.
@@ -590,6 +633,24 @@ var Mantle = (function () {
       }
     }
 
+    /* THE WINDOW, reflected: Mantle ref 3 and 4 have the plantation
+       shutters standing in the top left of the glass - ref 4 is the
+       plain one, a pale louvred panel well inside the dark - and they
+       are where the daylight comes from in this bay. A 64x48 frame with
+       a centre stile, slats three rows deep and a row of pale light
+       between each pair - WIDER than it is tall, like everything else
+       allowed in the lane, and well inside the pillows' luminance. The
+       soft pool round it is the light it lets in falling on the
+       reflected wall: a pool(), so it has no rim. */
+    pool(c, 62, 86, 64, 44, P.reflDay, 0.16);
+    c.fillStyle = P.reflCushion; c.fillRect(30, 62, 64, 48);
+    c.fillStyle = P.reflWall;    c.fillRect(32, 64, 60, 44);
+    for (y = 65; y + 2 < 108; y += 4) {
+      c.fillStyle = P.reflShutter; c.fillRect(32, y, 60, 3);
+      c.fillStyle = P.reflDay;     c.fillRect(32, y + 3, 60, 1);
+    }
+    c.fillStyle = P.reflCushion; c.fillRect(61, 64, 2, 44);
+
     /* one framed print over the sofa and a second further along. A wall
        with nothing on it is a wall nobody put anything on, and these are
        the only landmarks in the upper half of the lane: HORIZONTAL, and
@@ -807,11 +868,12 @@ var Mantle = (function () {
      and under it the band of ledger stone the television is hung on.
      Everything above is screen, and the screen is the layer behind.
 
-     The TV's TOP bezel is deliberately not drawn anywhere. The screen
-     fills the wall; what sits on the picture's top row is the crown
-     moulding's own shadow, which the room paints in drawCeiling. A
-     level that drew a top bezel as well would be telling the player the
-     television ends somewhere, and it does not. */
+     The TV's TOP bezel is in bakeTop, not here: it is the bottom of the
+     ceiling band, because the ceiling band IS the top of the television
+     and the stone above it. This file used to argue the top bezel must
+     never be drawn, so the panel would seem to go on for ever; the room
+     kills on the ceiling, and a line that ends the run is a line the
+     player must be told about exactly. */
   function bakeWall() {
     var W = 240, H = VH;
     var t = makeCanvas(W, H), c = t.ctx;
@@ -1234,12 +1296,75 @@ var Mantle = (function () {
     return t;
   }
 
+  /* ------------------------------------------------------ the top
+
+     This bay's own ceiling band: 240x24, the same width as the room's so
+     it tiles on the same beat, and the same CEIL = 24 rows, with the
+     kill line on the bottom row - but built out of Mantle ref 2 and 4
+     rather than out of the Ceiling photographs. Three courses of the
+     shelf's own ledger stone, laid by the same course() that lays the
+     band under the screen; row 18 is a stoneJoint shadow where the
+     panel stands off the wall, and rows 19 to 23 are the top bezel -
+     the dark, the lit arris, the body, the dark again, and the outline
+     sitting on 24.
+
+     THE STONE IS IN SHADOW. No pendant hangs over it - the room's lamps
+     are behind the player, which is why only the glass has any - and
+     the stone pillars are the one pale mass the bay is allowed; a band
+     of full-value stone across the lid would be a second one, so it
+     takes five sixteenths of void where the band under the screen takes
+     two. And the kill line reads the way the room's does: a lit row
+     (the bezel's arris, measured at 80 of luminance) three rows above a
+     hard dark edge, which is the crown/plasterLit/crownShade/outline
+     stack in the bezel's own pigments - pigments nothing in the lane
+     uses. Nothing solid hangs below 23. */
+  function bakeTop() {
+    var W = 240, t = makeCanvas(W, CEIL), c = t.ctx;
+    /* THE SEED IS MEASURED, not picked. course() offsets each run by a
+       random amount so three courses do not break joint in line, which
+       is a thing it can only do ON AVERAGE: in half the seeds round
+       here two of these three courses land a joint in the same column
+       anyway, and in a band only three courses deep that is a 12px dark
+       line straight down the lid, repeating every 240px because the
+       tile does. 4411 did it at x 11 and measured as a 57 column step
+       through twelve of the band's nineteen rows. 4410 is the nearest
+       seed where no column carries a joint in more than one course,
+       scanned full width and at two scrolls so the tile's own butt
+       joint at the repeat is in range too. */
+    var r = mulberry32(4410);
+    var y;
+    for (y = 0; y < 3; y++) course(c, r, 0, y * 6, W, 6, 14, 44, P.stoneJoint);
+    c.fillStyle = P.stoneJoint; c.fillRect(0, 18, W, 1);
+    /* the one amber piece, the stone's own rule, in the top course */
+    c.fillStyle = P.stoneRust;  c.fillRect(148, 6, 26, 6);
+    c.fillStyle = P.stoneLit;   c.fillRect(148, 6, 26, 1);
+    c.fillStyle = P.stoneJoint; c.fillRect(148, 11, 26, 1);
+    fleck(c, r, 0, 0, W, 18, 60);
+    /* Five sixteenths, measured. Laid at full value this band means
+       138.7, which is ABOVE the pillar bodies' own 129.1 and 137.0 -
+       the top of every pillar would run into a lid as pale as itself,
+       and a bay this dark is allowed exactly one pale mass. Four
+       sixteenths brings it to 108.5 and five to 100.9, which leaves the
+       nearer pillar variant 28 clear of the lid and the farther 36;
+       the arris rows still catch at 152-154, so it stays unmistakably
+       stone rather than going to a grey stripe. */
+    Tint.rect(c, 0, 0, W, 19, P.void, 5);
+    /* the bezel: four hard rows and the outline on the kill line.
+       Measured column means, 19 to 23: 29 / 80 / 47 / 29 / 12. */
+    c.fillStyle = P.bezelDark; c.fillRect(0, 19, W, 1);
+    c.fillStyle = P.bezelHi;   c.fillRect(0, 20, W, 1);
+    c.fillStyle = P.bezel;     c.fillRect(0, 21, W, 1);
+    c.fillStyle = P.bezelDark; c.fillRect(0, 22, W, 1);
+    c.fillStyle = P.outline;   c.fillRect(0, 23, W, 1);
+    return t;
+  }
+
   /* The room first, then the bay, then the sprites. Nothing here
      depends on an earlier tile; LivingRoom.build() guards itself, so
      the four bays calling it at boot cut the oak once. */
   function build() {
     LivingRoom.build();
-    T.ceiling = LivingRoom.bakeCeiling(null);
+    T.top     = bakeTop();
     T.screen  = bakeScreen();
     T.wall    = bakeWall();
     T.props   = bakeProps();
@@ -1301,8 +1426,14 @@ var Mantle = (function () {
     LivingRoom.drawMenuBackdrop(ctx, scroll);
   }
 
+  /* The bay's own band, tiled on the room's 240 beat, and then the
+     shadow the bezel throws down the glass - the room's own crownShade
+     strip, reused as it is, so rows 24 to 33 of the lane carry exactly
+     the shade they were measured with. No pendant pools: there is no
+     pendant up here to pour one. */
   function drawCeiling(ctx, scroll) {
-    LivingRoom.drawCeiling(ctx, scroll, T.ceiling);
+    tileX(ctx, T.top.canvas, scroll, 0);
+    ctx.drawImage(LivingRoom.tiles.crownShade.canvas, 0, CEIL);
   }
 
   function drawFloor(ctx, scroll) {
@@ -1966,7 +2097,7 @@ var Mantle = (function () {
   function drawPreview(ctx, x, y, w, h, t, big) {
     var s = t * 22;
     var shelfY = y + h - Math.round(h * 0.17);   /* the black mantle   */
-    var lidY = y + Math.round(h * 0.09);         /* the crown moulding */
+    var lidY = y + Math.round(h * 0.09);         /* the TV's top bezel */
     var stoneY = shelfY - 13;                    /* three 4px courses  */
     var i;
 
@@ -2129,13 +2260,21 @@ var Mantle = (function () {
     ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
     ctx.fillStyle = '#f3cc84';  ctx.fillRect(dx + sz / 2, dy, 2, 1);
 
-    /* 8. and the crown moulding's hard line across the top, which in
-       this room is the thing that ends runs */
-    ctx.fillStyle = R.plasterMid; ctx.fillRect(x, y, w, lidY - y);
-    ctx.fillStyle = R.crown;      ctx.fillRect(x, lidY - 3, w, 1);
-    ctx.fillStyle = R.plasterLit; ctx.fillRect(x, lidY - 2, w, 1);
-    ctx.fillStyle = R.crownShade; ctx.fillRect(x, lidY - 1, w, 1);
-    ctx.fillStyle = R.outline;    ctx.fillRect(x, lidY, w, 1);
+    /* 8. and the top of the television across the top of the card -
+       stone in shadow, then the bezel's hard line, which in this room is
+       the thing that ends runs. The level's own band, see bakeTop. */
+    ctx.fillStyle = P.stoneCream; ctx.fillRect(x, y, w, lidY - y);
+    for (i = 0; i * 9 < w; i++) {
+      ctx.fillStyle = (i & 1) ? P.stoneGreyGreen : P.stoneWhite;
+      ctx.fillRect(x + i * 9, y, 8, Math.max(1, lidY - y - 4));
+    }
+    /* the same five sixteenths the band itself takes, so the card's lid
+       sits under its pillars exactly the way the level's does */
+    Tint.rect(ctx, x, y, w, lidY - y, P.void, 5);
+    ctx.fillStyle = P.bezelDark;  ctx.fillRect(x, lidY - 3, w, 1);
+    ctx.fillStyle = P.bezelHi;    ctx.fillRect(x, lidY - 2, w, 1);
+    ctx.fillStyle = P.bezel;      ctx.fillRect(x, lidY - 1, w, 1);
+    ctx.fillStyle = P.outline;    ctx.fillRect(x, lidY, w, 1);
     Tint.rect(ctx, x, lidY + 1, w, 4, R.crownShade, 5);
     Tint.rect(ctx, x, y, w, h, P.lampWarm, 1);
   }

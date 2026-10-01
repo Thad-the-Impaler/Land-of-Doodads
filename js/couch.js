@@ -1,15 +1,23 @@
 /* ------------------------------------------------------------------
    Land of Doodads - LIVING ROOM / THE COUCH
 
-   Movie night. You are flying ACROSS THE BACK OF A GREY TUFTED
+   Movie night. You are flying ACROSS THE BACK OF A GREY MICROFIBRE
    SECTIONAL, between stacks of throw pillows, with a band of plantation
    shutters along the very top of the room and a dark walnut coffee
    table sliding past below. Drawn from Couch ref 1-4 in Assets/Concept:
    the sectional, the cream-and-gold damask cushions, the cream knit
-   throw over the far arm, the chess set, the magnifying glass, and the
-   three round
-   coasters - two pale wood slices and one coiled pink one - which are
-   the spare lives.
+   throw over the far arm, the chess set, the magnifying glass - and from
+   Coaster ref 1 and 2, the two coasters that are the spare lives: a
+   laser-engraved birch map and a coiled pink-and-blue yarn one.
+
+   THE SOFA BACK IS CUSHION PANELS, NOT A QUILT. Couch ref 2 is a row of
+   separate back cushions, each one plain grey with exactly FOUR buttons
+   in a wide rectangle and a few soft creases pulled out of them, a seam
+   and a soft shadow between one panel and the next. The first two cuts
+   of this bay painted the back as a continuous diamond-tufted lattice
+   with a button at every crossing, which is a different piece of
+   furniture - a chesterfield - and the owner said so. See bakeCouch for
+   what carries the wall now that the lattice is gone.
 
    WHAT THIS BAY IS, AND WHY IT IS NOT THE DESK. Both rooms are the same
    room and both have the same windows in them, so the first cut of this
@@ -154,11 +162,23 @@ var Couch = (function () {
        value, and every cream in the bay is pulled up and kept warm, so
        the two families separate by hue as well as by value and the
        separation does not depend on the lamp. */
-    backMid:      '#67635c',   /* the field of a tufted diamond         */
-    backLit:      '#7c7871',   /* its lamp-side face                    */
-    backCrease:   '#4f4c46',   /* the fold between two diamonds         */
+    backMid:      '#67635c',   /* the body of a cushion panel  (lum 99) */
+    backLit:      '#7c7871',   /* its lamp-side swell         (lum 120) */
+    backSwell:    '#716d66',   /* between the two: the swell's shoulder (109) */
+    backRoll:     '#5b5750',   /* the panel rolling away to its seam    (88) */
+    backCrease:   '#4f4c46',   /* the seam's shadow, and a crease        (76) */
     button:       '#343230',   /* a tufting button, and the seam row    */
     crest:        '#918d86',   /* the lit roll along the very top       */
+    /* backSwell and backRoll are NEW and they are what pays for the
+       lattice. A diamond-quilted back has a fold every 37 rows and a lit
+       face above every fold, so the old wall carried its tonal variety in
+       the pattern; a plain cushion panel has nothing but its own stuffing
+       to model, and modelled in three tones (120 / 99 / 76) each panel
+       came out as a lit disc on a flat plate with a hard ring round it -
+       a 21-luminance contour, which on a 160px panel is an edge the eye
+       finds. Five tones about eleven apart make the swell a RAMP in five
+       steps, each one under the room's own eight-a-row rule, and the
+       panel's mean lands within two of the old lattice's: see bakeCouch. */
 
     /* THE THROW PILLOWS, and they are the thing that kills you, so
        nothing else in this bay is allowed to be this colour. The two
@@ -219,14 +239,26 @@ var Couch = (function () {
     chessLight:   '#d8c29b',
     chessDark:    '#80593a',
 
-    /* the coasters: two wood slices and one coiled pink one */
-    woodSlice:    '#c4a46e',
-    woodRing:     '#a88a58',
-    woodPale:     '#e0c58f',
-    woodBark:     '#5e4330',
-    pinkWoven:    '#d394b0',
-    pinkPale:     '#efc2d4',
-    pinkDeep:     '#a66e86',
+    /* THE TWO COASTERS, off Coaster ref 1 and 2. They could not look less
+       alike and that is the gift: at boon size one reads as pale wood
+       with rings on it and the other as a pink-and-blue spiral.
+
+       ONE: a laser-engraved birch coaster, cut to the edge of a MAP
+       rather than to a circle, with topographic contour lines burnt in
+       mid-brown - dense in the middle - and a line of tiny engraved text
+       round the rim. TWO: a single twisted cord of pink and pale blue
+       yarn wound in a flat spiral from a small centre out to a soft,
+       slightly irregular rim. */
+    birch:        '#ecdfbc',   /* the pale face of the wood             */
+    birchShade:   '#cdbb8e',   /* its lower-right edge, away from the lamp */
+    burn:         '#a2733f',   /* a contour line, laser-burnt           */
+    burnDeep:     '#6b4624',   /* the dense centre, and the rim text    */
+    yarnPink:     '#ef8aa8',
+    yarnPinkDeep: '#c25c82',   /* the groove between two turns of pink  */
+    yarnBlue:     '#aad4e8',
+    yarnBlueDeep: '#6ea2bf',   /* ... and of blue                       */
+    yarnPale:     '#fbd6de',   /* the little pale knot at the centre    */
+    woodBark:     '#5e4330',   /* dark wood: the chess pieces, the table's edge */
 
     /* the popcorn */
     popWhite:     '#f6efe2',
@@ -395,8 +427,19 @@ var Couch = (function () {
      is seven for the name. 'MARSHMALLOW +5' is fourteen and measured 83
      wide: two characters drew off the left edge. MALLOW is what anybody
      actually calls one, and it is six. */
-  var BOON_NAME = 'COASTER';
+  /* The spare life has two names now because it is two things. The EXTRA
+     LIFE banner centres its caption on the screen and the SPENT caption
+     does the same, so neither is bound by the +5 clamp above. */
+  var MAP_NAME  = 'MAP COASTER';
+  var YARN_NAME = 'YARN COASTER';
   var GOLD_NAME = 'MALLOW';
+
+  /* The two coasters ALTERNATE, strictly. A coin toss would show one
+     player four birch maps in a row and never the yarn, and at one spare
+     life every thirty-odd planks that is most of a session; alternating
+     means the second coaster anybody ever sees is the other kind. The
+     first of a boot is the coin. */
+  var nextYarn = chance(0.5);
 
   var T = {};              /* baked tiles and sprites */
 
@@ -411,7 +454,7 @@ var Couch = (function () {
         26..85   the shutters: two panels, nine louvres each
         86..93   the window sill, with the sofa's shadow thrown up it
         94..97   the lit roll along the top of the sectional
-        98..234  THE TUFTED BACK - the field, and most of the screen
+        98..234  THE BACK CUSHIONS - the field, and most of the screen
         189..241 three throw cushions propped on the seat, leaning back
         235..241 the crease where the back cushions meet the seat
         242..269 the seat cushion - this bay's FLOOR band
@@ -611,16 +654,27 @@ var Couch = (function () {
      pair of them usable as the top and the bottom of the popcorn zone. */
   var CO_W = 480, CO_H = FLOOR - BACK_Y;   /* 480 x 148, drawn at y 94 */
 
-  /* THE TUFTING LATTICE. 48 wide because 480/48 is a whole number and
-     this tile is laid end to end - a lattice that does not divide into
-     480 puts a seam in the upholstery every screen. 37 tall because
-     148/37 is also a whole number, so the diamonds close at the crease
-     and at the crest instead of being cut off half a button short, and
-     because four diamonds down a 148px back is what Couch ref 2 has.
-     The pitch is also set against the pillars: at 34x26 the cells came
-     out the same size as the 34px cushions standing in front of them,
-     and two grids of one pitch read as one tiled wall. */
-  var CELL_W = 48, CELL_H = 37;
+  /* THE CUSHION PANELS. 160 wide because 480/160 is a whole number and
+     this tile is laid end to end - a panel that does not divide into 480
+     puts a half-cushion at every screen's seam - and because Couch ref 2
+     measures a panel at about 1.3 times as wide as it is tall: the field
+     is 137 rows, so 160 is the photograph's proportion to within a tenth.
+     Three panels a screen, each one wider than four of the 34px pillows
+     standing in front of it, so there is no pitch here for a pillar to
+     be mistaken for.
+
+     THE FOUR BUTTONS sit where the photograph's do: two rows at 36% and
+     64% of the panel's height, two columns 18% either side of its centre
+     line. In pixels that is rows 53 and 92 of the tile and 29 to each
+     side of the panel's middle - a wide rectangle, 58 by 39, with a lot
+     of plain cushion round it. */
+  /* The sofa back is cut into panels this wide. NOT PANEL_W: that name is
+     already taken by the shutter stile above, and a second `var` of it in
+     the same IIFE is not a second variable - it is the same one, assigned
+     later, so the window would have been built 160 wide instead of 90. */
+  var CUSHION_W = 160;
+  var BTN_DX = 29;
+  var BTN_Y = [53, 92];
 
   /* A 56x52 throw cushion propped against the back, drawn into its own
      little canvas so the outline can go underneath it.
@@ -753,121 +807,162 @@ var Couch = (function () {
     c.fillStyle = P.crest;    c.fillRect(0, 1, CO_W, 1);
     c.fillStyle = P.backLit;  c.fillRect(0, 2, CO_W, 2);
 
-    /* 2. THE DIAMOND TUFTING, and it is a surface rather than a pattern.
-       Drawn once as four short diagonal creases out of each button, it
-       came out as an argyle lattice louder than the pillars standing in
-       front of it - the lines read and the padding did not. So the
-       diamonds are filled instead: every pixel of the back is asked how
-       far it is from the nearest fold, and the far ones are the swell.
+    /* 2. THE PANELS, and each one is a STUFFED THING rather than a
+       pattern. Every pixel of the field is asked how far it is from the
+       centre of its own panel, in panel-widths across and field-heights
+       down, and that distance picks one of five tones. Two things make
+       the distance a cushion's and not a disc's:
 
-       u and v are the lattice coordinates rotated 45 degrees, which is
-       the cheapest honest way to say "diamond" on a grid: the folds are
-       the two families of lines where either one lands on a whole
-       number, min(du,dv) is how deep into a diamond a pixel is - zero
-       on a fold, a half at the centre - and a button is where four
-       folds cross.
+         - it is a 4-norm, not a 2-norm. A cushion is a rounded rectangle
+           with the stuffing pushed out to the corners, and the 4-norm's
+           unit ball is a squircle: nearly square, soft at the corners.
+           The 2-norm gave a lit disc on a flat plate.
+         - it is tipped toward the lamp. The pendants are overhead and a
+           little to the left, so the swell's bright side is its upper
+           left and the shadow collects along the bottom of each panel
+           and against the right-hand seam, the same convention the
+           pillars and the throw pillows state in their own passes.
 
-       THE SWELL IS HALF-LIT, not lit all over, and that is the one
-       thing that makes 148 rows of this read as upholstery rather than
-       as wallpaper. The pendants are overhead and a little to the left,
-       so each diamond is bright on its upper-left face and falls away
-       to the fold below it. eu/ev are the pixel's offset from ITS OWN
-       diamond's centre - the centre is the half-integer corner of the
-       cell it is in - and nx/ny turn that back into screen terms, so
-       the lamp direction is stated once, in screen space, the same way
-       the pillars and the cushions state it. Baked, because this is a
-       per-pixel pass over seventy thousand pixels and it would be
-       absurd anywhere else. */
+       WHAT CARRIES THE WALL NOW. The lattice was a fold every 37 rows
+       with a lit face above each one: two tones alternating all over the
+       field, which is where the old wall's tonal variety came from. The
+       panel swell has to carry that on its own, in five tones about
+       eleven apart (120, 109, 99, 88, 76) laid as five nested squircles
+       - a ramp in five steps rather than one lit shape on a flat plate.
+       The thresholds below were chosen so that the field's MEAN comes
+       out where the lattice's was (about 98 under the room's light): the
+       lit core and the dark roll are small, the body is most of the
+       panel, and the two shoulders between them are what make it read
+       as a soft thing rather than a target. Nothing in here is a
+       full-width row, so the room's eight-a-row rule has nothing to
+       find: every tone boundary is a curve. */
+    var TONES = [P.backLit, P.backSwell, P.backMid, P.backRoll, P.backCrease];
+    var tone = new Uint8Array(CO_W * CO_H);
+    var hx = CUSHION_W / 2, hy = (CREASE - FIELD) / 2, cyF = FIELD + hy;
+    /* THE RAMP IS DITHERED, AND IT IS BAKED. Five flat tones laid as five
+       nested squircles read as five contour rings - a target, not a
+       cushion - because an eleven-step edge that runs for sixty pixels
+       is an edge however small the step. So the tone is a CONTINUOUS
+       value along the swell, and the pixel takes the tone above or the
+       tone below it by a 4x4 Bayer threshold: an ordered dither, baked
+       once into this tile. That is the one place in this file a Bayer
+       grid is allowed, and the reason is the file's own rule: the grid
+       is anchored to the TILE, which moves as one piece, so it never
+       re-phases against anything and cannot boil. Dither.rect, which
+       anchors to the screen, is still not called anywhere in here. */
+    var BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+    var STOPS = [0.30, 0.57, 0.81, 0.97, 1.05];    /* where each tone is purest */
     for (y = FIELD; y < CREASE; y++) {
       for (x = 0; x < CO_W; x++) {
-        var u2 = x / CELL_W + y / CELL_H;
-        var v2 = x / CELL_W - y / CELL_H;
-        var fu = u2 - Math.round(u2), fv = v2 - Math.round(v2);
-        var du = fu < 0 ? -fu : fu, dv = fv < 0 ? -fv : fv;
-        var across, along;
-        if (du < dv) { across = du; along = dv; } else { across = dv; along = du; }
-        if (across < 0.060 * (1 - along * 1.55)) {
-          /* THE FOLD, AND IT IS PULLED AT THE BUTTON AND LETS GO
-             BETWEEN TWO. `across` is how far off a fold line a pixel
-             is; `along` is how far down that fold it has got - zero on
-             a button, a half at the midpoint between two of them. So
-             the crease is ~3.5 screen pixels wide where the thread
-             comes through and tapers to nothing about two thirds of the
-             way along, leaving the middle of every fold open. A crease
-             of one width all the way round came out as quilted vinyl -
-             a diner booth, not a microfibre sofa - and the buttons,
-             which are the one mark that actually says tufted,
-             disappeared into the lattice crossing over them. */
-          c.fillStyle = P.backCrease;
-        } else {
-          /* THE SWELL, and it is the pillars' own formula so that a
-             tuft and a cushion are lit by the same lamp. eu/ev are the
-             pixel's offset from ITS OWN diamond's centre - the
-             half-integer corner of the cell it landed in - and nx/ny
-             are that offset put back into screen terms, across and
-             down, scaled so the four points of the diamond sit at a
-             radius of one. Then it is a disc, pushed UP: the pendants
-             are overhead and a little to the left, so a tuft is bright
-             above its middle and falls away into the fold under it.
-
-             The first cut of this took the Chebyshev distance to the
-             nearest fold and tilted that, which is a diamond falloff
-             tilted off a diamond cell - it gave a row of pointed cones
-             like little bells, and a wall of them read as a pattern
-             printed on a flat panel rather than as padding. */
-          var eu = fu - (fu < 0 ? -0.5 : 0.5), ev = fv - (fv < 0 ? -0.5 : 0.5);
-          var nx = eu + ev, ny = eu - ev;
-          if (Math.sqrt(nx * nx + ny * ny) + ny * 0.30 + nx * 0.12 > 0.58) continue;
-          c.fillStyle = P.backLit;
+        var nx = ((x % CUSHION_W) - hx) / hx, ny = (y - cyF) / hy;
+        var ax = nx < 0 ? -nx : nx, ay = ny < 0 ? -ny : ny;
+        var d = Math.sqrt(Math.sqrt(ax * ax * ax * ax + ay * ay * ay * ay));
+        var lit = d + ny * 0.22 + nx * 0.10;
+        /* tv: the continuous tone, 0 at the lit core through 4 at the
+           seam, linear between one stop and the next */
+        var tv, k;
+        if (lit <= STOPS[0]) tv = 0;
+        else if (lit >= STOPS[4]) tv = 4;
+        else {
+          for (k = 0; lit > STOPS[k + 1]; k++) {}
+          tv = k + (lit - STOPS[k]) / (STOPS[k + 1] - STOPS[k]);
         }
+        k = Math.floor(tv);
+        if (k < 4 && (tv - k) * 16 > BAYER[y & 3][x & 3]) k++;
+        tone[y * CO_W + x] = k;
+      }
+    }
+
+    /* THE CREASES - "just a few", and the owner's words are the spec.
+       Six per panel: from each button a soft fold runs out toward its
+       own corner of the panel, and between the two buttons of each row
+       the fabric is pulled into a shallow horizontal fold. A fold is
+       drawn as a 1px line one tone DARKER with the row under it one tone
+       LIGHTER - a crease has a shadowed face and a lit face - and it
+       TAPERS: dense where it leaves the button, thinning to single
+       pixels at its far end, so it reads as cloth gathered and let go
+       rather than as a ruled line. Hashed, not Math.random, so the tile
+       is the same tile every boot. */
+    function crease(x0, y0, ddx, ddy, len, seed) {
+      var len2 = Math.sqrt(ddx * ddx + ddy * ddy);
+      ddx /= len2; ddy /= len2;
+      for (var s = 3; s < len; s++) {
+        var keep = 1 - (s - 3) / (len - 3);
+        if ((hash(seed * 131 + s) % 1000) / 1000 > keep * 0.85 + 0.15) continue;
+        var cx2 = Math.round(x0 + ddx * s), cy2 = Math.round(y0 + ddy * s);
+        if (cy2 < FIELD + 1 || cy2 >= CREASE - 1) continue;
+        var ii = cy2 * CO_W + wrap(cx2, CO_W);
+        if (tone[ii] < 4) tone[ii]++;
+        var jj = (cy2 + 1) * CO_W + wrap(cx2, CO_W);
+        if (tone[jj] > 0) tone[jj]--;
+      }
+    }
+    var pcx, p;
+    for (p = 0; p < CO_W / CUSHION_W; p++) {
+      pcx = p * CUSHION_W + hx;
+      crease(pcx - BTN_DX, BTN_Y[0], -0.80, -0.60, 28, p * 7 + 1);
+      crease(pcx + BTN_DX, BTN_Y[0],  0.80, -0.60, 28, p * 7 + 2);
+      crease(pcx - BTN_DX, BTN_Y[1], -0.80,  0.60, 24, p * 7 + 3);
+      crease(pcx + BTN_DX, BTN_Y[1],  0.80,  0.60, 24, p * 7 + 4);
+      crease(pcx - BTN_DX + 4, BTN_Y[0] + 1, 1, 0, 2 * BTN_DX - 8, p * 7 + 5);
+      crease(pcx - BTN_DX + 4, BTN_Y[1] + 1, 1, 0, 2 * BTN_DX - 8, p * 7 + 6);
+    }
+
+    /* THE NAP. Microfibre is a pile fabric and it shows every direction
+       it has been brushed in; one pixel in sixty bumped a tone either
+       way is enough to say so, and it is tonal variety at a scale no
+       measurement of rows or columns can see - which is the point. */
+    for (i = 0; i < (CO_W * (CREASE - FIELD)) / 60; i++) {
+      var h = hash(4001 + i * 9173);
+      var nxp = h % CO_W, nyp = FIELD + ((h >>> 9) % (CREASE - FIELD));
+      var ni = nyp * CO_W + nxp;
+      if ((h >>> 20) & 1) { if (tone[ni] < 4) tone[ni]++; }
+      else if (tone[ni] > 0) tone[ni]--;
+    }
+
+    for (y = FIELD; y < CREASE; y++) {
+      for (x = 0; x < CO_W; x++) {
+        c.fillStyle = TONES[tone[y * CO_W + x]];
         c.fillRect(x, y, 1, 1);
       }
     }
 
-    /* 3. A BUTTON WHEREVER FOUR FOLDS MEET, on the lattice's own nodes:
-       whole-number rows straight, half-number rows shifted half a cell,
-       which is a diamond grid and is what the photograph's buttons do.
-       Seven rows of them fall inside the field.
-
-       EACH ONE IS A PUCKER AND THEN A HOLE, and the pucker is what
-       makes it read. A 2x2 of #3a342e dropped straight onto the
-       crossing was invisible: a button is only 27 values darker than
-       the crease it sits in the middle of, and the crease is at its
-       widest exactly there, so the whole thing vanished into a dark
-       junction. What a real button does is gather the fabric into a
-       little raised ring around itself, and a ring that catches the
-       lamp is 48 values LIGHTER than the crease. So: a five-across plus
-       of backLit, then the 3x3 hole punched into the middle of it.
-       Bright ring, dark core, and it carries at one to one.
-
-       Stamped AFTER the per-pixel pass rather than tested inside it,
-       because a button wants a crisp square edge and the pass's
-       thresholds would hand it a soft one. */
-    for (j = 0; j * CELL_H / 2 <= CO_H; j++) {
-      var by = Math.round(j * CELL_H / 2);
-      if (by < FIELD + 3 || by > CREASE - 3) continue;
-      var off = (j & 1) ? CELL_W / 2 : 0;
-      for (i = 0; i * CELL_W + off < CO_W; i++) {
-        var bx = Math.round(i * CELL_W + off);
-        /* the pucker, with its four corners left off - a 5x5 square of
-           highlight is a little steel plate, and gathered cloth has no
-           corners */
-        c.fillStyle = P.backLit;
-        c.fillRect(bx - 1, by - 2, 3, 5); c.fillRect(bx - 2, by - 1, 5, 3);
-        c.fillStyle = P.button;  c.fillRect(bx - 1, by - 1, 3, 3);
+    /* 3. FOUR BUTTONS A PANEL, each one a DIMPLE and then a button. The
+       fabric is pulled INTO a tufting button, so the cloth round it is a
+       shallow cone: its upper lip faces away from the pendants and is in
+       shadow, its lower lip faces up into them and is lit. Dark arc
+       above, lit arc below, a 3x3 covered button in the middle with one
+       lit pixel on its dome - it carries at one to one, and the asymmetry
+       is what says "pulled in" rather than "stuck on". Stamped after the
+       tone pass because a button wants a crisp edge. */
+    for (p = 0; p < CO_W / CUSHION_W; p++) {
+      pcx = p * CUSHION_W + hx;
+      for (j = 0; j < 2; j++) {
+        for (i = 0; i < 2; i++) {
+          var bx = pcx + (i ? BTN_DX : -BTN_DX), by = BTN_Y[j];
+          c.fillStyle = P.backCrease;
+          c.fillRect(bx - 1, by - 2, 3, 1); c.fillRect(bx - 2, by - 1, 1, 2); c.fillRect(bx + 2, by - 1, 1, 2);
+          c.fillStyle = P.backLit;
+          c.fillRect(bx - 1, by + 2, 3, 1); c.fillRect(bx - 2, by + 1, 1, 1); c.fillRect(bx + 2, by + 1, 1, 1);
+          c.fillStyle = P.button;  c.fillRect(bx - 1, by - 1, 3, 3);
+          c.fillStyle = P.backMid; c.fillRect(bx - 1, by - 1, 1, 1);
+        }
       }
     }
 
-    /* 4. the two section joins - a sectional is three pieces of
-       furniture pretending to be one, and the seams are where it gives
-       itself away. x 0 is the tile seam, so laying the join on it is
-       also what hides the repeat. */
-    c.fillStyle = P.button;
-    c.fillRect(0, FIELD, 2, CREASE - FIELD);
-    c.fillRect(240, FIELD, 2, CREASE - FIELD);
-    c.fillStyle = P.backLit;
-    c.fillRect(2, FIELD, 1, CREASE - FIELD);
-    c.fillRect(242, FIELD, 1, CREASE - FIELD);
+    /* 4. THE SEAMS between panels: a 2px dark welt, a 1px lit edge on
+       the panel to its right (the lamp is overhead-left, so the LEFT
+       edge of every panel catches it), and the soft shadow the left-hand
+       panel throws into the seam - which the tone pass has already laid
+       down, since a panel's right-hand side rolls away through backRoll
+       into backCrease before it gets here. x 0 is the tile seam, so a
+       panel seam on it is also what hides the repeat. */
+    for (p = 0; p < CO_W / CUSHION_W; p++) {
+      c.fillStyle = P.button;
+      c.fillRect(p * CUSHION_W, FIELD, 2, CREASE - FIELD);
+      c.fillStyle = P.backLit;
+      c.fillRect(p * CUSHION_W + 2, FIELD, 1, CREASE - FIELD);
+    }
 
     /* 5. THE CREASE. The seam where the back cushions meet the seat,
        and the darkest band in the bay by two whole values. A kernel
@@ -1643,63 +1738,109 @@ var Couch = (function () {
             [W / 2 - r2, j2, r2 * 2, H - j2]];
   }
 
-  /* ------------------------------------------------------- the coaster
+  /* ------------------------------------------------------ the coasters
 
      The spare life, off the coffee table and standing on its edge in
-     the nap. Two of the three coasters in the photograph are pale wood
-     slices and one is a coiled pink rope one, so the odds here are the
-     picture's: a third of them are pink.
+     the nap. Two kinds, off Coaster ref 1 and 2, and makeBoon deals them
+     out turn and turn about.
 
      A 19px disc rather than the 15 it would be to scale, because a
      coaster has to be grabbable from a flight path that is already
      fourteen pixels above a floor that kills. At 19 its box top sits at
      FLOOR-18 and the grab band is a doodad centred between FLOOR-31 and
-     FLOOR-11 - a dive, but a dive with room in it. */
+     FLOOR-11 - a dive, but a dive with room in it. Both kinds keep the
+     same radius and the same 21x21 canvas, so the engine's box, the
+     dent in the nap and drawBoon's offsets are one set of numbers. */
   var COAST_R = 9.5;
 
-  function bakeCoaster(woven) {
+  /* THE MAP COASTER'S OUTLINE is not a circle. The photograph's are cut
+     to the edge of a map - a lake shore, a county line - so each is a
+     disc with a bite out of one side and a point left where the bite
+     ends. Two bites: a big round one out of the upper left, a nick out
+     of the lower right. ringOf handles the notches; it is why it exists. */
+  var MAP_BITES = [[-2.30, 10.6, 3.4], [0.95, 10.8, 2.1]];   /* [angle, dist, radius] */
+
+  /* The yarn coaster's rim is soft and a little irregular - a wound cord
+     never finishes on a perfect circle - so its radius wanders by about
+     half a pixel round the edge. */
+  function yarnR(a) { return 9.35 + 0.45 * Math.sin(3 * a + 1.0) + 0.25 * Math.sin(7 * a); }
+
+  function inMap(dx, dy, d) {
+    if (d > COAST_R) return false;
+    for (var b = 0; b < MAP_BITES.length; b++) {
+      var bx = Math.cos(MAP_BITES[b][0]) * MAP_BITES[b][1];
+      var by = Math.sin(MAP_BITES[b][0]) * MAP_BITES[b][1];
+      if (Math.sqrt((dx - bx) * (dx - bx) + (dy - by) * (dy - by)) < MAP_BITES[b][2]) return false;
+    }
+    return true;
+  }
+
+  function bakeCoaster(yarn) {
     var S = 21, t = makeCanvas(S, S), c = t.ctx;
-    var cx = 10, cy = 10, px, py, dx, dy, d, a, col;
+    var cx = 10, cy = 10, px, py, dx, dy, d, a, col, inside;
+    var m = makeCanvas(S, S);
+    m.ctx.fillStyle = '#ffffff';
 
     for (py = 0; py < S; py++) {
       for (px = 0; px < S; px++) {
         dx = px - cx; dy = py - cy;
         d = Math.sqrt(dx * dx + dy * dy);
-        if (d > COAST_R) continue;
         a = Math.atan2(dy, dx);
-        if (woven) {
-          /* one rope coiled in from the rim: an Archimedean spiral with
-             a 2px pitch, which is the only way a coil reads at 19px */
-          col = (Math.floor((d + a / TAU * 2) / 2) % 2) ? P.pinkWoven : P.pinkPale;
-          if (d > 8.4 && dy > 0) col = P.pinkDeep;
-          if (d > 8.9) col = P.pinkDeep;
+        inside = yarn ? d <= yarnR(a) : inMap(dx, dy, d);
+        if (!inside) continue;
+        m.ctx.fillRect(px, py, 1, 1);
+        if (yarn) {
+          /* ONE CORD, WOUND. k is which turn of the spiral this pixel is
+             on - an Archimedean spiral at a 3px pitch, two of cord and
+             one of the groove between turns, which is three turns on a
+             19px disc and the coarsest pitch that still reads as a coil
+             - and `along` is how far along the cord it is. The cord is
+             TWISTED from pink and pale blue, so its colour alternates
+             every 4.5px of its length: d * along is arc length, and the
+             stripes come out as a barber pole that gets finer toward the
+             rim, which is what a twisted cord wound flat does. At a 2px
+             pitch with 2.6px stripes it was pink-and-blue noise; the
+             coil has to be the thing you see first, and the twist the
+             thing you see second. The first three tenths of every turn
+             are the groove, a shade deeper in whichever colour it is. */
+          var turn = (d + a / TAU * 3 + 0.5) / 3;
+          var k = Math.floor(turn), along = a + k * TAU;
+          var pink = Math.floor((d * along) / 4.5 + k) % 2 === 0;
+          var groove = turn - k < 0.30;
+          if (d < 1.3) col = P.yarnPale;
+          else if (groove) col = pink ? P.yarnPinkDeep : P.yarnBlueDeep;
+          else col = pink ? P.yarnPink : P.yarnBlue;
+          /* the rim falls away from the lamp on its lower right */
+          if (d > yarnR(a) - 1.1 && dy + dx > 2) col = pink ? P.yarnPinkDeep : P.yarnBlueDeep;
         } else {
-          /* a slice of log: bark round the outside, two growth rings,
-             and the crack that every one of these develops */
-          if (d > 8.4) col = P.woodBark;
-          else if (Math.abs(d - 6.4) < 0.5 || Math.abs(d - 3.6) < 0.5) col = P.woodRing;
-          else col = P.woodSlice;
-          if (d > 6.6 && d < 8.5 && a > -2.5 && a < -1.1) col = P.woodPale;
+          /* PALE BIRCH WITH A MAP BURNT INTO IT. The contours are rings
+             round a point a little off the coaster's own centre, each one
+             wobbled by a sine of the angle so they are a hill's lines and
+             not a target's, and they are DENSE IN THE MIDDLE: the gaps
+             between them open out from 1.4px to 2px toward the rim. The
+             innermost two are burnt deeper, the way a laser dwells where
+             the lines crowd. Round the bottom of the rim, a dotted arc of
+             single pixels is the engraved maker's name - at this size
+             text is a texture, and a dotted arc is what six-point type
+             looks like from a metre away. */
+          var mx = dx - 1.4, my = (dy + 0.9) * 1.12;
+          var mc = Math.sqrt(mx * mx + my * my) + 0.55 * Math.sin(3 * Math.atan2(my, mx) + 0.7);
+          var RINGS = [1.3, 2.7, 4.3, 6.1, 8.1];
+          col = P.birch;
+          if (d > 7.4 && dy + dx > 3) col = P.birchShade;
+          for (var ri = 0; ri < RINGS.length; ri++) {
+            if (Math.abs(mc - RINGS[ri]) < 0.42) col = ri < 2 ? P.burnDeep : P.burn;
+          }
+          if (mc < 0.8) col = P.burnDeep;
+          if (d > 7.9 && d < 9.0 && a > 0.55 && a < 2.6 && ((px + py) & 1)) col = P.burnDeep;
         }
         c.fillStyle = col;
         c.fillRect(px, py, 1, 1);
       }
     }
-    if (!woven) {
-      /* the crack, centre to rim */
-      c.fillStyle = P.woodBark;
-      for (var i = 1; i < 9; i++) c.fillRect(cx + i, cy - Math.round(i * 0.4), 1, 1);
-    }
 
-    /* the ring goes underneath, for the same reason the kernel's does */
-    var m = makeCanvas(S, S);
-    m.ctx.fillStyle = '#ffffff';
-    for (py = 0; py < S; py++) {
-      for (px = 0; px < S; px++) {
-        dx = px - cx; dy = py - cy;
-        if (Math.sqrt(dx * dx + dy * dy) <= COAST_R) m.ctx.fillRect(px, py, 1, 1);
-      }
-    }
+    /* the ring goes underneath, for the same reason the kernel's does -
+       and it is a smear of the mask, so the bites keep their shape */
     c.globalCompositeOperation = 'destination-over';
     c.drawImage(LivingRoom.ringOf(m, S, S).canvas, 0, 0);
     c.globalCompositeOperation = 'source-over';
@@ -1804,7 +1945,7 @@ var Couch = (function () {
       DRIFT_BOX.push(driftBoxes(s));
     }
 
-    T.coaster = [bakeCoaster(false), bakeCoaster(true)];
+    T.coaster = [bakeCoaster(false), bakeCoaster(true)];   /* [map, yarn] */
     T.pawn    = [bakePiece(PAWN, true), bakePiece(PAWN, false)];
     T.rook    = [bakePiece(ROOK, true), bakePiece(ROOK, false)];
     T.pad     = bakePad();
@@ -2026,7 +2167,7 @@ var Couch = (function () {
     ctx.fillStyle = g;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
 
-    ctx.drawImage(T.coaster[ob.kind === 'woven' ? 1 : 0].canvas, x - 10, y - 10);
+    ctx.drawImage(T.coaster[ob.kind === 'yarn' ? 1 : 0].canvas, x - 10, y - 10);
 
     for (i = 0; i < 2; i++) {
       var k = wrap(ob.phase * 0.22 + ob.age * 0.3 + i * 0.5, 1);
@@ -2116,68 +2257,63 @@ var Couch = (function () {
       ctx.fillStyle = P.shutterLit;   ctx.fillRect(rx, lidY + 1, 1, backY - lidY - 2);
     }
 
-    /* 3. THE SOFA, and it gets the rest of the card, which is the point
-       of this rewrite. The lit roll, then the tufted field: two sets of
-       ruled diagonals, the lamp caught on the face just above each
-       descending crease, and a BUTTON at every crossing. That is the
-       level's per-pixel pass reduced to the three marks that survive at
-       sixty pixels - and the buttons are the one of the three that
-       actually says "tufted" rather than "diagonal stripes". */
+    /* 3. THE SOFA, and it gets the rest of the card. The lit roll, then
+       the back as CUSHION PANELS - the level's own 160:137 proportion,
+       so a card this wide gets two of them and a bit - each one a lit
+       squircle of swell on its plate with FOUR buttons in a wide
+       rectangle and a seam between it and the next. That is bakeCouch
+       reduced to the three marks that survive at sixty pixels, and the
+       four-button rectangle is the one of the three that says "this
+       sofa" rather than "some sofa". */
     ctx.fillStyle = P.outline;  ctx.fillRect(x, backY - 1, w, 1);
     ctx.fillStyle = P.crest;    ctx.fillRect(x, backY, w, 1);
     ctx.fillStyle = P.backLit;  ctx.fillRect(x, backY + 1, w, 1);
     ctx.fillStyle = P.backMid;  ctx.fillRect(x, backY + 2, w, seatY - backY - 2);
     var band = seatY - backY - 2;
     var top = backY + 2;
-    /* 3.2 diamonds down the field is the level's own count (four over
-       148 rows, the lowest of them behind the cushions), and 1.3 is its
-       48:37 cell, so the lattice on the card is the lattice in the bay.
-       The nodes are (i*PW, k*PH/2) with the odd rows shoved half a cell
-       across, which makes every diamond PW wide and PH tall with its
-       CENTRE half a cell along from a node - which is the one fact the
-       three passes below all need. */
-    var PH = Math.max(8, Math.round(band / 3.2));
-    var PW = Math.max(10, Math.round(PH * 1.3));
-    var hw = Math.max(2, Math.round(PW * 0.30)), hh = Math.max(2, Math.round(PH * 0.30));
-    var bx, byy, n, ww, run;
+    var PW = Math.max(14, Math.round(band * 1.17));
+    var bx, byy, n, px0, lit, ax, ay, d4;
 
-    /* the swell in the upper half of every diamond, FIRST, so the
-       creases rule over the top of it. Without this the card's whole
-       lower two thirds came out as flat grey with a faint argyle on
-       it - the thing that says "padding" is the light sitting on the
-       padding, not the lines between. */
-    ctx.fillStyle = P.backLit;
-    for (k = 0; k * PH / 2 <= band + PH; k++) {
-      byy = top + Math.round(k * PH / 2);
-      for (i = -1; i * PW < w + PW; i++) {
-        bx = x + Math.round(i * PW + ((k & 1) ? 0 : PW / 2));
-        for (n = -hh; n <= hh; n++) {
-          var ry = byy + n - Math.round(PH * 0.12);
-          if (ry < top || ry >= top + band) continue;
-          ww = Math.round(hw * Math.sqrt(Math.max(0, 1 - (n / hh) * (n / hh))));
-          ctx.fillRect(bx - ww, ry, ww * 2 + 1, 1);
+    /* The swell, as the level draws it: the 4-norm tipped toward the lamp,
+       in three tones here rather than five - at this size the two shoulders
+       are a pixel wide and buy nothing.
+
+       Drawn as RUNS and not as pixels. A cover is repainted every frame it
+       is on screen, and a pixel at a time this was w x band fills - about
+       four thousand on the big card, every frame, for one of five cards.
+       The swell is three tones in wide smooth bands, so a row is five or
+       six runs; same pixels, a twentieth of the calls. */
+    for (n = 0; n < band; n++) {
+      ay = (n - (band - 1) / 2) / (band / 2);
+      var runCol = null, runFrom = 0;
+      for (i = 0; i <= w; i++) {
+        var col = null;
+        if (i < w) {
+          ax = ((i % PW) - PW / 2) / (PW / 2);
+          var ux = ax < 0 ? -ax : ax, uy = ay < 0 ? -ay : ay;
+          d4 = Math.sqrt(Math.sqrt(ux * ux * ux * ux + uy * uy * uy * uy));
+          lit = d4 + ay * 0.22 + ax * 0.10;
+          col = lit < 0.50 ? P.backLit : (lit < 0.95 ? null : P.backRoll);
         }
+        if (col === runCol) continue;
+        if (runCol) { ctx.fillStyle = runCol; ctx.fillRect(x + runFrom, top + n, i - runFrom, 1); }
+        runCol = col; runFrom = i;
       }
     }
-    /* the creases, ruled out of every node both ways */
-    ctx.fillStyle = P.backCrease;
-    for (i = -1; i * PW < w + PW; i++) {
-      for (k = 0; k < band; k++) {
-        run = Math.round(k * PW / PH);
-        ctx.fillRect(x + i * PW + run, top + k, 1, 1);
-        ctx.fillRect(x + i * PW - run, top + k, 1, 1);
-      }
-    }
-    /* and the button, pucker and all, wherever four of them meet */
-    for (k = 0; k * PH / 2 <= band; k++) {
-      byy = top + Math.round(k * PH / 2);
-      if (byy < top || byy >= top + band) continue;
-      for (i = 0; i * PW + ((k & 1) ? PW / 2 : 0) < w; i++) {
-        bx = x + Math.round(i * PW + ((k & 1) ? PW / 2 : 0));
-        ctx.fillStyle = P.backLit;
-        ctx.fillRect(bx - 1, byy, 3, 1); ctx.fillRect(bx, byy - 1, 1, 3);
-        ctx.fillStyle = P.button;
-        ctx.fillRect(bx, byy, 1, 1);
+    /* the seams, and the four buttons on every panel */
+    for (k = 0; k * PW < w; k++) {
+      px0 = x + k * PW;
+      ctx.fillStyle = P.button;  ctx.fillRect(px0, top, 1, band);
+      ctx.fillStyle = P.backLit; ctx.fillRect(px0 + 1, top, 1, band);
+      for (n = 0; n < 2; n++) {
+        byy = top + Math.round(band * (n ? 0.64 : 0.36));
+        for (i = 0; i < 2; i++) {
+          bx = px0 + Math.round(PW * (i ? 0.68 : 0.32));
+          if (bx >= x + w - 1) continue;
+          ctx.fillStyle = P.backCrease; ctx.fillRect(bx, byy - 1, 1, 1);
+          ctx.fillStyle = P.backLit;    ctx.fillRect(bx, byy + 1, 1, 1);
+          ctx.fillStyle = P.button;     ctx.fillRect(bx, byy, 1, 1);
+        }
       }
     }
 
@@ -2425,13 +2561,19 @@ var Couch = (function () {
      default would put the grab point on the cushion and Gerald would
      reel it in by the dent. */
   function makeBoon(x, run) {
-    var woven = chance(0.33);
+    /* turn and turn about - see nextYarn. The engine reads ob.name for
+       the caption and ob.burst for the particles, so the two kinds differ
+       in both: a map coaster bursts birch and burnt brown, a yarn one
+       pink and blue, and both carry the two jades every spare life in
+       the game bursts with. */
+    var yarn = nextYarn;
+    nextYarn = !yarn;
     return { type: 'boon', x: x, y: FLOOR - 9, w: 18, taken: false,
              phase: rand(0, TAU), dx: 0, dy: 0,
-             kind: woven ? 'woven' : 'wood',
-             name: BOON_NAME,
-             burst: woven ? [P.pinkPale, P.pinkWoven, P.pinkDeep, P.lifePale, P.lifeJade]
-                          : [P.woodPale, P.woodSlice, P.woodBark, P.lifePale, P.lifeJade] };
+             kind: yarn ? 'yarn' : 'map',
+             name: yarn ? YARN_NAME : MAP_NAME,
+             burst: yarn ? [P.yarnPink, P.yarnBlue, P.yarnPale, P.lifePale, P.lifeJade]
+                         : [P.birch, P.burn, P.burnDeep, P.lifePale, P.lifeJade] };
   }
 
   /* --------------------------------------------------------- stepDrop
@@ -2641,7 +2783,7 @@ var Couch = (function () {
     P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: CEIL_KILLS,
-    BOON_NAME: BOON_NAME,
+    BOON_NAMES: [MAP_NAME, YARN_NAME],
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor,

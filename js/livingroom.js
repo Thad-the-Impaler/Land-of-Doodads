@@ -15,6 +15,19 @@
    is already house style: the Coop publishes postH, postV and drawNail
    and the title screen reads Coop.CEIL.
 
+   WHICH BAYS WEAR THE ROOM'S BAND. The plaster, the crown, the pendants
+   and the register were drawn off the Ceiling reference photographs,
+   and the owner is keeping those for a CEILING level of their own. The
+   Desk and the Couch keep this band - they are rooms you look across,
+   with a ceiling over them, and the owner says it works there. The
+   Mantle and the Whiteboard bake a band of their own (bakeTop in each
+   file: the stone above a television, the top rail of a rolling frame)
+   and draw it themselves. What every bay shares, whatever the band is
+   made of, is the CONTRACT: 240 wide so it tiles on one beat, CEIL = 24
+   rows deep, row 23 a hard dark edge on the kill line, nothing solid
+   below it, and the room's crownShade strip laid under it so the rows
+   the player flies through carry the same shade in all four.
+
    WHY THE CEILING IS FOUR HARD ROWS. Everywhere else in the game the
    lid is texture and the player learns it by bumping it. Here bumping
    it is the end of the run, so the band needs a legible EDGE rather
@@ -124,6 +137,10 @@ var LivingRoom = (function () {
      different in the Couch has been told the rule twice and believed it
      once. PlayScene shows this without the 'warn' tone: the doodad has
      just left the ground and the attention is already on the screen. */
+  /* The default lid warning. A bay whose lid is NOT the room's ceiling says
+     what its own is instead - the Mantle is roofed by a television and the
+     Whiteboard by the frame it hangs on, and telling either player about a
+     ceiling they cannot see is worse than telling them nothing. */
   var WARN_CEIL = ['▲ LOW CEILING ▲', 'THIS ONE ENDS THE RUN'];
 
   /* The two neutral colours the air in this room is made of. Every level's
@@ -407,10 +424,10 @@ var LivingRoom = (function () {
     c.fillRect(0, 23, CEIL_W, 1);
 
     /* The one thing a bay may change up here, and only the bottom four
-       rows of it: the Whiteboard hangs off an aluminium rail that has to
-       meet the ceiling, and a rail that stopped short of the moulding
-       would float. The plaster, the pendant and the register are the
-       room's and stay the room's. */
+       rows of it. Nothing passes one today - the Whiteboard used to hand
+       in its rail this way, and now bakes its whole band itself - but
+       the hook stays, because a bay that wants the room's plaster with
+       its own trim along the bottom is a reasonable bay to be. */
     if (typeof railPainter === 'function') railPainter(c, 0, 20, CEIL_W, 4);
     return t;
   }

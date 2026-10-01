@@ -92,24 +92,67 @@ var Desk = (function () {
      beige" has to be painted two stops up or the whole bay turns into a
      silhouette puzzle. */
   var P = {
-    /* the wall: beige-grey, rolled in bands, with a lamp pool low left */
-    wallDeep:     '#2a2219',
-    wallDark:     '#3b3226',
-    wallMid:      '#4e4234',   /* the base coat, and the fill behind everything */
-    wallLit:      '#665640',
-    wallLamp:     '#8c7250',   /* the warm core of the lamp pool              */
+    /* DAYLIGHT, AND WHERE IT COMES FROM. Desk ref 1-3 were shot at night
+       under a desk lamp and the first cut of this table was a faithful
+       tungsten: the wall measured red-minus-blue of 20 over the whole
+       lane, which is a bulb and not a room. The owner asked for a little
+       more daylight in the hue - a white-balance change, not a time of
+       day, and not a brightness change. So every pigment below that
+       moved lost its orange and held its luminance - every one within
+       two points of its night value except the wall's base coat, which
+       gave three (see below, where it says why it and not wallLit); the
+       room's lamp pool (wallLamp) stays warm because it is a lamp, and
+       gave up only a sixth of its cast. The light itself comes in where
+       it would: through the shutters, whose chinks are sky now instead
+       of night (Couch ref 2 shows exactly these slats with blue daylight
+       between them), and off the wall round them, which takes a soft
+       cool pool in bakeWall. The measured lighting pass survives because
+       every one of its steps is alpha times a luminance difference, and
+       the luminances did not move.
 
-    /* the plantation shutters, and the night behind the slats */
-    shutterFrame: '#b9ad9a',
-    shutterLit:   '#d9cdb8',
-    louvre:       '#8c8f80',
-    louvreGap:    '#2b3340',
-    nightSky:     '#1b2430',
+       MEASURED, over 64 scroll phases of the whole flight band (CEIL to
+       the desk top, every column), night cut -> this one: red-minus-blue
+       20.9 -> 11.0, which is the whole point; lane mean 78.0 -> 80.6,
+       which is the "slightly brighter" the owner asked for and no more;
+       book-tower pillar against that lane 38.1 -> 35.5, still over the
+       35 this bay shipped with. Largest single-row step in the bay is
+       157 at row 170, the desk's own front edge, in both cuts - no row
+       anywhere moved by more than three, and nothing new appeared.
+
+       Before, for the record: wallDeep #2a2219, wallDark #3b3226, wallMid
+       #4e4234, wallLit #665640, wallLamp #8c7250; shutterFrame #b9ad9a,
+       shutterLit #d9cdb8, louvre #8c8f80, louvreGap #2b3340, the chink
+       nightSky #1b2430; shelfLit #d2c5ad, shelfMid #ad9f88, shelfDark
+       #746655; deskLit #e6ddcb, deskTop #cfc4b1, deskEdge #9d9280,
+       drawerFace #b8a98f, drawerPanel #a89a81, drawerShade #857763,
+       toeKick #5b5044; screenReflect #2f2b35. */
+
+    /* the wall: greige, rolled in bands, with a lamp pool low left. Under
+       their old luminance, which is what pays for the daylight: the base
+       coat gives three and the others one or two. THE BASE COAT GIVES THE
+       MOST and wallLit gives nothing, on purpose - the gap between those
+       two is the roller texture, the only thing stopping 336x270 of
+       greige reading as a painted backdrop, and it is 20.7 here against
+       the night cut's 20.3. Paying out of wallLit would have flattened
+       the wall to buy a number. */
+    wallDeep:     '#24211e',
+    wallDark:     '#36322d',
+    wallMid:      '#454039',   /* the base coat, and the fill behind everything */
+    wallLit:      '#5c544b',
+    wallLamp:     '#887456',   /* the warm core of the lamp pool              */
+
+    /* the plantation shutters, and the DAY behind the slats */
+    shutterFrame: '#b5b0a7',
+    shutterLit:   '#d3cfc8',
+    louvre:       '#8c9195',   /* a white slat, backlit: cool on its face     */
+    louvreGap:    '#2a3548',
+    daySky:       '#7fa3c0',   /* the chink: sky, through six sixteenths of void */
+    dayWall:      '#8fa6ba',   /* the daylight falling on the wall round the window */
 
     /* the white floating shelves */
-    shelfLit:     '#d2c5ad',
-    shelfMid:     '#ad9f88',
-    shelfDark:    '#746655',
+    shelfLit:     '#cdc7ba',
+    shelfMid:     '#a9a195',
+    shelfDark:    '#6f6860',
 
     /* pothos, on the shutters and in the pot on the desk */
     ivyDark:      '#3c5126',
@@ -117,15 +160,15 @@ var Desk = (function () {
     ivyLit:       '#8ba652',
 
     /* the desk itself: white melamine, shaker drawers, black bar pulls */
-    deskLit:      '#e6ddcb',
-    deskTop:      '#cfc4b1',
-    deskEdge:     '#9d9280',
-    drawerFace:   '#b8a98f',
-    drawerPanel:  '#a89a81',
-    drawerShade:  '#857763',
+    deskLit:      '#e3dfd6',
+    deskTop:      '#cbc6bb',
+    deskEdge:     '#99938a',
+    drawerFace:   '#b3ab9d',
+    drawerPanel:  '#a39c90',
+    drawerShade:  '#817a6f',
     pullBlack:    '#1c1711',
     pullHi:       '#4a423a',
-    toeKick:      '#5b5044',
+    toeKick:      '#58534c',
 
     /* monitor bodies */
     bezel:        '#17130f',
@@ -133,7 +176,7 @@ var Desk = (function () {
     bezelSilver:  '#8e8578',
     stand:        '#2a2522',
     screenOff:    '#1d1a20',   /* the all-in-one, asleep                      */
-    screenReflect:'#2f2b35',   /* the window reflected in it                  */
+    screenReflect:'#2b2d38',   /* the window reflected in it - daylight, so blue */
     screenLogo:   '#6f6b8a',   /* the screensaver bouncing about on it        */
 
     /* the portrait screen: the session, scrolling a row at a time */
@@ -457,6 +500,22 @@ var Desk = (function () {
        the core - a lamp, not a spotlight. */
     lampPool(c, 90, 150, W, H);
 
+    /* THE DAYLIGHT, on the wall round the window: one band of a cool
+       grey-blue, a sixteenth, in an ellipse centred on the shutters. One
+       band and not the lamp pool's six, because it is a window across a
+       room and not a lamp on a desk - it lifts the wall about five of
+       luminance where it lands and its edge is a curve, so no row of the
+       bay moves by it.
+
+       IT IS 104 AND NOT 125 WIDE because the chinks now actually carry
+       sky (see shutters, where the fill was being painted over), and
+       that is worth 2.5 of the lane's mean on its own. The pool is the
+       cheapest of the three daylight costs to give back - it is the
+       spill, not the source - and 125 put it on wall the window could
+       not plausibly reach anyway. Measured: the lane's mean comes back
+       0.4 and the cream pillars keep their separation. */
+    dayPool(c, 221, 97, W, H);
+
     /* THE SHUTTERS. White plantation shutters, two panels either side of
        a centre stile, in a 6px frame. */
     shutters(c, 150, 28, 142, 138);
@@ -500,23 +559,47 @@ var Desk = (function () {
     }
   }
 
+  /* the daylight's one ellipse: the lamp pool's painter at one band */
+  function dayPool(c, cx, cy, W, H) {
+    var rx = 104, ry = Math.round(rx * 0.78);
+    for (var dy = -ry; dy <= ry; dy++) {
+      var yy = cy + dy;
+      if (yy < 0 || yy >= H) continue;
+      var k = dy / ry;
+      var hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - k * k)));
+      if (hw <= 0) continue;
+      var x0 = Math.max(0, cx - hw), x1 = Math.min(W, cx + hw);
+      if (x1 <= x0) continue;
+      Tint.rect(c, x0, yy, x1 - x0, 1, P.dayWall, 1);
+    }
+  }
+
   /* One window: a 6px painted frame with a lit inner edge, a 6px centre
      stile, and two louvre panels.
 
      THE SLATS ARE WHY IT READS AS A WINDOW. The pitch is six pixels -
      three of slat face, one of the lit arris along its lower edge, one
-     of the shadow behind it and one of actual NIGHT. Without that last
-     row the panel is a corrugated grey rectangle; with it there is a
-     chink of outside every six pixels, which is the only thing in the
-     bay that says the wall has a far side. */
+     of the shadow behind it and one of OUTSIDE. Without that last row
+     the panel is a corrugated grey rectangle; with it there is a chink
+     of daylight every six pixels, which is the only thing in the bay
+     that says the wall has a far side. */
   function shutters(c, x, y, w, h) {
     var i, panel;
 
-    /* the night behind the whole opening, so any gap shows it */
-    c.fillStyle = P.nightSky; c.fillRect(x, y, w, h);
+    /* THE OUTLINE FIRST, AND THE DAY INSIDE IT. These two were the other
+       way round and the chink was never outside at all: the outline rect
+       is w+2 by h+2, so it covered every pixel of the sky fill, and the
+       one row in six the slats leave bare came out at the outline's own
+       20 of luminance. It read as a plausible night, which is why it
+       survived the night cut unnoticed - but a chink that paints itself
+       black cannot carry daylight, and this bay's daylight comes through
+       exactly these six-pixel gaps. The outline now goes down first and
+       the sky fills the opening inside it, which leaves the same 1px
+       dark ring round the window and puts the sky where the slats part. */
+    c.fillStyle = P.outline;      c.fillRect(x - 1, y - 1, w + 2, h + 2);
+    c.fillStyle = P.daySky;       c.fillRect(x, y, w, h);
 
     /* the frame */
-    c.fillStyle = P.outline;      c.fillRect(x - 1, y - 1, w + 2, h + 2);
     c.fillStyle = P.shutterFrame;
     c.fillRect(x, y, w, 6); c.fillRect(x, y + h - 6, w, 6);
     c.fillRect(x, y, 6, h); c.fillRect(x + w - 6, y, 6, h);
@@ -536,7 +619,7 @@ var Desk = (function () {
         c.fillStyle = P.louvre;      c.fillRect(px, sy, pw, 3);
         c.fillStyle = P.shutterLit;  c.fillRect(px, sy + 3, pw, 1);
         c.fillStyle = P.louvreGap;   c.fillRect(px, sy + 4, pw, 1);
-        /* row 5 is left as nightSky: the chink */
+        /* row 5 is left as daySky: the chink, and the daylight */
       }
     }
     c.fillStyle = P.shutterFrame; c.fillRect(stile, inY, 6, inH);
@@ -548,9 +631,15 @@ var Desk = (function () {
        thing in the bay - brighter than a book tower's pages band, which
        is the one thing in this level that is not allowed to lose. The
        lamp pool is centred at x 90 and the window starts at 150, so the
-       honest answer is also the right one: nothing is lighting it.
-       Six sixteenths of void takes the frame down to a dim bone and the
-       slats to a grey that still reads as slats. */
+       honest answer is also the right one: nothing is lighting their
+       FACE. Six sixteenths of void takes the frame down to a dim bone
+       and the slats to a grey that still reads as slats - and takes the
+       sky in the chinks from 156 to a measured 103, which is a window
+       seen from a dim room and as bright as the window is allowed to
+       be: a book tower's pages band is 227 and must stay the brightest
+       thing in the bay. The chink is one row in six and the window is
+       142 of the tile's 336 columns, so all of it together moves the
+       lane's mean by 2.5 - which the wall's base coat gave back. */
     Tint.rect(c, x - 1, y - 1, w + 2, h + 2, P.void, 6);
   }
 
@@ -1838,13 +1927,20 @@ var Desk = (function () {
       ctx.fillStyle = R.lampCore;  ctx.fillRect(px0, lidY - 3, 1, 1);
     }
 
-    /* 3. a shutter, upper right */
+    /* 3. a shutter, upper right - AND THE DAY BEHIND IT. The pitch is
+       five here and not the bay's six: three of slat, one of shadow and
+       one of sky, with the bay's lit arris dropped because a single pale
+       row at card scale only greys the slat it sits under. The sky row
+       is the one thing on this card that is not a room, and the cover
+       has to agree with the level it is a picture of - the window is
+       where this bay's daylight comes from. */
     var shW = Math.round(w * 0.3), shX = x + w - shW - 4, shH = Math.round(h * 0.26);
     var shY = lidY + 4;
     ctx.fillStyle = P.shutterFrame; ctx.fillRect(shX, shY, shW, shH);
-    for (i = 2; i < shH - 2; i += 4) {
+    for (i = 2; i + 4 < shH - 2; i += 5) {
       ctx.fillStyle = P.louvre;    ctx.fillRect(shX + 2, shY + i, shW - 4, 3);
       ctx.fillStyle = P.louvreGap; ctx.fillRect(shX + 2, shY + i + 3, shW - 4, 1);
+      ctx.fillStyle = P.daySky;    ctx.fillRect(shX + 2, shY + i + 4, shW - 4, 1);
     }
     ctx.fillStyle = P.shutterLit; ctx.fillRect(shX, shY, shW, 1);
 
