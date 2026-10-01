@@ -10192,17 +10192,19 @@ var LivingRoom = (function () {
 /* ------------------------------------------------------------------
    Land of Doodads - LIVING ROOM / THE DESK
 
-   A workstation after dark. Three screens and one warm lamp pool are
-   the only light in the bay; behind them the wall climbs in roller
-   bands to white plantation shutters with night showing between the
-   slats and a pothos vine run along the top rail. Two floating shelves
+   A workstation in daylight. The light comes in through white
+   plantation shutters with the sky showing between the slats and falls
+   on a bright greige wall rolled in bands, with a pothos vine run along
+   the top rail; three screens and one desk lamp are the only other
+   light in the bay. Two floating shelves
    carry the keepsakes - the jar, the grey slab with the horned ghost
    painted on it, the candle, the photo frame, the little skeleton,
    and on the lower one a row of red and white spines, an orange party
    hat, a green cube and a wooden crane. Under all of it: a white desk
    with two banks of shaker drawers, a knee hole full of cable, a
    keyboard, a mouse, a tin of gum, a studio speaker and a pot of ivy.
-   Drawn from Assets/Concept/Desk ref 1-3.
+   Drawn from Assets/Concept/Desk ref 1-4; ref 4 is the daylight one,
+   and the one the light in here is measured against.
 
    WHAT THIS BAY IS FOR. It is the first room in the game whose CEILING
    KILLS, and the first room with a hazard that does not. Those are two
@@ -10216,12 +10218,14 @@ var LivingRoom = (function () {
    plank in here is a column of hardbacks - some spine out, some fore
    edge out, every course jogged a pixel because nobody stacked it
    straight - capped top and bottom with a fat dictionary. They are the
-   most saturated thing on the screen by a mile: the wall is a muted
-   beige-grey, the shelves are off-white, every screen is dim, and a
-   tower of red, black, yellow, green, blue and tan always wins the
-   eye. That is the whole value plan, and the live page on the
-   widescreen is deliberately dimmer than a plank's pages band so that
-   a tower never has to compete with a web browser.
+   DARKEST solid thing on the screen: since the daylight cut the wall is
+   a bright greige off Desk ref 4, the shutters are white timber with
+   sky in the chinks, and a tower of deep red, black, ochre, bottle
+   green, navy and walnut stands against all of that the way the black
+   monitors in the photograph do. That is the whole value plan - the
+   same inversion the Mantle plays, the other way up - and it is what
+   lets the wall be as bright as the photograph without the planks
+   vanishing into it. The note at the top of P has the numbers.
 
    THE SIGNATURE IS THE APP ICON, AND IT COMES OUT OF A SCREEN. It is a
    'spike', because a spike is something fixed to an edge of the room
@@ -10277,68 +10281,135 @@ var Desk = (function () {
      crown and its lamp glass are NOT in here: a level keeps only what is
      its own, and reads the room's through R.
 
-     Every value is a NIGHT value brightened for the screen. The
-     photographs are a dark room with one lamp in it, and a wall sampled
-     honestly off them comes out near-black; what the eye reads as "unlit
-     beige" has to be painted two stops up or the whole bay turns into a
-     silhouette puzzle. */
+     Every value is a DAY value now. Desk ref 1-3 are a dark room with
+     one lamp in it, and the first three cuts of this table were night
+     values brightened for the screen; Desk ref 4 is the same desk in
+     daylight, and it is the photograph this table is measured against. */
   var P = {
-    /* DAYLIGHT, AND WHERE IT COMES FROM. Desk ref 1-3 were shot at night
-       under a desk lamp and the first cut of this table was a faithful
-       tungsten: the wall measured red-minus-blue of 20 over the whole
-       lane, which is a bulb and not a room. The owner asked for a little
-       more daylight in the hue - a white-balance change, not a time of
-       day, and not a brightness change. So every pigment below that
-       moved lost its orange and held its luminance - every one within
-       two points of its night value except the wall's base coat, which
-       gave three (see below, where it says why it and not wallLit); the
-       room's lamp pool (wallLamp) stays warm because it is a lamp, and
-       gave up only a sixth of its cast. The light itself comes in where
-       it would: through the shutters, whose chinks are sky now instead
-       of night (Couch ref 2 shows exactly these slats with blue daylight
-       between them), and off the wall round them, which takes a soft
-       cool pool in bakeWall. The measured lighting pass survives because
-       every one of its steps is alpha times a luminance difference, and
-       the luminances did not move.
+    /* DAYLIGHT, AND WHAT IT COST. Desk ref 1-3 were shot at night under
+       a desk lamp and the first cut of this table was a faithful
+       tungsten. The second cut moved the hue and not the brightness - a
+       white-balance change, red-minus-blue 20.9 -> 11.0 at constant
+       luminance - and the owner said, rightly, that it did not look as if
+       anything had changed. Desk ref 4 is the same desk in DAYLIGHT, and
+       measured off it the wall is a bright, cool, nearly neutral greige:
+       upper left #86817b (lum 130), mid left #69635d (lum 100), above the
+       shutters #7c7772 (lum 120), red-minus-blue +10 to +12 throughout.
+       The wall this table had ran lum 33 to 85 (wallDeep #24211e,
+       wallDark #36322d, wallMid #454039, wallLit #5c544b). The warmth was
+       already right; the brightness was forty to seventy short. So the
+       wall goes UP to the photograph and the hue stays where the last cut
+       put it. The base coat is written at the photograph's UPPER-LEFT
+       wall (131, its brightest patch) and not its mid-left (100), because
+       the room's own light sheet - night up off the boards, void at the
+       skirting and the sides, shared by four bays and not this file's to
+       touch - takes about a tenth off whatever this wall is painted, more
+       toward the skirting: painted 131 it renders about 120 at mid lane
+       and about 100 above the desk, which is the photograph's own range.
+       At 109 the lane measured 102 and the room still read as dusk; at
+       120 it measured 105, and the lane only moves three for every
+       eleven the wall does, because a third of the lane is shutters,
+       shelves and screens that do not move with it.
 
-       MEASURED, over 64 scroll phases of the whole flight band (CEIL to
-       the desk top, every column), night cut -> this one: red-minus-blue
-       20.9 -> 11.0, which is the whole point; lane mean 78.0 -> 80.6,
-       which is the "slightly brighter" the owner asked for and no more;
-       book-tower pillar against that lane 38.1 -> 35.5, still over the
-       35 this bay shipped with. Largest single-row step in the bay is
-       157 at row 170, the desk's own front edge, in both cuts - no row
-       anywhere moved by more than three, and nothing new appeared.
+       AND THE LEVEL INVERTS. Lifting the wall to the photograph puts it
+       within twenty of a book tower whose body measured 131, and a plank
+       that does not separate from its lane is a level nobody can play.
+       The photograph answers that too: the monitors in it are BLACK and
+       the book spines are dark against the light wall - the room being
+       bright is exactly why the things in it read as dark. So this bay
+       now does what the Mantle already does, the other way up: a bright
+       room with dark furniture in it. The six covers, the pages and the
+       title line all drop into shadow (see BOOKS, below) and the tower is
+       the darkest solid thing on the screen instead of the most
+       saturated.
 
-       Before, for the record: wallDeep #2a2219, wallDark #3b3226, wallMid
-       #4e4234, wallLit #665640, wallLamp #8c7250; shutterFrame #b9ad9a,
-       shutterLit #d9cdb8, louvre #8c8f80, louvreGap #2b3340, the chink
-       nightSky #1b2430; shelfLit #d2c5ad, shelfMid #ad9f88, shelfDark
-       #746655; deskLit #e6ddcb, deskTop #cfc4b1, deskEdge #9d9280,
-       drawerFace #b8a98f, drawerPanel #a89a81, drawerShade #857763,
-       toeKick #5b5044; screenReflect #2f2b35. */
+       AND THE SEPARATION, MEASURED PROPERLY, BECAUSE THE FIRST VERSION
+       OF THIS PARAGRAPH GOT THE DIRECTION OF TRAVEL WRONG. It said the
+       inversion took the separation from 48.4 to 51.9. It did not. Run
+       on ONE harness, over both builds - lane = CEIL+14 to FLOOR-14,
+       every one of the 480 columns, eight scroll phases; pillar body =
+       columns x+6 to x+28 of a tower at x 200 over the same eight
+       phases, gap and caps excluded - the night build measures lane 78.8
+       against a body of 130.8, a separation of 52.0, and the daylight
+       cut on its own measures lane 108.5 against a body of 58.7, a
+       separation of 49.8. The inversion COST about two, and it landed a
+       shade under the 50 the brief named as the floor. Neither 48.4 nor
+       the direction of travel reproduces on any one method; what the old
+       note almost certainly did was measure the two builds two different
+       ways - or quote variant 1 of one against variant 0 of the other,
+       which is the same mistake wearing a hat. A before-and-after is
+       only a measurement if the same harness took both halves of it, so
+       both halves above come from one function, run twice, on the two
+       trees. Variant 1 runs 3 to 4 over variant 0 throughout, and is
+       quoted separately or not at all.
 
-    /* the wall: greige, rolled in bands, with a lamp pool low left. Under
-       their old luminance, which is what pays for the daylight: the base
-       coat gives three and the others one or two. THE BASE COAT GIVES THE
-       MOST and wallLit gives nothing, on purpose - the gap between those
-       two is the roller texture, the only thing stopping 336x270 of
-       greige reading as a painted backdrop, and it is 20.7 here against
-       the night cut's 20.3. Paying out of wallLit would have flattened
-       the wall to buy a number. */
-    wallDeep:     '#24211e',
-    wallDark:     '#36322d',
-    wallMid:      '#454039',   /* the base coat, and the fill behind everything */
-    wallLit:      '#5c544b',
-    wallLamp:     '#887456',   /* the warm core of the lamp pool              */
+       WHAT PUT IT BACK was not the tower and not the wall - neither of
+       those moved again - but the three screens, which the daylight cut
+       had left at their night values. Lighting them for the room they
+       are now in (see THE THREE SCREENS and SCREEN_DIM) lifts the lane
+       to 113.8 against the same body of 58.7: a separation of 55.2, and
+       57.3 on variant 1. Three lit monitors are a third of the lane's
+       width, so what they are worth is a third of what they move; the
+       plank is dark and the lane is bright, and anything that brightens
+       the lane buys separation rather than spending it.
+       Red-minus-blue over the same band 10.5 -> 12.0 -> 11.2, and the
+       photograph's wall is +11. The window is where the light comes from: the
+       shutters are no longer held six sixteenths toward the void, the
+       chinks between the slats carry the photograph's own daylight
+       (#cbd3cf, lum 208, cool), and the wall round the window takes two
+       bands of cool spill instead of one. Nothing that is a shape moved
+       and nothing that is an object moved. It is the light. */
 
-    /* the plantation shutters, and the DAY behind the slats */
-    shutterFrame: '#b5b0a7',
-    shutterLit:   '#d3cfc8',
-    louvre:       '#8c9195',   /* a white slat, backlit: cool on its face     */
-    louvreGap:    '#2a3548',
-    daySky:       '#7fa3c0',   /* the chink: sky, through six sixteenths of void */
-    dayWall:      '#8fa6ba',   /* the daylight falling on the wall round the window */
+    /* the wall: greige, rolled in bands, with the lamp pool low left and
+       the window's spill upper right. The base coat is lum 131. wallDeep
+       is the two baked washes at the skirting and under the moulding.
+       Red-minus-blue 12 throughout.
+
+       THE ROLLER TEXTURE, AND WHAT THE DAYLIGHT CUT COST IT - stated
+       with both pairs, because quoting one pair in one revision and the
+       other pair in the next is how two numbers that moved a long way
+       can be made to look as though nothing happened. Measured off the
+       pigments, night -> day:
+           wallDark  50.6 -> 121.7
+           wallMid   64.7 -> 130.7      (the base coat, and the fill)
+           wallLit   85.4 -> 144.0
+           wallDark to wallLit, the full amplitude:  34.8 -> 22.3
+           wallMid  to wallLit, the half:            20.7 -> 13.3
+       The superseded note quoted the HALF at 20.7; the note that
+       replaced it quoted the FULL at 22, and 22 next to 20.7 reads like
+       a wall that stayed where it was. It did not. The texture lost a
+       third of its absolute contrast (34.8 -> 22.3) and two thirds of
+       its contrast relative to the base it sits on (54% of 65 -> 17% of
+       131), on a wall that nearly doubled in brightness.
+
+       It is left at that for now, deliberately: these three tones are
+       the photograph's own wall and this round's brief is the hazard,
+       the screens and these comments. But the stated job of that gap is
+       that it is "the only thing stopping 336x270 of greige reading as a
+       painted backdrop", and at 17% of base it is doing that job on
+       about a third of the contrast it was designed with. If the wall is
+       ever reported as reading flat, this is the number to widen, and
+       widening it symmetrically about wallMid leaves the lane mean - and
+       therefore the separation - where it is. */
+    wallDeep:     '#6b665f',
+    wallDark:     '#7e7972',
+    wallMid:      '#87827b',   /* the base coat, and the fill behind everything */
+    wallLit:      '#958f88',
+    wallLamp:     '#ab9d87',   /* the lamp is still on; in daylight it is a hint */
+
+    /* the plantation shutters, and the DAY behind the slats. These are
+       the photograph's own numbers: frame #97938a (lum 147), louvre face
+       #a4a099 (160), daylight through a slat #cbd3cf (208, cool), and the
+       underside of a slat a mid grey rather than a night - a white slat in
+       a lit room is not black on its far side. The frame and the face are
+       written a few over the photograph because shutters() still takes
+       the whole window one sixteenth toward the void (see there). */
+    shutterFrame: '#a09c94',
+    shutterLit:   '#c1bdb6',
+    louvre:       '#a9a7a2',   /* a white slat, lit from behind and in front  */
+    louvreGap:    '#6b6c6d',
+    daySky:       '#cbd3cf',   /* the chink: the photograph's daylight, as is  */
+    dayWall:      '#aab0b4',   /* the daylight falling on the wall round the window */
 
     /* the white floating shelves */
     shelfLit:     '#cdc7ba',
@@ -10366,19 +10437,67 @@ var Desk = (function () {
     bezelHi:      '#3b3431',
     bezelSilver:  '#8e8578',
     stand:        '#2a2522',
-    screenOff:    '#1d1a20',   /* the all-in-one, asleep                      */
-    screenReflect:'#2b2d38',   /* the window reflected in it - daylight, so blue */
-    screenLogo:   '#6f6b8a',   /* the screensaver bouncing about on it        */
+    /* THE THREE SCREENS, RE-VALUED FOR THE DAY. The daylight cut moved
+       the wall and did not move these, and a screen that was correct
+       against a 72 wall is wrong against a 114 one: the widescreen's
+       live page used to LEAD its wall by 34 and ended up six BEHIND it,
+       which is a monitor that is switched on and does not look it. The
+       request names "different sequences playing on the screens" as a
+       feature of this bay, so all three have to read as lit glass in a
+       lit room. The two emitters go up; the one that is asleep does not,
+       because Desk ref 4's monitors are black and that is half of what
+       makes the room read as bright. See SCREEN_DIM for the other half
+       of this fix - the dimming that was paying for a constraint which
+       no longer exists.
 
-    /* the portrait screen: the session, scrolling a row at a time */
-    dawGrey:      '#7f91a8',
-    dawCell:      '#a7b6c8',
-    dawHi:        '#cfdce9',
-    dawHead:      '#4d7ab2',
+       THE NUMBERS, all three panes against the same strip of bare
+       plaster at x 2..8, y 100..140 - the one place in the bay that is
+       nothing but wall at every scroll phase. Night build, daylight cut
+       as it stood, and now:
+           wall strip          71.5   113.8   113.8
+           widescreen page    104.4   104.4   150.5    lead +33 / -9 / +37
+           portrait session    66.5    66.5   122.0    lead  -5 / -47 /  +8
+           all-in-one glass    20.0    20.0    28.5    lead -52 / -94 / -85
+       The widescreen is back to leading its wall by about the 34 it led
+       by at night, which is what a switched-on monitor does. The
+       portrait sits a little over the wall rather than fifty under it: a
+       session's chrome is grey and is not meant to out-shout a web page,
+       and its live playhead row is brighter again. The all-in-one is the
+       one that is SUPPOSED to lose, and it still loses by 85.
+
+       And the lane is a third screens, so lighting them is also what
+       takes the plank-to-lane separation from 49.8 back to 55.2 - see
+       AND THE SEPARATION, above. */
+
+    /* the all-in-one, asleep. It STAYS the darkest field in the bay -
+       a switched-off screen is the photograph's own black monitor and
+       the anchor of the whole inversion - but a black screen in a lit
+       room is charcoal and not ink (27 -> 37), and what it has in it is
+       the WINDOW: the reflection was 46, which is a night reflection,
+       and daylight off white shutters in dark glass is 98. The
+       screensaver's four tints come up with it so the one sequence on
+       this pane still reads: 112 -> 155 on a glass of 37. */
+    screenOff:    '#26232b',   /* the all-in-one, asleep                      */
+    screenReflect:'#5a6274',   /* the window reflected in it - daylight, so blue */
+    screenLogo:   '#9a95bd',   /* the screensaver bouncing about on it        */
+
+    /* the portrait screen: the session, scrolling a row at a time. A
+       session's chrome is grey, not white, so this pane is meant to sit
+       UNDER the page and OVER the wall - the whole family moves up by
+       about 33 and the playhead row stays where it is, because it was
+       already the brightest thing on the glass and still should be. */
+    dawGrey:      '#a3b2c4',
+    dawCell:      '#c7d3e0',
+    dawHi:        '#e4edf6',
+    dawHead:      '#6d99cf',
     dawPlay:      '#e8f3ff',
 
-    /* the widescreen: a web page, creeping upward */
-    pageWhite:    '#c8cdd2',   /* dimmer than a plank's pages band, on purpose */
+    /* the widescreen: a web page, creeping upward. A white page on a
+       monitor is the brightest thing in a daylit room that is not the
+       sky through a shutter slat - the photograph's own daylight is 208
+       and a lit page is over it - so the paper goes 204 -> 230 and the
+       ink on it does not move: a page gets brighter, its text does not. */
+    pageWhite:    '#e2e7ec',   /* turned down once more in screenPage - SCREEN_DIM */
     pageText:     '#8a9199',
     pageBar:      '#5c84a6',
     pageOrange:   '#e0783a',
@@ -10409,20 +10528,90 @@ var Desk = (function () {
     tBone:        '#e2d9c6',
 
     /* BOOKS. Six covers, each with the arris colour that lights its top
-       edge, and the three paper tones every one of them shares. These are
-       the loudest pigments in the bay and they are spent entirely on the
-       pillars and on what falls off the shelves - nothing in the
-       scenery is allowed to be this saturated. */
-    bookRed:      '#9b2e26',  bookRedHi:    '#c6483c',
-    bookBlack:    '#1f1c1c',  bookBlackHi:  '#403a3b',
-    bookYellow:   '#d8ae3a',  bookYellowHi: '#f1cf6a',
-    bookGreen:    '#3f6a3a',  bookGreenHi:  '#5f9155',
-    bookBlue:     '#2f4d7e',  bookBlueHi:   '#4d6fa6',
-    bookTan:      '#b07a48',  bookTanHi:    '#d19d6a',
-    pages:        '#eae2d2',
-    pagesHi:      '#f7f2e8',
-    pagesShade:   '#c7bcaa',
-    title:        '#f1e7d0',
+       edge, and the three paper tones a book IN A STACK shares. They are
+       spent on the pillars, on the cap and on the spines leaning on the
+       shelf - the falling book has its own paper, three entries down,
+       and the note there says why it had to be given one -
+       and since the daylight cut they are the DARKEST pigments in the bay
+       rather than the loudest: a stack of hardbacks between a monitor and
+       a lit wall is in its own shadow, and Desk ref 4 shows exactly that
+       - dark spines, a black screen, a bright wall behind both. Every
+       cover keeps its hue and gives up about two fifths of its luminance
+       (red 78 -> 47, yellow 173 -> 84, tan 132 -> 70, blue 74 -> 42,
+       green 88 -> 50, black 29 -> 23); the fore-edges, which were the
+       brightest thing in the bay at 227, are paper seen in shadow at 61;
+       the title line is a dim 96 instead of a white 231. A tower's body
+       measures 56.7 against a lane of 108.5 - that is the
+       separation, and it is the Mantle's inversion the other way up. The
+       first daylight cut stopped a third of the way (pages 82, covers
+       about ten over these) with the wall at 109, and measured 68
+       against 102: a separation of 34, worse than the night's 48; the
+       second (pages 69, these covers, wall 120) measured 60 against 105,
+       a separation of 46. The lesson is that the room's light sheet
+       takes a tenth off a bright wall and nothing off a dark tower, and
+       that only a third of the lane IS wall, so the tower has to pay
+       more than the arithmetic on raw pigments says.
+       Before, for the record: bookRed #9b2e26 / #c6483c, bookBlack
+       #1f1c1c / #403a3b, bookYellow #d8ae3a / #f1cf6a, bookGreen #3f6a3a
+       / #5f9155, bookBlue #2f4d7e / #4d6fa6, bookTan #b07a48 / #d19d6a,
+       pages #eae2d2, pagesHi #f7f2e8, pagesShade #c7bcaa, title #f1e7d0. */
+    bookRed:      '#601b18',  bookRedHi:    '#7c2922',
+    bookBlack:    '#181616',  bookBlackHi:  '#2e2a2a',
+    bookYellow:   '#6a5418',  bookYellowHi: '#88702a',
+    bookGreen:    '#243c23',  bookGreenHi:  '#365236',
+    bookBlue:     '#1b2c48',  bookBlueHi:   '#2a4066',
+    bookTan:      '#5f3f25',  bookTanHi:    '#78553a',
+    pages:        '#403c37',
+    pagesHi:      '#4c4741',
+    pagesShade:   '#33302d',
+    title:        '#665f55',
+
+    /* AND THE ONE BOOK THAT IS NOT IN THE STACK'S SHADOW. Everything
+       above is a book SEEN IN A PILE - wedged between its neighbours,
+       behind a monitor, under a shelf - and that is why the daylight cut
+       was right to take it down. A book that has come off the shelf and
+       is falling through the middle of the room is not in that shadow at
+       all: it is in the open air with the window on it, which is the one
+       place in this bay where paper still catches the light. So the DROP
+       keeps its own three tones, and only the drop and what it leaves on
+       the boards ever paint with them.
+
+       THIS IS NOT A FLOURISH, IT IS THE LEVEL'S MAIN HAZARD. Darkening
+       the shared paper took the bright fore-edge band off the drop
+       sprite at the same moment the wall rose by as much as the books
+       fell, so the lane-against-pillar number this round was tuned on
+       showed nothing while the thing the player has to dodge went
+       invisible. Measured over 14,400 placements (6 covers x 2
+       orientations x 25 x-positions x 16 y-positions x 3 scroll phases),
+       mean |dL| of the sprite against the backdrop under it: the night
+       build never fell below 39.8 anywhere in the bay; sharing the dark
+       paper put 2.75% of placements under 25 with a worst case of 11.7 -
+       a black hardback crossing the knee hole at y 214, which is a flat
+       field of 23 and is exactly the height every book ends its fall at.
+       With these three tones the worst placement in the bay is 32.4,
+       and NOTHING is under 25 - or under 30. The whole census, night
+       build / daylight cut as it stood / now:
+           min      39.3   11.7   32.4
+           p05      50.1   28.1   54.3
+           p25      65.0   52.2   72.6
+           median   73.2   72.2   84.4
+           under 25  0.00%  2.75%  0.00%
+       The median barely moved between the first two columns, which is
+       exactly why this was missed: the wall rose by as much as the books
+       fell, so every summary statistic the round was watching stayed
+       still while the bottom of the distribution fell out.
+
+       The values are the room's own daylight, not an invention:
+       dropPages is 208, which is the photograph's light through a
+       shutter slat (#cbd3cf, 208); dropPagesHi is 236, a hair under the
+       desk's white melamine; dropTitle is 180, gilt lettering on a dark
+       cover rather than the night build's flat white 231. FX.splat and
+       FX.splatHi are these two, by reference and not by copy, so the
+       burst a landing book throws can never again be a different paper
+       from the book it came off. */
+    dropPages:    '#d8d0bf',
+    dropPagesHi:  '#f2ece0',
+    dropTitle:    '#bdb49c',
 
     /* the mug: this bay's spare life */
     mugWhite:     '#f0eae0',
@@ -10498,12 +10687,24 @@ var Desk = (function () {
   /* The 15 neutral effect colours PlayScene paints particles and washes
      from. It never reads P. The first two are the ROOM's air, so the dust
      drifting through the Desk is the dust drifting through the Mantle.
-     The last seven are the mint. */
+     The last seven are the mint.
+
+     SPLAT IS THE ONE ENTRY THAT IS NOT A LITERAL, AND THAT IS
+     DELIBERATE. splatter() throws twelve particles in these two when a
+     drop lands, and what it throws them off is drawDropSplat's ridge of
+     paper. They were written out by hand as '#eae2d2' / '#f7f2e8' with
+     the comment "pages" - which was true of the night build and silently
+     stopped being true the moment the daylight cut took P.pages down to
+     61, leaving a 226-and-242 burst coming off a 61 book, 165 of
+     luminance apart. Naming the pigments instead of copying their values
+     is the only version of this that cannot drift again: change the
+     paper the falling book is lit by and the burst follows it in the
+     same edit. */
   var FX = {
     motes:    LivingRoom.AIR.motes,  motesHi: LivingRoom.AIR.motesHi,
     puff:     '#d2c5ad',   puffHi:   '#eae2d2',   /* plaster and paper dust */
     ground:   '#b4aa91',   groundHi: '#d4cfc1',   /* oak                    */
-    splat:    '#eae2d2',   splatHi:  '#f7f2e8',   /* pages                  */
+    splat:    P.dropPages, splatHi:  P.dropPagesHi, /* the falling book's own paper */
     hot:      '#5fd1b0',   hotMid:   '#8fe3c8',   hotHi: '#e8fff6',
     heat:     '#8fe3c8',   heatEdge: '#2f8f74',
     glowCore: '232,255,246', glowEdge: '95,209,176'
@@ -10622,19 +10823,33 @@ var Desk = (function () {
      eight pixels the pop point is already held clear of the glass. */
   var scrollNow = 0;
 
-  /* HOW FAR DOWN THE SCREENS ARE TURNED. A monitor at its own value is
-     an emitter, and three of them across the back of the bay out-shout a
-     book tower - which in this level is the one thing that must never
-     happen, because the towers are what the player is reading. Five
-     sixteenths of void, laid on the GLASS ONLY, on top of the three the
-     whole furniture layer gets: enough that a page is still legibly a
-     page and a session is still legibly playing, and not enough that
-     either of them is the brightest thing on the screen.
+  /* HOW FAR DOWN THE SCREENS ARE TURNED, AND WHY IT IS NO LONGER FIVE.
+
+     This was five sixteenths of void on the glass, and the reason
+     written here was that "a book tower's pages band is 227 and must
+     stay the brightest thing in the bay". That constraint is gone. The
+     daylight cut inverted this level: the tower's pages band is 61, the
+     tower is now the DARKEST solid thing on the screen, and a screen
+     cannot out-shout it by being bright - the brighter the lane, the
+     further the plank separates from it. Five sixteenths was being paid
+     for nothing, and what it bought instead was three switched-on
+     monitors reading at or below the wall behind them.
+
+     So: ONE sixteenth, laid on the GLASS ONLY, on top of the three the
+     whole furniture layer gets. It is not a curtain over an emitter any
+     more; it is the sheen a pane of glass has when the room it is in is
+     brighter than it was - the thing that keeps a monitor reading as
+     glass rather than as a hole cut in the wall. Measured on the
+     widescreen's live page against the plaster strip at x 2..8: the
+     night build led its wall by 34 (105.7 against 71.8) and the daylight
+     cut left it trailing by 6 (105.7 against 111.2). With the panes
+     re-valued and this at one it leads by the number quoted at the top
+     of THE THREE SCREENS in P.
 
      It is applied in exactly two places - under the baked chrome and
      under the live content - and it has to be the same number in both or
      a tab bar ends up brighter than the page under it. */
-  var SCREEN_DIM = 5;
+  var SCREEN_DIM = 1;
 
   var T = {};               /* baked tiles and sprites */
 
@@ -10688,23 +10903,18 @@ var Desk = (function () {
        nearest-neighbour layer bands anyway, and this way the bands are
        chosen rather than arrived at. The strengths are 1,1,1,2,2,3 from
        the outside in, which compounds to about half-way to wallLamp at
-       the core - a lamp, not a spotlight. */
+       the core - and in daylight wallLamp is thirty over the base coat
+       where it was fifty-four over it, so the core lands about fifteen
+       up and a little warm: a lamp left on in a lit room, not a pool. */
     lampPool(c, 90, 150, W, H);
 
-    /* THE DAYLIGHT, on the wall round the window: one band of a cool
-       grey-blue, a sixteenth, in an ellipse centred on the shutters. One
-       band and not the lamp pool's six, because it is a window across a
-       room and not a lamp on a desk - it lifts the wall about five of
-       luminance where it lands and its edge is a curve, so no row of the
-       bay moves by it.
-
-       IT IS 104 AND NOT 125 WIDE because the chinks now actually carry
-       sky (see shutters, where the fill was being painted over), and
-       that is worth 2.5 of the lane's mean on its own. The pool is the
-       cheapest of the three daylight costs to give back - it is the
-       spill, not the source - and 125 put it on wall the window could
-       not plausibly reach anyway. Measured: the lane's mean comes back
-       0.4 and the cream pillars keep their separation. */
+    /* THE DAYLIGHT, on the wall round the window: two bands of a cool
+       grey, a sixteenth each, in ellipses centred on the shutters. The
+       photograph's wall above the window measures 120 against 100 at mid
+       height, and two bands of dayWall over the base coat is about eight
+       of that at the core. Two bands and not the lamp pool's six, because
+       it is a window across a room and not a lamp on a desk; their edges
+       are curves, so no row of the bay moves by them. */
     dayPool(c, 221, 97, W, H);
 
     /* THE SHUTTERS. White plantation shutters, two panels either side of
@@ -10750,18 +10960,22 @@ var Desk = (function () {
     }
   }
 
-  /* the daylight's one ellipse: the lamp pool's painter at one band */
+  /* the daylight's spill: the lamp pool's painter at two bands, a
+     sixteenth each, the outer one as wide as the window and its frame */
   function dayPool(c, cx, cy, W, H) {
-    var rx = 104, ry = Math.round(rx * 0.78);
-    for (var dy = -ry; dy <= ry; dy++) {
-      var yy = cy + dy;
-      if (yy < 0 || yy >= H) continue;
-      var k = dy / ry;
-      var hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - k * k)));
-      if (hw <= 0) continue;
-      var x0 = Math.max(0, cx - hw), x1 = Math.min(W, cx + hw);
-      if (x1 <= x0) continue;
-      Tint.rect(c, x0, yy, x1 - x0, 1, P.dayWall, 1);
+    var radii = [110, 70];
+    for (var b = 0; b < radii.length; b++) {
+      var rx = radii[b], ry = Math.round(rx * 0.78);
+      for (var dy = -ry; dy <= ry; dy++) {
+        var yy = cy + dy;
+        if (yy < 0 || yy >= H) continue;
+        var k = dy / ry;
+        var hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - k * k)));
+        if (hw <= 0) continue;
+        var x0 = Math.max(0, cx - hw), x1 = Math.min(W, cx + hw);
+        if (x1 <= x0) continue;
+        Tint.rect(c, x0, yy, x1 - x0, 1, P.dayWall, 1);
+      }
     }
   }
 
@@ -10817,21 +11031,18 @@ var Desk = (function () {
     c.fillStyle = P.shutterLit;   c.fillRect(stile, inY, 1, inH);
     c.fillStyle = P.outline;      c.fillRect(stile + 5, inY, 1, inH);
 
-    /* AND THEN THE LAMP DOES NOT REACH IT. The shutters are white, and
-       painted at their own value they are 142 x 138 of the brightest
-       thing in the bay - brighter than a book tower's pages band, which
-       is the one thing in this level that is not allowed to lose. The
-       lamp pool is centred at x 90 and the window starts at 150, so the
-       honest answer is also the right one: nothing is lighting their
-       FACE. Six sixteenths of void takes the frame down to a dim bone
-       and the slats to a grey that still reads as slats - and takes the
-       sky in the chinks from 156 to a measured 103, which is a window
-       seen from a dim room and as bright as the window is allowed to
-       be: a book tower's pages band is 227 and must stay the brightest
-       thing in the bay. The chink is one row in six and the window is
-       142 of the tile's 336 columns, so all of it together moves the
-       lane's mean by 2.5 - which the wall's base coat gave back. */
-    Tint.rect(c, x - 1, y - 1, w + 2, h + 2, P.void, 6);
+    /* AND THEN A SIXTEENTH OF THE VOID, not six. Through the night cuts
+       the window was held six sixteenths down because a tower's pages
+       band was the one thing in the bay not allowed to lose, and white
+       shutters painted at their own value beat it. The level inverts now
+       - the towers are the dark thing - so the window may be what the
+       photograph says it is, the brightest surface in the room: the
+       frame about 147, a louvre face about 158 and the chink about 196
+       after this, against the photograph's 147, 160 and 208. The one
+       sixteenth that stays keeps the window a hair under its raw
+       pigments, so the lit arris on the frame still reads as an arris
+       and not as the same white as the slat under it. */
+    Tint.rect(c, x - 1, y - 1, w + 2, h + 2, P.void, 1);
   }
 
   /* a vine with leaf clusters every 7-11px, run along a rail or down a
@@ -11369,26 +11580,50 @@ var Desk = (function () {
      hazard.
 
      THERE IS NO TUMBLING. A box that swapped shape mid-fall could not be
-     dodged honestly, and the player would be right to be annoyed. */
+     dodged honestly, and the player would be right to be annoyed.
+
+     AND THE FORE EDGE IS LIT. Not one rectangle in here moved for the
+     daylight cut; what moved is which paper they are painted in. The
+     fore-edge band and the title row come out of dropPages / dropPagesHi
+     / dropTitle instead of the stack's pages / pagesHi / title, because
+     a book falling through the middle of the room is in the window's
+     light and a book wedged in a pile is not. That is the whole fix for
+     the hazard that lost its contrast, and it is lighting, not shape.
+
+     WHY IT HAS TO BE A BAND AND NOT A BRIGHTER COVER. The covers are
+     load-bearing: they are what the tower is made of, and they are dark
+     on purpose so the plank separates from a bright lane. The drop
+     cannot be lightened by lightening them. What it can have is the one
+     part of a book that is paper, and 10% of the flat sprite being 208
+     to 236 is worth more to the eye than the whole cover being ten
+     brighter, because it is a CONTRAST inside the sprite as well as
+     against the room - which is why it reads at any height, over the
+     bright wall and over the near-black knee hole alike.
+
+     The worst placement in the bay, over all 14,400 the census walks, is
+     a black hardback lying flat across the knee hole at x 200, y 214,
+     where the backdrop is a flat 23: mean |dL| 32.4, against 11.7 when
+     this sprite shared the stack's paper. Nothing is under 25, and
+     nothing is under 30. The full table is in P, under dropPages. */
   function bakeBookDrop(dir, ci) {
     var cover = COVERS[ci];
     var flat = dir === 'flat';
     var t = makeCanvas(flat ? 24 : 8, flat ? 8 : 24), c = t.ctx;
 
     if (flat) {
-      c.fillStyle = P.outline;  c.fillRect(0, 0, 24, 8);
-      c.fillStyle = cover[0];   c.fillRect(1, 1, 22, 6);
-      c.fillStyle = cover[1];   c.fillRect(1, 1, 22, 1);   /* the lit top face */
-      c.fillStyle = P.pages;    c.fillRect(18, 2, 4, 5);
-      c.fillStyle = P.pagesHi;  c.fillRect(18, 2, 4, 1);
-      c.fillStyle = P.title;    c.fillRect(4, 4, 8, 1);
+      c.fillStyle = P.outline;      c.fillRect(0, 0, 24, 8);
+      c.fillStyle = cover[0];       c.fillRect(1, 1, 22, 6);
+      c.fillStyle = cover[1];       c.fillRect(1, 1, 22, 1);  /* the lit top face */
+      c.fillStyle = P.dropPages;    c.fillRect(18, 2, 4, 5);
+      c.fillStyle = P.dropPagesHi;  c.fillRect(18, 2, 4, 1);
+      c.fillStyle = P.dropTitle;    c.fillRect(4, 4, 8, 1);
     } else {
-      c.fillStyle = P.outline;  c.fillRect(0, 0, 8, 24);
-      c.fillStyle = cover[0];   c.fillRect(1, 1, 4, 22);
-      c.fillStyle = cover[1];   c.fillRect(1, 1, 1, 22);
-      c.fillStyle = P.title;    c.fillRect(2, 7, 3, 1); c.fillRect(2, 11, 3, 1);
-      c.fillStyle = P.pages;    c.fillRect(5, 1, 2, 22);
-      c.fillStyle = P.pagesHi;  c.fillRect(5, 1, 1, 22);
+      c.fillStyle = P.outline;      c.fillRect(0, 0, 8, 24);
+      c.fillStyle = cover[0];       c.fillRect(1, 1, 4, 22);
+      c.fillStyle = cover[1];       c.fillRect(1, 1, 1, 22);
+      c.fillStyle = P.dropTitle;    c.fillRect(2, 7, 3, 1); c.fillRect(2, 11, 3, 1);
+      c.fillStyle = P.dropPages;    c.fillRect(5, 1, 2, 22);
+      c.fillStyle = P.dropPagesHi;  c.fillRect(5, 1, 1, 22);
     }
     return t;
   }
@@ -11685,7 +11920,7 @@ var Desk = (function () {
      changes colour on every bounce because the two wave COUNTS decide
      the tint, so the colour and the corner it came off are the same
      fact told twice. */
-  var LOGO_TINTS = ['#6f6b8a', '#8a6f6b', '#6b8a7a', '#7a6b8a'];
+  var LOGO_TINTS = ['#9a95bd', '#bd9a95', '#95bda9', '#a995bd'];
 
   function screenSaver(ctx, sx, sy, scroll) {
     var lx = Math.round(tri(scroll * 0.09, 63));
@@ -11923,12 +12158,15 @@ var Desk = (function () {
       return;
     }
 
-    /* the book. Two paper motes hang above either one. */
+    /* the book. Two paper motes hang above either one, in the FALLING
+       book's paper rather than the stack's - they came off this book, in
+       this light, and a mote the colour of a shelved fore-edge would be
+       two pixels of the tower floating in mid air. */
     for (i = 0; i < 2; i++) {
       k = mod(ob.spin * 0.7 + i * 0.41, 1);
       var py = y - 9 - Math.round(k * 7);
       if (py < CEIL) continue;
-      ctx.fillStyle = i ? P.pagesHi : P.pages;
+      ctx.fillStyle = i ? P.dropPagesHi : P.dropPages;
       ctx.fillRect(x - 4 + Math.round(Math.sin(ob.spin * 2 + i) * 4), py, 1, 1);
     }
     if (ob.dir === 'flat') {
@@ -11965,15 +12203,25 @@ var Desk = (function () {
     if (kind === 'book') {
       /* it has landed face down and open: a shallow tent of two covers
          meeting at a ridge of pages, which is how a hardback actually
-         lands and is the only splat in the game that is a SHAPE */
+         lands and is the only splat in the game that is a SHAPE.
+
+         The ridge and the two splayed leaves are the FALLING book's
+         paper, not the stack's, for two reasons. It is the same book it
+         was a frame ago, and it is still out in the open. And the floor
+         of this bay is the darkest band in it, so a splat in the stack's
+         61 would land on the boards and disappear - which is the one
+         place the player has to be able to see that the thing which was
+         chasing them has stopped. PlayScene's twelve burst particles are
+         FX.splat / FX.splatHi, which ARE these two pigments; the burst
+         and the thing it came off are now one decision. */
       var cover = COVERS[ob.cover];
-      ctx.fillStyle = P.pagesHi; ctx.fillRect(x - 2, FLOOR + 1, 4, 1);
+      ctx.fillStyle = P.dropPagesHi; ctx.fillRect(x - 2, FLOOR + 1, 4, 1);
       for (i = 1; i < 6; i++) {
         var hw = 2 + i * 2;
         ctx.fillStyle = cover[i < 3 ? 1 : 0];
         ctx.fillRect(x - hw, FLOOR + i, hw * 2, 1);
       }
-      ctx.fillStyle = P.pages;
+      ctx.fillStyle = P.dropPages;
       ctx.fillRect(x - 12, FLOOR + 5, 3, 1); ctx.fillRect(x + 9, FLOOR + 5, 3, 1);
       ctx.fillStyle = P.outline; ctx.fillRect(x - 12, FLOOR + 6, 24, 1);
     } else if (kind === 'coin') {
@@ -12187,12 +12435,15 @@ var Desk = (function () {
       tower(ctx, ox, gapY + gapH, oakY - gapY - gapH, i + 1);
     }
 
-    /* 8. a hardback coming down */
+    /* 8. a hardback coming down. Its fore edge is dropPages, the same as
+       the real sprite's - the cover is a promise about the level, and a
+       cover that draws the hazard in the tower's dark paper promises a
+       book the player will not be able to see. */
     var ty = y + 10 + mod(s * 1.5, oakY - y - 16);
     ctx.fillStyle = P.outline;    ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 5);
     ctx.fillStyle = P.bookBlue;   ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 4);
     ctx.fillStyle = P.bookBlueHi; ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 1);
-    ctx.fillStyle = P.pages;      ctx.fillRect(x + Math.round(w * 0.72) + 9, Math.round(ty) + 1, 2, 3);
+    ctx.fillStyle = P.dropPages;  ctx.fillRect(x + Math.round(w * 0.72) + 9, Math.round(ty) + 1, 2, 3);
 
     /* 9. THE SIGNATURE: an app icon COMING OUT OF THE WIDESCREEN, which
        is the one thing nobody will mistake for another level - and the
@@ -12205,20 +12456,26 @@ var Desk = (function () {
        bezel beside it. */
     var ww = Math.round(w * 0.3), wh = Math.round(h * 0.2);
     var wx = x + Math.round(w * 0.3), wy = deskY - wh;
-    var gx = wx + Math.round(ww * 0.62), gy = wy + wh - 3;
+    /* glowX, not gx: the oak-grain loop above already declared a `var gx` in
+       this same function, and a second `var` of a name is not a second
+       variable - it is the same one. This project has shipped that four
+       times now (PANEL_W, fy, gx, and one before them), always in a long
+       draw function where the two uses are a hundred lines apart and the
+       order of assignment happens to save it. */
+    var glowX = wx + Math.round(ww * 0.62), gy = wy + wh - 3;
     var k = mod(t * 0.42, 1);
     if (k < 0.90) {
       /* the glass lighting up: all of the charge, then the flash spent */
       var lit = k < 0.18 ? k / 0.18 : (k < 0.42 ? 1 - (k - 0.18) / 0.24 : 0);
       if (lit > 0) {
-        Tint.rect(ctx, gx - 4, gy - 3, 9, 5, P.appGreenHi, Math.round(10 * lit));
-        Tint.rect(ctx, gx - 2, gy - 2, 5, 4, P.appGreenHi, Math.round(10 * lit));
+        Tint.rect(ctx, glowX - 4, gy - 3, 9, 5, P.appGreenHi, Math.round(10 * lit));
+        Tint.rect(ctx, glowX - 2, gy - 2, 5, 4, P.appGreenHi, Math.round(10 * lit));
       }
       if (k >= 0.18) {
         var rp = clamp((k - 0.18) / 0.26, 0, 1);
         var re = 1 - (1 - rp) * (1 - rp);
         var topY = y + Math.round(h * 0.26);
-        var ix = gx - 4;
+        var ix = glowX - 4;
         var iy = Math.round(gy - 4 - (gy - 4 - topY) * re - 3 * Math.sin(Math.PI * rp));
         if (rp >= 1) iy += Math.round(Math.sin(t * 2.6) * 3);
         ctx.fillStyle = P.outline;  ctx.fillRect(ix - 1, iy - 1, 11, 11);
@@ -12683,6 +12940,27 @@ var Desk = (function () {
    furniture - a chesterfield - and the owner said so. See bakeCouch for
    what carries the wall now that the lattice is gone.
 
+   AND THE PANELS ARE STUFFED, NOT CAST. The cut after that one had the
+   right layout and the wrong material: square corners, a flat face and
+   a drawn seam, which the owner read as a concrete wall with bolts in
+   it. Each panel is a HEIGHT FIELD now - a pillow-shaped dome with
+   rounded corners, dimpled under its four buttons - lit from the
+   pendants and ordered-dithered through a tile-anchored Bayer. The
+   corners are round, the top is a rolled crest, every seam is a valley
+   both neighbours roll down into, and there is no straight edge on the
+   fabric anywhere. bakeCouch has the numbers.
+
+   AND THE CREST IS THE LAST OF IT. The modelling pass did all of that
+   and still left a 480px row of P.outline across the top of the tile,
+   with the panels starting underneath it - so the top of the sofa, which
+   is the first thing the eye meets because it is the silhouette against
+   the bright shutters, was a dead-straight rule with a shallow notch
+   every 160 pixels. The rule is gone. The crest is a curve carried in
+   the height field, the arch of a cushion plus a long wave across the
+   whole tile so no two panels on screen crest at the same height, and
+   the hard edge that holds it against the sill follows that curve
+   instead of cutting across it.
+
    WHAT THIS BAY IS, AND WHY IT IS NOT THE DESK. Both rooms are the same
    room and both have the same windows in them, so the first cut of this
    level filled its whole backdrop with the room's shutters and put the
@@ -12842,7 +13120,10 @@ var Couch = (function () {
        a 21-luminance contour, which on a 160px panel is an edge the eye
        finds. Five tones about eleven apart make the swell a RAMP in five
        steps, each one under the room's own eight-a-row rule, and the
-       panel's mean lands within two of the old lattice's: see bakeCouch. */
+       panel's mean lands within two of the old lattice's: see bakeCouch.
+       Since the modelling pass the ramp runs through SEVEN: crest above
+       backLit for the roll along the top of each cushion, and button
+       below backCrease for the valley between two of them. */
 
     /* THE THROW PILLOWS, and they are the thing that kills you, so
        nothing else in this bay is allowed to be this colour. The two
@@ -13117,8 +13398,9 @@ var Couch = (function () {
         24       the crown moulding (the room's, and it kills)
         26..85   the shutters: two panels, nine louvres each
         86..93   the window sill, with the sofa's shadow thrown up it
-        94..97   the lit roll along the top of the sectional
-        98..234  THE BACK CUSHIONS - the field, and most of the screen
+        94..120  the crest, and it is a CURVE: a cushion's apex touches 94
+                 and the valley at a seam runs down to about 120
+        94..234  THE BACK CUSHIONS - the field, and most of the screen
         189..241 three throw cushions propped on the seat, leaning back
         235..241 the crease where the back cushions meet the seat
         242..269 the seat cushion - this bay's FLOOR band
@@ -13267,7 +13549,6 @@ var Couch = (function () {
     c.fillStyle = P.shutterLit;   c.fillRect(px - 2, SILL_Y, PANEL_W + 4, 2);
     c.fillStyle = P.shutterMid;   c.fillRect(px - 2, SILL_Y + 2, PANEL_W + 4, 4);
     c.fillStyle = P.shutterShade; c.fillRect(px - 2, SILL_Y + 6, PANEL_W + 4, 1);
-    c.fillStyle = P.outline;      c.fillRect(px - 2, SILL_Y + 7, PANEL_W + 4, 1);
 
     /* and the hard edge round the whole panel. Three in ten pillars are
        cream and they pass in front of this: the outline is half of what
@@ -13291,6 +13572,15 @@ var Couch = (function () {
     shutterPanel(c, 193, false, r);  /* shut                     */
     shutterPanel(c, 289, true, r);   /* open to the night        */
 
+    /* and the shadow line under the nose of the sill, run the whole way
+       across rather than per panel. The sill is ONE shelf: drawn per
+       panel it left a 2px gap of lit wall every 96 pixels, and the
+       sectional's crest now touches this row where a cushion's apex
+       comes up to screen 94, so those gaps would have slid along the top
+       of the sofa at a different parallax from the sofa itself. */
+    c.fillStyle = P.outline;
+    c.fillRect(0, SILL_Y + 7, SH_W, 1);
+
     /* NO STEP BACK TOWARD THE WALL. There used to be a 3/16 Tint of
        P.wall over the whole tile, because the shutters were the entire
        backdrop and three in ten pillars had to beat them. Now they are
@@ -13312,10 +13602,12 @@ var Couch = (function () {
      because a backdrop you are flying across is not a backdrop.
 
      Everything in here is a horizontal band or a baked shape, so the
-     0.62 parallax only ever moves it sideways: the crest at y 94 is a
-     perfectly flat line across the screen no matter where the scroll
-     has got to, and so is the crease at 235, which is what makes the
-     pair of them usable as the top and the bottom of the popcorn zone. */
+     0.62 parallax only ever moves it sideways: the crease at 235 is a
+     perfectly flat line across the screen no matter where the scroll has
+     got to, which is what makes it usable as the floor of the popcorn
+     zone. The CREST is not flat and is not meant to be - it rises and
+     falls across the panels - and nothing is solved against it: every
+     number the hops are worked out from is quoted off FLOOR. */
   var CO_W = 480, CO_H = FLOOR - BACK_Y;   /* 480 x 148, drawn at y 94 */
 
   /* THE CUSHION PANELS. 160 wide because 480/160 is a whole number and
@@ -13457,83 +13749,250 @@ var Couch = (function () {
 
   function bakeCouch() {
     var t = makeCanvas(CO_W, CO_H), c = t.ctx;
-    var x, y, i, j;
-    var FIELD = 4;                        /* local row the tufting starts  */
+    var x, y, i, j, p, pcx;
+    var FIELD = 0;                        /* local row the cushions start  */
     var CREASE = CO_H - 7;                /* local 141, screen 235         */
+    var hx = CUSHION_W / 2;
 
-    /* 1. the body, and the roll along the top of it. The outline is the
-       hard edge the house style asks for everywhere a solid thing meets
-       something behind it; the three rows under it are the roll of the
-       backrest catching the pendants, crest then backLit, which is what
-       Couch ref 2's top edge actually does. */
+    /* 1. the body, AND NOTHING ALONG THE TOP OF IT - which is the one
+       bullet of the owner's cushion note that the modelling pass left on
+       the table. There used to be `fillRect(0, 0, CO_W, 1)` in P.outline
+       here: a 480px dead-straight rule across the whole tile, with the
+       cushion silhouette starting underneath it and only reaching u
+       15..145 of each 160px panel, so what the player met at the top of
+       the sofa back was a hard straight line with a shallow notch every
+       160 pixels. The note asked for "the top edge of the whole back is
+       a soft rolled crest, not a straight rule" and "no straight hard
+       edge anywhere on the fabric", and in Couch ref 2 the crest is a
+       continuous curve rising and falling across the panels with nothing
+       above it at all.
+
+       So the crest is part of the HEIGHT FIELD now. The top of the
+       fabric is a curve (crestOf, in step 2), the dark above it is the
+       recess between the sofa back and the window sill, and the hard
+       edge the house style asks for is two rows of outline that FOLLOW
+       that curve - laid at the end of step 2, where the shape of it is
+       known. FIELD is 0 and not 1 for the same reason: the crest has to
+       be able to reach the top row of the tile, or the row above it is a
+       straight rule again by another name. */
     c.fillStyle = P.backMid;  c.fillRect(0, 0, CO_W, CO_H);
-    c.fillStyle = P.outline;  c.fillRect(0, 0, CO_W, 1);
-    c.fillStyle = P.crest;    c.fillRect(0, 1, CO_W, 1);
-    c.fillStyle = P.backLit;  c.fillRect(0, 2, CO_W, 2);
 
-    /* 2. THE PANELS, and each one is a STUFFED THING rather than a
-       pattern. Every pixel of the field is asked how far it is from the
-       centre of its own panel, in panel-widths across and field-heights
-       down, and that distance picks one of five tones. Two things make
-       the distance a cushion's and not a disc's:
+    /* 2. THE PANELS, and each one is a STUFFED THING. Square corners, a
+       flat face and a drawn seam read as cast concrete with bolts in it
+       - the owner's words - so a panel is a HEIGHT FIELD now, and the
+       tones are read off it the way light would read them:
 
-         - it is a 4-norm, not a 2-norm. A cushion is a rounded rectangle
-           with the stuffing pushed out to the corners, and the 4-norm's
-           unit ball is a squircle: nearly square, soft at the corners.
-           The 2-norm gave a lit disc on a flat plate.
-         - it is tipped toward the lamp. The pendants are overhead and a
-           little to the left, so the swell's bright side is its upper
-           left and the shadow collects along the bottom of each panel
-           and against the right-hand seam, the same convention the
-           pillars and the throw pillows state in their own passes.
+         - its silhouette is a rounded rectangle, 158 of the panel's 160
+           columns and all 141 rows of the field, with an 18px radius on
+           the top corners and 8px on the bottom ones. Generous at the
+           top, where there is no frame behind the cushion and the
+           stuffing rounds freely; tight at the bottom, where the cushion
+           is pushed down into the seat. Outside that silhouette - the
+           corner wedges and the one column each side of a seam - is the
+           dark between two cushions.
+         - AND THAT RECTANGLE HANGS OFF A CREST LINE, not off row 0. The
+           panel's own vertical coordinate is measured down from wherever
+           the crest is on this column, so the rounded corners, the dome
+           and the lit roll along the top all follow the curve, and the
+           top of the sofa is a shape rather than a rule. crestOf below
+           is the curve and the numbers it was chosen for.
+         - the stuffing is a PILLOW and not a plateau: the product of two
+           superellipse bumps, one across and one down, each
+           (1 - r^3)^(1/3). Nearly flat through the middle, rolling over
+           hard in the outer fifth, and no mitre at the corners - a
+           distance field to the rectangle has one along each diagonal,
+           and it read as a bevelled box. The dome is 1 at the centre and
+           0 at every edge.
+         - each of the four buttons pulls the fabric INTO it: a Gaussian
+           dimple of radius 5.5px takes two fifths of the height at its
+           centre and nothing at twice that radius.
+         - the light is the pendants, overhead and a little to the left:
+           (-0.30, -0.85, 0.45), normalised. A pixel's tone is a base of
+           2.5 (between backSwell and backMid, mostly the latter), less 2
+           steps for standing the full height of the dome, less 7 steps
+           for how much more squarely its surface faces the light than a
+           flat one does - the gradient of the height field, scaled by
+           20px of puff, is the surface. So the roll along the top faces
+           up into the lamps and comes out crest; the roll at the bottom
+           faces the seat and goes down to backCrease; the left side of a
+           panel is a shade lighter than the right; the upper lip of
+           every dimple is in shadow and its lower lip is lit. Inside a
+           cushion the tone is clamped at backCrease, so the fabric's own
+           darkest value is one step above the valley it rolls into, and
+           the bottom roll is a ramp and not a cliff.
 
-       WHAT CARRIES THE WALL NOW. The lattice was a fold every 37 rows
-       with a lit face above each one: two tones alternating all over the
-       field, which is where the old wall's tonal variety came from. The
-       panel swell has to carry that on its own, in five tones about
-       eleven apart (120, 109, 99, 88, 76) laid as five nested squircles
-       - a ramp in five steps rather than one lit shape on a flat plate.
-       The thresholds below were chosen so that the field's MEAN comes
-       out where the lattice's was (about 98 under the room's light): the
-       lit core and the dark roll are small, the body is most of the
-       panel, and the two shoulders between them are what make it read
-       as a soft thing rather than a target. Nothing in here is a
-       full-width row, so the room's eight-a-row rule has nothing to
-       find: every tone boundary is a curve. */
-    var TONES = [P.backLit, P.backSwell, P.backMid, P.backRoll, P.backCrease];
-    var tone = new Uint8Array(CO_W * CO_H);
-    var hx = CUSHION_W / 2, hy = (CREASE - FIELD) / 2, cyF = FIELD + hy;
-    /* THE RAMP IS DITHERED, AND IT IS BAKED. Five flat tones laid as five
-       nested squircles read as five contour rings - a target, not a
-       cushion - because an eleven-step edge that runs for sixty pixels
-       is an edge however small the step. So the tone is a CONTINUOUS
-       value along the swell, and the pixel takes the tone above or the
-       tone below it by a 4x4 Bayer threshold: an ordered dither, baked
-       once into this tile. That is the one place in this file a Bayer
-       grid is allowed, and the reason is the file's own rule: the grid
-       is anchored to the TILE, which moves as one piece, so it never
-       re-phases against anything and cannot boil. Dither.rect, which
-       anchors to the screen, is still not called anywhere in here. */
+       THE RAMP IS DITHERED, AND IT IS BAKED. Seven flat tones laid as
+       contours read as a target (TONES has an eighth, P.outline, and it
+       is not a tone of the fabric - it is the edge above the crest, set
+       as a whole index and never dithered into), so the tone is a
+       CONTINUOUS value and
+       the pixel takes the tone above or the tone below it by a 4x4
+       Bayer threshold - an ordered dither, baked once into this tile.
+       That is the one place in this file a Bayer grid is allowed, and
+       the reason is the file's own rule: the grid is indexed by TILE
+       coordinates, and the tile moves as one piece, so it never
+       re-phases against anything and cannot boil. 480 and 160 both
+       divide by four, so the pattern wraps at the tile seam as well.
+       Dither.rect, which anchors to the screen, is still not called
+       anywhere in here. */
+    var TONES = [P.crest, P.backLit, P.backSwell, P.backMid, P.backRoll,
+                 P.backCrease, P.button, P.outline];
     var BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
-    var STOPS = [0.30, 0.57, 0.81, 0.97, 1.05];    /* where each tone is purest */
-    for (y = FIELD; y < CREASE; y++) {
+    var PW = CUSHION_W, PH = CREASE - FIELD;          /* one panel: 160 x 141 */
+    var R_TOP = 18, R_BOT = 8, GAP = 1;
+    var PUFF = 3;                                      /* the superellipse exponent    */
+    var PUFF_Z = 20;                                   /* px of height the normals see */
+    var DIMPLE_R = 5.5, DIMPLE_D = 0.40;
+    var DIMPLE_REACH = DIMPLE_R * 2.5;                 /* where a dimple stops mattering */
+    var DIMPLE_LIFT = 1.2;                             /* and how far its lip may light  */
+    var K_H = 2.0, K_N = 7.0, BASE = 2.5;
+    var CREST_DIP = 11, CREST_P = 1.6, CREST_RUN = 3;
+    var LX = -0.30, LY = -0.85, LZ = 0.45;
+    var LN = Math.sqrt(LX * LX + LY * LY + LZ * LZ);
+    LX /= LN; LY /= LN; LZ /= LN;
+
+    /* THE CREST LINE: which tile row the top of the fabric is on, column
+       by column, and it is the whole of what makes the top edge read as a
+       roll instead of as a rule. Two terms, and they are both there for a
+       measured reason.
+
+         - THE ARCH of one cushion: 11 rows from its apex down to the seam
+           at either side, as |u|^1.6 in half-panels. The exponent is
+           under two on purpose. Any smooth curve is flat at its own
+           apex, and a quadratic arch over a 160px panel with 11 rows of
+           amplitude stays inside half a pixel of its peak for fifty
+           columns - which is a fifty-pixel straight run of silhouette,
+           the very fault being fixed, just shorter. At 1.6 the roll turns
+           over inside twenty-two columns and then falls away steadily
+           into the seam, which is also what a stuffed cushion does: tight
+           at the top, slack at the sides.
+         - A LONG WAVE of three rows across the whole 480, cosine, so that
+           the three panels on screen are not three identical arches. It
+           puts their apexes on tile rows 2, 0 and 2 and their seams about
+           14, 12 and 12 down, and it is periodic in CO_W, so it wraps at the
+           tile seam like everything else in here.
+
+       Measured off the result: the longest run of columns sharing one
+       silhouette row is 22px against 480 before, 22 of the 480 columns
+       reach tile row 0 - screen 94, exactly where the old rule was - and
+       the valley at a seam is 26 rows deep, where the arch and the 18px
+       top corner radius add together. */
+    var crestOf = new Float32Array(CO_W);
+    var cu;
+    for (x = 0; x < CO_W; x++) {
+      cu = (wrap(x + 0.5, CUSHION_W) - CUSHION_W / 2) / (CUSHION_W / 2);
+      crestOf[x] = CREST_DIP * Math.pow(cu < 0 ? -cu : cu, CREST_P) +
+                   CREST_RUN * (1 + Math.cos(TAU * (x + 0.5) / CO_W)) / 2;
+    }
+
+    /* the height of the stuffing on tile column `xi` at row `v`, or -1
+       outside the cushion's rounded silhouette. The panel's vertical
+       coordinate is measured DOWN FROM THE CREST where the crest actually
+       is on this column and rescaled to the full panel, so the corners,
+       the dome and the roll along the top all hang off the curve while
+       the bottom of the panel still lands on the crease. The four dimples
+       are the exception: they stay on the tile rows their buttons are
+       stamped on, so they take v and not the shifted one. */
+    function puff(xi, v) {
+      var top = crestOf[xi];
+      var vv = (v - top) * PH / (PH - top);
+      if (vv < 0) return -1;
+      var u = wrap(xi, PW) + 0.5;
+      var r = vv < PH / 2 ? R_TOP : R_BOT;
+      var hw = PW / 2 - GAP - r, hh = PH / 2 - r;
+      var qx = Math.abs(u - PW / 2) - hw, qy = Math.abs(vv - PH / 2) - hh;
+      var ox = Math.max(qx, 0), oy = Math.max(qy, 0);
+      var d = Math.sqrt(ox * ox + oy * oy) + Math.min(Math.max(qx, qy), 0) - r;
+      if (d >= 0) return -1;
+      var rx = Math.min(1, Math.abs(u - PW / 2) / (PW / 2 - GAP));
+      var ry = Math.min(1, Math.abs(vv - PH / 2) / (PH / 2));
+      var h = Math.pow(1 - Math.pow(rx, PUFF), 1 / PUFF) *
+              Math.pow(1 - Math.pow(ry, PUFF), 1 / PUFF);
+      for (var b = 0; b < 4; b++) {
+        var dx = u - (PW / 2 + ((b & 1) ? BTN_DX : -BTN_DX));
+        var dy = v - (BTN_Y[b >> 1] - FIELD);
+        h *= 1 - DIMPLE_D * Math.exp(-(dx * dx + dy * dy) / (DIMPLE_R * DIMPLE_R));
+      }
+      return h;
+    }
+
+    /* HOW HARD A BUTTON IS PULLING at this pixel: the strongest of the
+       four dimples' own falloff, 1 under a button and nothing by two and
+       a half radii out. It is asked for once per pixel of the field, so
+       it leaves on a subtraction for everything a button cannot reach. */
+    function pull(xi, v) {
+      var best = 0, u = wrap(xi, PW) + 0.5, b, dx, dy, e;
+      for (b = 0; b < 4; b++) {
+        dy = v - (BTN_Y[b >> 1] - FIELD);
+        if (dy > DIMPLE_REACH || dy < -DIMPLE_REACH) continue;
+        dx = u - (PW / 2 + ((b & 1) ? BTN_DX : -BTN_DX));
+        if (dx > DIMPLE_REACH || dx < -DIMPLE_REACH) continue;
+        e = Math.exp(-(dx * dx + dy * dy) / (DIMPLE_R * DIMPLE_R));
+        if (e > best) best = e;
+      }
+      return best;
+    }
+
+    /* the field, with a one-pixel border so the gradient is defined on
+       the edge rows and columns, and wrapped across so the valley at x 0
+       sees the roll of the panel before it. The whole 480 is computed
+       now rather than one panel laid three times over: the long wave in
+       the crest makes the three panels genuinely different, and a panel
+       printed three times could not carry it. `po` is the silhouette
+       test, kept rather than recomputed - puff() is four exponentials. */
+    var GW = CO_W + 2, GH = PH + 2;
+    var hgt = new Float32Array(GW * GH);
+    var po = new Uint8Array(GW * GH);          /* 1 = outside the fabric */
+    var v, hv;
+    for (v = -1; v <= PH; v++) {
+      for (x = -1; x <= CO_W; x++) {
+        hv = puff(wrap(x, CO_W), v + 0.5);
+        po[(v + 1) * GW + (x + 1)] = hv < 0 ? 1 : 0;
+        hgt[(v + 1) * GW + (x + 1)] = hv < 0 ? 0 : hv;
+      }
+    }
+
+    /* the tile's tones, dithered. `inside` is the silhouette, for the
+       creases and the nap. */
+    var tone = new Uint8Array(CO_W * CO_H);
+    var inside = new Uint8Array(CO_W * CO_H);
+    for (v = 0; v < PH; v++) {
       for (x = 0; x < CO_W; x++) {
-        var nx = ((x % CUSHION_W) - hx) / hx, ny = (y - cyF) / hy;
-        var ax = nx < 0 ? -nx : nx, ay = ny < 0 ? -ny : ny;
-        var d = Math.sqrt(Math.sqrt(ax * ax * ax * ax + ay * ay * ay * ay));
-        var lit = d + ny * 0.22 + nx * 0.10;
-        /* tv: the continuous tone, 0 at the lit core through 4 at the
-           seam, linear between one stop and the next */
+        var gi = (v + 1) * GW + (x + 1);
         var tv, k;
-        if (lit <= STOPS[0]) tv = 0;
-        else if (lit >= STOPS[4]) tv = 4;
-        else {
-          for (k = 0; lit > STOPS[k + 1]; k++) {}
-          tv = k + (lit - STOPS[k]) / (STOPS[k + 1] - STOPS[k]);
+        if (po[gi]) {
+          tv = 6;
+        } else {
+          var gu = (hgt[gi + 1] - hgt[gi - 1]) / 2;
+          var gv = (hgt[gi + GW] - hgt[gi - GW]) / 2;
+          var nx = -gu * PUFF_Z, ny = -gv * PUFF_Z;
+          var nl = Math.sqrt(nx * nx + ny * ny + 1);
+          var ndl = (nx * LX + ny * LY + LZ) / nl;
+          tv = clamp(BASE - K_H * (hgt[gi] - 1) - K_N * (ndl - LZ), 0, 5);
+          /* AND A BUTTON IS A TUFT, NOT A FLARE. K_N 7 drives the normal
+             term past the dome's own range on the steep lower lip of a
+             dimple, so each of the twelve buttons came out with about
+             thirty-four pixels of P.crest under it - the same brightest
+             tone as the roll along the very top of the sofa - and read as
+             hardware bolted to a surface. In Couch ref 2 and ref 4 a
+             button is a soft dark dimple with no highlight at all. So the
+             lit side of a dimple is floored at one step above the panel
+             body and the floor RAMPS with the pull: 1 + 1.2 at the
+             button, 1 at the edge of its reach, which is the lamp-side
+             swell the panel wears anyway. Continuous in the pull, so the
+             dither carries it and no contour appears where the floor
+             starts to bite; and the shadowed upper lip, which is what
+             actually sells the pucker, is untouched. */
+          var dp = pull(x, v + 0.5);
+          if (dp > 0) {
+            var lift = 1 + DIMPLE_LIFT * dp;
+            if (tv < lift) tv = lift;
+          }
+          inside[(FIELD + v) * CO_W + x] = 1;
         }
         k = Math.floor(tv);
-        if (k < 4 && (tv - k) * 16 > BAYER[y & 3][x & 3]) k++;
-        tone[y * CO_W + x] = k;
+        if (k < 6 && (tv - k) * 16 > BAYER[(FIELD + v) & 3][x & 3]) k++;
+        tone[(FIELD + v) * CO_W + x] = k;
       }
     }
 
@@ -13546,7 +14005,9 @@ var Couch = (function () {
        TAPERS: dense where it leaves the button, thinning to single
        pixels at its far end, so it reads as cloth gathered and let go
        rather than as a ruled line. Hashed, not Math.random, so the tile
-       is the same tile every boot. */
+       is the same tile every boot. A crease stays on the cushion: it
+       never writes into a valley or a corner wedge, and never below
+       backCrease. */
     function crease(x0, y0, ddx, ddy, len, seed) {
       var len2 = Math.sqrt(ddx * ddx + ddy * ddy);
       ddx /= len2; ddy /= len2;
@@ -13556,12 +14017,19 @@ var Couch = (function () {
         var cx2 = Math.round(x0 + ddx * s), cy2 = Math.round(y0 + ddy * s);
         if (cy2 < FIELD + 1 || cy2 >= CREASE - 1) continue;
         var ii = cy2 * CO_W + wrap(cx2, CO_W);
-        if (tone[ii] < 4) tone[ii]++;
         var jj = (cy2 + 1) * CO_W + wrap(cx2, CO_W);
-        if (tone[jj] > 0) tone[jj]--;
+        if (!inside[ii] || !inside[jj]) continue;
+        if (tone[ii] < 5) tone[ii]++;
+        /* and the lit face of a fold stops at backLit, not at crest. A
+           crease is cloth gathered and let go; the brightest tone in the
+           palette belongs to the roll along the top of the sofa and to
+           nothing else. Six of the twelve folds leave a button on a
+           backLit pixel, and one step up from there was putting two or
+           three pixels of P.crest beside each button - the same flare the
+           dimple's own floor was just taken off. */
+        if (tone[jj] > 1) tone[jj]--;
       }
     }
-    var pcx, p;
     for (p = 0; p < CO_W / CUSHION_W; p++) {
       pcx = p * CUSHION_W + hx;
       crease(pcx - BTN_DX, BTN_Y[0], -0.80, -0.60, 28, p * 7 + 1);
@@ -13575,13 +14043,37 @@ var Couch = (function () {
     /* THE NAP. Microfibre is a pile fabric and it shows every direction
        it has been brushed in; one pixel in sixty bumped a tone either
        way is enough to say so, and it is tonal variety at a scale no
-       measurement of rows or columns can see - which is the point. */
+       measurement of rows or columns can see - which is the point. On
+       the cushion only, like the creases. */
     for (i = 0; i < (CO_W * (CREASE - FIELD)) / 60; i++) {
       var h = hash(4001 + i * 9173);
       var nxp = h % CO_W, nyp = FIELD + ((h >>> 9) % (CREASE - FIELD));
       var ni = nyp * CO_W + nxp;
-      if ((h >>> 20) & 1) { if (tone[ni] < 4) tone[ni]++; }
+      if (!inside[ni]) continue;
+      if ((h >>> 20) & 1) { if (tone[ni] < 5) tone[ni]++; }
       else if (tone[ni] > 0) tone[ni]--;
+    }
+
+    /* THE EDGE, AND IT IS A CURVE NOW. The house style wants a hard edge
+       wherever a solid thing meets something behind it, and the thing
+       that used to provide it along the top of the sofa was the straight
+       rule at row 0. Walk down each column to the first row of fabric
+       and lay two rows of outline immediately above it instead: on the
+       twenty-two columns where the crest reaches row 0 nothing is drawn
+       at all and the sill's own shadow line is the edge, and everywhere
+       else the edge hugs the roll and then the two rounded corners
+       rolling down into the seam. Above those two rows is tone 6, the
+       same P.button the valley between two cushions is painted in,
+       because it is the same gap seen from the same angle: a wide V at
+       the top narrowing to the 2px dark line that runs the rest of the
+       way down to the crease. A column with no fabric on it at all - the
+       seam itself - is left alone, or the walk would paint an edge into
+       the bottom of the valley. */
+    for (x = 0; x < CO_W; x++) {
+      y = -1;
+      for (j = 0; j < CREASE; j++) { if (inside[j * CO_W + x]) { y = j; break; } }
+      if (y > 0) tone[(y - 1) * CO_W + x] = 7;
+      if (y > 1) tone[(y - 2) * CO_W + x] = 7;
     }
 
     for (y = FIELD; y < CREASE; y++) {
@@ -13591,42 +14083,32 @@ var Couch = (function () {
       }
     }
 
-    /* 3. FOUR BUTTONS A PANEL, each one a DIMPLE and then a button. The
-       fabric is pulled INTO a tufting button, so the cloth round it is a
-       shallow cone: its upper lip faces away from the pendants and is in
-       shadow, its lower lip faces up into them and is lit. Dark arc
-       above, lit arc below, a 3x3 covered button in the middle with one
-       lit pixel on its dome - it carries at one to one, and the asymmetry
-       is what says "pulled in" rather than "stuck on". Stamped after the
-       tone pass because a button wants a crisp edge. */
+    /* 3. FOUR BUTTONS A PANEL. The dimple is in the height field now -
+       the shadowed upper lip and the lit lower lip come out of the light
+       and not out of a stamp, and the lit one is floored off the crest's
+       tone up in the tone pass so a button is a pucker and not a flare -
+       so what is stamped here is the button
+       itself: 3x3 covered in the sofa's own dark, one lit pixel on its
+       dome, and the one-row shadow it throws onto the lip under it.
+       Stamped after the tone pass because a button wants a crisp edge. */
     for (p = 0; p < CO_W / CUSHION_W; p++) {
       pcx = p * CUSHION_W + hx;
       for (j = 0; j < 2; j++) {
         for (i = 0; i < 2; i++) {
           var bx = pcx + (i ? BTN_DX : -BTN_DX), by = BTN_Y[j];
-          c.fillStyle = P.backCrease;
-          c.fillRect(bx - 1, by - 2, 3, 1); c.fillRect(bx - 2, by - 1, 1, 2); c.fillRect(bx + 2, by - 1, 1, 2);
-          c.fillStyle = P.backLit;
-          c.fillRect(bx - 1, by + 2, 3, 1); c.fillRect(bx - 2, by + 1, 1, 1); c.fillRect(bx + 2, by + 1, 1, 1);
-          c.fillStyle = P.button;  c.fillRect(bx - 1, by - 1, 3, 3);
-          c.fillStyle = P.backMid; c.fillRect(bx - 1, by - 1, 1, 1);
+          c.fillStyle = P.button;     c.fillRect(bx - 1, by - 1, 3, 3);
+          c.fillStyle = P.backMid;    c.fillRect(bx - 1, by - 1, 1, 1);
+          c.fillStyle = P.backCrease; c.fillRect(bx - 1, by + 2, 3, 1);
         }
       }
     }
 
-    /* 4. THE SEAMS between panels: a 2px dark welt, a 1px lit edge on
-       the panel to its right (the lamp is overhead-left, so the LEFT
-       edge of every panel catches it), and the soft shadow the left-hand
-       panel throws into the seam - which the tone pass has already laid
-       down, since a panel's right-hand side rolls away through backRoll
-       into backCrease before it gets here. x 0 is the tile seam, so a
-       panel seam on it is also what hides the repeat. */
-    for (p = 0; p < CO_W / CUSHION_W; p++) {
-      c.fillStyle = P.button;
-      c.fillRect(p * CUSHION_W, FIELD, 2, CREASE - FIELD);
-      c.fillStyle = P.backLit;
-      c.fillRect(p * CUSHION_W + 2, FIELD, 1, CREASE - FIELD);
-    }
+    /* 4. THE SEAMS are not drawn. A seam used to be a 2px welt and a 1px
+       lit edge - a ruled line - and it is a VALLEY now: the column either
+       side of a panel boundary is outside both cushions' silhouettes and
+       takes the dark, and each neighbour rolls down into it through
+       backRoll and backCrease on its own, out of the height field. x 0
+       is the tile seam, and the valley on it is what hides the repeat. */
 
     /* 5. THE CREASE. The seam where the back cushions meet the seat,
        and the darkest band in the bay by two whole values. A kernel
@@ -14929,46 +15411,108 @@ var Couch = (function () {
        reduced to the three marks that survive at sixty pixels, and the
        four-button rectangle is the one of the three that says "this
        sofa" rather than "some sofa". */
-    ctx.fillStyle = P.outline;  ctx.fillRect(x, backY - 1, w, 1);
-    ctx.fillStyle = P.crest;    ctx.fillRect(x, backY, w, 1);
-    ctx.fillStyle = P.backLit;  ctx.fillRect(x, backY + 1, w, 1);
-    ctx.fillStyle = P.backMid;  ctx.fillRect(x, backY + 2, w, seatY - backY - 2);
     var band = seatY - backY - 2;
     var top = backY + 2;
     var PW = Math.max(14, Math.round(band * 1.17));
-    var bx, byy, n, px0, lit, ax, ay, d4;
 
-    /* The swell, as the level draws it: the 4-norm tipped toward the lamp,
-       in three tones here rather than five - at this size the two shoulders
-       are a pixel wide and buy nothing.
+    /* The crest, as the level bakes it and NOT as a rule. bakeCouch stopped
+       drawing a straight full-width line across the top of the fabric this
+       round, because that is the first thing the eye meets and a sofa does
+       not have one; the cover went on drawing it, so the card was still
+       advertising the thing the level had just stopped doing. Same arch,
+       scaled: CREST_DIP 11 over a 160px panel is the level's, so a cover
+       panel PW wide dips PW * 11/160, and the apex is flat in a quadratic
+       so the exponent stays 1.6. */
+    var cDip = Math.max(1, Math.round(PW * 11 / 160));
+    var cx2, cu, lift, ry;
+    ctx.fillStyle = P.backMid;
+    for (cx2 = 0; cx2 < w; cx2++) {
+      cu = ((cx2 % PW) / PW - 0.5) * 2;
+      lift = Math.round(cDip * Math.pow(cu < 0 ? -cu : cu, 1.6));
+      ry = top + lift;
+      ctx.fillRect(x + cx2, ry, 1, seatY - ry);
+      /* the roll and the hard edge follow the curve rather than cutting it */
+      ctx.fillStyle = P.backLit; ctx.fillRect(x + cx2, ry - 1, 1, 1);
+      ctx.fillStyle = P.crest;   ctx.fillRect(x + cx2, ry - 2, 1, 1);
+      ctx.fillStyle = P.outline; ctx.fillRect(x + cx2, ry - 3, 1, 1);
+      ctx.fillStyle = P.backMid;
+    }
+    var bx, byy, n, px0, lit, ax, ay;
+    /* the swell's row-invariant terms, declared HERE and used nowhere
+       else in this function. The rewrite that put the swell in declared
+       `var fy` inside the loop while `var fy` already existed ninety
+       lines below for the hot kernel's y - and `var` is function-scoped,
+       so 'use strict' passes a duplicate straight through and those were
+       one variable, not two. It happened to work only because the lower
+       one assigns immediately before its single use; hoisting the swell's
+       copy out of the loop, which is the obvious optimisation and is done
+       below, would have left a superellipse value of about 0.39 to 1.0
+       sitting in it and drawn the hot kernel off the top of the card. The
+       file already documents this exact trap for PANEL_W and CUSHION_W,
+       and the project has now shipped it three times, so: one declaration
+       site, names that cannot collide, and the kernel's y is `hotY`. */
+    var uy, ex, ey, sl, roll, qy, qy2;
+
+    /* The swell, as the level draws it: the pillow-shaped product of two
+       superellipse bumps, rounded at the corners and lit from above left,
+       in three tones here rather than seven - at this size the shoulders
+       are a pixel wide and buy nothing. The corner wedges and the seam
+       column between two panels take the sofa's dark, so even at sixty
+       pixels the panels are rounded things with a valley between them
+       and not a ruled grid.
 
        Drawn as RUNS and not as pixels. A cover is repainted every frame it
        is on screen, and a pixel at a time this was w x band fills - about
        four thousand on the big card, every frame, for one of five cards.
        The swell is three tones in wide smooth bands, so a row is five or
-       six runs; same pixels, a twentieth of the calls. */
+       six runs: a twentieth of the FILLS, which is what that rewrite
+       bought. It did not buy any arithmetic, and for a while it quietly
+       cost some - see the row-invariant block below. */
+    var CR = 0.26;                           /* corner radius, in half-panels */
+    var THIRD = 1 / 3;
     for (n = 0; n < band; n++) {
-      ay = (n - (band - 1) / 2) / (band / 2);
+      ay = (n + 0.5) / band * 2 - 1;
+      /* EVERYTHING THAT DEPENDS ONLY ON THE ROW, LIFTED OUT OF THE ROW.
+         uy, the superellipse bump down the panel, the slope term and the
+         corner test's own y were all being recomputed for every pixel of
+         a cover that repaints every frame, and one of them is a Math.pow.
+         The carousel paints every visible card every frame, and this
+         function had gone from 0.188ms a call to 0.447ms while the
+         Desk's, untouched, costs 0.034ms. Hoisted it is the same pixels
+         to the bit - an isolated bench of the loop either way returns an
+         identical sum and runs 0.320ms against 0.198ms, 38% off. */
+      uy = ay < 0 ? -ay : ay;
+      if (uy > 0.98) uy = 0.98;
+      ey = Math.pow(1 - uy * uy * uy, THIRD);
+      /* how steeply the dome rolls on this row, and which way it faces */
+      sl = uy * uy / (ey * ey);
+      roll = (ay < 0 ? 0.25 : -0.25) * sl;
+      qy = uy - (1 - CR);
+      qy2 = qy * qy;
       var runCol = null, runFrom = 0;
       for (i = 0; i <= w; i++) {
         var col = null;
         if (i < w) {
-          ax = ((i % PW) - PW / 2) / (PW / 2);
-          var ux = ax < 0 ? -ax : ax, uy = ay < 0 ? -ay : ay;
-          d4 = Math.sqrt(Math.sqrt(ux * ux * ux * ux + uy * uy * uy * uy));
-          lit = d4 + ay * 0.22 + ax * 0.10;
-          col = lit < 0.50 ? P.backLit : (lit < 0.95 ? null : P.backRoll);
+          var pu = i % PW;
+          ax = (pu + 0.5) / PW * 2 - 1;
+          var ux = ax < 0 ? -ax : ax;
+          var qx = ux - (1 - CR);
+          if (pu === 0 || (qx > 0 && qy > 0 && qx * qx + qy2 > CR * CR)) {
+            col = P.button;
+          } else {
+            ex = Math.pow(1 - ux * ux * ux, THIRD);
+            lit = ex * ey + roll - ax * 0.08;
+            col = lit > 1.04 ? P.backLit : (lit < 0.60 ? P.backRoll : null);
+          }
         }
         if (col === runCol) continue;
         if (runCol) { ctx.fillStyle = runCol; ctx.fillRect(x + runFrom, top + n, i - runFrom, 1); }
         runCol = col; runFrom = i;
       }
     }
-    /* the seams, and the four buttons on every panel */
+    /* the four buttons on every panel; the seams are the valleys above */
     for (k = 0; k * PW < w; k++) {
       px0 = x + k * PW;
-      ctx.fillStyle = P.button;  ctx.fillRect(px0, top, 1, band);
-      ctx.fillStyle = P.backLit; ctx.fillRect(px0 + 1, top, 1, band);
       for (n = 0; n < 2; n++) {
         byy = top + Math.round(band * (n ? 0.64 : 0.36));
         for (i = 0; i < 2; i++) {
@@ -15045,8 +15589,8 @@ var Couch = (function () {
     }
     /* and the hot one on its way down, which is the one warm thing in a
        grey room and the only colour on this card */
-    var fy = lidY + Math.round(wrap(s * 1.5, seatY - lidY - 6));
-    kernelet(ctx, x + Math.round(w * 0.78), fy, true);
+    var hotY = lidY + Math.round(wrap(s * 1.5, seatY - lidY - 6));
+    kernelet(ctx, x + Math.round(w * 0.78), hotY, true);
 
     /* 6. the doodad flying it, with a halo so a pale bird never goes
        missing against a pale shutter */

@@ -1,17 +1,19 @@
 /* ------------------------------------------------------------------
    Land of Doodads - LIVING ROOM / THE DESK
 
-   A workstation after dark. Three screens and one warm lamp pool are
-   the only light in the bay; behind them the wall climbs in roller
-   bands to white plantation shutters with night showing between the
-   slats and a pothos vine run along the top rail. Two floating shelves
+   A workstation in daylight. The light comes in through white
+   plantation shutters with the sky showing between the slats and falls
+   on a bright greige wall rolled in bands, with a pothos vine run along
+   the top rail; three screens and one desk lamp are the only other
+   light in the bay. Two floating shelves
    carry the keepsakes - the jar, the grey slab with the horned ghost
    painted on it, the candle, the photo frame, the little skeleton,
    and on the lower one a row of red and white spines, an orange party
    hat, a green cube and a wooden crane. Under all of it: a white desk
    with two banks of shaker drawers, a knee hole full of cable, a
    keyboard, a mouse, a tin of gum, a studio speaker and a pot of ivy.
-   Drawn from Assets/Concept/Desk ref 1-3.
+   Drawn from Assets/Concept/Desk ref 1-4; ref 4 is the daylight one,
+   and the one the light in here is measured against.
 
    WHAT THIS BAY IS FOR. It is the first room in the game whose CEILING
    KILLS, and the first room with a hazard that does not. Those are two
@@ -25,12 +27,14 @@
    plank in here is a column of hardbacks - some spine out, some fore
    edge out, every course jogged a pixel because nobody stacked it
    straight - capped top and bottom with a fat dictionary. They are the
-   most saturated thing on the screen by a mile: the wall is a muted
-   beige-grey, the shelves are off-white, every screen is dim, and a
-   tower of red, black, yellow, green, blue and tan always wins the
-   eye. That is the whole value plan, and the live page on the
-   widescreen is deliberately dimmer than a plank's pages band so that
-   a tower never has to compete with a web browser.
+   DARKEST solid thing on the screen: since the daylight cut the wall is
+   a bright greige off Desk ref 4, the shutters are white timber with
+   sky in the chinks, and a tower of deep red, black, ochre, bottle
+   green, navy and walnut stands against all of that the way the black
+   monitors in the photograph do. That is the whole value plan - the
+   same inversion the Mantle plays, the other way up - and it is what
+   lets the wall be as bright as the photograph without the planks
+   vanishing into it. The note at the top of P has the numbers.
 
    THE SIGNATURE IS THE APP ICON, AND IT COMES OUT OF A SCREEN. It is a
    'spike', because a spike is something fixed to an edge of the room
@@ -86,68 +90,135 @@ var Desk = (function () {
      crown and its lamp glass are NOT in here: a level keeps only what is
      its own, and reads the room's through R.
 
-     Every value is a NIGHT value brightened for the screen. The
-     photographs are a dark room with one lamp in it, and a wall sampled
-     honestly off them comes out near-black; what the eye reads as "unlit
-     beige" has to be painted two stops up or the whole bay turns into a
-     silhouette puzzle. */
+     Every value is a DAY value now. Desk ref 1-3 are a dark room with
+     one lamp in it, and the first three cuts of this table were night
+     values brightened for the screen; Desk ref 4 is the same desk in
+     daylight, and it is the photograph this table is measured against. */
   var P = {
-    /* DAYLIGHT, AND WHERE IT COMES FROM. Desk ref 1-3 were shot at night
-       under a desk lamp and the first cut of this table was a faithful
-       tungsten: the wall measured red-minus-blue of 20 over the whole
-       lane, which is a bulb and not a room. The owner asked for a little
-       more daylight in the hue - a white-balance change, not a time of
-       day, and not a brightness change. So every pigment below that
-       moved lost its orange and held its luminance - every one within
-       two points of its night value except the wall's base coat, which
-       gave three (see below, where it says why it and not wallLit); the
-       room's lamp pool (wallLamp) stays warm because it is a lamp, and
-       gave up only a sixth of its cast. The light itself comes in where
-       it would: through the shutters, whose chinks are sky now instead
-       of night (Couch ref 2 shows exactly these slats with blue daylight
-       between them), and off the wall round them, which takes a soft
-       cool pool in bakeWall. The measured lighting pass survives because
-       every one of its steps is alpha times a luminance difference, and
-       the luminances did not move.
+    /* DAYLIGHT, AND WHAT IT COST. Desk ref 1-3 were shot at night under
+       a desk lamp and the first cut of this table was a faithful
+       tungsten. The second cut moved the hue and not the brightness - a
+       white-balance change, red-minus-blue 20.9 -> 11.0 at constant
+       luminance - and the owner said, rightly, that it did not look as if
+       anything had changed. Desk ref 4 is the same desk in DAYLIGHT, and
+       measured off it the wall is a bright, cool, nearly neutral greige:
+       upper left #86817b (lum 130), mid left #69635d (lum 100), above the
+       shutters #7c7772 (lum 120), red-minus-blue +10 to +12 throughout.
+       The wall this table had ran lum 33 to 85 (wallDeep #24211e,
+       wallDark #36322d, wallMid #454039, wallLit #5c544b). The warmth was
+       already right; the brightness was forty to seventy short. So the
+       wall goes UP to the photograph and the hue stays where the last cut
+       put it. The base coat is written at the photograph's UPPER-LEFT
+       wall (131, its brightest patch) and not its mid-left (100), because
+       the room's own light sheet - night up off the boards, void at the
+       skirting and the sides, shared by four bays and not this file's to
+       touch - takes about a tenth off whatever this wall is painted, more
+       toward the skirting: painted 131 it renders about 120 at mid lane
+       and about 100 above the desk, which is the photograph's own range.
+       At 109 the lane measured 102 and the room still read as dusk; at
+       120 it measured 105, and the lane only moves three for every
+       eleven the wall does, because a third of the lane is shutters,
+       shelves and screens that do not move with it.
 
-       MEASURED, over 64 scroll phases of the whole flight band (CEIL to
-       the desk top, every column), night cut -> this one: red-minus-blue
-       20.9 -> 11.0, which is the whole point; lane mean 78.0 -> 80.6,
-       which is the "slightly brighter" the owner asked for and no more;
-       book-tower pillar against that lane 38.1 -> 35.5, still over the
-       35 this bay shipped with. Largest single-row step in the bay is
-       157 at row 170, the desk's own front edge, in both cuts - no row
-       anywhere moved by more than three, and nothing new appeared.
+       AND THE LEVEL INVERTS. Lifting the wall to the photograph puts it
+       within twenty of a book tower whose body measured 131, and a plank
+       that does not separate from its lane is a level nobody can play.
+       The photograph answers that too: the monitors in it are BLACK and
+       the book spines are dark against the light wall - the room being
+       bright is exactly why the things in it read as dark. So this bay
+       now does what the Mantle already does, the other way up: a bright
+       room with dark furniture in it. The six covers, the pages and the
+       title line all drop into shadow (see BOOKS, below) and the tower is
+       the darkest solid thing on the screen instead of the most
+       saturated.
 
-       Before, for the record: wallDeep #2a2219, wallDark #3b3226, wallMid
-       #4e4234, wallLit #665640, wallLamp #8c7250; shutterFrame #b9ad9a,
-       shutterLit #d9cdb8, louvre #8c8f80, louvreGap #2b3340, the chink
-       nightSky #1b2430; shelfLit #d2c5ad, shelfMid #ad9f88, shelfDark
-       #746655; deskLit #e6ddcb, deskTop #cfc4b1, deskEdge #9d9280,
-       drawerFace #b8a98f, drawerPanel #a89a81, drawerShade #857763,
-       toeKick #5b5044; screenReflect #2f2b35. */
+       AND THE SEPARATION, MEASURED PROPERLY, BECAUSE THE FIRST VERSION
+       OF THIS PARAGRAPH GOT THE DIRECTION OF TRAVEL WRONG. It said the
+       inversion took the separation from 48.4 to 51.9. It did not. Run
+       on ONE harness, over both builds - lane = CEIL+14 to FLOOR-14,
+       every one of the 480 columns, eight scroll phases; pillar body =
+       columns x+6 to x+28 of a tower at x 200 over the same eight
+       phases, gap and caps excluded - the night build measures lane 78.8
+       against a body of 130.8, a separation of 52.0, and the daylight
+       cut on its own measures lane 108.5 against a body of 58.7, a
+       separation of 49.8. The inversion COST about two, and it landed a
+       shade under the 50 the brief named as the floor. Neither 48.4 nor
+       the direction of travel reproduces on any one method; what the old
+       note almost certainly did was measure the two builds two different
+       ways - or quote variant 1 of one against variant 0 of the other,
+       which is the same mistake wearing a hat. A before-and-after is
+       only a measurement if the same harness took both halves of it, so
+       both halves above come from one function, run twice, on the two
+       trees. Variant 1 runs 3 to 4 over variant 0 throughout, and is
+       quoted separately or not at all.
 
-    /* the wall: greige, rolled in bands, with a lamp pool low left. Under
-       their old luminance, which is what pays for the daylight: the base
-       coat gives three and the others one or two. THE BASE COAT GIVES THE
-       MOST and wallLit gives nothing, on purpose - the gap between those
-       two is the roller texture, the only thing stopping 336x270 of
-       greige reading as a painted backdrop, and it is 20.7 here against
-       the night cut's 20.3. Paying out of wallLit would have flattened
-       the wall to buy a number. */
-    wallDeep:     '#24211e',
-    wallDark:     '#36322d',
-    wallMid:      '#454039',   /* the base coat, and the fill behind everything */
-    wallLit:      '#5c544b',
-    wallLamp:     '#887456',   /* the warm core of the lamp pool              */
+       WHAT PUT IT BACK was not the tower and not the wall - neither of
+       those moved again - but the three screens, which the daylight cut
+       had left at their night values. Lighting them for the room they
+       are now in (see THE THREE SCREENS and SCREEN_DIM) lifts the lane
+       to 113.8 against the same body of 58.7: a separation of 55.2, and
+       57.3 on variant 1. Three lit monitors are a third of the lane's
+       width, so what they are worth is a third of what they move; the
+       plank is dark and the lane is bright, and anything that brightens
+       the lane buys separation rather than spending it.
+       Red-minus-blue over the same band 10.5 -> 12.0 -> 11.2, and the
+       photograph's wall is +11. The window is where the light comes from: the
+       shutters are no longer held six sixteenths toward the void, the
+       chinks between the slats carry the photograph's own daylight
+       (#cbd3cf, lum 208, cool), and the wall round the window takes two
+       bands of cool spill instead of one. Nothing that is a shape moved
+       and nothing that is an object moved. It is the light. */
 
-    /* the plantation shutters, and the DAY behind the slats */
-    shutterFrame: '#b5b0a7',
-    shutterLit:   '#d3cfc8',
-    louvre:       '#8c9195',   /* a white slat, backlit: cool on its face     */
-    louvreGap:    '#2a3548',
-    daySky:       '#7fa3c0',   /* the chink: sky, through six sixteenths of void */
-    dayWall:      '#8fa6ba',   /* the daylight falling on the wall round the window */
+    /* the wall: greige, rolled in bands, with the lamp pool low left and
+       the window's spill upper right. The base coat is lum 131. wallDeep
+       is the two baked washes at the skirting and under the moulding.
+       Red-minus-blue 12 throughout.
+
+       THE ROLLER TEXTURE, AND WHAT THE DAYLIGHT CUT COST IT - stated
+       with both pairs, because quoting one pair in one revision and the
+       other pair in the next is how two numbers that moved a long way
+       can be made to look as though nothing happened. Measured off the
+       pigments, night -> day:
+           wallDark  50.6 -> 121.7
+           wallMid   64.7 -> 130.7      (the base coat, and the fill)
+           wallLit   85.4 -> 144.0
+           wallDark to wallLit, the full amplitude:  34.8 -> 22.3
+           wallMid  to wallLit, the half:            20.7 -> 13.3
+       The superseded note quoted the HALF at 20.7; the note that
+       replaced it quoted the FULL at 22, and 22 next to 20.7 reads like
+       a wall that stayed where it was. It did not. The texture lost a
+       third of its absolute contrast (34.8 -> 22.3) and two thirds of
+       its contrast relative to the base it sits on (54% of 65 -> 17% of
+       131), on a wall that nearly doubled in brightness.
+
+       It is left at that for now, deliberately: these three tones are
+       the photograph's own wall and this round's brief is the hazard,
+       the screens and these comments. But the stated job of that gap is
+       that it is "the only thing stopping 336x270 of greige reading as a
+       painted backdrop", and at 17% of base it is doing that job on
+       about a third of the contrast it was designed with. If the wall is
+       ever reported as reading flat, this is the number to widen, and
+       widening it symmetrically about wallMid leaves the lane mean - and
+       therefore the separation - where it is. */
+    wallDeep:     '#6b665f',
+    wallDark:     '#7e7972',
+    wallMid:      '#87827b',   /* the base coat, and the fill behind everything */
+    wallLit:      '#958f88',
+    wallLamp:     '#ab9d87',   /* the lamp is still on; in daylight it is a hint */
+
+    /* the plantation shutters, and the DAY behind the slats. These are
+       the photograph's own numbers: frame #97938a (lum 147), louvre face
+       #a4a099 (160), daylight through a slat #cbd3cf (208, cool), and the
+       underside of a slat a mid grey rather than a night - a white slat in
+       a lit room is not black on its far side. The frame and the face are
+       written a few over the photograph because shutters() still takes
+       the whole window one sixteenth toward the void (see there). */
+    shutterFrame: '#a09c94',
+    shutterLit:   '#c1bdb6',
+    louvre:       '#a9a7a2',   /* a white slat, lit from behind and in front  */
+    louvreGap:    '#6b6c6d',
+    daySky:       '#cbd3cf',   /* the chink: the photograph's daylight, as is  */
+    dayWall:      '#aab0b4',   /* the daylight falling on the wall round the window */
 
     /* the white floating shelves */
     shelfLit:     '#cdc7ba',
@@ -175,19 +246,67 @@ var Desk = (function () {
     bezelHi:      '#3b3431',
     bezelSilver:  '#8e8578',
     stand:        '#2a2522',
-    screenOff:    '#1d1a20',   /* the all-in-one, asleep                      */
-    screenReflect:'#2b2d38',   /* the window reflected in it - daylight, so blue */
-    screenLogo:   '#6f6b8a',   /* the screensaver bouncing about on it        */
+    /* THE THREE SCREENS, RE-VALUED FOR THE DAY. The daylight cut moved
+       the wall and did not move these, and a screen that was correct
+       against a 72 wall is wrong against a 114 one: the widescreen's
+       live page used to LEAD its wall by 34 and ended up six BEHIND it,
+       which is a monitor that is switched on and does not look it. The
+       request names "different sequences playing on the screens" as a
+       feature of this bay, so all three have to read as lit glass in a
+       lit room. The two emitters go up; the one that is asleep does not,
+       because Desk ref 4's monitors are black and that is half of what
+       makes the room read as bright. See SCREEN_DIM for the other half
+       of this fix - the dimming that was paying for a constraint which
+       no longer exists.
 
-    /* the portrait screen: the session, scrolling a row at a time */
-    dawGrey:      '#7f91a8',
-    dawCell:      '#a7b6c8',
-    dawHi:        '#cfdce9',
-    dawHead:      '#4d7ab2',
+       THE NUMBERS, all three panes against the same strip of bare
+       plaster at x 2..8, y 100..140 - the one place in the bay that is
+       nothing but wall at every scroll phase. Night build, daylight cut
+       as it stood, and now:
+           wall strip          71.5   113.8   113.8
+           widescreen page    104.4   104.4   150.5    lead +33 / -9 / +37
+           portrait session    66.5    66.5   122.0    lead  -5 / -47 /  +8
+           all-in-one glass    20.0    20.0    28.5    lead -52 / -94 / -85
+       The widescreen is back to leading its wall by about the 34 it led
+       by at night, which is what a switched-on monitor does. The
+       portrait sits a little over the wall rather than fifty under it: a
+       session's chrome is grey and is not meant to out-shout a web page,
+       and its live playhead row is brighter again. The all-in-one is the
+       one that is SUPPOSED to lose, and it still loses by 85.
+
+       And the lane is a third screens, so lighting them is also what
+       takes the plank-to-lane separation from 49.8 back to 55.2 - see
+       AND THE SEPARATION, above. */
+
+    /* the all-in-one, asleep. It STAYS the darkest field in the bay -
+       a switched-off screen is the photograph's own black monitor and
+       the anchor of the whole inversion - but a black screen in a lit
+       room is charcoal and not ink (27 -> 37), and what it has in it is
+       the WINDOW: the reflection was 46, which is a night reflection,
+       and daylight off white shutters in dark glass is 98. The
+       screensaver's four tints come up with it so the one sequence on
+       this pane still reads: 112 -> 155 on a glass of 37. */
+    screenOff:    '#26232b',   /* the all-in-one, asleep                      */
+    screenReflect:'#5a6274',   /* the window reflected in it - daylight, so blue */
+    screenLogo:   '#9a95bd',   /* the screensaver bouncing about on it        */
+
+    /* the portrait screen: the session, scrolling a row at a time. A
+       session's chrome is grey, not white, so this pane is meant to sit
+       UNDER the page and OVER the wall - the whole family moves up by
+       about 33 and the playhead row stays where it is, because it was
+       already the brightest thing on the glass and still should be. */
+    dawGrey:      '#a3b2c4',
+    dawCell:      '#c7d3e0',
+    dawHi:        '#e4edf6',
+    dawHead:      '#6d99cf',
     dawPlay:      '#e8f3ff',
 
-    /* the widescreen: a web page, creeping upward */
-    pageWhite:    '#c8cdd2',   /* dimmer than a plank's pages band, on purpose */
+    /* the widescreen: a web page, creeping upward. A white page on a
+       monitor is the brightest thing in a daylit room that is not the
+       sky through a shutter slat - the photograph's own daylight is 208
+       and a lit page is over it - so the paper goes 204 -> 230 and the
+       ink on it does not move: a page gets brighter, its text does not. */
+    pageWhite:    '#e2e7ec',   /* turned down once more in screenPage - SCREEN_DIM */
     pageText:     '#8a9199',
     pageBar:      '#5c84a6',
     pageOrange:   '#e0783a',
@@ -218,20 +337,90 @@ var Desk = (function () {
     tBone:        '#e2d9c6',
 
     /* BOOKS. Six covers, each with the arris colour that lights its top
-       edge, and the three paper tones every one of them shares. These are
-       the loudest pigments in the bay and they are spent entirely on the
-       pillars and on what falls off the shelves - nothing in the
-       scenery is allowed to be this saturated. */
-    bookRed:      '#9b2e26',  bookRedHi:    '#c6483c',
-    bookBlack:    '#1f1c1c',  bookBlackHi:  '#403a3b',
-    bookYellow:   '#d8ae3a',  bookYellowHi: '#f1cf6a',
-    bookGreen:    '#3f6a3a',  bookGreenHi:  '#5f9155',
-    bookBlue:     '#2f4d7e',  bookBlueHi:   '#4d6fa6',
-    bookTan:      '#b07a48',  bookTanHi:    '#d19d6a',
-    pages:        '#eae2d2',
-    pagesHi:      '#f7f2e8',
-    pagesShade:   '#c7bcaa',
-    title:        '#f1e7d0',
+       edge, and the three paper tones a book IN A STACK shares. They are
+       spent on the pillars, on the cap and on the spines leaning on the
+       shelf - the falling book has its own paper, three entries down,
+       and the note there says why it had to be given one -
+       and since the daylight cut they are the DARKEST pigments in the bay
+       rather than the loudest: a stack of hardbacks between a monitor and
+       a lit wall is in its own shadow, and Desk ref 4 shows exactly that
+       - dark spines, a black screen, a bright wall behind both. Every
+       cover keeps its hue and gives up about two fifths of its luminance
+       (red 78 -> 47, yellow 173 -> 84, tan 132 -> 70, blue 74 -> 42,
+       green 88 -> 50, black 29 -> 23); the fore-edges, which were the
+       brightest thing in the bay at 227, are paper seen in shadow at 61;
+       the title line is a dim 96 instead of a white 231. A tower's body
+       measures 56.7 against a lane of 108.5 - that is the
+       separation, and it is the Mantle's inversion the other way up. The
+       first daylight cut stopped a third of the way (pages 82, covers
+       about ten over these) with the wall at 109, and measured 68
+       against 102: a separation of 34, worse than the night's 48; the
+       second (pages 69, these covers, wall 120) measured 60 against 105,
+       a separation of 46. The lesson is that the room's light sheet
+       takes a tenth off a bright wall and nothing off a dark tower, and
+       that only a third of the lane IS wall, so the tower has to pay
+       more than the arithmetic on raw pigments says.
+       Before, for the record: bookRed #9b2e26 / #c6483c, bookBlack
+       #1f1c1c / #403a3b, bookYellow #d8ae3a / #f1cf6a, bookGreen #3f6a3a
+       / #5f9155, bookBlue #2f4d7e / #4d6fa6, bookTan #b07a48 / #d19d6a,
+       pages #eae2d2, pagesHi #f7f2e8, pagesShade #c7bcaa, title #f1e7d0. */
+    bookRed:      '#601b18',  bookRedHi:    '#7c2922',
+    bookBlack:    '#181616',  bookBlackHi:  '#2e2a2a',
+    bookYellow:   '#6a5418',  bookYellowHi: '#88702a',
+    bookGreen:    '#243c23',  bookGreenHi:  '#365236',
+    bookBlue:     '#1b2c48',  bookBlueHi:   '#2a4066',
+    bookTan:      '#5f3f25',  bookTanHi:    '#78553a',
+    pages:        '#403c37',
+    pagesHi:      '#4c4741',
+    pagesShade:   '#33302d',
+    title:        '#665f55',
+
+    /* AND THE ONE BOOK THAT IS NOT IN THE STACK'S SHADOW. Everything
+       above is a book SEEN IN A PILE - wedged between its neighbours,
+       behind a monitor, under a shelf - and that is why the daylight cut
+       was right to take it down. A book that has come off the shelf and
+       is falling through the middle of the room is not in that shadow at
+       all: it is in the open air with the window on it, which is the one
+       place in this bay where paper still catches the light. So the DROP
+       keeps its own three tones, and only the drop and what it leaves on
+       the boards ever paint with them.
+
+       THIS IS NOT A FLOURISH, IT IS THE LEVEL'S MAIN HAZARD. Darkening
+       the shared paper took the bright fore-edge band off the drop
+       sprite at the same moment the wall rose by as much as the books
+       fell, so the lane-against-pillar number this round was tuned on
+       showed nothing while the thing the player has to dodge went
+       invisible. Measured over 14,400 placements (6 covers x 2
+       orientations x 25 x-positions x 16 y-positions x 3 scroll phases),
+       mean |dL| of the sprite against the backdrop under it: the night
+       build never fell below 39.8 anywhere in the bay; sharing the dark
+       paper put 2.75% of placements under 25 with a worst case of 11.7 -
+       a black hardback crossing the knee hole at y 214, which is a flat
+       field of 23 and is exactly the height every book ends its fall at.
+       With these three tones the worst placement in the bay is 32.4,
+       and NOTHING is under 25 - or under 30. The whole census, night
+       build / daylight cut as it stood / now:
+           min      39.3   11.7   32.4
+           p05      50.1   28.1   54.3
+           p25      65.0   52.2   72.6
+           median   73.2   72.2   84.4
+           under 25  0.00%  2.75%  0.00%
+       The median barely moved between the first two columns, which is
+       exactly why this was missed: the wall rose by as much as the books
+       fell, so every summary statistic the round was watching stayed
+       still while the bottom of the distribution fell out.
+
+       The values are the room's own daylight, not an invention:
+       dropPages is 208, which is the photograph's light through a
+       shutter slat (#cbd3cf, 208); dropPagesHi is 236, a hair under the
+       desk's white melamine; dropTitle is 180, gilt lettering on a dark
+       cover rather than the night build's flat white 231. FX.splat and
+       FX.splatHi are these two, by reference and not by copy, so the
+       burst a landing book throws can never again be a different paper
+       from the book it came off. */
+    dropPages:    '#d8d0bf',
+    dropPagesHi:  '#f2ece0',
+    dropTitle:    '#bdb49c',
 
     /* the mug: this bay's spare life */
     mugWhite:     '#f0eae0',
@@ -307,12 +496,24 @@ var Desk = (function () {
   /* The 15 neutral effect colours PlayScene paints particles and washes
      from. It never reads P. The first two are the ROOM's air, so the dust
      drifting through the Desk is the dust drifting through the Mantle.
-     The last seven are the mint. */
+     The last seven are the mint.
+
+     SPLAT IS THE ONE ENTRY THAT IS NOT A LITERAL, AND THAT IS
+     DELIBERATE. splatter() throws twelve particles in these two when a
+     drop lands, and what it throws them off is drawDropSplat's ridge of
+     paper. They were written out by hand as '#eae2d2' / '#f7f2e8' with
+     the comment "pages" - which was true of the night build and silently
+     stopped being true the moment the daylight cut took P.pages down to
+     61, leaving a 226-and-242 burst coming off a 61 book, 165 of
+     luminance apart. Naming the pigments instead of copying their values
+     is the only version of this that cannot drift again: change the
+     paper the falling book is lit by and the burst follows it in the
+     same edit. */
   var FX = {
     motes:    LivingRoom.AIR.motes,  motesHi: LivingRoom.AIR.motesHi,
     puff:     '#d2c5ad',   puffHi:   '#eae2d2',   /* plaster and paper dust */
     ground:   '#b4aa91',   groundHi: '#d4cfc1',   /* oak                    */
-    splat:    '#eae2d2',   splatHi:  '#f7f2e8',   /* pages                  */
+    splat:    P.dropPages, splatHi:  P.dropPagesHi, /* the falling book's own paper */
     hot:      '#5fd1b0',   hotMid:   '#8fe3c8',   hotHi: '#e8fff6',
     heat:     '#8fe3c8',   heatEdge: '#2f8f74',
     glowCore: '232,255,246', glowEdge: '95,209,176'
@@ -431,19 +632,33 @@ var Desk = (function () {
      eight pixels the pop point is already held clear of the glass. */
   var scrollNow = 0;
 
-  /* HOW FAR DOWN THE SCREENS ARE TURNED. A monitor at its own value is
-     an emitter, and three of them across the back of the bay out-shout a
-     book tower - which in this level is the one thing that must never
-     happen, because the towers are what the player is reading. Five
-     sixteenths of void, laid on the GLASS ONLY, on top of the three the
-     whole furniture layer gets: enough that a page is still legibly a
-     page and a session is still legibly playing, and not enough that
-     either of them is the brightest thing on the screen.
+  /* HOW FAR DOWN THE SCREENS ARE TURNED, AND WHY IT IS NO LONGER FIVE.
+
+     This was five sixteenths of void on the glass, and the reason
+     written here was that "a book tower's pages band is 227 and must
+     stay the brightest thing in the bay". That constraint is gone. The
+     daylight cut inverted this level: the tower's pages band is 61, the
+     tower is now the DARKEST solid thing on the screen, and a screen
+     cannot out-shout it by being bright - the brighter the lane, the
+     further the plank separates from it. Five sixteenths was being paid
+     for nothing, and what it bought instead was three switched-on
+     monitors reading at or below the wall behind them.
+
+     So: ONE sixteenth, laid on the GLASS ONLY, on top of the three the
+     whole furniture layer gets. It is not a curtain over an emitter any
+     more; it is the sheen a pane of glass has when the room it is in is
+     brighter than it was - the thing that keeps a monitor reading as
+     glass rather than as a hole cut in the wall. Measured on the
+     widescreen's live page against the plaster strip at x 2..8: the
+     night build led its wall by 34 (105.7 against 71.8) and the daylight
+     cut left it trailing by 6 (105.7 against 111.2). With the panes
+     re-valued and this at one it leads by the number quoted at the top
+     of THE THREE SCREENS in P.
 
      It is applied in exactly two places - under the baked chrome and
      under the live content - and it has to be the same number in both or
      a tab bar ends up brighter than the page under it. */
-  var SCREEN_DIM = 5;
+  var SCREEN_DIM = 1;
 
   var T = {};               /* baked tiles and sprites */
 
@@ -497,23 +712,18 @@ var Desk = (function () {
        nearest-neighbour layer bands anyway, and this way the bands are
        chosen rather than arrived at. The strengths are 1,1,1,2,2,3 from
        the outside in, which compounds to about half-way to wallLamp at
-       the core - a lamp, not a spotlight. */
+       the core - and in daylight wallLamp is thirty over the base coat
+       where it was fifty-four over it, so the core lands about fifteen
+       up and a little warm: a lamp left on in a lit room, not a pool. */
     lampPool(c, 90, 150, W, H);
 
-    /* THE DAYLIGHT, on the wall round the window: one band of a cool
-       grey-blue, a sixteenth, in an ellipse centred on the shutters. One
-       band and not the lamp pool's six, because it is a window across a
-       room and not a lamp on a desk - it lifts the wall about five of
-       luminance where it lands and its edge is a curve, so no row of the
-       bay moves by it.
-
-       IT IS 104 AND NOT 125 WIDE because the chinks now actually carry
-       sky (see shutters, where the fill was being painted over), and
-       that is worth 2.5 of the lane's mean on its own. The pool is the
-       cheapest of the three daylight costs to give back - it is the
-       spill, not the source - and 125 put it on wall the window could
-       not plausibly reach anyway. Measured: the lane's mean comes back
-       0.4 and the cream pillars keep their separation. */
+    /* THE DAYLIGHT, on the wall round the window: two bands of a cool
+       grey, a sixteenth each, in ellipses centred on the shutters. The
+       photograph's wall above the window measures 120 against 100 at mid
+       height, and two bands of dayWall over the base coat is about eight
+       of that at the core. Two bands and not the lamp pool's six, because
+       it is a window across a room and not a lamp on a desk; their edges
+       are curves, so no row of the bay moves by them. */
     dayPool(c, 221, 97, W, H);
 
     /* THE SHUTTERS. White plantation shutters, two panels either side of
@@ -559,18 +769,22 @@ var Desk = (function () {
     }
   }
 
-  /* the daylight's one ellipse: the lamp pool's painter at one band */
+  /* the daylight's spill: the lamp pool's painter at two bands, a
+     sixteenth each, the outer one as wide as the window and its frame */
   function dayPool(c, cx, cy, W, H) {
-    var rx = 104, ry = Math.round(rx * 0.78);
-    for (var dy = -ry; dy <= ry; dy++) {
-      var yy = cy + dy;
-      if (yy < 0 || yy >= H) continue;
-      var k = dy / ry;
-      var hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - k * k)));
-      if (hw <= 0) continue;
-      var x0 = Math.max(0, cx - hw), x1 = Math.min(W, cx + hw);
-      if (x1 <= x0) continue;
-      Tint.rect(c, x0, yy, x1 - x0, 1, P.dayWall, 1);
+    var radii = [110, 70];
+    for (var b = 0; b < radii.length; b++) {
+      var rx = radii[b], ry = Math.round(rx * 0.78);
+      for (var dy = -ry; dy <= ry; dy++) {
+        var yy = cy + dy;
+        if (yy < 0 || yy >= H) continue;
+        var k = dy / ry;
+        var hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - k * k)));
+        if (hw <= 0) continue;
+        var x0 = Math.max(0, cx - hw), x1 = Math.min(W, cx + hw);
+        if (x1 <= x0) continue;
+        Tint.rect(c, x0, yy, x1 - x0, 1, P.dayWall, 1);
+      }
     }
   }
 
@@ -626,21 +840,18 @@ var Desk = (function () {
     c.fillStyle = P.shutterLit;   c.fillRect(stile, inY, 1, inH);
     c.fillStyle = P.outline;      c.fillRect(stile + 5, inY, 1, inH);
 
-    /* AND THEN THE LAMP DOES NOT REACH IT. The shutters are white, and
-       painted at their own value they are 142 x 138 of the brightest
-       thing in the bay - brighter than a book tower's pages band, which
-       is the one thing in this level that is not allowed to lose. The
-       lamp pool is centred at x 90 and the window starts at 150, so the
-       honest answer is also the right one: nothing is lighting their
-       FACE. Six sixteenths of void takes the frame down to a dim bone
-       and the slats to a grey that still reads as slats - and takes the
-       sky in the chinks from 156 to a measured 103, which is a window
-       seen from a dim room and as bright as the window is allowed to
-       be: a book tower's pages band is 227 and must stay the brightest
-       thing in the bay. The chink is one row in six and the window is
-       142 of the tile's 336 columns, so all of it together moves the
-       lane's mean by 2.5 - which the wall's base coat gave back. */
-    Tint.rect(c, x - 1, y - 1, w + 2, h + 2, P.void, 6);
+    /* AND THEN A SIXTEENTH OF THE VOID, not six. Through the night cuts
+       the window was held six sixteenths down because a tower's pages
+       band was the one thing in the bay not allowed to lose, and white
+       shutters painted at their own value beat it. The level inverts now
+       - the towers are the dark thing - so the window may be what the
+       photograph says it is, the brightest surface in the room: the
+       frame about 147, a louvre face about 158 and the chink about 196
+       after this, against the photograph's 147, 160 and 208. The one
+       sixteenth that stays keeps the window a hair under its raw
+       pigments, so the lit arris on the frame still reads as an arris
+       and not as the same white as the slat under it. */
+    Tint.rect(c, x - 1, y - 1, w + 2, h + 2, P.void, 1);
   }
 
   /* a vine with leaf clusters every 7-11px, run along a rail or down a
@@ -1178,26 +1389,50 @@ var Desk = (function () {
      hazard.
 
      THERE IS NO TUMBLING. A box that swapped shape mid-fall could not be
-     dodged honestly, and the player would be right to be annoyed. */
+     dodged honestly, and the player would be right to be annoyed.
+
+     AND THE FORE EDGE IS LIT. Not one rectangle in here moved for the
+     daylight cut; what moved is which paper they are painted in. The
+     fore-edge band and the title row come out of dropPages / dropPagesHi
+     / dropTitle instead of the stack's pages / pagesHi / title, because
+     a book falling through the middle of the room is in the window's
+     light and a book wedged in a pile is not. That is the whole fix for
+     the hazard that lost its contrast, and it is lighting, not shape.
+
+     WHY IT HAS TO BE A BAND AND NOT A BRIGHTER COVER. The covers are
+     load-bearing: they are what the tower is made of, and they are dark
+     on purpose so the plank separates from a bright lane. The drop
+     cannot be lightened by lightening them. What it can have is the one
+     part of a book that is paper, and 10% of the flat sprite being 208
+     to 236 is worth more to the eye than the whole cover being ten
+     brighter, because it is a CONTRAST inside the sprite as well as
+     against the room - which is why it reads at any height, over the
+     bright wall and over the near-black knee hole alike.
+
+     The worst placement in the bay, over all 14,400 the census walks, is
+     a black hardback lying flat across the knee hole at x 200, y 214,
+     where the backdrop is a flat 23: mean |dL| 32.4, against 11.7 when
+     this sprite shared the stack's paper. Nothing is under 25, and
+     nothing is under 30. The full table is in P, under dropPages. */
   function bakeBookDrop(dir, ci) {
     var cover = COVERS[ci];
     var flat = dir === 'flat';
     var t = makeCanvas(flat ? 24 : 8, flat ? 8 : 24), c = t.ctx;
 
     if (flat) {
-      c.fillStyle = P.outline;  c.fillRect(0, 0, 24, 8);
-      c.fillStyle = cover[0];   c.fillRect(1, 1, 22, 6);
-      c.fillStyle = cover[1];   c.fillRect(1, 1, 22, 1);   /* the lit top face */
-      c.fillStyle = P.pages;    c.fillRect(18, 2, 4, 5);
-      c.fillStyle = P.pagesHi;  c.fillRect(18, 2, 4, 1);
-      c.fillStyle = P.title;    c.fillRect(4, 4, 8, 1);
+      c.fillStyle = P.outline;      c.fillRect(0, 0, 24, 8);
+      c.fillStyle = cover[0];       c.fillRect(1, 1, 22, 6);
+      c.fillStyle = cover[1];       c.fillRect(1, 1, 22, 1);  /* the lit top face */
+      c.fillStyle = P.dropPages;    c.fillRect(18, 2, 4, 5);
+      c.fillStyle = P.dropPagesHi;  c.fillRect(18, 2, 4, 1);
+      c.fillStyle = P.dropTitle;    c.fillRect(4, 4, 8, 1);
     } else {
-      c.fillStyle = P.outline;  c.fillRect(0, 0, 8, 24);
-      c.fillStyle = cover[0];   c.fillRect(1, 1, 4, 22);
-      c.fillStyle = cover[1];   c.fillRect(1, 1, 1, 22);
-      c.fillStyle = P.title;    c.fillRect(2, 7, 3, 1); c.fillRect(2, 11, 3, 1);
-      c.fillStyle = P.pages;    c.fillRect(5, 1, 2, 22);
-      c.fillStyle = P.pagesHi;  c.fillRect(5, 1, 1, 22);
+      c.fillStyle = P.outline;      c.fillRect(0, 0, 8, 24);
+      c.fillStyle = cover[0];       c.fillRect(1, 1, 4, 22);
+      c.fillStyle = cover[1];       c.fillRect(1, 1, 1, 22);
+      c.fillStyle = P.dropTitle;    c.fillRect(2, 7, 3, 1); c.fillRect(2, 11, 3, 1);
+      c.fillStyle = P.dropPages;    c.fillRect(5, 1, 2, 22);
+      c.fillStyle = P.dropPagesHi;  c.fillRect(5, 1, 1, 22);
     }
     return t;
   }
@@ -1494,7 +1729,7 @@ var Desk = (function () {
      changes colour on every bounce because the two wave COUNTS decide
      the tint, so the colour and the corner it came off are the same
      fact told twice. */
-  var LOGO_TINTS = ['#6f6b8a', '#8a6f6b', '#6b8a7a', '#7a6b8a'];
+  var LOGO_TINTS = ['#9a95bd', '#bd9a95', '#95bda9', '#a995bd'];
 
   function screenSaver(ctx, sx, sy, scroll) {
     var lx = Math.round(tri(scroll * 0.09, 63));
@@ -1732,12 +1967,15 @@ var Desk = (function () {
       return;
     }
 
-    /* the book. Two paper motes hang above either one. */
+    /* the book. Two paper motes hang above either one, in the FALLING
+       book's paper rather than the stack's - they came off this book, in
+       this light, and a mote the colour of a shelved fore-edge would be
+       two pixels of the tower floating in mid air. */
     for (i = 0; i < 2; i++) {
       k = mod(ob.spin * 0.7 + i * 0.41, 1);
       var py = y - 9 - Math.round(k * 7);
       if (py < CEIL) continue;
-      ctx.fillStyle = i ? P.pagesHi : P.pages;
+      ctx.fillStyle = i ? P.dropPagesHi : P.dropPages;
       ctx.fillRect(x - 4 + Math.round(Math.sin(ob.spin * 2 + i) * 4), py, 1, 1);
     }
     if (ob.dir === 'flat') {
@@ -1774,15 +2012,25 @@ var Desk = (function () {
     if (kind === 'book') {
       /* it has landed face down and open: a shallow tent of two covers
          meeting at a ridge of pages, which is how a hardback actually
-         lands and is the only splat in the game that is a SHAPE */
+         lands and is the only splat in the game that is a SHAPE.
+
+         The ridge and the two splayed leaves are the FALLING book's
+         paper, not the stack's, for two reasons. It is the same book it
+         was a frame ago, and it is still out in the open. And the floor
+         of this bay is the darkest band in it, so a splat in the stack's
+         61 would land on the boards and disappear - which is the one
+         place the player has to be able to see that the thing which was
+         chasing them has stopped. PlayScene's twelve burst particles are
+         FX.splat / FX.splatHi, which ARE these two pigments; the burst
+         and the thing it came off are now one decision. */
       var cover = COVERS[ob.cover];
-      ctx.fillStyle = P.pagesHi; ctx.fillRect(x - 2, FLOOR + 1, 4, 1);
+      ctx.fillStyle = P.dropPagesHi; ctx.fillRect(x - 2, FLOOR + 1, 4, 1);
       for (i = 1; i < 6; i++) {
         var hw = 2 + i * 2;
         ctx.fillStyle = cover[i < 3 ? 1 : 0];
         ctx.fillRect(x - hw, FLOOR + i, hw * 2, 1);
       }
-      ctx.fillStyle = P.pages;
+      ctx.fillStyle = P.dropPages;
       ctx.fillRect(x - 12, FLOOR + 5, 3, 1); ctx.fillRect(x + 9, FLOOR + 5, 3, 1);
       ctx.fillStyle = P.outline; ctx.fillRect(x - 12, FLOOR + 6, 24, 1);
     } else if (kind === 'coin') {
@@ -1996,12 +2244,15 @@ var Desk = (function () {
       tower(ctx, ox, gapY + gapH, oakY - gapY - gapH, i + 1);
     }
 
-    /* 8. a hardback coming down */
+    /* 8. a hardback coming down. Its fore edge is dropPages, the same as
+       the real sprite's - the cover is a promise about the level, and a
+       cover that draws the hazard in the tower's dark paper promises a
+       book the player will not be able to see. */
     var ty = y + 10 + mod(s * 1.5, oakY - y - 16);
     ctx.fillStyle = P.outline;    ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 5);
     ctx.fillStyle = P.bookBlue;   ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 4);
     ctx.fillStyle = P.bookBlueHi; ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 1);
-    ctx.fillStyle = P.pages;      ctx.fillRect(x + Math.round(w * 0.72) + 9, Math.round(ty) + 1, 2, 3);
+    ctx.fillStyle = P.dropPages;  ctx.fillRect(x + Math.round(w * 0.72) + 9, Math.round(ty) + 1, 2, 3);
 
     /* 9. THE SIGNATURE: an app icon COMING OUT OF THE WIDESCREEN, which
        is the one thing nobody will mistake for another level - and the
@@ -2014,20 +2265,26 @@ var Desk = (function () {
        bezel beside it. */
     var ww = Math.round(w * 0.3), wh = Math.round(h * 0.2);
     var wx = x + Math.round(w * 0.3), wy = deskY - wh;
-    var gx = wx + Math.round(ww * 0.62), gy = wy + wh - 3;
+    /* glowX, not gx: the oak-grain loop above already declared a `var gx` in
+       this same function, and a second `var` of a name is not a second
+       variable - it is the same one. This project has shipped that four
+       times now (PANEL_W, fy, gx, and one before them), always in a long
+       draw function where the two uses are a hundred lines apart and the
+       order of assignment happens to save it. */
+    var glowX = wx + Math.round(ww * 0.62), gy = wy + wh - 3;
     var k = mod(t * 0.42, 1);
     if (k < 0.90) {
       /* the glass lighting up: all of the charge, then the flash spent */
       var lit = k < 0.18 ? k / 0.18 : (k < 0.42 ? 1 - (k - 0.18) / 0.24 : 0);
       if (lit > 0) {
-        Tint.rect(ctx, gx - 4, gy - 3, 9, 5, P.appGreenHi, Math.round(10 * lit));
-        Tint.rect(ctx, gx - 2, gy - 2, 5, 4, P.appGreenHi, Math.round(10 * lit));
+        Tint.rect(ctx, glowX - 4, gy - 3, 9, 5, P.appGreenHi, Math.round(10 * lit));
+        Tint.rect(ctx, glowX - 2, gy - 2, 5, 4, P.appGreenHi, Math.round(10 * lit));
       }
       if (k >= 0.18) {
         var rp = clamp((k - 0.18) / 0.26, 0, 1);
         var re = 1 - (1 - rp) * (1 - rp);
         var topY = y + Math.round(h * 0.26);
-        var ix = gx - 4;
+        var ix = glowX - 4;
         var iy = Math.round(gy - 4 - (gy - 4 - topY) * re - 3 * Math.sin(Math.PI * rp));
         if (rp >= 1) iy += Math.round(Math.sin(t * 2.6) * 3);
         ctx.fillStyle = P.outline;  ctx.fillRect(ix - 1, iy - 1, 11, 11);
