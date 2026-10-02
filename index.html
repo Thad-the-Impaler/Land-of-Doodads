@@ -42,11 +42,18 @@
   <script src="js/levels.js"></script>
   <script src="js/scores.js"></script>
   <script src="js/ui.js"></script>
+  <!-- Achievements and their badges. The badges are baked from UI.C and from
+       the levels' own tiles, and the roster reads the house high score off
+       scores.js as it is built, so both sit after everything they ask a
+       question of - badges after ui.js, the roster after scores.js. -->
+  <script src="js/badges.js"></script>
+  <script src="js/achievements.js"></script>
   <script src="js/scene_title.js"></script>
   <script src="js/scene_levelselect.js"></script>
   <script src="js/scene_charselect.js"></script>
   <script src="js/scene_play.js"></script>
   <script src="js/scene_scores.js"></script>
+  <script src="js/scene_achievements.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

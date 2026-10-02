@@ -105,6 +105,24 @@ var Audio3 = (function () {
                            tone({ from: 1046, dur: 0.34, type: 'square', vol: 0.14, delay: 0.50 });
                            tone({ from: 1318, dur: 0.34, type: 'square', vol: 0.10, delay: 0.50 });
                            noise({ freq: 2600, dur: 0.5, vol: 0.05, q: 0.6, delay: 0.5 }); },
+    /* A badge pinned on. Two chords struck one after the other rather than
+       another line of single notes, because every arpeggio in this table
+       already belongs to something else and a fourth one would be heard as
+       whichever of them it resembled most.
+
+       It is deliberately sized between its neighbours, which is the whole
+       job of the sound: a doodad coming unlocked is mkoydokoy and the better
+       part of a second, a point is two notes inside a fifth of one, and this
+       is a third of a second of two-voice chords with a bright tail on it.
+       The player should be able to tell which of the three just happened
+       without taking their eyes off the plank in front of them, and a
+       fanfare for an achievement would make every doodad feel cheaper. */
+    badge:   function () { tone({ from: 523, dur: 0.09, type: 'square', vol: 0.11 });
+                           tone({ from: 659, dur: 0.09, type: 'square', vol: 0.09 });
+                           tone({ from: 784, dur: 0.28, type: 'square', vol: 0.12, delay: 0.10 });
+                           tone({ from: 1046, dur: 0.28, type: 'square', vol: 0.10, delay: 0.10 });
+                           tone({ from: 1318, dur: 0.22, type: 'triangle', vol: 0.07, delay: 0.16 });
+                           noise({ freq: 2800, dur: 0.3, vol: 0.04, q: 0.7, delay: 0.10 }); },
 
 
     /* ---- the succulent ---- */

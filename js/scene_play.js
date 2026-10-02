@@ -123,6 +123,19 @@ var PlayScene = (function () {
   var unlocked = [];           /* doodads this run has earned */
   var unlockBanner = 0;
   var wonLevels = [];          /* levels this run has opened up */
+  /* What this run earned off the achievement roster, in the order the badges
+     were pinned on. It is kept here for exactly the reason `unlocked` is kept
+     rather than being read back off the roster at the end: the results board
+     has one line to spend on the best news of the run, and the roster can
+     only say what is earned, never what was earned on THIS flight. */
+  var runAchv = [];
+  /* Rings taken this run. A stun costs no life and leaves no trace in the
+     state - that is the whole point of it - so nothing in the engine was
+     counting them, and MOSQUITOS is a thing that happens inside one run
+     rather than across a save file. So the number lives out here with the
+     rest of the run state and is zeroed by start() along with it; see
+     runStat for why what gets written down is a high-water mark. */
+  var stuns = 0;
   var lives = 0;               /* spare lives in hand */
   var invuln = 0;              /* grace after a save, in seconds */
   var saveFlash = 0, saveBanner = 0;
@@ -251,6 +264,7 @@ var PlayScene = (function () {
     sour = 0; shrivel = 0; sourFlash = 0; sourBanner = 0;
     spicySlot = 80; sourSlot = 80;
     unlocked.length = 0; unlockBanner = 0; wonLevels.length = 0;
+    runAchv.length = 0; stuns = 0;
     /* Lives never carry between runs: start() is what RETRY calls, so a
        lucky run would otherwise hand every retry after it a free save.
        A doodad that brings its own spare starts with it every time -
@@ -598,6 +612,11 @@ var PlayScene = (function () {
                        life: rand(0.5, 1.2), g: -50,
                        col: chance(0.45) ? UI.C.gold : (chance(0.5) ? who.accentLight : who.accent) });
     }
+    /* Finding him is the fourth way a doodad comes open, and the only one
+       that no score and no tally can see, so POULTRY CATCHER needs its own
+       look here. Below the `if (!who) return;` on purpose: meeting someone
+       already known changes nothing and has nothing to check. */
+    bank(Achievements.check());
   }
 
   /* Drawn on the smooth layer with the sprites, but clipped to the air
@@ -813,6 +832,14 @@ var PlayScene = (function () {
                           : (chance(0.4) ? LIFE_PALE : (chance(0.5) ? LIFE_LEAF : LIFE_TIP)) });
     }
     checkBoonUnlocks();
+    /* 'boon' and 'boon.couch': every spare life on the Couch is a coaster, so
+       DO YOU RESPECT WOOD? is the suffixed key. Note that THE SURVIVOR MAN is
+       NOT on this tally - it reads the existing 'succulents' save key that
+       checkBoonUnlocks just bumped, so a player who has already taken twenty
+       earns it the moment the game next boots rather than having to go and
+       take twenty more. Anything that can be counted out of the save file
+       already is counted out of the save file. */
+    bank(Achievements.note('boon', level));
   }
 
   /* Some doodads are bought with succulents rather than with a score, so
@@ -878,6 +905,15 @@ var PlayScene = (function () {
        overtake a name on the table in the same instant. */
     checkPassed();
     checkUnlocks();
+    /* After the unlock bookkeeping, not before it: +5 can open a level, a
+       room and a doodad all at once, and those are the bigger news and have
+       to reach the banner queue first. 'gold' and 'gold.mantle' - every gold
+       drop on the Mantle is a capybara, so DON'T WORRY, BE CAPY is the
+       suffixed key and nothing here has to know what this bay calls its
+       bonus. ob.name is the art's word for the thing, and it is for the
+       shout; the tally is keyed on the LEVEL, because a bay's gold is
+       whatever that bay says it is and the id cannot be renamed by art. */
+    bank(Achievements.note('gold', level));
   }
 
   /* A hit that might not be fatal. Returns true when collide() should stop
@@ -1022,6 +1058,17 @@ var PlayScene = (function () {
                        life: rand(0.2, 0.5), g: 200,
                        col: chance(0.5) ? FX.splatHi : FX.splat });
     }
+    /* A ring counted. collide() tests `invuln > 0` and leaves the icon
+       standing before it ever gets here - a hazard you cannot be hurt by is
+       a hazard you have not met yet - so anything that reaches this line is
+       a ring the player actually took, which is what "SURVIVE 3
+       NOTIFICATIONS IN ONE RUN" has to mean. And it is reached at the ring
+       rather than at the end of the run on purpose: a doodad that takes its
+       third ring and then flies into the next plank keeps the badge, because
+       it did survive three notifications - it was something else that got
+       it - and a run only has to reach the roster once, here. */
+    stuns++;
+    bank(runStat('run.stun', stuns));
   }
 
   /* --------------------------------------------------------- the heat */
@@ -1058,6 +1105,15 @@ var PlayScene = (function () {
                        col: chance(0.4) ? FX.hotHi
                           : (chance(0.5) ? FX.hotMid : FX.hot) });
     }
+    /* The heat is the one pickup that banks nothing else - no score, no spare
+       life, no doodad - so this is the whole of its bookkeeping, and it goes
+       last for the same reason every other one of these does: the pickup has
+       to have actually landed before anything is credited for it. note()
+       bumps both 'spicy' and 'spicy.construction', which is how TOLERANCE
+       (any hot drop, any bay) and BURN WITH THE FLAMES OF VICTORY (butane
+       cans only) are two rows in a table and not two branches in here - the
+       engine never learns that the Construction Zone's hot drop is a can. */
+    bank(Achievements.note('spicy', level));
   }
 
   /* the wake of embers the doodad leaves while it is lit up */
@@ -1094,6 +1150,12 @@ var PlayScene = (function () {
                        col: chance(0.4) ? SOUR_HI : (chance(0.5) ? SOUR_MID : SOUR_DARK) });
     }
     checkLimeUnlocks();
+    /* No achievement reads 'sour' today. It is wired anyway because the cost
+       is one line and the alternative is a lime tally that starts at zero on
+       the day the twelfth achievement is written - the four pickups are a
+       set, and an uncounted one is the kind of hole that is only ever found
+       by shipping it and then telling players their limes did not count. */
+    bank(Achievements.note('sour', level));
   }
 
   /* checkBoonUnlocks' twin: one doodad is bought with limes rather than
@@ -1401,16 +1463,42 @@ var PlayScene = (function () {
        record, and it is what the roster falls back on if the passkey is
        ever switched off. But there is nothing to announce when the
        passkey has already opened everything. */
-    if (!won.length || Doodads.masterKey()) return;
-    for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
-    Audio3.play('unlock');
-    Screen.shake(2.5, 0.3);
-    for (var k = 0; k < 30; k++) {
-      var a = rand(0, TAU), sp = rand(40, 170);
-      particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
-                       life: rand(0.5, 1.2), g: -50,
-                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+    /* This used to be `if (!won.length || Doodads.masterKey()) return;` and
+       it had to become a block, because an early return is a fine way to end
+       a function and a trap for whatever is added below it later: on every
+       run where no doodad comes open - which is nearly every run - the badge
+       check underneath would never have run at all, and HATCHLING would have
+       arrived only on the plank that happened to also open a stall. */
+    if (won.length && !Doodads.masterKey()) {
+      for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
+      Audio3.play('unlock');
+      Screen.shake(2.5, 0.3);
+      for (var k = 0; k < 30; k++) {
+        var a = rand(0, TAU), sp = rand(40, 170);
+        particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                         life: rand(0.5, 1.2), g: -50,
+                         col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+      }
     }
+    /* THE SCORE-GATED BADGES, ON THE PLANK THAT PAID FOR THEM.
+
+       Everything above here has just written the honest record down -
+       Levels.noteScore banked the reach that opens a room, Doodads.noteScore
+       banked the best score the roster prices its stalls against - and all
+       four of HATCHLING, PULLET, POULTRY CATCHER and VOYAGER are read back
+       out of exactly that state. So the cheapest correct place to look is
+       immediately after it was written, which also happens to be the place
+       the player is looking: mid-flight, one plank after the one that did it,
+       rather than on a results screen three seconds later.
+
+       check() takes no argument because it is not told what changed; it
+       re-reads all eleven rows, and that is on purpose. This function runs
+       once per point, so eleven comparisons against values the roster keeps
+       cached in module scope is the whole cost, and in exchange no caller
+       anywhere has to know which achievements a score could possibly move.
+       An achievement already banked never comes back out of check() again,
+       so calling it on every point announces nothing twice. */
+    bank(Achievements.check());
   }
 
   /* --------------------------------------------------- score chasing */
@@ -1721,9 +1809,16 @@ var PlayScene = (function () {
          confirm on whatever the marker happened to be on - usually RETRY -
          so a player could press exactly what they wanted and reliably get
          something else. The row carries a:'confirm', so this only has to
-         move the cursor onto it before the confirm line below reads it. */
-      var tg = Input.tapped();
-      if (tg && tg.id === 'row') menuIndex = tg.i;
+         move the cursor onto it before the confirm line below reads it.
+
+         `row`, not `tg`: the paused branch at the top of this same function
+         already declares a `var tg`, and `var` is function-scoped, so the
+         two were one variable with two meanings. Harmless while the two
+         branches stay mutually exclusive and each assigns before it reads -
+         which is exactly the kind of "harmless" that stops being harmless
+         the day somebody moves a line. */
+      var row = Input.tapped();
+      if (row && row.id === 'row') menuIndex = row.i;
       if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
       if (Input.nav('down')) { menuIndex = (menuIndex + 1) % MENU.length; Audio3.play('move'); }
       if (Input.hit('confirm')) { Audio3.play('select'); MENU[menuIndex].act(); }
@@ -2223,6 +2318,10 @@ var PlayScene = (function () {
     var lvl = head.kind === 'level' ? head.it : null;
     var d = head.kind === 'doodad' ? head.it : null;
     var rm = head.kind === 'room' ? head.it : null;
+    /* the fourth kind, and the first one that is not a thing you can go and
+       press afterwards - which is why its third line is the method rather
+       than a direction to a screen */
+    var ach = head.kind === 'achievement' ? head.it : null;
     var a = clamp(unlockBanner / 0.6, 0, 1);
     var ga = ctx.globalAlpha;
     ctx.globalAlpha = ga * a;
@@ -2243,6 +2342,37 @@ var PlayScene = (function () {
                  { colour: UI.C.ink, outline: UI.C.shadow, wave: t * 8, waveAmp: 1.2 });
       UI.text(ctx, 'OPEN ON THE LEVEL SELECT', VW / 2, 142,
               { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
+    } else if (ach) {
+      UI.heading(ctx, 'ACHIEVEMENT EARNED', VW / 2, 96, 2, { colour: UI.C.gold, outline: UI.C.shadow });
+      /* THE BADGE AT TWICE ITS SIZE BESIDE THE NAME, THE PAIR CENTRED AS ONE
+         UNIT. The other three kinds centre a single string, so they can hand
+         the centre of the screen to Font.draw and be done; a badge and a name
+         have to be measured together or the name is centred and the badge
+         hangs off its left, which reads as a layout accident.
+
+         The name is scale 2 for EVERY achievement, where the other kinds use
+         3. BURN WITH THE FLAMES OF VICTORY measures 370 at scale 2 and 555 at
+         scale 3, and the screen is 480 - so one of the eleven would not fit,
+         and a banner that silently shrinks its heading for one entry in a
+         list is worse than a banner that is one size smaller for all of them.
+         At scale 2 the widest unit is 36 + 8 + 370 = 414, which leaves 33px
+         of margin each side.
+
+         The rhythm 96 / 114 / 154 is the house 96 / 116 / 142 with the middle
+         line grown to hold a 36px badge: the badge spans y 114..150 and the
+         14px-tall name sits at 125..139, so both are centred on y 132.
+         UI.heading passes `align` straight through to Font.draw, where
+         anything that is not 'center' or 'right' is left-aligned, so 'left'
+         is how the name is hung off the badge's right edge. */
+      var nw = Font.measure(ach.name, 2);
+      var unit = Badges.W * 2 + 8 + nw;
+      var x0 = Math.round(VW / 2 - unit / 2);
+      Badges.draw(ctx, ach.icon || ach.id, x0, 114, { scale: 2 });
+      UI.heading(ctx, ach.name, x0 + Badges.W * 2 + 8, 125, 2,
+                 { align: 'left', colour: UI.C.ink, outline: UI.C.shadow, wave: t * 8, waveAmp: 1.2 });
+      /* the method, where the other kinds put the place to go and find the
+         thing. There is nowhere to go: the badge is already on the wall. */
+      UI.text(ctx, ach.how, VW / 2, 154, { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow });
     } else {
       UI.heading(ctx, 'DOODAD UNLOCKED', VW / 2, 96, 2, { colour: UI.C.gold, outline: UI.C.shadow });
       UI.heading(ctx, d.name, VW / 2, 116, 3,
@@ -2258,6 +2388,89 @@ var PlayScene = (function () {
   function announce(kind, it) {
     bannerQueue.push({ kind: kind, it: it });
     if (unlockBanner <= 0) unlockBanner = BANNER_TIME;
+  }
+
+  /* Achievements come out of the same events the unlocks do, and they take
+     their turn in the same queue, so a plank that opens a doodad AND finishes
+     POULTRY CATCHER reads the doodad out first and the badge follows it - the
+     call order in each pickup is what guarantees that, not anything in here.
+
+     The flourish is deliberately smaller than an unlock's: twenty particles
+     against thirty, a 1.5 shake against 2.5, and its own two-chord sound
+     instead of the stall fanfare. A doodad coming open is a new thing to fly;
+     a badge is a receipt for something the player already did, and giving the
+     receipt the same fanfare would make the fanfare mean nothing.
+
+     Nothing here asks whether the master passkey is on, which every other
+     announcement in this file has to. Achievements counts the honest state
+     itself - the price actually paid for a doodad, the gate actually passed
+     for a room - and refuses to grant anything to the passkey, so whatever
+     comes back out of note(), noteRun() or check() was earned by flying and
+     is always worth saying out loud. Repeating the masterKey test here would
+     have been the kind of guard that silently hides a bug in the other file
+     rather than one that prevents anything. */
+  function bank(won) {
+    if (!won || !won.length) return;
+    /* THE ONE CAPTION SLOT, STOOD DOWN - the precedent is checkBoonUnlocks,
+       which kills its own EXTRA LIFE the frame a doodad comes out of its
+       stall. Five of the eleven badges are earned BY a pickup, so for those
+       five the collision is not a coincidence that might happen, it is the
+       guaranteed shape of the moment: SPICY! and the rest draw their heading
+       at y 112 and their second line at 136..140, and the banner's badge
+       spans 114..150 with the name through the middle of it. Without this
+       the twentieth hot drop in the game draws SPICY! and TOLERANCE on top
+       of one another, every time, for everybody.
+
+       saveBanner is left alone on purpose. SAVED! is not a flourish, it is
+       the player being told a life has just been spent, and the two can only
+       land together by accident inside a second and a half - where the four
+       above land together by construction. A badge is never worth standing
+       on top of the news that you nearly died. */
+    spicyBanner = 0; sourBanner = 0; stunBanner = 0; boonBanner = 0;
+    for (var i = 0; i < won.length; i++) { runAchv.push(won[i]); announce('achievement', won[i]); }
+    Audio3.play('badge');
+    Screen.shake(1.5, 0.2);
+    for (var k = 0; k < 20; k++) {
+      var a = rand(0, TAU), sp = rand(30, 150);
+      particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.35, 0.95), g: -50,
+                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? '#fff3d0' : UI.C.goldDark) });
+    }
+  }
+
+  /* A PER-RUN STATISTIC, WRITTEN TWICE THE WAY note() WRITES AN EVENT TWICE.
+
+     The generic key is THE FACT THAT A STUN HAPPENED, and the level is a
+     suffix on it - 'run.stun' and 'run.stun.desk' - and not the other way
+     round. That choice is the reason this file, alone of everything the
+     achievements touch, still names no bay anywhere. MOSQUITOS is a Desk
+     achievement, so the obvious shape was `if (level.id === 'desk')` around
+     a 'deskStun' counter; the cost of that shape is that the day the
+     Whiteboard grows a hazard that rings, somebody has to come back into the
+     engine and add a second branch for 'whiteboardStun' - and the engine is
+     the one place in this project where a level's name has never been
+     allowed to appear. The makers are handed `tune` and `art` precisely so
+     they can be told apart without being named. This keeps that: a ring is a
+     ring, PlayScene writes down both the event and the event-on-this-level,
+     and which of the two a given achievement reads is one string in the
+     roster table. "Survive three rings in one run on the Whiteboard" is then
+     one more row and no code at all - the same discipline as the five
+     obstacle type strings and the doodads' passive ability fields.
+
+     HIGH-WATER, NOT INCREMENT. noteRun stores max(stored, n), so this is
+     called with the running total rather than with a +1. That matters because
+     every ring in a run calls it: an increment would turn eleven rings into a
+     tally of eleven that then survives into the next run, where it would hand
+     out MOSQUITOS for the first ring taken. A high-water mark of a per-run
+     counter that start() zeroes says what it means - the worst one run ever
+     got - and is idempotent if it is ever called twice for the same ring.
+
+     Both writes are re-evaluated, which looks wasteful and is not: check()
+     is eleven rows of arithmetic over cached save values, and once an
+     achievement is banked it never comes back out of check() again, so the
+     concat can never report the same badge twice. */
+  function runStat(key, v) {
+    return Achievements.noteRun(key, v).concat(Achievements.noteRun(key + '.' + level.id, v));
   }
 
   /* the one-off heads up when the rafters start letting go */
@@ -2406,6 +2619,29 @@ var PlayScene = (function () {
       UI.text(ctx, won.name + ' UNLOCKED!', lx + lw / 2, y + 54,
               { align: 'center', colour: Math.floor(t * 3) % 2 ? won.accentLight : UI.C.gold,
                 shadow: UI.C.shadow });
+    } else if (runAchv.length) {
+      /* Third in a queue of three for one line, behind a doodad and ahead of
+         a personal best: a stall coming open is a new thing to fly, a badge
+         is a thing that will still be on the wall tomorrow, and a best is a
+         number the table beside this board is already showing in gold.
+
+         The NAME is deliberately not printed. BURN WITH THE FLAMES OF VICTORY
+         is 185px at scale 1 and this board is 156 wide, so the long ones
+         would have to be truncated and the short ones would not - the badge
+         says which achievement it was, and the screen that lists them is two
+         presses away. ACHIEVEMENT! is 71px, plus the 18px badge and 5px of
+         air, which is 94 of the 136 between the board's margins; the worst
+         case, 10 ACHIEVEMENTS!, is 118. The badge sits at y+47..y+64, one row
+         of air above the rule at y+66, with the text centred on it. */
+      var last = runAchv[runAchv.length - 1];
+      var line = runAchv.length > 1 ? runAchv.length + ' ACHIEVEMENTS!' : 'ACHIEVEMENT!';
+      var unit = Badges.W + 5 + Font.measure(line, 1);
+      var x0 = Math.round(lx + lw / 2 - unit / 2);
+      /* the earned badge at scale 1, so the fifth argument is the contract's
+         `opts` passed explicitly as null rather than left off the end */
+      Badges.draw(ctx, last.icon || last.id, x0, y + 47, null);
+      UI.text(ctx, line, x0 + Badges.W + 5, y + 53,
+              { colour: Math.floor(t * 3) % 2 ? UI.C.ink : UI.C.gold, shadow: UI.C.shadow });
     } else if (pbNew && score > 0) {
       UI.text(ctx, 'NEW ' + doodad.name + ' BEST!', lx + lw / 2, y + 54,
               { align: 'center', colour: doodad.accentLight, shadow: UI.C.shadow });
@@ -2515,6 +2751,8 @@ var PlayScene = (function () {
                                     bodyR: bodyR(),
                                     unlocked: unlocked.map(function (d) { return d.id; }),
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
+                                    achievements: runAchv.map(function (a) { return a.id; }),
+                                    stuns: stuns,
                                     lives: lives, invuln: invuln,
                                     pottedLives: pottedLives, spentPotted: spentPotted,
                                     planksUp: planksUp, flickCool: flickCool,

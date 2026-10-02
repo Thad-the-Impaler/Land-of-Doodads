@@ -64,7 +64,17 @@ var Doodads = (function () {
       watch: true,
       accent: '#3f6b52', accentDark: '#1d3325', accentLight: '#7fb28d',
       sprite: { w: 384, h: 349, pivotX: 228.4, pivotY: 193.7, bodyR: 155.3, footOffset: 1.00 },
-      title: { role: 'patrol', r: 18, homeX: 340, homeY: 124 }
+      /* spanY 16 rather than the default 34, because the title screen's
+         menu grew a third board and the column now starts at y 144 instead
+         of 182. updateFlyer's figure of eight is explicitly "sized to keep
+         off the sign and the menu boards", and at the default she wandered
+         to y 158 with an 18px body - 32px of her behind the top board. 16
+         puts her lowest centre at 140, so her BODY is always above the
+         boards and only the bottom of the sprite can pass behind one. She
+         keeps all 78 of her horizontal travel; moving her sideways instead
+         cannot work, since clearing the boards' right edge at x 326 needs a
+         centre past 344 and 344 + 78 is off the stage. */
+      title: { role: 'patrol', r: 18, homeX: 340, homeY: 124, spanY: 16 }
     },
     {
       id: 'gerald',
@@ -427,6 +437,24 @@ var Doodads = (function () {
     });
   }
 
+  /* HAS THIS DOODAD'S OWN PRICE ACTUALLY BEEN PAID?
+
+     isUnlocked() without the passkey line, and the honest answer rather
+     than the generous one. The achievements roster asks this: IMP11 opens
+     every stall at once, and POULTRY CATCHER is a record of what the player
+     DID, so a passkey must not hand it over. Split out of isUnlocked rather
+     than copied into js/achievements.js so that the four prices are written
+     down once - a fifth kind of lock is a line here and nowhere else. */
+  function meets(d, best) {
+    if (typeof d === 'string') d = BY_ID[d];
+    if (!d) return false;
+    if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
+    if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
+    if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
+    if (d.unlockMeet && metIds().indexOf(d.id) < 0) return false;
+    return true;
+  }
+
   /* pass `best` when checking several doodads in one frame. masterKey(),
      boonsTaken() and limesTaken() all cache, so this stays cheap enough to
      call from a draw loop. A doodad states whatever it wants and has to satisfy all
@@ -435,11 +463,7 @@ var Doodads = (function () {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
     if (masterKey()) return true;
-    if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
-    if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
-    if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
-    if (d.unlockMeet && metIds().indexOf(d.id) < 0) return false;
-    return true;
+    return meets(d, best);
   }
 
   /* What a locked doodad is still waiting for: the price to print, how far
@@ -493,7 +517,7 @@ var Doodads = (function () {
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
     limesTaken: limesTaken, noteLime: noteLime,
     meetable: meetable, noteMeet: noteMeet,
-    isUnlocked: isUnlocked, firstUnlocked: firstUnlocked,
+    isUnlocked: isUnlocked, meets: meets, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey
   };
 })();

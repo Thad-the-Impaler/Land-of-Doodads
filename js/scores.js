@@ -19,6 +19,20 @@ var Scores = (function () {
     { name: 'GER', score: 2, doodad: 'gerald' }
   ];
 
+  /* The HATCHLING achievement is "pass the default high score", so the
+     achievement roster has to be told what that score is. It asks here
+     rather than carrying a 12 of its own: the default high score is not a
+     number somebody chose for it, it is whatever the best of the doodads'
+     own three entries happens to be, and the day this table is reseeded
+     with different names and numbers the achievement must move with it. A
+     12 written down anywhere else would quietly go on asking for a score
+     that no longer means anything. */
+  function houseTop() {
+    var t = 0;
+    for (var i = 0; i < HOUSE.length; i++) if (HOUSE[i].score > t) t = HOUSE[i].score;
+    return t;
+  }
+
   /* A level's id is baked into every score key, and this one was spelled
      'coup' until it was pointed out that a coup is a change of government
      and a coop is where the chickens live. Renaming it would otherwise
@@ -136,7 +150,7 @@ var Scores = (function () {
   }
 
   return {
-    SIZE: SIZE, migrate: migrate,
+    SIZE: SIZE, migrate: migrate, houseTop: houseTop,
     table: table, rankFor: rankFor, submit: submit, top: top,
     personalBest: personalBest, recordRun: recordRun, erase: erase,
     lastInitials: lastInitials, ordinal: ordinal, rankColour: rankColour

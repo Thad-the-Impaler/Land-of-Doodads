@@ -29,7 +29,50 @@ var TitleScene = (function () {
   var PERCH_TOP = 134;
   var timers = [];                 /* delayed beats, ticked by the scene */
   var menuIndex = 0;
-  var MENU = ['PLAY', 'HIGH SCORES'];
+  var MENU = ['PLAY', 'HIGH SCORES', 'ACHIEVEMENTS'];
+
+  /* which row the NEW tab hangs on, asked of the menu rather than typed as a
+     2, because the tab landing on the wrong board is the kind of mistake
+     that survives a reordering unnoticed */
+  var ACHV_ROW = MENU.indexOf('ACHIEVEMENTS');
+
+  /* The menu's geometry, in one place because two things now need it: the
+     loop that draws the boards, and the NEW tab that has to land on the
+     third board's corner exactly. A second copy of `144 + m * 38` sitting in
+     drawFg is how those two quietly drift apart the next time a row is
+     added, so there is only the one copy and both callers ask for it.
+
+     172 wide rather than the 152 these boards were: ACHIEVEMENTS is 142px at
+     scale 2 and UI.button centres its label at x + w/2 - 1, so on a 152
+     board the S finished 6px from the edge, directly under the lit board's
+     right-hand nail at x + w - 6. On 172 the word has 15px of air each side
+     and the nails (bx + 4 and bx + bw - 6) are clear of the glyphs. The
+     column also has to start higher, at 144 instead of 182, because three
+     rows of 38 have to finish at the same 252 the two rows used to - the
+     footer strip's soft edge begins at 254 and the logo's subtitle ends at
+     113, which leaves the top board 31px of daylight above it. */
+  var MENU_BW = 172, MENU_BH = 32;
+  function menuX() { return (VW - MENU_BW) / 2; }          /* 154 */
+  function menuY(m) { return 144 + m * 38; }               /* 144 / 182 / 220 */
+
+  /* THE MENU COLUMN IS A PLACE THE PERCHERS KEEP OUT OF.
+
+     With two boards the column started at y 182 and a percher sitting on a
+     perch at 134..180 stood above it. With three it starts at 144, so any
+     perch in the middle of the screen puts its percher BEHIND a board for
+     the whole fourteen seconds the perch takes to drift from x 346 to x 134
+     at SCROLL 15 - the doodad the player earned, hidden by the menu that
+     tells them so. Rather than move the boards or the perches, the column
+     joins the left edge and the far right as somewhere a percher will not
+     choose and will not stay: 20px of air either side of the boards, so a
+     doodad is not half-eclipsed by a board's edge either. */
+  var MENU_L = (VW - MENU_BW) / 2 - 20;                    /* 134 */
+  var MENU_R = (VW - MENU_BW) / 2 + MENU_BW + 20;          /* 346 */
+
+  function inColumn(p) {
+    var cx = p.x + p.w * 0.5;
+    return cx > MENU_L && cx < MENU_R;
+  }
 
   /* The rectangles this screen drew, refilled every frame inside drawFg and
      handed to Input by Game.render. PLAY was already the biggest word on the
@@ -194,9 +237,39 @@ var TitleScene = (function () {
     a.timer -= dt;
 
     if (a.state === 'perch') {
-      var gone = !a.perch || perches.indexOf(a.perch) < 0 || a.perch.x + a.perch.w < 96;
-      if (gone) { leapToPerch(a); }
-      else {
+      /* TWO DIFFERENT REASONS TO GO, AND ONLY ONE OF THEM IS A REASON TO
+         LET GO.
+
+         GONE is the perch itself ending: recycled out of the list, or
+         carried off the left of the stage. There is nothing left to stand
+         on and the percher has to leave whether or not it has anywhere to
+         leave to.
+
+         HIDDEN is the perch drifting in behind the menu boards, which is
+         new - the column starts at y 144 now, not 182, so a perch in the
+         middle of the screen puts whoever is on it behind a sign for the
+         fourteen seconds it takes to cross. That is a reason to go LOOKING
+         for somewhere better, and never a reason to step off: if the hop
+         finds nothing the percher keeps standing exactly where it is and
+         rides the perch on through. The 2px is so a perch handed out at the
+         very boundary is not declared hidden on the frame it was taken.
+
+         Riding on was the whole of the bug the first time this was written.
+         leapToPerch can and does come back empty - every free perch taken,
+         or every one of them still off the right-hand edge - and the old
+         shape simply stopped updating a.x and a.y when that happened, which
+         with GONE was a doodad standing still at the far left for half a
+         second and with HIDDEN is a doodad hanging in the air over the hay
+         in the middle of the screen. A doodad behind a sign reads as a
+         doodad behind a sign. A doodad in mid-air reads as a bug. */
+      var held = a.perch && perches.indexOf(a.perch) >= 0;
+      var gone = !held || a.perch.x + a.perch.w < 96;
+      var hidden = held && !gone && inColumn(a.perch)
+                   && a.perch.x + a.perch.w * 0.5 < MENU_R - 2;
+      if (gone || hidden) leapToPerch(a);
+      /* still perched means the hop found nowhere to go - or was never
+         called for in the first place, which is the ordinary case */
+      if (a.state === 'perch' && held) {
         a.x = a.perch.x + a.perch.w * 0.5;
         a.y = a.perch.y - a.r * a.foot + Math.sin(t * 2.1 + a.bobPhase) * 1.2;
         a.angle = Math.sin(t * 1.1 + a.bobPhase) * 0.05;
@@ -241,23 +314,61 @@ var TitleScene = (function () {
     return false;
   }
 
+  /* CAN THIS PERCH BE LANDED ON AT ALL - asked by every pass below, which
+     is the point of it being a function.
+
+     It used to be asked only by the first pass. The fallback underneath
+     tested nothing but "free, and to the right of me", and perches are
+     SPAWNED OFF THE RIGHT EDGE - updateScenery keeps pushing new ones out
+     at rightmost + 96..168 until the furthest is past VW + 120 - so the
+     furthest-right free perch is routinely one that has not arrived yet.
+     That was survivable while the fallback was the rare branch. Once the
+     menu column started evicting perchers in the middle of the stage it
+     became the usual branch, and a percher hopping to a perch at x 600
+     simply left the screen.
+
+     The three tests, in the order they rule things out: below the sign,
+     because PERCH_TOP is where the logo stops covering things; past x 150,
+     because anything further left is on its way out of shot and would have
+     to be left again within a few seconds; and a centre inside VW - 74, so
+     the doodad lands somewhere the player can see. */
+  function landable(p, a) {
+    if (p === a.perch || perchTaken(p, a)) return false;
+    if (p.y < PERCH_TOP) return false;
+    if (p.x < 150) return false;
+    return p.x + p.w * 0.5 <= VW - 74;
+  }
+
+  /* The nearest landable perch to `aim`, optionally refusing the ones
+     behind the menu boards. Two passes over the same test is how the
+     column gets to be a preference rather than a ban: a percher would
+     rather be hidden for a while than be left hopping in place with
+     nowhere to land. */
+  function bestPerch(a, aim, avoidColumn) {
+    var best = null;
+    for (var i = 0; i < perches.length; i++) {
+      var p = perches[i];
+      if (!landable(p, a)) continue;
+      if (avoidColumn && inColumn(p)) continue;
+      if (!best || Math.abs(p.x - aim) < Math.abs(best.x - aim)) best = p;
+    }
+    return best;
+  }
+
   function leapToPerch(a) {
-    var best = null, i, p;
-    for (i = 0; i < perches.length; i++) {
-      p = perches[i];
-      if (p.x < 150 || p === a.perch || perchTaken(p, a)) continue;
-      if (p.y < PERCH_TOP) continue;
-      if (p.x + p.w * 0.5 > VW - 74) continue;
-      if (!best || Math.abs(p.x - 280) < Math.abs(best.x - 280)) best = p;
-    }
-    /* nothing in the sweet spot: take whatever is furthest right on screen */
-    if (!best) {
-      for (i = 0; i < perches.length; i++) {
-        p = perches[i];
-        if (p === a.perch || p.x < a.x + 20 || perchTaken(p, a)) continue;
-        if (!best || p.x > best.x) best = p;
-      }
-    }
+    /* The sweet spot used to be x 280, the middle of a stage whose menu
+       lived at the bottom. It is now the right-hand gap, between the boards'
+       right edge at MENU_R (346) and the furthest right a percher may stand
+       (centre 406) - which, with a perch 58..112 wide, is a left edge of
+       about 290..377. Measuring against 392 therefore reads as "as far into
+       that gap as this perch will go", and the wide perches that would poke
+       back over the boards lose to the narrow ones that clear them.
+
+       And if the gap has nothing free in it, take the nearest landable
+       perch anywhere, boards included. Being half behind a sign for a few
+       seconds is a small price; the alternative is a doodad with nowhere to
+       go, and what that actually looks like is in updatePercher. */
+    var best = bestPerch(a, 392, true) || bestPerch(a, 392, false);
     if (!best) { a.timer = 0.4; return; }
     a.from = { x: a.x, y: a.y };
     a.target = best;
@@ -399,6 +510,17 @@ var TitleScene = (function () {
     seedScenery();
     menuIndex = (params && params.menu) || 0;
 
+    /* An achievement can come true somewhere that has no banner to show it
+       in: a run abandoned from the pause panel after the plank that paid for
+       it, a doodad bought on the select screen, or a save file that already
+       satisfied one before achievements existed at all. Re-evaluating on the
+       way in banks those, silently - the earned count goes up and the
+       ACHIEVEMENTS row grows its NEW tab, which is all the title should say.
+       The celebrating belongs to the run that earned it and to the screen
+       that can show the badge, so the newly-earned list is deliberately
+       dropped on the floor here. */
+    Achievements.check();
+
     actors = {}; cast = [];
     var best = Doodads.bestReached();
     Doodads.list.forEach(function (d) {
@@ -415,7 +537,14 @@ var TitleScene = (function () {
     a.role = d.title.role;
     if (a.role === 'perch') {
       var want = [], q;
-      for (q = 0; q < perches.length; q++) if (perches[q].y >= PERCH_TOP) want.push(perches[q]);
+      /* High enough to stand clear of the sign, and out of the menu column:
+         the hop-off rule in updatePercher would evict a percher seeded into
+         the column on its very first frame, which is a hop at t = 0 before
+         the player has seen anybody standing anywhere. Choosing properly in
+         the first place costs one test. */
+      for (q = 0; q < perches.length; q++) {
+        if (perches[q].y >= PERCH_TOP && !inColumn(perches[q])) want.push(perches[q]);
+      }
       if (!want.length) want = perches;
       a.state = 'perch';
       /* One perch each - asked, not counted. Counting heads assumed the
@@ -492,8 +621,13 @@ var TitleScene = (function () {
     if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
     if (Input.hit('confirm')) {
       Audio3.play('select');
+      /* Named, not numbered, so the row order is free to change: both
+         screens come back with the index they left from (ScoresScene with
+         { menu: 1 }, AchievementsScene with { menu: 2 }) and those numbers
+         are the only place the order is written down twice. */
       if (MENU[menuIndex] === 'PLAY') Game.go(LevelSelectScene, {});
-      else Game.go(ScoresScene, {});
+      else if (MENU[menuIndex] === 'HIGH SCORES') Game.go(ScoresScene, {});
+      else Game.go(AchievementsScene, {});
     }
   }
 
@@ -607,15 +741,49 @@ var TitleScene = (function () {
        pointing at it would be one thing too many on a screen whose whole
        rule is "tap the thing itself". On a computer they are what the arrow
        keys look like. */
-    var bw = 152, bh = 32, bx = (VW - bw) / 2;
-    for (var m = 0; m < MENU.length; m++) {
-      var by = 182 + m * 38;
+    var bw = MENU_BW, bh = MENU_BH, bx = menuX();
+    var m, by;
+    for (m = 0; m < MENU.length; m++) {
+      by = menuY(m);
       UI.button(ctx, hot, bx, by, bw, bh,
                 { id: 'menu', i: m, a: 'confirm', label: MENU[m], lit: m === menuIndex });
       if (m === menuIndex && !UI.touch()) {
         UI.marker(ctx, bx - 12, by + bh / 2, t);
         UI.chevron(ctx, bx + bw + 12, by + bh / 2, -1, 4, UI.C.gold);
       }
+    }
+
+    /* HOW MANY BADGES ARE WAITING TO BE LOOKED AT.
+
+       Earning an achievement mid-flight is announced where it happens, but
+       the ones banked silently - on the way into this screen, or on the
+       first boot after a save file turns out to have satisfied several
+       already - have nothing to announce them, and a row the player has
+       never seen is exactly what the doodad select's NEW tag is for. So the
+       same tag, in the same colours, hung off the ACHIEVEMENTS board's
+       top-right corner rather than inset into it: overhanging by 4px up and
+       4px right, so the board keeps all 172px for its label and the tab
+       cannot crowd the S. Drawn after the boards, which puts it on top of
+       the lit board's gold rim where the 1px drop shadow reads.
+
+       It is not a target. The board underneath it already is one, and a tag
+       that could be pressed separately would be a second thing to press for
+       the same destination. freshCount() is the length of a cached array, so
+       asking every frame is free, and it drops as the achievements screen's
+       exit() marks the rows it actually showed - the count here is honest
+       the next time this screen is drawn. */
+    var n = Achievements.freshCount();
+    if (n > 0) {
+      var tag = n + ' NEW';
+      var tw = Font.measure(tag, 1) + 8;           /* 37 for '1 NEW', 43 for '12 NEW' */
+      var tx = bx + bw + 4 - tw;
+      by = menuY(ACHV_ROW) - 4;                    /* 216: overhanging the board's top edge */
+      ctx.fillStyle = UI.C.shadow;   ctx.fillRect(tx + 1, by + 1, tw, 9);
+      ctx.fillStyle = UI.C.goldDark; ctx.fillRect(tx, by, tw, 9);
+      ctx.fillStyle = UI.C.gold;
+      ctx.fillRect(tx, by, tw, 1); ctx.fillRect(tx, by + 8, tw, 1);
+      ctx.fillRect(tx, by, 1, 9); ctx.fillRect(tx + tw - 1, by, 1, 9);
+      UI.text(ctx, tag, tx + tw / 2, by + 1, { align: 'center', colour: UI.C.ink, shadow: null });
     }
 
     /* THE SOUND TOGGLE, and it is here because without it a phone cannot
@@ -673,13 +841,17 @@ var TitleScene = (function () {
          and the doodad belong off screen, and only one of them can be
          clamped back on */
       if (a.x < -20 || a.x > VW + 20 || b.sx === undefined) continue;
-      /* and it stays on the screen even when its doodad is at the edge */
-      var bx = clamp(Math.round(b.sx), 1, VW - 13);
-      var by = Math.round(b.sy - (1.2 - b.life) * 6);
+      /* and it stays on the screen even when its doodad is at the edge.
+         sx/sy, not bx/by: those two names belong to the menu boards at the
+         top of this same function, and `var` is function-scoped, so the
+         bubble loop was quietly overwriting them. Harmless while nothing
+         after the loop read them - the NEW tab above reads bx. */
+      var sx = clamp(Math.round(b.sx), 1, VW - 13);
+      var sy = Math.round(b.sy - (1.2 - b.life) * 6);
       /* fade rather than strobe: the old blink ran at 12Hz, which on a
          bubble this small read as a fault */
       ctx.globalAlpha = ga * clamp(b.life / 0.3, 0, 1);
-      drawBubble(ctx, bx, by, b.symbol);
+      drawBubble(ctx, sx, sy, b.symbol);
     }
     ctx.globalAlpha = ga;
 

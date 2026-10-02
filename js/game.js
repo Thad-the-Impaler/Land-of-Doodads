@@ -226,6 +226,16 @@ var Game = (function () {
     selection.doodad = pickDoodad();
     drawLoading();
     Levels.buildArt();
+    /* after the art, because four of the badges are not drawn at all - they
+       blit a level's own baked tile (the butane can, the capybara, the
+       notification, the potted succulent) so that a badge can never drift
+       away from the pickup it stands for. There has to be art to blit. */
+    Badges.build();
+    /* and after Scores.migrate() above, because the roster is evaluated once
+       here and the score-shaped achievements read the very keys migrate
+       renames: asked a moment earlier, a table saved under the old spelling
+       would read as a zero and the player's best run would not count. */
+    Achievements.init();
 
     Assets.load(function () {
       ready = true;
