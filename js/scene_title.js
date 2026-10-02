@@ -481,6 +481,13 @@ var TitleScene = (function () {
        go, and the keyboard branch underneath does the going. */
     var tg = Input.tapped();
     if (tg && tg.id === 'menu') menuIndex = tg.i;
+    if (tg && tg.id === 'sound') {
+      /* the same toggle M has always driven, and the same toast with it, so
+         a phone and a keyboard say the same thing about the same state */
+      var muted = Audio3.toggleMute();
+      Game.toast(muted ? 'SOUND OFF' : 'SOUND ON');
+      if (!muted) Audio3.play('move');
+    }
     if (Input.nav('down')) { menuIndex = (menuIndex + 1) % MENU.length; Audio3.play('move'); }
     if (Input.nav('up')) { menuIndex = (menuIndex + MENU.length - 1) % MENU.length; Audio3.play('move'); }
     if (Input.hit('confirm')) {
@@ -611,6 +618,34 @@ var TitleScene = (function () {
       }
     }
 
+    /* THE SOUND TOGGLE, and it is here because without it a phone cannot
+       reach the sound at all.
+
+       Mute has only ever been KeyM. The two places that said so - this
+       screen's footer and the pause panel's key list - are both correctly
+       suppressed on touch, because they list keys a phone does not have;
+       but mute was INSIDE those lists and, unlike flying, moving and
+       pausing, it never got a touch home to move to. So it did not just
+       lose its signpost, it lost its only route.
+
+       Drawn whenever something is POINTING, the same rule the BACK button
+       and the scores screen's paging arrows follow: a cursor can use it too,
+       and a keyboard that has never pointed keeps its footer and its M. The
+       cursor's footer line drops M SOUND in exchange, because a key named
+       underneath a button that does the same thing is the BACK-twice
+       contradiction again; the keyboard's line keeps it, since that is the
+       only place the key is still the only way. The
+       label carries the state rather than the action, because that is what
+       the toast has always said and a button that reads SOUND ON is only
+       ambiguous until you have pressed it once. */
+    if (Input.pointing()) {
+      /* its base sits a little above the footer strip, which is drawn after
+         it and on a cursor would otherwise smear its bottom border */
+      UI.button(ctx, hot, 6, VH - 46, 68, 26,
+                { id: 'sound', scale: 1,
+                  label: Audio3.isMuted() ? 'SOUND OFF' : 'SOUND ON' });
+    }
+
     /* arcade style hi-score readout in the corner */
     var best = Scores.table(Game.room(), Game.level())[0];
     if (best) {
@@ -653,7 +688,7 @@ var TitleScene = (function () {
        repeated the boards as words directly underneath them, so UI.footer
        leaves it out there entirely. */
     UI.footer(ctx, '▲ ▼ CHOOSE   ENTER SELECT   M SOUND   F FULLSCREEN',
-                   'CLICK A BOARD   M SOUND   F FULLSCREEN');
+                   'CLICK A BOARD   F FULLSCREEN');
   }
 
   function drawLogo(ctx) {
