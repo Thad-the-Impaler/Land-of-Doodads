@@ -77,12 +77,25 @@ var AchievementsScene = (function () {
      and exit() is what spends it. */
   var seenNow = [];
 
-  /* Is any plate on this screen one the save was able to PROVE rather than
-     count? Those are banked with no day and print '- - -', and the line
-     under the panel exists to say what the dash means. Worked out on the
-     way in because nothing on this screen can earn anything, so the answer
-     cannot change while it is up. */
-  var anyRetro = false;
+  /* The two halves of the line under the panel, worked out on the way in
+     because nothing on this screen can earn anything, so neither answer can
+     change while it is up.
+
+     `anyRetro` is whether any plate came out of history rather than out of
+     play - those print '- - -' where the day goes, and the first half of
+     the line says what the dash means. `anyCounting` is whether any row is
+     still filling a bar that started from nothing, which is the whole
+     reason the line exists: it is the one that answers "why does this say
+     0 / 20 when I have been playing for weeks".
+
+     They are asked SEPARATELY. They were one question, and that was the
+     bug: the line only appeared when a dash was on screen, so a save that
+     the first release had already stamped with real dates - which is every
+     save that had refreshed once - got no dashes and therefore no
+     explanation either, and the screen went on contradicting itself. The
+     bars are the thing that needs explaining whether or not anything is
+     dashed. */
+  var anyRetro = false, anyCounting = false;
 
   /* The rectangles this screen drew, refilled inside drawFg and handed
      to Input by Game.render - BACK and the two paging boards, or nothing
@@ -104,10 +117,13 @@ var AchievementsScene = (function () {
     slide = 0;
     seenNow = [];
     page = 0;
-    anyRetro = false;
+    anyRetro = Achievements.retroCount() > 0;
+    anyCounting = false;
     for (var r = 0; r < Achievements.list.length; r++) {
       var row = Achievements.list[r];
-      if (Achievements.earned(row) && !Achievements.when(row)) { anyRetro = true; break; }
+      /* a tally is the kind that starts from nothing; a probe reads a count
+         the save was already keeping and needs no explanation */
+      if (row.tally && !Achievements.earned(row)) { anyCounting = true; break; }
     }
     /* Arrive on the page the new thing is on. A player who comes here
        because the title said `1 NEW` is looking for one row, and the
@@ -383,10 +399,17 @@ var AchievementsScene = (function () {
      the footer string, because UI.footer draws nothing at all on touch and
      a phone would then never be told any of this. */
   function drawNote(ctx) {
-    var line = Doodads.masterKey() ? 'THE PASSKEY OPENS DOORS. IT EARNS NOTHING.'
-             : (anyRetro && Achievements.since()
-                  ? '- - - MEANS ALREADY DONE.  BARS COUNT FROM ' + stamp(Achievements.since())
-                  : '');
+    var line = '';
+    if (Doodads.masterKey()) line = 'THE PASSKEY OPENS DOORS. IT EARNS NOTHING.';
+    /* BOTH conditions, because the line is only worth saying to somebody who
+       was already playing when the badges arrived: a dash on the board means
+       the save was carrying history, and a bar still filling means something
+       started from nothing on the same day. A player who installed this week
+       has neither, and telling them their bars count from the day they
+       installed is noise. */
+    else if (anyRetro && anyCounting && Achievements.since()) {
+      line = '- - - MEANS ALREADY DONE.  BARS COUNT FROM ' + stamp(Achievements.since());
+    }
     if (!line) return;
     var strip = UI.touch() ? 18 : 28;
     ctx.fillStyle = UI.C.darker;

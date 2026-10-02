@@ -240,9 +240,12 @@ var Achievements = (function () {
      screen has to be able to say so. 0 means a save that has not been
      through init() yet. */
   var since = 0;
+  /* load() changed something the save does not hold yet, so init() has to
+     write even on a boot that banks nothing new */
+  var migrated = false;
 
   function load() {
-    got = {}; fresh = []; n = {}; freshUnknown = []; since = 0;
+    got = {}; fresh = []; n = {}; freshUnknown = []; since = 0; migrated = false;
 
     var stored = Save.get('achv', null);
     if (stored && typeof stored === 'object') {
@@ -297,6 +300,8 @@ var Achievements = (function () {
          something to branch on rather than a shape to guess at. */
     }
 
+    migrateFirstPass();
+
     var rawN = Save.get('achv.n', null);
     if (rawN && typeof rawN === 'object') {
       for (var key in rawN) {
@@ -313,6 +318,49 @@ var Achievements = (function () {
         if (typeof v === 'number' && isFinite(v) && v > 0 && v <= 0x7fffffff) n[key] = Math.floor(v);
       }
     }
+  }
+
+  /* A SAVE THE FIRST RELEASE OF THIS FILE ALREADY BANKED.
+
+     That release had no `since` and stamped every retroactive plate with
+     the day of the boot that found it - so a player who had been playing
+     for weeks got five plates dated the morning they refreshed, and the
+     screen printed EARNED above that date as though the runs had happened
+     that morning. The build after it banks those with no day at all, which
+     the screen draws as '- - -' and the line under the panel explains. But
+     that only ever runs ONCE per save, and for anybody who had already
+     refreshed, it had already run: check() skips a plate that is in `got`,
+     so the honest dashes were only ever going to reach a save that had
+     never seen the feature. Which was every save I tested and no save that
+     existed.
+
+     So the dates are repaired here instead. The giveaway is exact rather
+     than a guess: that release took ONE Date.now() for a whole check()
+     pass, so every plate banked by the retroactive pass carries the
+     identical timestamp, and it is the earliest one in the save. Two or
+     more plates sharing the save's earliest stamp were banked together
+     before the player had done anything, which is the retroactive pass and
+     nothing else - a later pass that banks two at once is still later. The
+     earliest stamp is also the honest answer to when counting began.
+
+     One plate alone on the earliest stamp is left exactly as it is. It
+     could have been the only thing the save could prove, or it could have
+     been earned in play on that boot, and there is no way to tell them
+     apart - so it keeps its date and `since` still moves back to it. */
+  function migrateFirstPass() {
+    if (since > 0) return;
+    var id, min = 0, shared = 0;
+    for (id in got) {
+      if (!got.hasOwnProperty(id) || !got[id]) continue;
+      if (!min || got[id] < min) min = got[id];
+    }
+    if (!min) return;
+    for (id in got) if (got.hasOwnProperty(id) && got[id] === min) shared++;
+    since = min;
+    if (shared > 1) {
+      for (id in got) if (got.hasOwnProperty(id) && got[id] === min) got[id] = 0;
+    }
+    migrated = true;
   }
 
   /* Nothing should reach this module before Game.init() calls init(), but
@@ -514,9 +562,9 @@ var Achievements = (function () {
     var first = since === 0;
     if (first) since = Date.now();
     check(0);
-    /* `since` has to survive a boot that earns nothing, and check() only
-       writes when it banks something */
-    if (first) writeGot();
+    /* `since` and any repaired dates have to survive a boot that earns
+       nothing, and check() only writes when it banks something */
+    if (first || migrated) writeGot();
   }
 
   /* The secrecy gate, and the only thing in this file that is allowed to
@@ -552,6 +600,22 @@ var Achievements = (function () {
   /* Roster ids only. A save that has travelled through a later build may
      hold plates this one does not know, and counting them would print
      EARNED 12 / 11. */
+  /* HOW MANY PLATES CAME OUT OF HISTORY RATHER THAN OUT OF PLAY. A plate
+     with no day is one the save could prove and could not date; a plate
+     dated before counting began is the same thing on a save whose repair
+     above could not be certain enough to zero it. The screen asks so that
+     it only explains the dash when there is a dash to explain. */
+  function retroCount() {
+    ensure();
+    var c = 0;
+    for (var i = 0; i < LIST.length; i++) {
+      var id = LIST[i].id;
+      if (!got.hasOwnProperty(id)) continue;
+      if (!got[id] || (since && got[id] < since)) c++;
+    }
+    return c;
+  }
+
   function earnedCount() {
     ensure();
     var c = 0;
@@ -614,6 +678,7 @@ var Achievements = (function () {
     init: init,
     /* the day counting began, 0 on a save that has not booted this build */
     since: function () { ensure(); return since; },
+    retroCount: retroCount,
     get: function (id) { return BY_ID.hasOwnProperty(id) ? BY_ID[id] : null; },
     total: function () { return LIST.length; },
     earned: earned, earnedCount: earnedCount,
