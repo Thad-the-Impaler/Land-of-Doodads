@@ -91,6 +91,11 @@ var Audio3 = (function () {
     pause:   function () { tone({ from: 600, to: 300, dur: 0.1, type: 'triangle', vol: 0.12 }); },
     chirp:   function () { tone({ from: 900 + Math.random() * 300, to: 1500 + Math.random() * 400,
                                   dur: 0.07, type: 'square', vol: 0.07 }); },
+    /* A ROOM, if its recording is not there to play. It is the stall fanfare
+       and not a second arrangement, because the alternative to a missing
+       sample must be a sound and not silence, and this is the sound the game
+       already means by "something opened". */
+    room:    function () { SFX.unlock(); },
     /* a doodad just came unlocked - the one real fanfare in the game */
     unlock:  function () { tone({ from: 523, dur: 0.1, type: 'square', vol: 0.13 });
                            tone({ from: 659, dur: 0.1, type: 'square', vol: 0.13, delay: 0.09 });
@@ -190,7 +195,12 @@ var Audio3 = (function () {
      without one. A sound nobody hears is not a subtle sound. */
   var SAMPLES = {
     unlock: { src: 'Assets/sounds/mkoydokoy.mp3', vol: 0.45 },
-    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.40 }
+    nerve:  { src: 'Assets/sounds/stressless.mp3', vol: 0.40 },
+    /* A ROOM coming open, which is a rarer and bigger thing than a stall or
+       a bay: there is one score-gated room in the game today and the player
+       crosses it once. Louder than the stall fanfare for that reason, and
+       its own recording rather than the same one twice. */
+    room:   { src: 'Assets/sounds/wholenewworld.mp3', vol: 0.5 }
   };
 
   var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */

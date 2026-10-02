@@ -454,13 +454,19 @@ Every sound in the game is a couple of oscillators - a square wave, a filtered
 noise burst, no files - which is what keeps the whole thing a handful of
 scripts. `M` mutes, and the choice is saved.
 
-There are two exceptions, both recordings. **An unlock plays one**, because the
-moment a stall comes open is worth a voice rather than an arpeggio, and no
+There are three exceptions, all recordings. **An unlock plays one**, because
+the moment a stall comes open is worth a voice rather than an arpeggio, and no
 arrangement of square waves was going to be that; it fires for a doodad and a
-level alike, and for the master passkey. **Cookie's nerve plays the other**,
-every time she shaves a plank close enough to score double. That one is mixed
-well under the first - a fanfare happens a handful of times in a save, a
-threaded plank happens every couple of seconds in a good run.
+level alike, and for the master passkey. **A ROOM coming open plays its own**,
+louder, because that is rarer still - there is one score-gated room in the game
+and you cross it once. It is keyed on the kind of thing that opened and not on
+which room it is, so the day a second room is gated it will sound for that one
+too; and when a single score opens a room and a bay together, which is exactly
+what the Construction Zone's twentieth point does, the room wins the one slot
+there is. **Cookie's nerve plays the third**, every time she shaves a plank
+close enough to score double. That one is mixed well under the others - a
+fanfare happens a handful of times in a save, a threaded plank happens every
+couple of seconds in a good run.
 
 The chiptune fanfare it replaced is still in the file and still wired up: if
 the recording has not finished decoding, or the browser will not take it, or

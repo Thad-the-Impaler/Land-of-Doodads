@@ -24,7 +24,8 @@ OUT = "Land of Doodads.html"
 # A sound file is named for what it IS, so that it stays identifiable; audio.js
 # plays it under the name of what it DOES. This is the one place the two meet,
 # and a file with no entry keeps its own stem as its role.
-SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve"}
+SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve",
+               "wholenewworld.mp3": "room"}
 
 
 def read(path):

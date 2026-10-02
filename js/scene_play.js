@@ -1374,7 +1374,20 @@ var PlayScene = (function () {
     }
     if (opened.length && !Doodads.masterKey()) {
       for (var z = 0; z < opened.length; z++) announce(opened[z].kind, opened[z].it);
-      Audio3.play('unlock');
+      /* A ROOM opening gets its own fanfare, and it takes precedence when a
+         single score opens a room and a bay together - which is exactly what
+         the Construction Zone's twentieth point does, since it is the key to
+         both THE LIVING ROOM and the room's first bay. The bigger news wins
+         the one slot there is.
+
+         It is keyed on the KIND and not on which room it is: noteScore
+         already reports a room opening separately, and its threshold test
+         (crossed, not landed on) means this fires once ever. The day a
+         second room is gated it will sound for that one too, which is
+         right - this is the sound of a door, not the sound of one door. */
+      var roomOpened = false;
+      for (z = 0; z < opened.length; z++) if (opened[z].kind === 'room') roomOpened = true;
+      Audio3.play(roomOpened ? 'room' : 'unlock');
       Screen.shake(2.5, 0.3);
       for (var q = 0; q < 26; q++) {
         var ang = rand(0, TAU), spd = rand(40, 160);
