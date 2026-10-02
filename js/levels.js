@@ -352,7 +352,27 @@ var Levels = (function () {
          third of them unreachable behind the kernels, lands the ones a
          player actually gets about where every other bay's are. boonGap
          stays at 10 so two can never arrive together. */
-      boonChance: 0.045, boonGap: 10
+      boonChance: 0.045, boonGap: 10,
+      /* Somebody is bouncing in the popcorn, somewhere between the fifth
+         pillow and the twentieth. Which doodad that is remains the roster's
+         business, the same as it is in the Garden - this only says where to
+         look - but unlike the Garden's stake, WHICH pillow is rolled fresh
+         every run, and that is what meetSpan is: the first one he may be at
+         plus how many more the dice may add.
+
+         WHY A WINDOW HERE AND A FIXED PLANK THERE. The Garden's hiding
+         place is the same dive every run, so one number is honest. This
+         floor is not: the kernels arm at dropScore 4 and the carpet above
+         does not thicken until about 12.5 seconds in. At speedStart 112 and
+         spacing 228 the fifth pillow is roughly 10 seconds out and the
+         twentieth roughly 38, so an early draw is a dive onto nearly bare
+         cushion and a late one is a dive into the full carpet. Pinning it to
+         one pillow would have handed every player the same run of the two,
+         and 5..20 is the honest spread between them - the easy end still
+         asks for the dive, the hard end is the one worth telling somebody
+         about. 20 and not higher because a run that long is not a given on
+         this bay, and a hiding place nobody reaches is not a hiding place. */
+      meetAt: 5, meetSpan: 15
     }
   };
 

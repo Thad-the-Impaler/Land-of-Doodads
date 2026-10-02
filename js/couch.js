@@ -98,6 +98,45 @@
    art.stepDrop and the engine hands it one drop at a time to move. See
    stepDrop for what that contract permits and what it does not.
 
+   AND SOMEBODY IS IN THE POPCORN. KOA is the second doodad in the game
+   who is FOUND rather than bought, and the Garden's way of hiding one -
+   a face peeking over the top of a plank, holding perfectly still -
+   would be thrown away in here, because the bottom of this bay is
+   already full of pale things moving about and one more still face
+   would be the easiest thing in the room to miss. So he hides IN them.
+   He is standing on the cushion somewhere between the fifth pillow and
+   the twentieth, bouncing at the kernels' own gravity to an apex in the
+   middle of the kernels' own range, and the popcorn clicks off him.
+   Touch him and he is yours. Take a plain kernel while he is on the
+   screen and he is gone for the rest of the run.
+
+   WHO KNOWS WHAT, because he is the first thing in this bay that three
+   files have to agree about. The LEVEL says where (tune.meetAt and
+   tune.meetSpan on THE COUCH, a window of pillows), the ROSTER says who
+   (Doodads.meetable, which is told the level id so the Garden never
+   offers the Couch's hider), and this MODULE says how: makeMeet puts
+   him down, stepBoon moves him, hitMeet is how big he is to a kernel,
+   rectsFor is how big he is to the doodad, and drawMeetSpot is the one
+   thing painted for him here.
+
+   HE IS A 'boon', which is why this file has so little to do for him.
+   The engine's five obstacle types are closed and he did not get a
+   sixth: a boon already has a grab point the engine asks the art for,
+   a hitbox it asks rectsFor for, contact resolved in collide(), and -
+   the one that makes the rule possible at all - it is LEFT STANDING by
+   save(), so "took a hit and lived" is a state the player can be in and
+   lose him from. A drop would have been wrong five ways over (lethal,
+   splattered, knocked down by a tail, drawn in front of the pillows,
+   and lined by Pepper's watch) and litter is never collided at all.
+
+   WHAT THIS MODULE DOES NOT DO IS DRAW THE KOALA. Sprites cannot be
+   painted on the room layer: it is nearest-neighbour by contract, and a
+   377px PNG resampled to 27 on it would be noise. So PlayScene draws
+   him with Doodads.draw on the smooth sprite layer, at the grab point
+   this module publishes and squashed by the ob.squash this module sets -
+   exactly as it already draws Saddam where the plank says he is. The
+   art says where he is and what shape he is in; the engine draws him.
+
    Same discipline as js/coop.js, js/deck.js and js/construction.js:
    every pixel in here is generated and baked into a tile once, and ANY
    shade laid over something that scrolls is a flat Tint, never a
@@ -410,6 +449,66 @@ var Couch = (function () {
      their centres are 7 apart. */
   var KERNEL_R = 3.5;
   var PAIR_D = 7;
+
+  /* ------------------------------------------- THE HIDER IN THE POPCORN
+
+     KOA's four numbers, and every one of them is set against the
+     kernels' rather than beside them, because the thing the player has
+     to believe about him is that he came out of this carpet. Two sets
+     of constants for one motion drift apart the first time either is
+     tuned, so where he can share the popcorn's numbers he shares them -
+     DROP_GRAV, HOP_VARY, the re-launch rather than a restitution - and
+     the four below are the places he deliberately differs.
+
+     KOA_HOP, his apex, is FIXED like a kernel's, and at 30 it sits a
+     little UNDER the 33 that is the true midpoint of HOP_MIN..HOP_MAX -
+     deliberately, and the three pixels are the whole margin: 33 would put
+     his best hop's box top at FLOOR-65.9, over the FLOOR-64 that is the
+     hitbox bottom of a doodad flying the middle of the lowest gap, and he
+     would come up and meet somebody who had not gone down for him. The
+     dive is the price of him and it has to stay a dive. At DROP_GRAV his period is 2 * sqrt(2 * 30 / 150)
+     = 1.26s, which sits inside the 1.03..1.57s the popcorn around him
+     is keeping, so one look tells the player where he is going to be -
+     the same bargain this level offers for everything else that hops.
+     And it is the number that sets the price of him, which was measured
+     rather than guessed. On a nominal hop his centre tops out at
+     FLOOR-44 and his box at FLOOR-58; on the +15% rolls, 34.5 of hop, it
+     reaches FLOOR-62.5. A doodad flying the middle of the lowest gap has
+     its hitbox bottom at FLOOR-64, so he is OUT OF REACH of a straight
+     line through the gap on every hop he has - by six pixels on an
+     average one and by a pixel and a half on his best. Which is the
+     right shape for the number to have: he cannot be collected by flying
+     properly, and on his best hop he is a pixel and a half from it, so
+     the dive is short and it is obvious that it is needed. For scale, the
+     highest a kernel's box ever gets is FLOOR-60 (see HOP_MAX), so at the
+     top of a good hop he is the tallest thing on the carpet by a couple
+     of pixels - which is also what makes him findable at all in a room
+     where everything else is white and hopping.
+
+     KOA_DRIFT is how far either side of where he was put he will
+     wander, and it is why he needs no pillar maths where a kernel needs
+     hitPillar. At spacingMin 184 the cushion between two pillows is
+     92px wide and a pillow's lower cap takes 21 of it, so 20 of drift
+     plus his own 14 of body never reaches a bolster. He stays in his
+     patch; the engine keeps the patch clear by skipping the spike,
+     litter and boon rolls for the gap he is in.
+
+     KOA_KICK and KOA_VX_MAX are the kernels' sideways nudge cut down:
+     16 where a kernel takes up to 24, capped at 24 where VX_MAX is 56.
+     He is heavier than a kernel and his patch is smaller than the
+     carpet, and a hider skating 56px/s through the popcorn would read as
+     something coming at the player rather than something hiding.
+
+     KOA_R is the radius a kernel comes off, and it is 13 against the 14
+     of his hitbox (see rectsFor) - a pixel INSIDE it, on purpose. If
+     the popcorn bounced off a circle wider than the box the player is
+     diving at, the bounce would look like an invisible wall around him,
+     and the one thing he must never read as is a hazard. Inside the box
+     it reads as popcorn hitting fur. */
+  var KOA_HOP = 30;
+  var KOA_DRIFT = 20;
+  var KOA_KICK = 16, KOA_VX_MAX = 24;
+  var KOA_R = 13, KOA_PAIR_D = KERNEL_R + KOA_R;      /* 16.5 */
 
   /* The marshmallow's odds. They live here rather than in the tune
      because the ART is what has to know: a +5 the module has not rolled
@@ -2555,7 +2654,59 @@ var Couch = (function () {
 
   /* --------------------------------------------------------- the boon */
 
+  /* THE ONLY THING THIS MODULE PAINTS FOR KOA: the patch of cushion he is
+     standing over. It is drawDropSpot's grammar on a bigger thing, and
+     for drawDropSpot's reason - in this bay how far UP a thing is and how
+     far down the screen it is are two different questions, and what the
+     player needs off the floor is how soon it comes down. Small and dark
+     when he is about to land, wide and faint at the top of his hop. There
+     is no second, fainter term for height above the hop the way a kernel
+     has one: a kernel can be flicked up a cap and halfway to the
+     moulding, and his apex is his ceiling.
+
+     14..22 wide against a kernel's 5..11, because he is four times a
+     kernel's width and a spot narrower than the thing casting it reads as
+     a different, smaller object on the floor.
+
+     NO GLOW, NO SPARKS, NOTHING THAT PULSES, and that is a decision and
+     not an omission. The gifts get all three because a gift has to be
+     noticed from across the room, and the trouble with him is the
+     opposite one: the first instinct of a player who sees something new
+     bouncing in the kill zone is to AVOID it, and a glowing thing in the
+     popcorn reads as the hot cheddar, which is a hazard that happens to
+     help. What tells the player he is not a hazard is that he has a FACE,
+     which the engine draws on the sprite layer, and that the card they
+     unlocked him from has already said somebody is bouncing in the
+     popcorn and to get him out. The shadow is here for one job only: so
+     his height is readable off the floor, the same way every kernel's is,
+     because that is what a player needs to time the dive.
+
+     AND IT IS A TINT. He moves, and the 4x4 Bayer is anchored in user
+     space, so a dithered patch under a hopping animal re-phases every
+     frame and the pixels boil. There is still no call to Dither.rect
+     anywhere in this file. */
+  function drawMeetSpot(ctx, ob) {
+    var high = -ob.dy;                            /* 0 on the cushion    */
+    var near = clamp(high / ob.hop, 0, 1);        /* 1 at the top of a hop */
+    var w = 14 + Math.round(8 * near);
+    Tint.rect(ctx, Math.round(ob.x - w / 2), FLOOR + 1, w, 3,
+              P.seatDeep, 14 - Math.round(8 * near));
+  }
+
   function drawBoon(ctx, ob) {
+    /* KOA IS NOT DRAWN HERE, and it is worth saying where he is drawn
+       instead. This canvas is the room layer: nearest-neighbour by
+       contract, so that the pillows and the popcorn stay pixel art, and a
+       377px koala resampled onto it at 27px would be mush. The sprite
+       goes on the smooth layer, drawn by PlayScene with Doodads.draw at
+       the grab point this module publishes, which is how every other
+       screen in the game draws a doodad and how this one already draws
+       Saddam. What is left for the room layer is his shadow, and he gets
+       it only while he is still in play. */
+    if (ob.meet) {
+      if (!ob.met) drawMeetSpot(ctx, ob);
+      return;
+    }
     if (ob.taken) return;
     var i;
     /* the dent it was standing in stays where it was even after Gerald
@@ -3067,6 +3218,74 @@ var Couch = (function () {
                          : [P.birch, P.burn, P.burnDeep, P.lifePale, P.lifeJade] };
   }
 
+  /* --------------------------------------------------------- makeMeet
+
+     KOA, put down in the middle of one gap's cushion. An OPTIONAL maker,
+     like makeBoon: the engine calls it only if the level publishes one,
+     and a level that does not gets the plank hider the Garden has always
+     had, which is why nothing about Saddam changes for any of this.
+
+     The engine sets ob.meet to whoever is hiding AFTER this returns, the
+     way it sets plank.meet and ob.gold, so nothing in here knows or cares
+     which doodad it is building a hiding place for. Everything below is
+     true of any 13px animal standing in popcorn.                      */
+  function makeMeet(x, run) {
+    return {
+      type: 'boon', x: x,
+
+      /* FLOOR-14 is where a 13px doodad STANDS, and it is arithmetic
+         rather than taste. Doodads.draw scales the sprite by r / bodyR,
+         so at MEET_BODY 13 his art comes out about 27px tall, and his
+         footOffset of 1.07 puts his feet 13.9px below the pivot the
+         engine draws him on - which lands them on the cushion to within
+         a tenth of a pixel. MEET_BODY is deliberately not scaled by
+         anybody's `size` (its own comment in js/scene_play.js demands
+         that), so this is a constant and not a function of who is in
+         the popcorn tonight. */
+      y: FLOOR - 14,
+
+      /* collide() and the cull both test ob.x..ob.x+w, so w is his body
+         and not a guess: 26 for a 27px sprite. And because the ART moves
+         ob.x itself - the way a kernel's does - instead of carrying him
+         in ob.dx the way the coaster's bob does, both of those tests
+         stay honest for free. ob.dx exists and stays 0 so the engine's
+         grabX() can read it without caring which kind of boon it holds. */
+      w: 26, taken: false,
+      dx: 0, dy: 0,
+
+      /* ob.dy is his HOP, measured up from the cushion, which is what
+         makes one grab point do for everything: the engine's grab point
+         for a boon is boonY(ob) + ob.dy, so his box, the burst when he
+         is caught and the sprite on the smooth layer all rise and fall
+         with him off one number. ob.drift is the same integral in the
+         world's frame and is what KOA_DRIFT bounds - it cannot be read
+         back off ob.x, because the room is scrolling ob.x left at 112 to
+         174px/s underneath him. */
+      drift: 0, vx: 0, vy: 0,
+
+      /* his own apex, in the same field a kernel keeps its apex in, so
+         stepBoon's re-launch and stepDrop's are the same algebra */
+      hop: KOA_HOP, squash: 1,
+
+      /* THE ART'S STATEMENT THAT HE CAN BE SPOOKED. The engine's rule is
+         generic - a hider that says it is shy is sent away when the
+         player takes a plain hazard while it is on the screen - and the
+         Garden's plank never says it, so the one doodad already shipped
+         behind a cushion in the Backyard is untouched by the whole of
+         this. Saying it here is also honest about whose rule it is: the
+         popcorn is this bay's hazard, so being frightened OF the popcorn
+         is this bay's idea. */
+      shy: true,
+
+      /* Nothing of his reads this. It is published because the boon
+         contract names it and drawBoon's other branch bobs on it, the
+         same reason makeSpikes publishes an empty `spikes` array: a
+         level's objects answer the same questions whether or not this
+         particular one has an interesting answer. */
+      phase: rand(0, TAU)
+    };
+  }
+
   /* --------------------------------------------------------- stepDrop
 
      THE CONTRACT. The engine hands this ONE drop and the whole obstacle
@@ -3111,6 +3330,15 @@ var Couch = (function () {
         hitPillar(ob, p);
       } else if (p !== ob && p.type === 'drop' && p.broken <= 0 && p.hop !== undefined) {
         hitKernel(ob, p);
+      } else if (p.type === 'boon' && p.meet && !p.met) {
+        /* KOA, standing in the popcorn. 20 is KOA_PAIR_D rounded up, so
+           the gate is never the thing that misses. The coasters fall
+           straight through this test because only a hider carries
+           ob.meet, and a hider already caught or already spooked carries
+           ob.met and is out of play - the engine has stopped testing and
+           drawing him by then and the art stops moving him. */
+        if (ob.x < p.x - 20 || ob.x > p.x + 20) continue;
+        hitMeet(ob, p);
       }
     }
 
@@ -3227,6 +3455,142 @@ var Couch = (function () {
     ob.vx = clamp(ob.vx, -VX_MAX, VX_MAX);
   }
 
+  /* A kernel against KOA, and this is the contact that sells him: a
+     thing the popcorn bounces off is a thing that is IN the popcorn.
+
+     ONE-SIDED, LIKE hitKernel, AND FOR A STRONGER REASON. The art is
+     forbidden from writing to another obstacle on a drop's call, and
+     here that prohibition happens to be exactly what the design wants:
+     he keeps his own rhythm no matter how much popcorn arrives, because
+     nothing in this function can touch him. The kernels click off him;
+     he goes on hopping at 1.26s like the metronome the player is timing.
+
+     HE IS TREATED AS A WALL, not as a body. His own velocity is not in
+     the closing speed, which is wrong by up to 95px/s at the bottom of
+     a hop - and right anyway, because putting it in would make a rising
+     koala serve kernels at the ceiling at 1.85 times that, and a hider
+     who launches popcorn into the gap above him is a hazard with extra
+     steps. Being a wall is also why the push-out is the WHOLE overlap
+     where hitKernel takes half of it: the other kernel will do its own
+     half on its own call, and he never will.
+
+     1.85 is (1 + e) at the e = 0.85 hitKernel already uses - the whole
+     impulse rather than the half an equal-mass pair takes, which is what
+     an immovable body deals out. And there is no cap on the kernel's vy
+     here on purpose: one knocked above its own apex is re-launched to
+     that apex on its next landing anyway, so the fixed-period rule heals
+     itself inside one hop, and stepDrop's moulding clamp catches the
+     extreme at the top of the room. */
+  function hitMeet(ob, p) {
+    var dx = ob.x - p.x, dy = ob.y - (p.y + p.dy);
+    var d2 = dx * dx + dy * dy;
+    if (d2 >= KOA_PAIR_D * KOA_PAIR_D || d2 < 0.0001) return;
+    var d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+    ob.x += nx * (KOA_PAIR_D - d);
+    ob.y += ny * (KOA_PAIR_D - d);
+    var rv = ob.vx * nx + ob.vy * ny;
+    if (rv >= 0) return;                 /* already separating */
+    ob.vx -= 1.85 * rv * nx;
+    ob.vy -= 1.85 * rv * ny;
+    ob.vx = clamp(ob.vx, -VX_MAX, VX_MAX);
+    ob.bounced = true;
+  }
+
+  /* --------------------------------------------------------- stepBoon
+
+     stepDrop's twin, and the same contract word for word: the engine has
+     already scrolled this obstacle and hands it over with the whole list;
+     move the one you were given, you may READ the list, never splice it
+     and never write to anything else in it. Set ob.bounced and the engine
+     throws two particles of cushion fluff and ticks 'bop' for you, rate
+     limited, because no art module calls Audio3 - which means he shares
+     the popcorn's own landing sound, and that is half of why he reads as
+     part of the carpet. There is no return value: unlike a drop, a boon
+     has nothing the engine could land it into.
+
+     `obstacles` goes UNREAD here, deliberately. The only thing he
+     interacts with is the popcorn coming off him, and that is resolved on
+     the KERNEL's call, in stepDrop -> hitMeet, where it can be applied to
+     the kernel alone. Doing it from this side would mean writing to
+     another obstacle, which the contract forbids, and would also apply
+     every impulse twice. The parameter stays because the contract names
+     it and the next bay that wants it should not have to change the hook.
+  */
+  function stepBoon(ob, dt, obstacles) {
+    /* The coasters do not move under their own power: drawBoon bobs them
+       on ob.phase, and the engine's hunger writes their ob.dx/ob.dy when
+       Gerald reels one in - which is also why he is kept out of that
+       hunger, since those are the two fields the art owns for him. And a
+       hider already caught or already spooked is out of the run: the
+       engine has stopped testing and drawing him, so there is nothing
+       left in here to animate. */
+    if (!ob.meet || ob.met) return;
+
+    /* HIS BOUNCE IS THE KERNELS' BOUNCE - their gravity, their +-15%,
+       their re-launch instead of a restitution. What differs is the four
+       constants at the top of the file and nothing else.
+
+       ob.dy is his height above the cushion, so 0 is standing and
+       negative is airborne, and ob.y itself never moves. He is MADE at
+       rest, which means the first frame's gravity carries ob.dy over 0
+       and trips the landing branch below: he launches on the frame he is
+       admitted and is never once seen holding still. That matters for
+       exactly the reason no kernel in this bay ever comes to rest - a
+       thing standing still down here reads as scenery, and the worst
+       outcome for a hider is not being avoided, it is being walked
+       past. */
+    ob.vy += DROP_GRAV * dt;
+    ob.dy += ob.vy * dt;
+    ob.x += ob.vx * dt;
+    ob.drift += ob.vx * dt;
+
+    /* THE PATCH. He turns round at KOA_DRIFT either side of where he was
+       put - see the constants for why 20 is the number that needs no
+       pillar maths. Pulling ob.drift back onto the wall is what makes
+       this test fire once instead of every frame afterwards: the next
+       frame can only cross it again if the kick he has just taken is
+       still pointed outwards, and then reversing is the right answer
+       again. */
+    if (ob.drift > KOA_DRIFT || ob.drift < -KOA_DRIFT) {
+      ob.vx = -ob.vx;
+      ob.drift = clamp(ob.drift, -KOA_DRIFT, KOA_DRIFT);
+    }
+
+    /* THE CUSHION, and it is stepDrop's landing with three things
+       changed. Re-launched to his own apex rather than damped, so the
+       period the player timed off one look is the period he keeps.
+       Kicked sideways on every landing, because that wander is the
+       popcorn's tell and it is the thing he picked up off them - it is
+       what his ability is named for. And squashed, because 27 pixels of
+       animal hitting a cushion that every kernel in the room is drumming
+       on ought to give.
+
+       He needs neither of stepDrop's two hard limits. The moulding is
+       nowhere near a 30px hop, and nothing in the bay can put him above
+       his own apex, because the one impulse that could is applied to the
+       kernel and never to him. */
+    if (ob.dy >= 0) {
+      ob.dy = 0;
+      ob.vy = -Math.sqrt(2 * DROP_GRAV * ob.hop * rand(1 - HOP_VARY, 1 + HOP_VARY));
+      ob.vx = clamp(ob.vx * 0.75 + rand(-KOA_KICK, KOA_KICK), -KOA_VX_MAX, KOA_VX_MAX);
+      ob.squash = 0.78;
+      /* the engine's fluff comes out at ob.y + 3, which for him is his
+         middle rather than his feet - two grains of cushion grain nobody
+         will measure, and moving it would mean special-casing a helper a
+         dozen kernels a second share */
+      ob.bounced = true;
+    }
+
+    /* and the squash eases back out over about a tenth of a second.
+       ob.squash is a field the ENGINE reads, the way it reads ob.landed
+       and ob.name: it hands Doodads.draw { squashX: 1 / squash, squashY:
+       squash }, so the art decides how he deforms and the sprite layer
+       does the drawing. Math.min(1, dt * 12) rather than dt * 12 because
+       one long frame - the first after a tab comes back - would otherwise
+       carry the term past 1 and stretch him instead of settling him. */
+    ob.squash += (1 - ob.squash) * Math.min(1, dt * 12);
+  }
+
   /* ------------------------------------------------------- the boxes
 
      Every lethal pixel has a box and nothing harmless has one. The
@@ -3263,9 +3627,27 @@ var Couch = (function () {
       else if (ob.spicy || ob.sour) out.push([ob.x - 5, ob.y - 5, 10, 10]);
       else out.push([ob.x - 3, ob.y - 3, 6, 6]);
     } else if (ob.type === 'boon') {
-      /* the disc is what you collect, so the box travels with it and
-         the dent it was standing in has none */
-      if (!ob.taken) out.push([ob.x + ob.dx - 9, FLOOR - 18 + ob.dy, 18, 18]);
+      if (ob.meet) {
+        /* KOA, and his is the one box in this bay that is BIGGER than the
+           thing inside it: 28 against his 26 of body, a pixel of slack on
+           each side, the same pixel both gifts get. Dodging is meant to be
+           fair and catching is meant to be easy, and he is caught, not
+           dodged - the player is already paying for him by flying low
+           enough to be in the popcorn, and charging them a second time
+           for a pixel of aim would be charging twice for one dive.
+
+           It travels with his hop, because ob.y + ob.dy is where the
+           engine draws him and a box left down on the cushion would mean
+           collecting him by touching the air a bouncing koala has just
+           left. Once he is caught or spooked he has no box at all: he is
+           out of the run and the engine simply scrolls him off the left
+           with everything else. */
+        if (!ob.met) out.push([ob.x - 14, ob.y + ob.dy - 14, 28, 28]);
+      } else if (!ob.taken) {
+        /* the disc is what you collect, so the box travels with it and
+           the dent it was standing in has none */
+        out.push([ob.x + ob.dx - 9, FLOOR - 18 + ob.dy, 18, 18]);
+      }
     }
     return out;
   }
@@ -3283,6 +3665,13 @@ var Couch = (function () {
     drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon,
+    /* The two optional hooks, and optional is the whole point of them:
+       the engine calls makeMeet only if the level has one and falls back
+       to hiding the doodad behind a plank if it does not, and it calls
+       stepBoon only if the level has one and otherwise leaves a boon
+       sitting where it was put. So the Garden, the Canopy and every other
+       level that sheds a spare life is untouched by either. */
+    makeMeet: makeMeet, stepBoon: stepBoon,
     stepDrop: stepDrop,
     rectsFor: rectsFor
   };

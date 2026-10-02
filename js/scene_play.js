@@ -193,6 +193,18 @@ var PlayScene = (function () {
   var hungry = 0;              /* things his hunger has hold of this frame */
   var nearestPull = 0;         /* how close the closest of them is, 0..1   */
   var planksUp = 0;            /* planks spawned, for the one he hides on  */
+  /* WHICH plank that is, decided once in start() and never again.
+     The Garden names a single plank (tune.meetAt 10) and that is all it has
+     ever needed; the Couch names a WINDOW instead - somebody is in the
+     popcorn between the fifth pillow and the twentieth - so the number has
+     to be rolled. It is rolled ONCE PER RUN rather than being a coin
+     flipped at every plank inside the window, because a per-plank coin
+     makes the encounter a lottery that some runs simply do not hold, and
+     the challenge the owner asked for is the dive through the carpet, not
+     the draw. Held in a variable rather than recomputed from tune on each
+     spawn for the same reason: a second read would roll a second number
+     and the window would offer him over and over. */
+  var meetPlank = 0;
   var flickCool = 0;           /* seconds until the tail is back under him */
   /* What the mid-flight banner is currently shouting about, and what is
      waiting behind it. A score can open a level AND a doodad on the very
@@ -207,6 +219,17 @@ var PlayScene = (function () {
   var nerveX = 0, nerveY = 0, nerveGain = 1;
   var goldPop = 0;             /* and the one for a gold can caught        */
   var goldX = 0, goldY = 0;
+  /* And the opposite shout: the hider who was TOUCHED BY THE POPCORN while
+     the player was diving for him and is gone. It is built exactly like the
+     gold one - a pop, a clamped point, and the level's own word for what
+     just happened - because it is the same kind of news: a thing that
+     happened over there rather than in the contested middle of the screen,
+     where SPICY!, SAVED! and the unlock queue already live. It needs its own
+     pair of coordinates and cannot borrow goldX/goldY: the frame he is
+     spooked is very often the frame a kernel was caught or smashed, so both
+     captions can be up at once and sharing the point would put them on top
+     of each other. */
+  var fledPop = 0, fledX = 0, fledY = 0, fledName = '';
   /* and what the level calls it. A can, a gear, a quarter and a marshmallow
      are all the same +5, and shouting GOLD over a coin somebody just caught
      names a metal nobody saw. The art says so with ob.name; the Backyard's
@@ -281,6 +304,16 @@ var PlayScene = (function () {
     lives = doodad.lives || 0; invuln = 0; saveFlash = 0; saveBanner = 0;
     pottedLives = 0; spentPotted = false;
     planksUp = 0; flickCool = 0;
+    /* THE ONE ROLL OF THE RUN. tune.meetAt is the first plank he may be
+       behind and tune.meetSpan is how many more the dice may add, so the
+       Couch's 5 and 15 are a uniform 5..20 (randInt is inclusive at both
+       ends) and the Garden's 10 with no span resolves to exactly 10 - bit
+       for bit the plank Saddam has always been on. Rolled in start() and
+       not in enter(), so RETRY puts him somewhere else and a player who
+       lost him at plank 19 does not have to fly nineteen planks again to
+       find out where he went. */
+    meetPlank = tune.meetAt ? tune.meetAt + randInt(0, tune.meetSpan || 0) : 0;
+    fledPop = 0; fledName = '';
     bannerQueue.length = 0;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
     boonName = 'SUCCULENT';
@@ -382,7 +415,16 @@ var PlayScene = (function () {
 
     /* never two spicy eggs close together, however the dice fall */
     if (spicyGap > 0) spicyGap--;
-    var spicy = spicyGap <= 0 && chance(tune.spicyChance);
+    /* `craving` is the ODDS axis, and the gaps above and below are what make
+       it safe to hand out. The multiplier moves the ROLL and nothing else:
+       spicyGap/sourGap of 4 still mean at most one drop in five can be hot
+       and one in five sour however the dice fall, so a doodad with a taste
+       for both raises the rate inside a ceiling he cannot lift. tune is read
+       and never written - the level's own number has to come out the same
+       for the next doodad. The art-rolled +5s (the Couch's marshmallow, the
+       Mantle's capybara) are not here and do not scale, which is right: they
+       are the bay's own dice and the engine does not own them. */
+    var spicy = spicyGap <= 0 && chance(tune.spicyChance * (doodad.craving || 1));
     if (spicy) spicyGap = 4;
 
     /* The gold can and the lime ride the same spawner, and are spaced the
@@ -394,7 +436,10 @@ var PlayScene = (function () {
     var gold = !spicy && goldGap <= 0 && chance(tune.goldChance || 0);
     if (gold) goldGap = 4;
     if (sourGap > 0) sourGap--;
-    var lime = !spicy && !gold && sourGap <= 0 && chance(tune.sourChance || 0);
+    /* the same multiplier on the lime, for the same reason - see the heat's
+       roll above. The `|| 0` stays outside it: a level that sheds no limes
+       must go on shedding none whoever is flying, and 0 * 1.5 is still 0. */
+    var lime = !spicy && !gold && sourGap <= 0 && chance((tune.sourChance || 0) * (doodad.craving || 1));
     if (lime) sourGap = 4;
 
     var x = VW - rand(tune.dropAheadMin, tune.dropAheadMax);
@@ -476,7 +521,17 @@ var PlayScene = (function () {
      of catchable drop goes in here once and both abilities learn about it
      together: he pulls it in, and the tail leaves it alone. */
   function isPowerUp(ob) {
-    if (ob.type === 'boon') return !ob.taken;
+    /* A HIDER IS NOT A GIFT, although he arrives wearing a boon's clothes.
+       The Couch's koala is a 'boon' with `meet` on him, which buys him a
+       grab point, a hitbox the art decides and contact in collide() for
+       nothing - but it would also have put him inside Gerald's hunger, and
+       reeling him out of the popcorn from 110px away is the unlock without
+       the dive. The hunger also writes ob.dx/ob.dy, and for a hider those
+       two belong to the art module that is hopping him about: two things
+       moving one object argue with each other for as long as both are in
+       reach. The tail reads this in the opposite direction and so leaves
+       him alone too, which is also right - he is not a hazard to bat down. */
+    if (ob.type === 'boon') return !ob.taken && !ob.meet;
     return ob.type === 'drop' && (ob.spicy || ob.gold || ob.sour) && !ob.broken;
   }
 
@@ -566,11 +621,34 @@ var PlayScene = (function () {
 
   /* ------------------------------------------------------------- the meet
 
-     One doodad is not bought at all. He is behind a plank, with just enough
-     of himself showing to be noticed, and the only way in is to fly close
-     enough to touch him - which means hugging the bottom edge of a gap that
-     would kill you nine pixels lower. The reward for looking, and for
-     nerve. */
+     Some doodads are not bought at all. They are FOUND, in the world, on one
+     particular plank of one particular run, and the only way in is to fly
+     close enough to touch them.
+
+     There are two hiding places now and the engine knows the difference
+     between them in exactly four places - the burst point, the draw, the
+     collision path and the spook. THE LEVEL SAYS WHERE (tune.meetAt, and
+     tune.meetSpan if it wants a window), THE ROSTER SAYS WHO
+     (Doodads.meetable(level.id) - it takes the level id because with two
+     found doodads the Garden must never offer the Couch's), and THE ART SAYS
+     HOW, by publishing art.makeMeet.
+
+       A PLANK HIDER, which is what a level without makeMeet gets for free:
+       the doodad is behind the stake with just enough of himself showing to
+       be noticed, and reaching him means hugging the bottom edge of a gap
+       that would kill you nine pixels lower. The reward for looking, and for
+       nerve. Saddam in the Garden.
+
+       A GROUND HIDER, when the art makes one: an ordinary 'boon' with
+       `meet` on it, which the art module moves itself - the Couch hops its
+       koala about on the popcorn carpet. A boon already has a grab point, a
+       hitbox the art decides, contact in collide() and, crucially, it is
+       LEFT STANDING by save(), which is what makes "hit but survived" a real
+       state the rule below can punish. The one wrong thing about a boon is
+       that touching it means takeBoon, and that is a single fork on ob.meet.
+
+     A hider marked `shy` by its art is one the world can scare off; see
+     spookMeet. Nothing in here names a level or a doodad. */
 
   var MEET_R = 9;              /* his touchable bulge, above the cap    */
   var MEET_RISE = 14;          /* how much of him clears the cap - over
@@ -591,6 +669,20 @@ var PlayScene = (function () {
   function meetY(ob) { return ob.gapY + ob.gapH; }
   /* the middle of the part of him that is actually showing */
   function meetCy(ob) { return meetY(ob) - MEET_RISE / 2; }
+
+  /* WHERE THE HIDER ACTUALLY IS, whichever kind of hiding place he is in -
+     the one question four different pieces of this file ask (the fanfare's
+     burst, the spook's burst, the shout's anchor and the draw), and the only
+     reason any of them has to know there are two kinds. A plank hider has no
+     position of his own: he is a flag on a pillar, so his point is worked out
+     from the gap. A ground hider is an object, so his point is the point a
+     boon is grabbed by - which is ob.x plus whatever the art has nudged him
+     by, and the art for this one hops him, so it moves every frame. Written
+     as two functions rather than inlined four times because getting the two
+     branches out of step is exactly how a burst ends up somewhere the player
+     was not looking. */
+  function meetAtX(ob) { return ob.type === 'pillar' ? meetX(ob) : grabX(ob); }
+  function meetAtY(ob) { return ob.type === 'pillar' ? meetCy(ob) : grabY(ob); }
 
   function updateMeet() {
     /* his bulge is his own size; a shrivelled doodad has to get closer to
@@ -628,9 +720,14 @@ var PlayScene = (function () {
       announce('doodad', who);
       Audio3.play('unlock');
       Screen.shake(3, 0.35);
+      /* at the hider, not at the doodad: the whole event is that something
+         over there has just come out of hiding. meetAtX/meetAtY because the
+         over-there is a gap's lower cap for a plank hider and a spot on the
+         cushion for a ground one, and this burst has never had any business
+         knowing which. */
       for (var k = 0; k < 30; k++) {
         var a = rand(0, TAU), sp = rand(40, 170);
-        particles.push({ x: meetX(ob), y: meetCy(ob),
+        particles.push({ x: meetAtX(ob), y: meetAtY(ob),
                          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
                          life: rand(0.5, 1.2), g: -50,
                          col: chance(0.45) ? UI.C.gold : (chance(0.5) ? who.accentLight : who.accent) });
@@ -643,29 +740,159 @@ var PlayScene = (function () {
     bank(Achievements.check());
   }
 
-  /* Drawn on the smooth layer with the sprites, but clipped to the air
-     ABOVE the plank's lower cap - which is what makes him read as standing
-     behind the stake rather than floating in front of it. The plank itself
-     is painted on the room layer underneath and simply shows through. */
+  /* ---------------------------------------------------------- the spook
+
+     THE PRICE OF A HIDER THE WORLD CAN SCARE OFF. The owner's rule for the
+     koala is "collect him WITHOUT BEING HIT BY THE POPCORN", and this is the
+     whole of it: one hook, called from collide()'s drop branch, that sends
+     away every hider who has said he is `shy`.
+
+     WHAT COUNTS AS A HIT is decided by the CALL SITE and not in here, which
+     is what keeps the rule the card's own words. It sits after the three gift
+     lines - a kernel you CATCH is a gift and not a hit - and before the heat
+     smashes anything, so every way of paying for a plain kernel counts the
+     same: a death (moot, the run is over), a spare life, a save's grace where
+     hurt() returns false and the kernel sails straight through you, and the
+     hot run that bursts it. You touched popcorn; which of those paid for it
+     is not the point. A kernel Saddam's tail knocked down never reaches that
+     branch and so is not a hit, which is also right - it never touched you.
+     A PILLOW is not a kernel and not a hit, because the owner said popcorn -
+     but the grace a pillow buys does not shelter you either, so the carpet
+     cannot be waded through on a spare life.
+
+     WHY `shy` RATHER THAN A TYPE TEST. The art module is what knows whether
+     its hiding place is dangerous, and a plank hider's plank sheds nothing -
+     so Saddam's field is simply never set and the Garden comes out bit for
+     bit as it was. The engine's rule is generic for any hider who ever says
+     the word.
+
+     WHY ob.met AND NOT A SPLICE. This is called from inside collide()'s
+     backwards walk, which is holding an index and a list of rects, and
+     removing a different object from under it is how that loop gets broken.
+     Marking him met costs nothing anyway: the engine already skips a met
+     hider for the test and the draw, the art skips it for the step, the box
+     and the shadow, and he is culled off the left edge with the rest of the
+     world. Nothing calls Doodads.noteMeet, so the save file never learns his
+     name and the next run offers him again - he got away, he was not lost. */
+  function spookMeet() {
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (!ob.meet || ob.met || !ob.shy) continue;
+      /* AND HE HAS TO HAVE BEEN SEEN. `seen` is set by drawMeet on the first
+         frame it actually draws him, which is the only authority on the
+         question - the engine admits a hider at the middle of the plank
+         spacing it is spawning, and on the Couch that is x 689..714, two
+         hundred pixels off the right edge. drawMeet refuses anything past
+         VW + 40, so without this he existed, had a box and was frightenable
+         for the better part of two seconds while the player could not
+         possibly know he was there: a kernel taken at the wrong moment lost
+         a doodad nobody had been offered, and the GOT AWAY caption was
+         pinned to the screen edge pointing at nothing.
+
+         Reading drawMeet's own flag rather than repeating its coordinate
+         test is deliberate: there is then one definition of "on screen" and
+         the rule the card states - he is lost if you are hit WHILE HE IS
+         THERE - is the rule the code runs. */
+      if (!ob.seen) continue;
+      var who = ob.meet;
+      ob.met = true;
+      var hx = meetAtX(ob), hy = meetAtY(ob);
+      /* CUSHION FLUFF, FALLING - the opposite shape to every other burst in
+         this file, which throw their particles up with a negative g because
+         they are all celebrations. This one has g 260 and dies downward: he
+         went INTO the bedding rather than out of it. Six of his own light
+         accent among the twenty-four of the floor, which is just enough to
+         say whose puff it was without reading as a reward. */
+      for (var k = 0; k < 30; k++) {
+        var a = rand(0, TAU), sp = rand(30, 150);
+        particles.push({ x: hx, y: hy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30,
+                         life: rand(0.3, 0.8), g: 260,
+                         col: k < 24 ? (chance(0.5) ? FX.ground : FX.groundHi)
+                                     : who.accentLight });
+      }
+      /* the carpet's own tick, rate limited through the same bopAt the
+         bounces use: this lands in the middle of a kernel hit, which is
+         already shaking the screen and shouting, and a second loud noise
+         there would only muddy the one that matters */
+      if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
+      /* THE CAPTION IS THE WHOLE OF THE EXPLANATION, so it is measured and
+         clamped the way the gold shout is - goldHalf's reasoning applies
+         verbatim, and a name is a roster string that can be any length. It
+         is anchored 22px above him rather than the gold's 14: he is on the
+         floor, and a caption at 14 would be inside the fluff it is
+         explaining. */
+      fledName = who.name + ' GOT AWAY';
+      var half = Math.min(VW / 2, Math.ceil(Font.measure(fledName, 1) / 2) + 2);
+      fledX = clamp(hx, half, VW - half);
+      fledY = Math.max(CEIL + 6, hy - 22);
+      fledPop = 0.9;
+    }
+  }
+
+  /* Both hiders are drawn HERE, on the smooth layer, and not by their art
+     modules - for the reason the room layer exists at all: it is scaled
+     nearest-neighbour, and a 377px koala PNG squeezed into 26px on it is
+     noise. The art says where he is; the engine draws the sprite there,
+     exactly as it already draws Saddam where the plank says he is.
+
+     The plank hider is clipped to the air ABOVE the plank's lower cap, which
+     is what makes him read as standing behind the stake rather than floating
+     in front of it: the plank itself is painted on the room layer underneath
+     and simply shows through. A ground hider needs no clip - he is standing
+     on the bedding in the open, which is the whole danger of where he is -
+     but he does get his art's squash, because something bouncing that does
+     not flatten when it lands reads as something sliding. */
   function drawMeet(ctx) {
     for (var i = 0; i < obstacles.length; i++) {
       var ob = obstacles[i];
-      if (ob.type !== 'pillar' || !ob.meet || ob.met) continue;
-      var cut = meetY(ob);
-      if (cut <= CEIL || ob.x > VW + 40 || ob.x + ob.w < -40) continue;
-      /* Always the neutral frame. A flap frame was flipped in here to make
-         him twitch, but his two frames are pixel-identical above the cut
-         except for the very tip of his tail, whose join to his body is
-         below it - so the only thing that moved was a 3x3 scrap of red
-         floating clear of him, which reads as a glitch rather than as
-         something alive. He holds still, which is what a hider does. */
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, CEIL, VW, cut - CEIL);
-      ctx.clip();
-      Doodads.draw(ctx, ob.meet.id, meetX(ob), cut + MEET_BODY - MEET_RISE,
-                   MEET_BODY, 0, false);
-      ctx.restore();
+      if (!ob.meet || ob.met) continue;
+      if (ob.x > VW + 40 || ob.x + (ob.w || 40) < -40) continue;
+      /* HE HAS NOW BEEN SEEN, and spookMeet reads this rather than repeating
+         the test above: a hider can only be frightened off once the player
+         has been shown him. It is set before the draw rather than after
+         because the two branches below both return early in their own ways
+         and the question is already settled by the line above. */
+      ob.seen = true;
+      if (ob.type === 'pillar') {
+        var cut = meetY(ob);
+        if (cut <= CEIL) continue;
+        /* Always the neutral frame. A flap frame was flipped in here to make
+           him twitch, but his two frames are pixel-identical above the cut
+           except for the very tip of his tail, whose join to his body is
+           below it - so the only thing that moved was a 3x3 scrap of red
+           floating clear of him, which reads as a glitch rather than as
+           something alive. He holds still, which is what a hider does. */
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, CEIL, VW, cut - CEIL);
+        ctx.clip();
+        Doodads.draw(ctx, ob.meet.id, meetX(ob), cut + MEET_BODY - MEET_RISE,
+                     MEET_BODY, 0, false);
+        ctx.restore();
+        continue;
+      }
+      /* ob.squash is a field the art writes and the engine reads, the way
+         ob.landed and ob.name are: one number, flatter than 1 on the frame he
+         lands and eased back up. Undefined on anything that does not bother,
+         which is why the test is explicit rather than `ob.squash || 1` - the
+         neutral case should allocate no options object at all, and
+         Doodads.draw is happy with a trailing undefined. */
+      var o = null, gy = grabY(ob);
+      if (ob.squash) {
+        o = { squashX: 1 / ob.squash, squashY: ob.squash };
+        /* AND THE SQUASH IS ANCHORED AT HIS FEET, not at his middle.
+           Doodads.draw scales about the PIVOT, and a doodad's pivot is the
+           centre of its body - his feet are footOffset body radii below it,
+           which is why makeMeet puts him at FLOOR - 14 to stand him on the
+           bedding. Scaling about the centre pulls the feet UP by that same
+           offset times the squash, so the flattest frame of every landing
+           drew him three pixels in the air: a bounce that ends with a hop
+           rather than a contact. Pushing the draw point down by exactly the
+           slack the squash introduces lands the feet on the cushion on every
+           frame of the ease, which is what a landing looks like. */
+        gy += MEET_BODY * Doodads.get(ob.meet.id).sprite.footOffset * (1 - ob.squash);
+      }
+      Doodads.draw(ctx, ob.meet.id, grabX(ob), gy, MEET_BODY, 0, false, o);
     }
   }
 
@@ -937,6 +1164,20 @@ var PlayScene = (function () {
        overtake a name on the table in the same instant. */
     checkPassed();
     checkUnlocks();
+    /* AND THE +5 ITSELF IS A CURRENCY NOW. Two doodads are bought with
+       particular gold drops - three quarters, three capybaras - so a can
+       caught is a can counted, by THE ART'S OWN WORD FOR IT and never by the
+       level: "collect 3 quarters" means three quarters, and a second bay that
+       ever shed quarters would and should count toward the same three. The
+       fallback matters for the Backyard, whose three levels name nothing and
+       whose cans therefore all count as 'GOLD' together - which is the same
+       sentence read the same way.
+       AFTER checkUnlocks and BEFORE the note below, and both halves of that
+       are deliberate. After, so a +5 that opens a level or a whole room gets
+       into the banner queue ahead of the stall - the bigger news goes first.
+       Before, so that by the time Achievements.note runs its check() the
+       stall is already open and POULTRY CATCHER can see it. */
+    checkGoldUnlocks(ob.name || 'GOLD');
     /* After the unlock bookkeeping, not before it: +5 can open a level, a
        room and a doodad all at once, and those are the bigger news and have
        to reach the banner queue first. 'gold' and 'gold.mantle' - every gold
@@ -946,6 +1187,34 @@ var PlayScene = (function () {
        shout; the tally is keyed on the LEVEL, because a bay's gold is
        whatever that bay says it is and the id cannot be renamed by art. */
     bank(Achievements.note('gold', level));
+  }
+
+  /* checkLimeUnlocks' twin, one axis over: a doodad bought with three of one
+     particular +5 rather than with three limes. The roster owns the tally in
+     its own save key and hands back only the stalls THIS catch opened, so
+     this never has to know how many are needed or how many are in hand - and
+     a second catch after the third returns an empty list, which is what stops
+     the fanfare firing again on every quarter from then on.
+
+     The +5 shout stands down, exactly as SOUR! and EXTRA LIFE do at their own
+     unlock sites: 'QUARTER +5' is drawn out at the catch and the stall banner
+     owns the middle of the screen, but the two are both news in the same
+     instant and a doodad coming out of its stall is the bigger one. The score
+     and the particles are untouched - the +5 still lands, it just stops
+     shouting about itself. */
+  function checkGoldUnlocks(name) {
+    var won = Doodads.noteGold(name);
+    if (!won.length || Doodads.masterKey()) return;
+    for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
+    goldPop = 0;
+    Audio3.play('unlock');
+    Screen.shake(2.5, 0.3);
+    for (var k = 0; k < 30; k++) {
+      var a = rand(0, TAU), sp = rand(40, 170);
+      particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.5, 1.2), g: -50,
+                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+    }
   }
 
   /* A hit that might not be fatal. Returns true when collide() should stop
@@ -1109,7 +1378,13 @@ var PlayScene = (function () {
     /* a second one part way through tops the heat up rather than
        restarting it, so a lucky pair is worth chasing */
     var wasHot = spicy > 0;
-    spicy = spicy > 0 ? Math.min(SPICY_TIME * 1.6, spicy + SPICY_TIME * 0.6) : SPICY_TIME;
+    /* spicyTime() and not SPICY_TIME, and the local is so that the FULL
+       duration and the top-up cap built off it can never disagree: a doodad
+       who makes what he picks up last longer has to carry the x1.6 ceiling
+       and the x0.6 increment up with him, or the second drop of a pair would
+       be capped at a number shorter than the first drop alone gave him. */
+    var full = spicyTime();
+    spicy = spicy > 0 ? Math.min(full * 1.6, spicy + full * 0.6) : full;
     spicyFlash = 0.14;
     spicyBanner = 1.1;
     /* the banner slot has one tenant - see stun() */
@@ -1128,6 +1403,19 @@ var PlayScene = (function () {
        drops taken in the SAME frame would otherwise both claim 80 and
        stay there for the whole seven seconds. */
     if (!wasHot) spicySlot = (sour > 0 && sourSlot === 80) ? 92 : 80;
+    /* THE DEED: both timers running at the same instant. This is the cheapest
+       place in the whole file that cannot miss the moment - it is the exact
+       line where the heat starts, so there is no frame in which both are up
+       and nothing has looked. The alternative, a test in update(), would run
+       once a frame forever to catch an event that can only begin here or in
+       grabSour, and would still have to guard against reporting it on all
+       four hundred frames that follow.
+       Below spicyBanner, not above it: checkDeed stands the pickup captions
+       down so the stall gets the middle of the screen, and it cannot stand
+       down a banner that has not been set yet. The deed is reported BY NAME
+       and the engine never learns which doodad it opens, or that anything
+       opens at all on most bays. */
+    if (sour > 0) checkDeed('hot-and-sour');
     Screen.shake(4.5, 0.4);
     Audio3.play('spicy');
     for (var i = 0; i < 26; i++) {
@@ -1163,13 +1451,21 @@ var PlayScene = (function () {
   function grabSour(ob) {
     /* a pair tops the lime up rather than restarting it, as the heat does */
     var wasSmall = sour > 0;
-    sour = sour > 0 ? Math.min(SOUR_TIME * 1.6, sour + SOUR_TIME * 0.6) : SOUR_TIME;
+    /* through sourTime(), and the local for the reason grabSpicy's gives */
+    var full = sourTime();
+    sour = sour > 0 ? Math.min(full * 1.6, sour + full * 0.6) : full;
     sourFlash = 0.14;
     sourBanner = 1.1;
     /* the banner slot has one tenant - see stun() */
     spicyBanner = 0; stunBanner = 0;
     /* grabSpicy's mirror image, off the heat instead of off the lime */
     if (!wasSmall) sourSlot = (spicy > 0 && spicySlot === 80) ? 92 : 80;
+    /* and the deed's other half - see grabSpicy. Both halves have to exist
+       because the two drops can be caught in either order, and whichever
+       lands second is the one that makes the pair. Reported the same way,
+       and the second report returns an empty list, so holding both again
+       next run shouts nothing. */
+    if (spicy > 0) checkDeed('hot-and-sour');
     /* smaller and longer than a hit's shake. Screen.shake decays over its
        own time, so this reads as the whole room buzzing rather than as
        something having gone wrong - which is the point of a sour face. */
@@ -1201,6 +1497,45 @@ var PlayScene = (function () {
     if (!won.length || Doodads.masterKey()) return;
     for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
     sourBanner = 0;
+    Audio3.play('unlock');
+    Screen.shake(2.5, 0.3);
+    for (var k = 0; k < 30; k++) {
+      var a = rand(0, TAU), sp = rand(40, 170);
+      particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                       life: rand(0.5, 1.2), g: -50,
+                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+    }
+  }
+
+  /* A DEED: a doodad bought with something that is DONE rather than with
+     something that is counted. "Be hot and sour at once" is not a tally - it
+     either happened or it did not - so the roster remembers it in the same
+     list it remembers a found doodad in, and the engine reports it by a plain
+     string and never learns what it opens or whether it opens anything at
+     all. Nine bays out of ten call this and get an empty list back because
+     nothing in the roster is waiting on that string, which costs one array
+     walk at the instant a power-up is caught.
+
+     SO THIS IS SAFE TO CALL AS OFTEN AS THE EVENT HAPPENS. noteDeed writes
+     the doodad's id down the first time and returns [] every time after, so
+     the flourish fires once ever even though the pair is reachable several
+     times in one run and in every run after that.
+
+     Both captions stand down, not just one: the deed can only land on the
+     frame a second power-up is caught, so SPICY! or SOUR! is up by
+     construction and the other one is up too (that is what the pair means),
+     and both draw in the middle of the screen the banner wants.
+
+     No bank(Achievements.check()) here, unlike takeMeet. takeMeet needs one
+     because finding a doodad is an event nothing else looks at; this is
+     called from inside grabSpicy and grabSour, and both of them end in a
+     bank(Achievements.note(...)) which runs check() a few lines later. A
+     second check() would re-read all eleven rows for nothing. */
+  function checkDeed(name) {
+    var won = Doodads.noteDeed(name);
+    if (!won.length || Doodads.masterKey()) return;
+    for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
+    spicyBanner = 0; sourBanner = 0;
     Audio3.play('unlock');
     Screen.shake(2.5, 0.3);
     for (var k = 0; k < 30; k++) {
@@ -1255,35 +1590,62 @@ var PlayScene = (function () {
       var gapY = clamp(lastGapY + rand(-tune.gapDrift, tune.gapDrift), top, bottom);
       lastGapY = gapY;
       var plank = art.makePillar(spawnCursor, gapY, gapH, run);
-      /* Somebody is hiding behind one particular plank. The level says
-         which one, the roster says who, and neither has to know about the
-         other - so a second level could hide a second doodad by adding one
-         number, and the doodad is found even on a run that never scores. */
-      if (tune.meetAt && ++planksUp === tune.meetAt) {
-        var who = Doodads.meetable();
-        if (who) plank.meet = who;
+      /* the middle of the gap AFTER this plank, hoisted above the meet test
+         because a ground hider is put there - he stands in the clear space
+         between two planks, where the hazards would otherwise go */
+      var mid = spawnCursor + d.spacing * 0.5;
+
+      /* SOMEBODY IS HIDING AT ONE PARTICULAR PLANK. Three modules decide it
+         between them and none of them has to know about the others: THE LEVEL
+         says where (meetPlank, rolled in start() out of tune.meetAt and
+         tune.meetSpan), THE ROSTER says who (and is asked about THIS level,
+         so the Garden can never offer the Couch's hider), and THE ART says
+         how - a module that publishes makeMeet gets to build its own hiding
+         place, and one that does not gets the plank hider it has always had
+         for free. Which is why adding the second found doodad added one
+         optional hook and no branch on a level name anywhere.
+         `held` is the engine's one concession: a ground hider OWNS that patch
+         of floor. The spike, the litter and the gift are all skipped for this
+         gap, so the only things in there to read are him and whatever the
+         level's own carpet is doing - which is the dive the unlock is for. */
+      var held = false;
+      if (meetPlank && ++planksUp === meetPlank) {
+        var who = Doodads.meetable(level.id);
+        if (who) {
+          if (art.makeMeet) {
+            var m = admit(art.makeMeet(mid, run));
+            /* set AFTER the maker returns, the way plank.meet and ob.gold
+               are: makeMeet keeps the signature it has, and the art never
+               learns which doodad it just built a hiding place for */
+            m.meet = who;
+            held = true;
+          } else {
+            plank.meet = who;
+          }
+        }
       }
       admit(plank);
 
-      /* hazards in the space between two pillars */
-      var mid = spawnCursor + d.spacing * 0.5;
-      if (spikesReady() && chance(d.spikes)) {
-        var onCeiling = chance(0.42);
-        /* how long a spike grows is the level's business: the Coop's nails
-           are short and stubby, the Garden's mint runs away with itself */
-        var lo = onCeiling ? (tune.spikeCeilMin || 13) : (tune.spikeFloorMin || 15);
-        var hi = onCeiling ? (tune.spikeCeilMax || 21) : (tune.spikeFloorMax || 27);
-        admit(art.makeSpikes(mid + rand(-14, 14), onCeiling ? 'ceil' : 'floor',
-                             randInt(3, 6), randInt(lo, hi), run));
-      }
-      if (chance(0.55)) admit(art.makeLitter(mid + rand(-40, 40), run));
+      if (!held) {
+        /* hazards in the space between two pillars */
+        if (spikesReady() && chance(d.spikes)) {
+          var onCeiling = chance(0.42);
+          /* how long a spike grows is the level's business: the Coop's nails
+             are short and stubby, the Garden's mint runs away with itself */
+          var lo = onCeiling ? (tune.spikeCeilMin || 13) : (tune.spikeFloorMin || 15);
+          var hi = onCeiling ? (tune.spikeCeilMax || 21) : (tune.spikeFloorMax || 27);
+          admit(art.makeSpikes(mid + rand(-14, 14), onCeiling ? 'ceil' : 'floor',
+                               randInt(3, 6), randInt(lo, hi), run));
+        }
+        if (chance(0.55)) admit(art.makeLitter(mid + rand(-40, 40), run));
 
-      /* the succulent: rare, never twice in quick succession, and only on
-         a level whose art actually grows one */
-      if (boonGap > 0) boonGap--;
-      else if (art.makeBoon && tune.boonChance && chance(tune.boonChance)) {
-        admit(art.makeBoon(mid + rand(-30, 30), run));
-        boonGap = tune.boonGap || 5;
+        /* the succulent: rare, never twice in quick succession, and only on
+           a level whose art actually grows one */
+        if (boonGap > 0) boonGap--;
+        else if (art.makeBoon && tune.boonChance && chance(tune.boonChance)) {
+          admit(art.makeBoon(mid + rand(-30, 30), run));
+          boonGap = tune.boonGap || 5;
+        }
       }
 
       spawnCursor += d.spacing;
@@ -1300,6 +1662,20 @@ var PlayScene = (function () {
   function grav()    { return doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY; }
   function maxFall() { return doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL; }
   function flapV()   { return doodad.light ? FLAP * doodad.light.flap : FLAP; }
+
+  /* HOW LONG A POWER-UP LASTS, on the same pattern and for the same reason:
+     `carry` is the duration axis, and a doodad who packs what he picks up is
+     data rather than a branch. 6.5s of heat becomes 8.8 at 1.35, 7.0s of lime
+     becomes 9.45.
+     EVERY read of the two constants goes through these, including the two
+     GAUGES - and that last one is the whole point of making them accessors
+     rather than scaling at the catch. The bars draw clamp(spicy / SPICY_TIME),
+     so a longer heat read against the shipped constant would start the bar
+     pinned at full for two and a half seconds and then fall: the player would
+     see a bar that lies about how much is left for the first third of the
+     ability they are paying for. */
+  function spicyTime() { return SPICY_TIME * (doodad.carry || 1); }
+  function sourTime()  { return SOUR_TIME * (doodad.carry || 1); }
 
   /* And the size the doodad is right now, for the same reason: a lime makes
      it smaller, so everything that measures the doodad asks rather than
@@ -1332,7 +1708,19 @@ var PlayScene = (function () {
     var want = 0;
     if (Input.down('left')) want -= 1;
     if (Input.down('right')) want += 1;
-    player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
+    /* THE LANE AXIS, and nobody had ever touched it: `light` is the whole of
+       the vertical flight model and the left/right nudge has been the same two
+       constants for every doodad in the game. `bouncy` scales BOTH of them by
+       the same number on purpose - the speed alone would mean a doodad who
+       takes half again as long to get going, which feels like weight and not
+       like bounce, whereas scaling the acceleration with it keeps full speed
+       arriving in the same 0.13 seconds and simply gives him more of it. At
+       1.5 that is 174px/s, which is still slower than the room scrolls
+       (112..178) and is still only sideways: it buys room to dodge a drop or
+       reach a coaster, which is room the game already hands out, and it makes
+       nothing survivable that was not. */
+    var m = doodad.bouncy || 1;
+    player.vx = approach(player.vx, want * MOVE_SPD * m, MOVE_ACC * m * dt);
     player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
     if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
 
@@ -1618,7 +2006,17 @@ var PlayScene = (function () {
         hit = circleHitsRect(player.x, player.y, hr, r[0], r[1], r[2], r[3]);
       }
       if (!hit) continue;
-      if (ob.type === 'boon') { takeBoon(ob); obstacles.splice(i, 1); continue; }
+      /* A boon is a gift unless it is a HIDER wearing a boon's clothes, and
+         that is the single fork the whole ground-hider mechanic costs the
+         collision path. The splice runs either way: a hider that has been
+         touched is out of the world, found or not, and a met one that somehow
+         reached here has nothing left to give. */
+      if (ob.type === 'boon') {
+        if (ob.meet) { if (!ob.met) takeMeet(ob); }
+        else takeBoon(ob);
+        obstacles.splice(i, 1);
+        continue;
+      }
       if (ob.type !== 'drop') {
         /* A hazard that only RINGS. It is read before hurt(), so a level
            can have both kinds of obstacle in the air at once and the engine
@@ -1641,6 +2039,15 @@ var PlayScene = (function () {
       if (ob.spicy) { grabSpicy(ob); obstacles.splice(i, 1); continue; }
       if (ob.gold)  { takeGold(ob);  obstacles.splice(i, 1); continue; }
       if (ob.sour)  { grabSour(ob);  obstacles.splice(i, 1); continue; }
+      /* ANYTHING STILL HERE IS A PLAIN ONE, and a plain one touching you
+         scares off whoever is hiding in the carpet it came out of. This line
+         is the whole of "without being hit by the popcorn", and where it sits
+         is the rule: below the three gifts, because catching something is not
+         being hit by it, and above the smash and the hurt() below, because
+         every way of PAYING for a plain drop counts the same - the heat that
+         bursts it, the spare life, the grace that waves it straight through
+         you, or the death. See spookMeet for the rest of the reasoning. */
+      spookMeet();
       if (spicy > 0) { smashDrop(ob); obstacles.splice(i, 1); continue; }
       if (hurt('drop')) return;
     }
@@ -1702,6 +2109,7 @@ var PlayScene = (function () {
     if (lifePop > 0) lifePop -= dt;
     if (nervePop > 0) nervePop -= dt;
     if (goldPop > 0) goldPop -= dt;
+    if (fledPop > 0) fledPop -= dt;
     if (flickCool > 0) {
       flickCool -= dt;
       if (flickCool <= 0) { flickCool = 0; if (state === 'play') flickReady(); }
@@ -1791,7 +2199,20 @@ var PlayScene = (function () {
                        clamp(0.5 + 0.5 * ringing / stunTime, 0, 1), BUZZ);
         }
       }
-      speed = d.speed * (spicy > 0 ? SPICY_SPEED : 1);
+      /* THE TEMPO AXIS. `calm` is the fraction of the heat's hurry a doodad
+         refuses, so 0.5 turns 1.55 into 1 + 0.55 * 0.5 = 1.275 for him and
+         nothing at all for everyone else (calm undefined reads as 0, which
+         leaves this expression equal to SPICY_SPEED exactly). It is written
+         off the EXCESS over 1 rather than as SPICY_SPEED * calm because the
+         thing being halved is the hurry, not the speed - a doodad who halved
+         the speed would be flying at 0.78 of normal while hot, which is a
+         punishment for catching a reward.
+         1.0 was rejected: the heat's entire cost is the speed, so refusing
+         all of it would make every hot drop a free double. Half is the number
+         at which a hot run is still a faster run. Nothing else about the heat
+         moves - the streaks, the wash and the glow all read off `heat`, so it
+         still looks exactly as hot as it is; it just does not run as hard. */
+      speed = d.speed * (spicy > 0 ? 1 + (SPICY_SPEED - 1) * (1 - (doodad.calm || 0)) : 1);
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
@@ -1861,6 +2282,35 @@ var PlayScene = (function () {
     }
   }
 
+  /* WHAT THE ENGINE DOES ABOUT A THING THE LEVEL SAYS HAS JUST COME OFF
+     SOMETHING. ob.bounced is a flag an art module raises and this clears; the
+     particles and the sound stay on this side of the line because no art
+     module in this project calls Audio3 or touches the particle list, and
+     because the rate limit has to be shared - a carpet of popcorn can land
+     fifteen kernels in one frame and fifteen ticks at once is a crack, not a
+     tick.
+
+     Pulled out of moveObstacles because there are two callers now: the
+     level's drop step and the level's boon step. They were one block inside
+     the drop branch, and the second caller's choices were to duplicate it or
+     to drift from it, which is how two kinds of bounce end up sounding
+     different for no reason anybody wrote down.
+
+     `ob.y + 3` is the floor-ward edge of the thing for both callers. A drop
+     carries its height in ob.y; a hopping boon carries a fixed y and its
+     height in ob.dy, and ob.dy is zero at exactly the instant it lands -
+     which is the only instant this is ever called for one. */
+  function bounced(ob) {
+    ob.bounced = false;
+    for (var b = 0; b < 2; b++) {
+      particles.push({ x: ob.x, y: ob.y + 3,
+                       vx: rand(-50, 50) - speed * 0.1, vy: rand(-50, -20),
+                       life: rand(0.15, 0.3), g: 300,
+                       col: chance(0.5) ? FX.ground : FX.groundHi });
+    }
+    if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
+  }
+
   function moveObstacles(dt, spd) {
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
@@ -1891,26 +2341,30 @@ var PlayScene = (function () {
              Deck accepted exactly that staleness for its mister clock.
              Returning true lands the drop, which is the ordinary splat. */
           if (art.stepDrop(ob, dt, obstacles)) landDrop(ob);
-          /* A flag the level sets when its drop has just come off something.
-             The SOUND stays in the engine, because no art module calls
-             Audio3 - and it is rate limited, because a dozen kernels can
-             land in the same frame and a dozen ticks at once is a crack. */
-          if (ob.bounced) {
-            ob.bounced = false;
-            for (var b = 0; b < 2; b++) {
-              particles.push({ x: ob.x, y: ob.y + 3,
-                               vx: rand(-50, 50) - speed * 0.1, vy: rand(-50, -20),
-                               life: rand(0.15, 0.3), g: 300,
-                               col: chance(0.5) ? FX.ground : FX.groundHi });
-            }
-            if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
-          }
+          /* a flag the level sets when its drop has just come off something -
+             see bounced() for why the noise is on this side of the line */
+          if (ob.bounced) bounced(ob);
         } else {
           ob.vy += art.DROP_GRAV * dt;
           ob.y += ob.vy * dt;
           ob.spin += ob.spinRate * dt;
           if (ob.y >= FLOOR - 4) landDrop(ob);
         }
+      }
+      /* stepDrop's twin, on the same contract and for the same reason: a boon
+         has always been a thing that sits still, and the Couch's hider is a
+         boon that hops. The level moves the one it is handed, may read the
+         list, and may never splice it or write to anything else in it - and it
+         raises ob.bounced when its boon has come off the floor, which is the
+         same flag with the same meaning as a kernel's. There is no landed()
+         counterpart to stepDrop's return value because a boon has nowhere to
+         land: a gift stays where it was put and a hopper goes on hopping, so
+         the hook is a step and not a step-and-finish. No art module outside
+         the Couch publishes this, and a level that does not simply has still
+         boons, exactly as before. */
+      if (ob.type === 'boon' && art.stepBoon) {
+        art.stepBoon(ob, dt, obstacles);
+        if (ob.bounced) bounced(ob);
       }
       if (ob.type === 'pillar' && !ob.scored && ob.x + ob.w < player.x) {
         ob.scored = true;
@@ -2136,6 +2590,10 @@ var PlayScene = (function () {
       if (stunBanner > 0) drawStun(ctx);
       if (nervePop > 0) drawNerve(ctx);
       if (goldPop > 0) drawGold(ctx);
+      /* not an `else`: the frame a hider is scared off is very often the frame
+         a kernel was caught or burst, so both captions can be up at once -
+         which is why they have their own clamped points and never share one */
+      if (fledPop > 0) drawFled(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
       else if (hazardWarn > 0) drawHazardWarning(ctx);
@@ -2197,6 +2655,27 @@ var PlayScene = (function () {
     ctx.globalAlpha = ga;
   }
 
+  /* And the one shout in the game that is BAD NEWS thrown where it happened:
+     the hider who has just been scared out of the carpet by a kernel. Same
+     fade curve and same rise as the gold's, because it is the same kind of
+     event - but in UI.C.ink and not in gold, deliberately. Gold means reward
+     everywhere else in this file; a caption in gold over something you just
+     lost would read as a prize for half a second, which is the half second
+     the player is using to work out what went wrong.
+     0.9 seconds rather than the gold's 0.6: it lands in the middle of a
+     kernel hit, which has its own shake and its own SAVED! or splat, and the
+     line explaining why the koala vanished has to still be there when the
+     eye gets back to the spot it vanished from. */
+  function drawFled(ctx) {
+    if (state === 'entry') return;
+    var k = clamp(fledPop / 0.9, 0, 1);
+    var ga = ctx.globalAlpha;
+    ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
+    UI.text(ctx, fledName, fledX, fledY - (1 - k) * 15,
+            { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
+    ctx.globalAlpha = ga;
+  }
+
   /* the shout when a succulent is taken, and when one is spent */
   function drawSaveBanner(ctx) {
     if (state === 'entry') return;
@@ -2243,7 +2722,10 @@ var PlayScene = (function () {
     /* The lime may be up too, and it no longer changes a word of this: the
        caption stands beside its own bar now, so each power-up names itself
        on its own row and neither has to know the other is there. */
-    drawGauge(ctx, clamp(spicy / SPICY_TIME, 0, 1), heat, SPICY_GAUGE,
+    /* spicyTime(), not SPICY_TIME: the bar has to be a fraction of what THIS
+       doodad's heat actually lasts, or a doodad who carries it longer watches
+       a full bar sit still for the extra seconds and then drain */
+    drawGauge(ctx, clamp(spicy / spicyTime(), 0, 1), heat, SPICY_GAUGE,
               'SPICY  X' + SPICY_MULT, spicySlot);
   }
 
@@ -2322,7 +2804,8 @@ var PlayScene = (function () {
        instant the heat's alpha fell under 0.02 and left the lime looking
        like a glitch. It now stands wherever it was standing when it was
        caught, and only grabSour moves it. */
-    drawGauge(ctx, clamp(sour / SOUR_TIME, 0, 1), shrivel, SOUR_GAUGE,
+    /* sourTime(), for the reason drawSpicy's gauge gives */
+    drawGauge(ctx, clamp(sour / sourTime(), 0, 1), shrivel, SOUR_GAUGE,
               'SOUR  SMALL', sourSlot);
   }
 
@@ -2800,11 +3283,23 @@ var PlayScene = (function () {
                                     lives: lives, invuln: invuln,
                                     pottedLives: pottedLives, spentPotted: spentPotted,
                                     planksUp: planksUp, flickCool: flickCool,
+                                    /* the plank this run rolled for the hider,
+                                       so a headless test can read what it has
+                                       to fly to rather than guessing, and
+                                       whether the carpet has just scared him
+                                       off - fledPop is the only trace the
+                                       spook leaves anywhere */
+                                    meetPlank: meetPlank, fled: fledPop > 0,
                                     flick: doodad && doodad.flick ? doodad.flick.reach : 0,
                                     banners: bannerQueue.map(function (b) { return b.kind + ':' + (b.it.id || b.it.name); }),
                                     meetOn: obstacles.filter(function (o) { return o.meet && !o.met; }).length,
                                     boonsTaken: Doodads.boonsTaken(),
                                     limesTaken: Doodads.limesTaken(),
+                                    /* the +5s, by the art's own name for them,
+                                       which is what a headless test of the
+                                       quarter and capybara prices reads */
+                                    quarters: Doodads.goldTaken('QUARTER'),
+                                    capybaras: Doodads.goldTaken('CAPYBARA'),
                                     size: doodad && doodad.size ? doodad.size : 1,
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
                                     trotting: trotting, watchA: watchA,

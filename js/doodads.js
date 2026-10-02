@@ -8,18 +8,42 @@
    tools/trim_sprites.py to regenerate it; do not hand-edit.
 
    unlockAt is the score the player has to have reached before a doodad
-   can be flown. No unlockAt means it was always there. unlockBoons,
-   unlockLimes and unlockMeet are the other prices: things collected, and
-   somebody found.
+   can be flown. No unlockAt means it was always there. There are SIX kinds
+   of price, and meets() is the one place all six are written down:
+     unlockAt     a score reached with anyone, on any level
+     unlockBoons  succulents collected, any level, ever
+     unlockLimes  limes caught, which only the Canopy grows
+     unlockGold   { name, need, where } - that many of a level's +5 pickup,
+                  counted on the PICKUP'S NAME rather than on the level, so
+                  a second bay that one day shed quarters would count
+                  toward the same three. `where` is only for the price line.
+     unlockMeet   the id of the level he is HIDING in. Not bought: found.
+     unlockDeed   the id of a deed the engine reports by name - something
+                  the player DID, rather than something collected.
+   The last two share one save key ('met', a list of doodad ids), because
+   they are the same shape of answer: one event that either happened or did
+   not, with nothing to total up and nothing to half-finish. A found doodad
+   and a deed doodad are one list for that reason and no other.
    title says how the doodad behaves in the coop on the title screen.
 
    Every doodad has an ability, and every one of them is PASSIVE: it needs
    no button of its own. The one that did (a dash on a double-tap) was cut,
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
-   `trot`, `light`, `lives`, `flick`, `size` - so a new one is a new field
-   rather than a new branch on an id, and each sits on its own axis:
-   points, sight, pickups, survival, handling, room.
+   `trot`, `light`, `lives`, `flick`, `size`, `bouncy`, `carry`, `craving`,
+   `calm` - so a new one is a new field rather than a new branch on an id,
+   and each sits on its own axis: points, sight, pickups, survival,
+   handling, room, lane, duration, odds, tempo.
+
+   The four newest axes, because their words are less obvious than the rest:
+   `bouncy` is the LANE - how fast the left/right nudge crosses the room,
+   which Billy's vertical flight model never touched. `carry` is DURATION -
+   how long a power-up lasts, which nothing had ever scaled. `craving` is
+   ODDS - whether a hot or a sour drop exists at all, where Gerald's reach
+   is only about one that already does. `calm` is TEMPO - how much of the
+   heat's hurry a doodad declines, where the points it pays out are
+   untouched. Each is one multiplier read where a constant used to be read,
+   which is the shape grav(), maxFall() and flapV() already set.
 
    `voice` is the sound a doodad makes when the character select lands on
    it: the ROLE js/audio.js plays, not a path, so a doodad that borrows
@@ -199,10 +223,17 @@ var Doodads = (function () {
       abilityLive: true,
       abilityAbout: ['THE TAIL GETS THERE FIRST.', 'THEN IT NEEDS A MOMENT.'],
       flick: { reach: 28, cool: 2.5 },
-      /* Not a price at all: he is FOUND. The level says which plank he is
-         hiding behind (tune.meetAt); this only says that touching him is
-         what opens the stall. */
-      unlockMeet: true,
+      /* Not a price at all: he is FOUND. The level says WHICH plank he is
+         hiding behind (tune.meetAt) and the roster says WHO is behind it;
+         touching him is what opens the stall.
+
+         It names the level now, where it used to be a bare `true`, because
+         there is a second found doodad: KOA is in the popcorn on the Couch,
+         and meetable() is handed the level that is asking so that it can
+         tell whose world is whose. Without it the Garden's tenth stake
+         would offer whichever of the two was still shut and first in the
+         roster, which is to say the Garden would hand over the koala. */
+      unlockMeet: 'garden',
       /* boiled-crawfish red - the one warm red in a roster of browns,
          greens, a grey and a blue, and it reads against the Garden's green
          as well as the coop's timber */
@@ -265,6 +296,201 @@ var Doodads = (function () {
       /* 13 is Cookie's 19 at 0.7: the perches are where he stands next to
          her, so this is where the difference has to hold up */
       title: { role: 'perch', r: 13 }
+    },
+    {
+      id: 'koa',
+      name: 'KOA',
+      tagline: 'CAME OUT OF THE POPCORN',
+      about: ['A KOALA. NOT A BEAR.', 'ASLEEP FOR MOST OF THIS.'],
+      /* The RULE of his unlock lives here, on his own card, and not in
+         requirement(): the price line stays one generic 'FIND HIM' for both
+         of the found doodads, and each of them says in his own words what
+         finding him actually asks. His asks for a clean dive, and the
+         player is told so before they go, which is what makes the rule
+         fair - nothing about it is hidden. */
+      lockedAbout: ['SOMEBODY IS BOUNCING IN THE POPCORN.', 'GET HIM OUT WITHOUT TAKING A HIT.'],
+      /* The LANE axis, which nobody held: Billy's `light` is the whole
+         vertical flight model, and the left/right nudge had never been
+         touched by anybody. `bouncy` scales that nudge's top speed AND its
+         acceleration by the same 1.5, so he still reaches full speed in the
+         same 0.13s and simply has more of it to reach - 116px/s becomes
+         174. A kernel is kicked sideways every single time it lands, and he
+         spent the whole level in that carpet; this is what he picked up
+         there.
+
+         1.5 is not overpowered because sideways is ALL it is: 174 is still
+         slower than the room scrolls past him (112..178), and sideways room
+         is what dodging a drop and reaching for a coaster already use, so it
+         makes nothing survivable that was not survivable before.
+
+         The LITERAL bounce was rejected, and it is worth writing down why,
+         because it is the obvious reading of the word. A bounce off the
+         floor is Maximus's trot with a spring on it, and a floor that does
+         not end you is a spare life however it is dressed - which is
+         Inari's ability, and which was ruled out twice over. The Living
+         Room's ceiling fails the same way: the lid killing you is that
+         room's whole novelty, and a death removed is a life. A missed gift
+         hopping back off the floor died on measured geometry instead -
+         Backyard drops land around x -30..70, behind a player sitting at
+         116, so the rebound would almost never be catchable, and on the
+         Couch nothing lands at all. */
+      ability: 'BOUNCY',
+      abilityLive: true,
+      abilityAbout: ['HE PICKED IT UP FROM THE POPCORN:', 'HALF AGAIN AS QUICK, LEFT OR RIGHT.'],
+      bouncy: 1.5,
+      /* FOUND, like Saddam, and the value is the level he is found in -
+         see meetable(). The Couch is the one bay with a floor worth hiding
+         on: he is down in the popcorn, which is the only place the carpet
+         can make a dive cost something. */
+      unlockMeet: 'couch',
+      /* Eucalyptus, NOT his grey. His art is 71% #afaca9, and a cool pale
+         grey is already Inari's (#8d95a6) - a second grey light shaft on
+         the rail would simply read as hers, and the accent's whole job is
+         telling the stalls apart at a glance. A koala's one other colour is
+         the leaf he is holding, and a silvery blue-green is clear of
+         Pepper's bottle green (#3f6b52, which is darker and yellower) and
+         of Billy's blue. */
+      accent: '#5c9d94', accentDark: '#2f5a54', accentLight: '#9fd4cb',
+      sprite: { w: 377, h: 384, pivotX: 191.6, pivotY: 192.0, bodyR: 179.9, footOffset: 1.07 },
+      title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'roller',
+      name: 'ROLLER',
+      tagline: 'NEVER CHECKED, NEVER CLAIMED',
+      about: ['A CARRY-ON WITH ONE GOOD WHEEL.', 'KNOWS EVERY CAROUSEL BY NAME.'],
+      lockedAbout: ['SOMETHING ON WHEELS IS PARKED HERE.', 'IT TAKES QUARTERS.'],
+      /* The DURATION axis: nobody had ever scaled how LONG a power-up
+         lasts. `carry` multiplies both timers - the heat's 6.5s becomes 8.8
+         and the lime's 7.0 becomes 9.45 - and because PlayScene reads those
+         times through accessors rather than the constants, the x1.6 top-up
+         caps scale with them for free. That matters more than it sounds:
+         without it his gauge would start past the end of its own bar and a
+         second pickup would clip his first seconds off.
+
+         1.35 and not 1.5, because the two power-ups are not worth the same
+         to him. The heat is double-edged - longer heat is longer at 1.55x
+         room speed, so stretching it is as much a dare as a gift - while
+         the lime is pure gain and costs nothing at all. So the number is
+         set against the LIME: 35% of seven seconds is about what Billy's
+         slow fall is worth in a tight gap, for a few more planks. And
+         nothing here survives a mistake, which is what keeps it clear of
+         Inari's axis. */
+      ability: 'CARRY-ON',
+      abilityLive: true,
+      abilityAbout: ['WHAT HE PICKS UP, HE PACKS.', 'THE HEAT AND THE LIME LAST LONGER.'],
+      carry: 1.35,
+      /* Three quarters, and the Desk is where quarters are shed. The count
+         is keyed on the PICKUP'S name and not on the level, so a second bay
+         that one day sheds quarters counts toward the same three - which is
+         what "collect three quarters" says, and what a player would expect
+         of it. `where` is for the price line only; it buys nothing else. */
+      unlockGold: { name: 'QUARTER', need: 3, where: 'desk' },
+      /* The ribbon, NOT the bag. His art is 91% #2b2b2b, and a near-black
+         accent is a hole in the coop's dim brown and an invisible light
+         shaft behind him. But the joke is on his side here: a black
+         suitcase is precisely the one nobody can pick out on the carousel,
+         so you tie a pink ribbon to the handle. Pink is also the one hue
+         nothing else on the rail has. */
+      accent: '#c45c8a', accentDark: '#6e2c4b', accentLight: '#e89ebf',
+      sprite: { w: 315, h: 384, pivotX: 158.9, pivotY: 197.8, bodyR: 155.8, footOffset: 1.13 },
+      /* Measured the way Saddam's was, in SPRITE width rather than body
+         radius: at r 17 his art reaches 17.3 left and 17.0 right of the
+         pivot, so a home of 460 with a span of 2 keeps him inside
+         440.7..479 - on the stage, and clear of Maximus, whose r 22 art
+         reaches x 440 at the far end of his own wander. The floor to the
+         left of the menu column is full (Saddam 4..67, Gerald 69..171) and
+         the column paints its boards over anybody standing in it, so the
+         right edge is the only floor left to give him. */
+      title: { role: 'walk', r: 17, homeX: 460, spanX: 2 }
+    },
+    {
+      id: 'donkey',
+      /* Ten characters, which at the card's heading scale of 3 measures
+         177px against drawOpenCard's NAME_SPAN of 168 - so his name DOES
+         step down to scale 2, the same step TURD THE BIRD's 231px already
+         takes, and the heading band is sized for it. Nine characters or
+         fewer (159px) would have held scale 3; the name is worth more than
+         the size. */
+      name: 'DONKEY JOE',
+      tagline: 'LOUD IN BOTH DIRECTIONS',
+      about: ['A BLUE DONKEY WITH A LOT OF TEETH.', 'HAS NEVER ONCE BEEN WRONG.'],
+      lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
+      /* The ODDS axis: what the sky sheds, which is a genuinely different
+         question from Gerald's. `pull` is reach to a gift that already
+         exists; `craving` is whether one exists at all. tune.spicyChance
+         and tune.sourChance are read x1.5 for him and for nobody else, and
+         the tune itself is never written - a doodad must not leave a level
+         altered behind him.
+
+         The cap is the reason 1.5 is safe. The engine's spicyGap and
+         sourGap of 4 mean at most one drop in five can ever be hot (or ever
+         be sour) however the dice fall, so the multiplier raises the RATE
+         inside a ceiling it cannot lift. Only the tune-rolled drops scale
+         with him: the Couch's hot cheddar does, while the marshmallow, the
+         quarter and the capybara are the art's own roll and do not, which
+         is what keeps him off the +5 unlocks.
+
+         Tied to his own unlock on purpose. He was opened by a player
+         holding both at once, so afterwards both come looking for him. */
+      ability: 'CRAVINGS',
+      abilityLive: true,
+      abilityAbout: ['HE GOT A TASTE FOR BOTH.', 'HOT AND SOUR FALL MORE OFTEN FOR HIM.'],
+      craving: 1.5,
+      /* Neither collected nor scored: DONE. The engine reports the deed by
+         this name and knows nothing whatever about what it opens, so the
+         roster keeps the only copy of that fact - and the save remembers
+         the DOODAD, in the same list the found ones use, because holding
+         both at once either happened or it did not. */
+      unlockDeed: 'hot-and-sour',
+      /* His own blue, pushed to indigo. The art is 78% #2d00fe, and taken
+         straight it sits on the rail beside Billy's #4f8fd0 as a second
+         blue with nothing to tell them apart. Darker, and a step toward
+         violet, it is unmistakably the donkey and not the biro, and it
+         still reads against the coop's brown. */
+      accent: '#5b4de0', accentDark: '#2c2380', accentLight: '#a39cf0',
+      sprite: { w: 384, h: 335, pivotX: 208.8, pivotY: 172.4, bodyR: 162.4, footOffset: 1.00 },
+      title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'capybara',
+      name: 'CAPYBARA',
+      tagline: 'HAS NOWHERE TO BE',
+      about: ['SOMETHING WILL SIT ON HIM.', 'HE WILL ALLOW IT.'],
+      lockedAbout: ['SOMETHING IN HERE IS VERY CALM.', 'IT WOULD LIKE THREE OF ITS OWN.'],
+      /* The TEMPO axis: how much of the heat's hurry he simply declines.
+         `calm` is the FRACTION refused rather than a speed, so SPICY_SPEED
+         1.55 becomes 1 + 0.55 * (1 - 0.5) = 1.275 for him. The streaks, the
+         wash and the glow all still read off `heat` and not off the speed,
+         so a hot run still LOOKS exactly as hot as it is; it just does not
+         run as hard.
+
+         0.5 and not 1.0: the heat's whole cost is the speed, so refusing
+         all of it would turn every hot drop into a free double and the
+         power-up into a pure gift. Half is the number at which a hot run is
+         still a faster run than a cold one - he pays, he just pays half.
+         Not Cookie's axis either, because the points are untouched: he has
+         longer in which to earn the same doubles, not more of them. */
+      ability: 'UNHURRIED',
+      abilityLive: true,
+      abilityAbout: ['THE HEAT STILL DOUBLES HIS POINTS.', 'IT ONLY HALF HURRIES THE ROOM.'],
+      calm: 0.5,
+      /* Three of his own, which the Mantle sheds. The CAPYBARA achievement
+         counts the same pickup in its own ledger and the two complete on
+         the same catch, which is deliberate rather than an oversight: the
+         unlock currency is counted HERE because a wiped or corrupted
+         achievements file must never be able to take a doodad away. */
+      unlockGold: { name: 'CAPYBARA', need: 3, where: 'mantle' },
+      /* Reed olive, NOT his butter yellow. The art is 75% #fefbab, which is
+         Billy's near-white problem over again - a white light shaft behind
+         a pale sprite - and a true gold would vanish into UI.C.gold on
+         every price and every score it got printed beside. He is a
+         riverbank animal, so the yellow pushed green is the reeds he is
+         sitting in, and a yellow-green is clear of Gerald's tan (#a3803f,
+         32 points less green) and of both of the greens. */
+      accent: '#98a63a', accentDark: '#535c1b', accentLight: '#cdd57a',
+      sprite: { w: 369, h: 384, pivotX: 184.6, pivotY: 188.8, bodyR: 184.6, footOffset: 1.02 },
+      title: { role: 'perch', r: 20 }
     }
   ];
 
@@ -325,7 +551,8 @@ var Doodads = (function () {
   var reached = null;                 /* cached; localStorage is not free */
   var boons = null;
   var limes = null;
-  var met = null;                     /* ids of the ones found in the world */
+  var golds = null;                   /* { QUARTER: 3 } - the +5s, by name */
+  var met = null;                     /* ids of the found AND the deed ones */
   var passkey = null;
 
   /* The master passkey opens every doodad at once. It is its own flag
@@ -402,9 +629,81 @@ var Doodads = (function () {
     });
   }
 
-  /* The doodads that have been found rather than earned. A list of ids
-     rather than a count, because meeting one is a single event that either
-     has or has not happened and there is nothing to total up. */
+  /* THE +5 PICKUPS EVER CAUGHT, COUNTED BY THE ART'S OWN NAME FOR THEM -
+     { QUARTER: 3, CAPYBARA: 1 }.
+
+     Its own save key, for the same reasons as 'succulents' and 'limes': a
+     wiped score table must not take a doodad away, and a total is not
+     recoverable from anything else the save keeps. It is emphatically NOT
+     read out of the achievements ledger, which counts the same catches in
+     'achv.n' keyed by LEVEL ('gold.mantle'). Those are two books on purpose
+     - Doodads owns the unlock currencies, Achievements owns the badges -
+     so that a corrupted or hand-wiped achievements file can cost the player
+     a badge but never a doodad. The same deliberate duplication already
+     exists for 'succulents' against 'boon' and 'limes' against 'sour'.
+
+     Keyed on the NAME and not on the level because the price says "collect
+     three quarters": a second bay that one day shed quarters would count
+     toward the same three, which is what the player was actually asked for.
+
+     Nothing in the stored value is trusted - it is a JSON blob out of
+     localStorage that a curious player can edit by hand. Only a plain
+     object is accepted at all (an array would otherwise pass typeof and
+     hand back its length and indices as counts), and each entry has to be a
+     finite positive number before it is floored and kept. A broken entry
+     costs the count for that one name instead of throwing on the first
+     frame that draws a locked card. */
+  function goldsTaken() {
+    if (golds !== null) return golds;
+    var stored = Save.get('gold', null);
+    golds = {};
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+      for (var k in stored) {
+        /* off the PROTOTYPE, because `stored` came out of localStorage and a
+           save holding {"hasOwnProperty": 1} makes stored.hasOwnProperty the
+           number 1 - which throws on the first frame of boot, since
+           Game.pickDoodad asks isUnlocked before anything is drawn. BY_ID and
+           `places` are built from the roster in this file and can skip this;
+           this one table cannot. */
+        if (!Object.prototype.hasOwnProperty.call(stored, k)) continue;
+        var n = stored[k];
+        if (typeof n === 'number' && isFinite(n) && n > 0) golds[k] = Math.floor(n);
+      }
+    }
+    return golds;
+  }
+
+  /* hasOwnProperty rather than `|| 0`, for the reason get() and has() give
+     at the bottom of this file: `golds` is a plain object, so a pickup one
+     day named CONSTRUCTOR or TOSTRING would otherwise find a function off
+     the prototype. The names come from the art, which is free to call a
+     thing whatever it likes. */
+  function goldTaken(name) {
+    var all = goldsTaken();
+    return Object.prototype.hasOwnProperty.call(all, name) ? all[name] : 0;
+  }
+
+  /* one +5 caught, by name. returns the doodads it just opened up, exactly
+     as noteBoon and noteLime do - usually none, and at most the one whose
+     third quarter this was. */
+  function noteGold(name) {
+    var before = goldTaken(name);     /* which also primes the cache */
+    golds[name] = before + 1;
+    Save.set('gold', golds);
+    return LIST.filter(function (d) {
+      return d.unlockGold && d.unlockGold.name === name &&
+             d.unlockGold.need > before && d.unlockGold.need <= before + 1;
+    });
+  }
+
+  /* The doodads that have been found rather than earned, and now the ones
+     that were EARNED BY A DEED as well. A list of ids rather than a count,
+     because either one is a single event that has or has not happened and
+     there is nothing to total up - and one list rather than two, because
+     that is the only thing the two have in common and it is the whole of
+     what the save needs to remember. The filter is what keeps a stale id
+     out of it, so a doodad deleted from the roster cannot come back as a
+     ghost in metIds(). */
   function metIds() {
     if (met !== null) return met;
     var stored = Save.get('met', []);
@@ -412,9 +711,18 @@ var Doodads = (function () {
     return met;
   }
 
-  /* The doodad currently hiding in the world, if any: the first still-shut
-     one that is found rather than bought. Levels ask for this instead of
-     naming an id, so who is behind the plank stays the roster's business.
+  /* The doodad hiding in THIS level, if any: the first still-shut one whose
+     unlockMeet names the place that is asking. Levels ask for this instead
+     of naming an id, so who is hiding where stays the roster's business.
+
+     IT TAKES THE LEVEL ID, which it did not have to while Saddam was the
+     only found doodad - it returned "the first still-shut found one" and
+     there was only ever one to find. KOA is the second, in the popcorn on
+     the Couch, and the old signature would have had the Garden's tenth
+     stake offer whichever of the two came first in the roster: a koala
+     behind a stake in the Garden, found by a dive that cost nothing, with
+     the Couch's whole rule skipped. A falsy place returns null rather than
+     matching the doodads that have no unlockMeet at all.
 
      IT ASKS meets(), NOT isUnlocked(), AND THE DIFFERENCE IS THE PASSKEY.
      isUnlocked() short-circuits true on masterKey(), so with IMP11 typed
@@ -428,10 +736,11 @@ var Doodads = (function () {
      and the passkey does not pay a price - it opens a door. meets() is that
      question. The passkey still opens his stall to fly, exactly as before;
      what it no longer does is take him out of the world. */
-  function meetable() {
+  function meetable(place) {
+    if (!place) return null;
     var best = bestReached();
     for (var i = 0; i < LIST.length; i++) {
-      if (LIST[i].unlockMeet && !meets(LIST[i], best)) return LIST[i];
+      if (LIST[i].unlockMeet === place && !meets(LIST[i], best)) return LIST[i];
     }
     return null;
   }
@@ -446,6 +755,37 @@ var Doodads = (function () {
     list.push(d.id);
     Save.set('met', list);
     return d;
+  }
+
+  /* A DEED DONE, reported by name. Returns the doodads it just opened up,
+     and [] every time after the first - which is the point of it, because
+     the deed it was built for (holding the heat and the lime at once) is
+     something a confident player does on most runs, and a banner that fired
+     every time would be noise instead of news. The shape noteMeet has, for
+     the same reason noteMeet has it: a deed is an event, not a total.
+
+     It returns an array where noteMeet returns one doodad, because the
+     caller's shape is noteBoon's and noteLime's - the engine pushes the
+     result onto its unlock queue - and because nothing says two doodads
+     could not one day want the same deed. The engine names the deed and
+     never learns what it bought. */
+  function noteDeed(name) {
+    /* noteMeet's guard, in the shape noteMeet states it: without it an
+       undefined name matches the eleven doodads that carry no unlockDeed
+       field at all - `undefined === undefined` - and every one of them is
+       written into the save as done. Nothing reaches it today, because the
+       engine only ever names a deed it has a literal for, which is exactly
+       the kind of latent that stops being latent when a second deed is
+       added by somebody reading this function rather than its twin. */
+    if (!name) return [];
+    var list = metIds();
+    var won = LIST.filter(function (d) {
+      return d.unlockDeed === name && list.indexOf(d.id) < 0;
+    });
+    if (!won.length) return won;
+    won.forEach(function (d) { list.push(d.id); });
+    Save.set('met', list);
+    return won;
   }
 
   /* record a run. returns the doodads this score just opened up, in
@@ -467,31 +807,43 @@ var Doodads = (function () {
      than the generous one. The achievements roster asks this: IMP11 opens
      every stall at once, and POULTRY CATCHER is a record of what the player
      DID, so a passkey must not hand it over. Split out of isUnlocked rather
-     than copied into js/achievements.js so that the four prices are written
-     down once - a fifth kind of lock is a line here and nowhere else. */
+     than copied into js/achievements.js so that the six prices are written
+     down once - a seventh kind of lock is a line here and nowhere else. */
   function meets(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
     if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
-    if (d.unlockMeet && metIds().indexOf(d.id) < 0) return false;
+    if (d.unlockGold && goldTaken(d.unlockGold.name) < d.unlockGold.need) return false;
+    /* one test for the found ones and the deed ones together, because they
+       share the one list: both are a yes that is remembered by the doodad's
+       own id, and neither has a number to fall short of */
+    if ((d.unlockMeet || d.unlockDeed) && metIds().indexOf(d.id) < 0) return false;
     return true;
   }
 
   /* DOES THIS DOODAD COST ANYTHING AT ALL?
 
-     The four prices are written down HERE, beside meets(), so a fifth kind
+     The six prices are written down HERE, beside meets(), so a seventh kind
      of lock is still one line in one file. It exists because the question
      was being asked by building the answer: Achievements.doodadsBought()
      called requirement() on all eight doodads purely to test the result for
      truthiness, and requirement() allocates an object and concatenates two
      strings for every priced one. Five objects and a dozen strings, thrown
      away unread, once per point scored and - until the achievements screen
-     stopped asking an earned row for its progress - sixty times a second. */
+     stopped asking an earned row for its progress - sixty times a second.
+
+     EVERY NEW KIND HAS TO BE ADDED HERE AS WELL AS TO meets(), and the two
+     say different things: meets() asks whether the price was paid, this asks
+     whether there was one. POULTRY CATCHER counts the doodads that are
+     priced AND met, so a kind this test did not know about would make its
+     doodad free - it would never be counted toward the badge, and nine of
+     twelve would be as high as the badge could ever read. */
   function priced(d) {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
-    return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes || d.unlockMeet));
+    return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
+                    d.unlockMeet || d.unlockGold || d.unlockDeed));
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey(),
@@ -505,10 +857,70 @@ var Doodads = (function () {
     return meets(d, best);
   }
 
+  /* WHICH LEVEL IS THIS, AND WHAT IS IT CALLED?
+
+     Two of the prices name a level - "find him" and "collect three of
+     these" - and neither stores the NAME, only the id, because the names
+     live in js/levels.js and a name copied into the roster is a name that
+     will one day disagree with the menu.
+
+     The walk is cached because of where it is called from. The select
+     screen asks requirement() for a locked stall's `.plate` on every frame
+     it draws the rail, so this would otherwise walk two rooms and nine bays
+     per locked doodad per frame, forever, to answer a question whose answer
+     cannot change: ids are fixed in the source. A miss is cached as null
+     along with the hits, so a typo in an unlockGold.where costs one walk
+     rather than one per frame. */
+  var places = {};
+
+  function placeOf(id) {
+    if (places.hasOwnProperty(id)) return places[id];
+    var found = null;
+    var rooms = Levels.rooms;
+    for (var i = 0; i < rooms.length && !found; i++) {
+      var levels = rooms[i].levels;
+      for (var j = 0; j < levels.length; j++) {
+        if (levels[j].id === id) { found = { name: levels[j].name, room: rooms[i] }; break; }
+      }
+    }
+    places[id] = found;
+    return found;
+  }
+
+  /* SECRECY OUTRANKS HELPFULNESS, and it is the one thing the passkey is
+     allowed to follow.
+
+     The Living Room's bays are secret until its door is open - the level
+     select will not so much as draw their names, and Levels.shown() keeps
+     their score tables from being written - so a doodad's price must not
+     print TRY THE COUCH to a player who has never heard of the Living Room.
+     A locked card that said it would be handing over the room's existence,
+     the number of bays in it and where to go, in exchange for nothing.
+
+     roomOpen() is the right test and not gateMet(): it honours IMP11, and a
+     passkey that opened every door in the game but left the price lines coy
+     about where the doors were would be an exception nobody could guess.
+     The limes' price never had to think about any of this, because the
+     Canopy is in the Backyard where every bay is public from the first boot.
+
+     Levels is safe to reach for even though it loads after this file: this
+     only ever runs from a draw, which is long after boot, exactly as
+     bestReached()'s call to Levels.playable() already does. */
+  function placeLine(id) {
+    var p = placeOf(id);
+    return (p && Levels.roomOpen(p.room)) ? 'TRY ' + p.name : 'YOU ARE NOT THERE YET';
+  }
+
   /* What a locked doodad is still waiting for: the price to print, how far
      along the player is and what to call it. Here rather than on the select
      screen, so the card never has to know which kind of lock it is looking
-     at - and a fourth kind is a fourth branch in one place. */
+     at - and a seventh kind is a seventh branch in one place.
+
+     Every string is measured against drawLockedCard's fixed geometry: the
+     price is drawn centred at VW/2 with spacing 2, so n characters measure
+     8n-2 px against a budget of about 460, and the longest of these is the
+     shut-room form of the capybara's at 42 characters and 334px. The plates
+     are spacing 1 (6n-1) and have to sit inside a stall's 92px pitch. */
   function requirement(d) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return null;
@@ -524,16 +936,58 @@ var Doodads = (function () {
                plate: d.unlockLimes + ' LIMES',
                have: Math.min(limesTaken(), d.unlockLimes), need: d.unlockLimes };
     }
+    /* The price names the level for the same reason the limes' does: a
+       player who has not worked out where quarters come from cannot go and
+       get three of them. The pickup's name is stored SINGULAR, because that
+       is how the art shouts it when the +5 lands ('QUARTER +5'), so the
+       price is the one place that adds the S - a pickup that did not
+       pluralise with an S would want a field of its own, and none of them
+       does. A doodad with no `where` simply gets the short line, which is
+       what a pickup shed by several bays would want. */
+    if (d.unlockGold) {
+      var g = d.unlockGold;
+      return { price: 'COLLECT ' + g.need + ' ' + g.name + 'S' +
+                      (g.where ? '. ' + placeLine(g.where) : ''),
+               unit: 'CAUGHT', plate: g.need + ' ' + g.name + 'S',
+               have: Math.min(goldTaken(g.name), g.need), need: g.need };
+    }
+    /* nothing to total up and nothing to half-finish: you have met him or
+       you have not, so this one asks the card for no progress bar.
+
+       The level is looked up rather than written out, and that changed a
+       shipped line - Saddam's card used to read FIND HIM IN THE GARDEN and
+       now reads FIND HIM. TRY THE GARDEN. The preposition is the reason:
+       IN or ON belongs to each level's name (in the garden, but on the
+       couch) and nothing in js/levels.js stores which, so the line is built
+       without one rather than with the wrong one. Giving every level a
+       `prep` key would be nine rows touched for one word.
+
+       It is also why neither of them says here what finding him COSTS. The
+       Garden asks for nothing but a close pass; the Couch asks for a dive
+       through the popcorn without taking a hit. That is each doodad's own
+       business, so each says it in his lockedAbout, and this stays generic. */
+    if (d.unlockMeet) {
+      return { price: 'FIND HIM. ' + placeLine(d.unlockMeet), plate: 'HIDING',
+               hint: 'HE IS NOT FOR SALE', bar: false };
+    }
+    /* a deed is one event too, so no bar here either. The copy is written
+       out rather than built, because there is exactly one deed and a
+       sentence reads better than a phrase assembled out of a deed id; a
+       second deed would want a small table keyed by that id rather than a
+       second branch.
+
+       The hint deliberately does not name the Whiteboard. It is the last
+       bay of a secret room, so naming it would spend the room's secret on a
+       locked card - and ONE BAY SHEDS BOTH is true, gives away nothing and
+       is quite enough to go looking with. */
+    if (d.unlockDeed) {
+      return { price: 'BE HOT AND SOUR AT ONCE', plate: 'HOT + SOUR',
+               hint: 'ONE BAY SHEDS BOTH', bar: false };
+    }
     if (d.unlockAt) {
       return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
                plate: 'SCORE ' + d.unlockAt,
                have: Math.min(bestReached(), d.unlockAt), need: d.unlockAt };
-    }
-    /* nothing to total up and nothing to half-finish: you have met him or
-       you have not, so this one asks the card for no progress bar */
-    if (d.unlockMeet) {
-      return { price: 'FIND HIM IN THE GARDEN', plate: 'HIDING',
-               hint: 'HE IS NOT FOR SALE', bar: false };
     }
     return null;
   }
@@ -561,7 +1015,14 @@ var Doodads = (function () {
     bestReached: bestReached, noteScore: noteScore,
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
     limesTaken: limesTaken, noteLime: noteLime,
-    meetable: meetable, noteMeet: noteMeet,
+    /* the +5 pickups, counted by the art's own name for them. goldTaken is
+       what the price line on a locked card reads and what PlayScene's
+       inspect() dumps for a headless test, the way it already dumps the
+       succulents and the limes; noteGold is what PlayScene calls on a catch,
+       and it hands back whatever that catch just opened. */
+    goldTaken: goldTaken, noteGold: noteGold,
+    /* meetable() takes the level id now - see its comment */
+    meetable: meetable, noteMeet: noteMeet, noteDeed: noteDeed,
     isUnlocked: isUnlocked, meets: meets, priced: priced, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey
   };
