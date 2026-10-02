@@ -64,6 +64,26 @@ var CharSelectScene = (function () {
 
   function unlocked(i) { return Doodads.isUnlocked(Doodads.list[i], best); }
 
+  /* THE DOODAD'S OWN NOISE, on the frame the cursor lands on it.
+
+     Not every doodad has one - three recordings exist and the roster is
+     eight long - so this is a field on the doodad rather than anything this
+     screen knows: js/doodads.js names the audio role in `voice`, and a
+     doodad that has not been recorded simply has no field and the move
+     click is all you hear. A ninth doodad with a recording changes nothing
+     in this file.
+
+     A BOARDED STALL STAYS QUIET, the same rule the idle chirp above
+     follows. A locked doodad is drawn as a shut stall with its price on it,
+     and something calling out from behind the boards would read as the game
+     offering him. The voices also share one audio channel, so holding an
+     arrow across the rail cuts each call off with the next rather than
+     playing all three at once - see SAMPLES in js/audio.js. */
+  function speak(i) {
+    var d = Doodads.list[i];
+    if (d && d.voice && unlocked(i)) Audio3.play(d.voice);
+  }
+
   /* ------------------------------------------------------- lifecycle */
 
   function enter() {
@@ -90,6 +110,11 @@ var CharSelectScene = (function () {
       index = Doodads.indexOf(fresh[0]);
       pop[index] = POP_T;
       Audio3.play('select');
+      /* arriving ON a freshly earned stall is the cursor landing on it,
+         which is the same moment moveTo covers; he should introduce
+         himself here too rather than only once you have moved away and
+         come back */
+      speak(index);
     }
     /* Arrive with the row already where it belongs rather than sliding into
        place while the player is still reading the screen - and AFTER the
@@ -157,6 +182,7 @@ var CharSelectScene = (function () {
       flapCooldown[index] = rand(0.8, 2.2);
     }
     Audio3.play('move');
+    speak(index);
   }
 
   function move(dir) { moveTo(index + dir); }

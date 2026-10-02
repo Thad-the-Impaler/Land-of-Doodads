@@ -218,7 +218,36 @@ var Audio3 = (function () {
        a bay: there is one score-gated room in the game today and the player
        crosses it once. Louder than the stall fanfare for that reason, and
        its own recording rather than the same one twice. */
-    room:   { src: 'Assets/sounds/wholenewworld.mp3', vol: 0.5 }
+    room:   { src: 'Assets/sounds/wholenewworld.mp3', vol: 0.5 },
+
+    /* THE DOODADS' OWN VOICES, one per stall, played when the character
+       select lands on that doodad. js/doodads.js names the role in the
+       doodad's own `voice` field, so a ninth doodad with a recording is a
+       file, a line here and a line there - and a doodad with no recording
+       says nothing extra, which is why `fallback` is 'move' rather than a
+       voice-shaped arpeggio nobody asked for.
+
+       They all share one CHANNEL. Holding an arrow walks the whole rail in
+       a second and a half, and without it that is eight recordings playing
+       over one another; with it, each one cuts the last off exactly the way
+       moving the cursor cuts off the click. See playSample.
+
+       vol 0.55: louder than the in-play chirp and under the fanfares. These
+       are the only recordings in the game that fire on a cursor move, so
+       they are heard far more often than anything else here and have to sit
+       where a repeated sound is still welcome.
+
+       Billy and Saddam are their own recordings. Pepper is cut out of a
+       long yard recording and was 24dB down with the room floor right under
+       it, so it carries a 320Hz high pass and a little compression to lift
+       the call off the hiss - see tools/make_sound.sh, which has the exact
+       command every one of these was cut with. */
+    voiceBilly:  { src: 'Assets/sounds/billyselect.mp3',  vol: 0.55,
+                   channel: 'voice', fallback: 'move' },
+    voiceSaddam: { src: 'Assets/sounds/saddamselect.mp3', vol: 0.55,
+                   channel: 'voice', fallback: 'move' },
+    voicePepper: { src: 'Assets/sounds/pepperselect.mp3', vol: 0.55,
+                   channel: 'voice', fallback: 'move' }
   };
 
   var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */
@@ -287,27 +316,39 @@ var Audio3 = (function () {
        twice in the same frame, and two four-second voices over each other
        is a mess - so whatever is sounding is stopped and it starts again
        from the top, which is also what makes a second unlock feel like a
-       second unlock rather than a smear. */
-    if (sounding[name]) {
-      try { sounding[name].stop(); } catch (e) {}
-      sounding[name] = null;
+       second unlock rather than a smear.
+
+       A CHANNEL rather than the name, for the one case where the rule has
+       to cover a whole family: the doodads' voices all share 'voice', so
+       walking the character select's rail cuts each call off with the next
+       instead of stacking a farmyard. Everything else is its own channel by
+       default, which is what the name alone always meant. */
+    var ch = (SAMPLES[name] && SAMPLES[name].channel) || name;
+    if (sounding[ch]) {
+      try { sounding[ch].stop(); } catch (e) {}
+      sounding[ch] = null;
     }
     var src = ctx.createBufferSource();
     src.buffer = buffers[name];
     var gain = ctx.createGain();
     gain.gain.value = SAMPLES[name].vol;
     src.connect(gain); gain.connect(master);
-    src.onended = function () { if (sounding[name] === src) sounding[name] = null; };
+    src.onended = function () { if (sounding[ch] === src) sounding[ch] = null; };
     src.start();
-    sounding[name] = src;
+    sounding[ch] = src;
     return true;
   }
 
   function play(name) {
-    var fn = SFX[name];
-    if (!fn && !SAMPLES[name]) return;
+    var s = SAMPLES[name], fn = SFX[name];
+    if (!fn && !s) return;
     unlock();
     if (playSample(name)) return;
+    /* A recording with no synth entry of its own - which is every voice,
+       because there is no arpeggio that sounds like Billy - still has to
+       make SOME noise on the frame its bytes have not arrived yet, or the
+       first press after a cold boot is the one that feels broken. */
+    if (!fn && s.fallback) fn = SFX[s.fallback];
     if (fn) fn();
   }
 

@@ -25,7 +25,12 @@ OUT = "Land of Doodads.html"
 # plays it under the name of what it DOES. This is the one place the two meet,
 # and a file with no entry keeps its own stem as its role.
 SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve",
-               "wholenewworld.mp3": "room"}
+               "wholenewworld.mp3": "room",
+               # the doodads' own calls on the character select; js/doodads.js
+               # names the role in each doodad's `voice` field
+               "billyselect.mp3": "voiceBilly",
+               "saddamselect.mp3": "voiceSaddam",
+               "pepperselect.mp3": "voicePepper"}
 
 
 def read(path):
@@ -54,7 +59,7 @@ def main():
     for name in sorted(os.listdir("Assets/sprites")):
         if name.endswith(".png"):
             sprites[name[:-4]] = data_uri(os.path.join("Assets/sprites", name))
-    frames = "\n".join('  %s: "%s",' % (k, v) for k, v in sprites.items())
+    frames = "\n".join('  "%s": "%s",' % (k, v) for k, v in sprites.items())
 
     # the sounds, keyed by the ROLE js/audio.js plays them under rather than
     # by filename - audio.js maps role -> path and this overrides the path
@@ -64,7 +69,10 @@ def main():
             if name.endswith(".mp3"):
                 sounds[SOUND_ROLES.get(name, name[:-4])] = data_uri(
                     os.path.join("Assets/sounds", name), "audio/mpeg")
-    clips = "\n".join('  %s: "%s",' % (k, v) for k, v in sounds.items())
+    # the key is QUOTED: these are role names, and a role with a dot or a
+    # dash in it would otherwise emit a syntax error into the shipped page
+    # rather than failing here where somebody would see it
+    clips = "\n".join('  "%s": "%s",' % (k, v) for k, v in sounds.items())
 
     inline_assets = ("<script>\nwindow.DOODAD_SPRITES = {\n" + frames + "\n};\n"
                      "window.DOODAD_SOUNDS = {\n" + clips + "\n};\n</script>")

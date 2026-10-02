@@ -21,6 +21,12 @@
    rather than a new branch on an id, and each sits on its own axis:
    points, sight, pickups, survival, handling, room.
 
+   `voice` is the sound a doodad makes when the character select lands on
+   it: the ROLE js/audio.js plays, not a path, so a doodad that borrows
+   another's call just names the same role. A doodad that says nothing has
+   no field, and the select screen's own click is all you hear - which is
+   what every one of them did until there were recordings for three.
+
    `size` is the one field the OTHER scenes read too: it is how big the
    doodad is against a standard one, and a doodad that is small is small
    wherever it stands - the rail, the coop, the score table - because it is
@@ -74,6 +80,7 @@ var Doodads = (function () {
          keeps all 78 of her horizontal travel; moving her sideways instead
          cannot work, since clearing the boards' right edge at x 326 needs a
          centre past 344 and 344 + 78 is off the stage. */
+      voice: 'voicePepper',
       title: { role: 'patrol', r: 18, homeX: 340, homeY: 124, spanY: 16 }
     },
     {
@@ -138,6 +145,7 @@ var Doodads = (function () {
          accent would put a white light shaft behind a white sprite */
       accent: '#4f8fd0', accentDark: '#2c5680', accentLight: '#9fc8ee',
       sprite: { w: 384, h: 360, pivotX: 192.0, pivotY: 178.2, bodyR: 178.2, footOffset: 1.00 },
+      voice: 'voiceBilly',
       title: { role: 'patrol', r: 19, homeX: 96, homeY: 104, spanX: 54, spanY: 24 }
     },
     {
@@ -205,6 +213,7 @@ var Doodads = (function () {
          A shorter span and a home of 34 gives him 4.2..66.9 - on screen,
          and clear of where Gerald's art begins at 68.9. (250, the first
          guess, was behind the PLAY board, which is painted over him.) */
+      voice: 'voiceSaddam',
       title: { role: 'walk', r: 19, homeX: 34, spanX: 6 }
     },
     {
