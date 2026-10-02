@@ -30,20 +30,26 @@
    no button of its own. The one that did (a dash on a double-tap) was cut,
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
-   `trot`, `light`, `lives`, `flick`, `size`, `bouncy`, `carry`, `craving`,
+   `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `hotAir`,
    `calm` - so a new one is a new field rather than a new branch on an id,
    and each sits on its own axis: points, sight, pickups, survival,
-   handling, room, lane, duration, odds, tempo.
+   handling, room, spring, duration, hot air, tempo.
 
    The four newest axes, because their words are less obvious than the rest:
-   `bouncy` is the LANE - how fast the left/right nudge crosses the room,
-   which Billy's vertical flight model never touched. `carry` is DURATION -
-   how long a power-up lasts, which nothing had ever scaled. `craving` is
-   ODDS - whether a hot or a sour drop exists at all, where Gerald's reach
-   is only about one that already does. `calm` is TEMPO - how much of the
-   heat's hurry a doodad declines, where the points it pays out are
-   untouched. Each is one multiplier read where a constant used to be read,
-   which is the shape grav(), maxFall() and flapV() already set.
+   `bounce` is the SPRING - a flap taken from a fast fall gets part of the
+   fall back as lift, which is a rule about the flap and not a weight.
+   `carry` is DURATION - how long a power-up lasts, which nothing had ever
+   scaled. `hotAir` is what the HEAT DOES TO HIM - a lift that arrives with
+   the heat and cools away with the gauge, where Billy's `light` is a weight
+   he has on every plank. `calm` is TEMPO - how much of the heat's hurry a
+   doodad declines, where the points it pays out are untouched. `carry` and
+   `calm` are each one multiplier read where a constant used to be read,
+   which is the shape grav(), maxFall() and flapV() already set; `bounce`
+   and `hotAir` are rules the flap and those same three accessors carry, so
+   the integrator still never learns a name. Two axes were held and given
+   back in between - the LANE (a faster sideways nudge) and the ODDS (more
+   hot and sour drops) - because neither could be SEEN in a run, and an
+   ability the player cannot see is not one.
 
    `voice` is the sound a doodad makes when the character select lands on
    it: the ROLE js/audio.js plays, not a path, so a doodad that borrows
@@ -309,35 +315,55 @@ var Doodads = (function () {
          player is told so before they go, which is what makes the rule
          fair - nothing about it is hidden. */
       lockedAbout: ['SOMEBODY IS BOUNCING IN THE POPCORN.', 'GET HIM OUT WITHOUT TAKING A HIT.'],
-      /* The LANE axis, which nobody held: Billy's `light` is the whole
-         vertical flight model, and the left/right nudge had never been
-         touched by anybody. `bouncy` scales that nudge's top speed AND its
-         acceleration by the same 1.5, so he still reaches full speed in the
-         same 0.13s and simply has more of it to reach - 116px/s becomes
-         174. A kernel is kicked sideways every single time it lands, and he
-         spent the whole level in that carpet; this is what he picked up
-         there.
+      /* The SPRING, which is the literal reading of the word and the one
+         the first pass talked itself out of. `bounce` is a rule about the
+         flap and about nothing else: a flap taken while he is falling
+         faster than `over` px/s gets `back` of the excess added to its
+         lift. Everyone's flap SETS vy to -338 whatever he was doing a frame
+         ago; his sets it to -338 minus 0.8 of whatever he was falling at
+         over 420. A hover flap - the rhythm that holds a height, where he
+         comes back down through his own line at 338 - is exactly everyone's
+         flap, 48px of lift. Let him drop 50px under that line before the
+         beat and he arrives at 480: 60 of excess, 48 of it back, a lift of
+         63. A full-speed fall (545, which he reaches about 80px under the
+         line) springs him 81 - a little short of double. That is how a
+         rubber ball behaves, what it gets back being a share of what it
+         came down with, and 0.8 is about what a good one keeps. It needs no
+         gesture, because it is the same flap the thumb was already taking;
+         and the player can see it, because he stretches on the rebound and
+         the arc after it is plainly not the arc everyone else gets.
 
-         1.5 is not overpowered because sideways is ALL it is: 174 is still
-         slower than the room scrolls past him (112..178), and sideways room
-         is what dodging a drop and reaching for a coaster already use, so it
-         makes nothing survivable that was not survivable before.
+         It is NOT a death removed, and the reason is WHEN a flap acts. A
+         flap turns him upward on the frame it lands, for him as for anyone;
+         the spring only changes how high the arc after it goes. So the last
+         moment he can save himself off the floor or a plank's cap is the
+         same moment as everyone's, and what the extra buys him is
+         altitude - which he had to dive to earn, and which, in a tight gap,
+         kills him: 81px of spring in a gap with 56px of clearance is the
+         upper plank. He dives where the air above him is open and flaps
+         early where it is not, and that is a thing a player works out in
+         one run. (The faster rise does clear a plank's face a hair sooner -
+         about a pixel at room speed - which is the whole of its survival
+         value, and it is only there after a dive that has put him under the
+         top plank anyway.)
 
-         The LITERAL bounce was rejected, and it is worth writing down why,
-         because it is the obvious reading of the word. A bounce off the
-         floor is Maximus's trot with a spring on it, and a floor that does
-         not end you is a spare life however it is dressed - which is
-         Inari's ability, and which was ruled out twice over. The Living
-         Room's ceiling fails the same way: the lid killing you is that
-         room's whole novelty, and a death removed is a life. A missed gift
-         hopping back off the floor died on measured geometry instead -
-         Backyard drops land around x -30..70, behind a player sitting at
-         116, so the rebound would almost never be catchable, and on the
-         Couch nothing lands at all. */
-      ability: 'BOUNCY',
+         What was rejected, across both passes. x1.5 on the sideways nudge
+         went first: true to the word and invisible in play, and the owner
+         said so. A bounce off the floor is Maximus's trot with a spring on
+         it, and a bounce off the Living Room's lid deletes that room's whole
+         novelty - each is a death removed, however it is dressed, and a
+         death removed is Inari's spare life in another coat. A hard rebound
+         off the Backyard's rafters is real and literal and has nowhere to
+         happen in the Living Room, whose four bays end the run at the lid
+         instead, so nearly half the game would never see it - and in the
+         Backyard everybody already gets a small one (vy x -0.18 off the
+         wall). A flap that ADDED to a rise, so that quick taps climbed
+         faster, is the cut dash in a new coat: sudden, and pointed at the
+         next plank. */
+      ability: 'BOUNCE BACK',
       abilityLive: true,
-      abilityAbout: ['HE PICKED IT UP FROM THE POPCORN:', 'HALF AGAIN AS QUICK, LEFT OR RIGHT.'],
-      bouncy: 1.5,
+      abilityAbout: ['THE HARDER HE FALLS,', 'THE HIGHER HE SPRINGS BACK UP.'],
+      bounce: { over: 420, back: 0.8 },
       /* FOUND, like Saddam, and the value is the level he is found in -
          see meetable(). The Couch is the one bay with a floor worth hiding
          on: he is down in the popcorn, which is the only place the carpet
@@ -386,13 +412,26 @@ var Doodads = (function () {
          what "collect three quarters" says, and what a player would expect
          of it. `where` is for the price line only; it buys nothing else. */
       unlockGold: { name: 'QUARTER', need: 3, where: 'desk' },
-      /* The ribbon, NOT the bag. His art is 91% #2b2b2b, and a near-black
-         accent is a hole in the coop's dim brown and an invisible light
-         shaft behind him. But the joke is on his side here: a black
-         suitcase is precisely the one nobody can pick out on the carousel,
-         so you tie a pink ribbon to the handle. Pink is also the one hue
-         nothing else on the rail has. */
-      accent: '#c45c8a', accentDark: '#6e2c4b', accentLight: '#e89ebf',
+      /* The HANDLE, and the quarter. His art is 83% one near-black,
+         #2c2c2c, and 96% near-black all told, so a near-black accent is a
+         hole in the coop's dim brown and an invisible light shaft behind
+         him. The first pass tied a pink ribbon to him instead - the bag
+         nobody can find on the carousel - and the owner did not get it,
+         which is the one test an accent has to pass: it reads at a glance
+         or it is not working. So this one is motivated by what is actually
+         on him. The only thing on the sprite that is not black is the
+         telescoping handle, #dad9d3, and the one thing he is bought with is
+         three quarters; both are silver.
+
+         Billy's note turns the other way here. His near-white was refused
+         because a white shaft behind a white sprite is no shaft at all;
+         behind a BLACK sprite it is the sharpest silhouette on the rail. It
+         is kept clear of the two pale things it could be mistaken for by
+         temperature: UI.C.ink (#f2e6c8) is cream and Inari's #cdd6e6 is
+         cold and blue, and this is neither - a neutral steel, a shade
+         lighter than the handle so it reads as light and not as more
+         suitcase. */
+      accent: '#a7a6a0', accentDark: '#55544f', accentLight: '#e4e3dd',
       sprite: { w: 315, h: 384, pivotX: 158.9, pivotY: 197.8, bodyR: 155.8, footOffset: 1.13 },
       /* Measured the way Saddam's was, in SPRITE width rather than body
          radius: at r 17 his art reaches 17.3 left and 17.0 right of the
@@ -414,29 +453,64 @@ var Doodads = (function () {
          the size. */
       name: 'DONKEY JOE',
       tagline: 'LOUD IN BOTH DIRECTIONS',
-      about: ['A BLUE DONKEY WITH A LOT OF TEETH.', 'HAS NEVER ONCE BEEN WRONG.'],
+      about: ['AN INFLATABLE DONKEY WITH A LOT OF TEETH.', 'HAS NEVER ONCE BEEN WRONG.'],
       lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
-      /* The ODDS axis: what the sky sheds, which is a genuinely different
-         question from Gerald's. `pull` is reach to a gift that already
-         exists; `craving` is whether one exists at all. tune.spicyChance
-         and tune.sourChance are read x1.5 for him and for nobody else, and
-         the tune itself is never written - a doodad must not leave a level
-         altered behind him.
+      /* HOT AIR, which is what an inflatable is full of. `hotAir` names the
+         same three numbers Billy's `light` scales - gravity, the fall cap,
+         the flap - but it is not a weight: it is what the HEAT does to his
+         body, and it is there only while the heat is. Catch a hot drop and
+         it fills him: gravity goes to 0.55 of itself, the fall cap to 0.6,
+         the flap to 0.72 (softened for the reason Billy's is, so a beat
+         still lifts him about 46px and what changes is the time it takes -
+         a hang of 0.75s against the standard 0.57). Then it COOLS.
+         PlayScene scales the lift by what is left on the gauge, so he is
+         lightest at the catch and back to his own weight by the time the
+         bar is empty - for him the heat bar is an altimeter. Nothing about
+         the heat's own terms moves: the room still runs at 1.55x and the
+         planks are still double.
 
-         The cap is the reason 1.5 is safe. The engine's spicyGap and
-         sourGap of 4 mean at most one drop in five can ever be hot (or ever
-         be sour) however the dice fall, so the multiplier raises the RATE
-         inside a ceiling it cannot lift. Only the tune-rolled drops scale
-         with him: the Couch's hot cheddar does, while the marshmallow, the
-         quarter and the capybara are the art's own roll and do not, which
-         is what keeps him off the +5 unlocks.
+         That is why it is a different KIND of thing from PAPER-LIGHT and
+         not a different number of it. Billy IS light: a property, the same
+         on the first plank as the fiftieth. Joe is as heavy as anyone until
+         the heat is in him, and he loses it continuously, in the fast room,
+         while the room is still fast - the back half of every hot run is
+         him near his full weight at 1.55x, which is everyone's hot run.
+         What the heat buys him is the front half, and that is where a slow
+         fall is worth most. Capybara refuses the hurry, Roller stretches
+         the clock; Joe is the first doodad the heat changes bodily. And a
+         hot balloon rises: with more hang in him he drifts up more easily,
+         and in the Living Room the lid is still the lid. A popped balloon
+         falls, too - die() zeroes the heat, so the tumble is at full weight.
+         Nothing in it removes a death: no hit he could not take before
+         becomes survivable, and the longer hang COSTS him timing room at the
+         top of a gap exactly as PAPER-LIGHT already does, under a lid that
+         in the Living Room's four bays kills. It is Billy's kind of help on
+         a timer, and only while a dare the player chose to take is running.
 
-         Tied to his own unlock on purpose. He was opened by a player
-         holding both at once, so afterwards both come looking for him. */
-      ability: 'CRAVINGS',
+         Rejected, with reasons, because the obvious readings are obvious.
+         x1.5 on the odds of a hot or sour drop went first: nothing about it
+         could be seen in a run, and the owner said so. A balloon that
+         floats up on its own, the tap pulling him DOWN, is the most honest
+         reading of all and fails twice: the Backyard's rafters are solid
+         and survivable, so a doodad that falls upward would rest on them
+         between planks and the fall death would simply leave the game for
+         him in five levels - a death removed by geometry - and it asks the
+         thumb to unlearn the one thing it knows. A plain buoyancy
+         multiplier, always on, is Billy with a different name. A balloon
+         that bounces off things is Koa's word, and off a plank it is a
+         life. Swelling with the heat (hot air expands) was weighed and
+         dropped because a bigger hitbox turns the reward into a way of
+         losing, and letting the lime deflate him further is only visible in
+         the three bays that grow limes. Three more were weighed and left: a
+         string that catches gifts below him is Gerald's axis with a longer
+         arm; a kite that lifts with the room's speed is a Billy that
+         varies, and nobody in a run could tell it from Billy; and 'full of
+         hot air' as a hot START to every run is a pun rather than a balloon
+         the player could see. */
+      ability: 'HOT AIR',
       abilityLive: true,
-      abilityAbout: ['HE GOT A TASTE FOR BOTH.', 'HOT AND SOUR FALL MORE OFTEN FOR HIM.'],
-      craving: 1.5,
+      abilityAbout: ['THE HEAT FILLS HIM UP AND HE FLOATS.', 'HE SINKS BACK AS IT COOLS.'],
+      hotAir: { gravity: 0.55, fall: 0.6, flap: 0.72 },
       /* Neither collected nor scored: DONE. The engine reports the deed by
          this name and knows nothing whatever about what it opens, so the
          roster keeps the only copy of that fact - and the save remembers

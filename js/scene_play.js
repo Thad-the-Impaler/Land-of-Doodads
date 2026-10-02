@@ -248,7 +248,10 @@ var PlayScene = (function () {
     { label: 'TITLE', act: function () { Game.go(TitleScene, {}); } }
   ];
 
-  var player = { x: X_START, y: 0, vy: 0, vx: 0, angle: 0, flapTimer: 0, spin: 0 };
+  /* `spring` is how much of a rebound the last flap was, 0..1, for the one
+     doodad whose flap can be one - see springV(). It is on the player and not
+     in a module var because it is a fact about THIS flap, like flapTimer. */
+  var player = { x: X_START, y: 0, vy: 0, vx: 0, angle: 0, flapTimer: 0, spin: 0, spring: 0 };
 
   /* The rectangles the panels drew, refilled inside drawFg and handed to
      Input by Game.render. A RUN itself never publishes any: a tap anywhere is
@@ -341,6 +344,7 @@ var PlayScene = (function () {
     player.x = X_START;
     player.y = (CEIL + FLOOR) / 2;
     player.vy = 0; player.vx = 0; player.angle = 0; player.flapTimer = 0; player.spin = 0;
+    player.spring = 0;
 
     dust.length = 0;
     for (var i = 0; i < 26; i++) {
@@ -413,18 +417,13 @@ var PlayScene = (function () {
     if (dropTimer > 0) return;
     dropTimer = d.dropEvery * rand(0.78, 1.28);
 
-    /* never two spicy eggs close together, however the dice fall */
+    /* never two spicy eggs close together, however the dice fall. The two
+       rolls here read the tune and only the tune: a per-doodad multiplier on
+       them was built (CRAVINGS, x1.5 on both) and sent back, because nothing
+       about it could be seen in a run. The odds are the level's and nobody
+       else's. */
     if (spicyGap > 0) spicyGap--;
-    /* `craving` is the ODDS axis, and the gaps above and below are what make
-       it safe to hand out. The multiplier moves the ROLL and nothing else:
-       spicyGap/sourGap of 4 still mean at most one drop in five can be hot
-       and one in five sour however the dice fall, so a doodad with a taste
-       for both raises the rate inside a ceiling he cannot lift. tune is read
-       and never written - the level's own number has to come out the same
-       for the next doodad. The art-rolled +5s (the Couch's marshmallow, the
-       Mantle's capybara) are not here and do not scale, which is right: they
-       are the bay's own dice and the engine does not own them. */
-    var spicy = spicyGap <= 0 && chance(tune.spicyChance * (doodad.craving || 1));
+    var spicy = spicyGap <= 0 && chance(tune.spicyChance);
     if (spicy) spicyGap = 4;
 
     /* The gold can and the lime ride the same spawner, and are spaced the
@@ -436,10 +435,7 @@ var PlayScene = (function () {
     var gold = !spicy && goldGap <= 0 && chance(tune.goldChance || 0);
     if (gold) goldGap = 4;
     if (sourGap > 0) sourGap--;
-    /* the same multiplier on the lime, for the same reason - see the heat's
-       roll above. The `|| 0` stays outside it: a level that sheds no limes
-       must go on shedding none whoever is flying, and 0 * 1.5 is still 0. */
-    var lime = !spicy && !gold && sourGap <= 0 && chance((tune.sourChance || 0) * (doodad.craving || 1));
+    var lime = !spicy && !gold && sourGap <= 0 && chance(tune.sourChance || 0);
     if (lime) sourGap = 4;
 
     var x = VW - rand(tune.dropAheadMin, tune.dropAheadMax);
@@ -1655,13 +1651,54 @@ var PlayScene = (function () {
   /* -------------------------------------------------------- physics
 
      The three numbers a doodad's flight is made of, each run through its
-     own `light` scale if it has one. Everything that moves the player asks
-     for them rather than reading the constants, so a doodad that weighs
-     less than the others is data and not a special case. */
+     own `light` scale if it has one, and then through whatever hot air is
+     in him - lift() below. Everything that moves the player asks for them
+     rather than reading the constants, so a doodad that weighs less than
+     the others is data and not a special case - and so is one who weighs
+     less for a while. */
 
-  function grav()    { return doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY; }
-  function maxFall() { return doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL; }
-  function flapV()   { return doodad.light ? FLAP * doodad.light.flap : FLAP; }
+  function grav()    { return GRAVITY  * (doodad.light ? doodad.light.gravity : 1) * lift('gravity'); }
+  function maxFall() { return MAX_FALL * (doodad.light ? doodad.light.fall    : 1) * lift('fall'); }
+  function flapV()   { return FLAP     * (doodad.light ? doodad.light.flap    : 1) * lift('flap'); }
+
+  /* HOT AIR, Donkey Joe's: the heat changes what HE weighs, for as long as
+     it is in him. `hotAir` carries the same three scales `light` does, but
+     where `light` is a property this is a quantity, and it drains. hotAir()
+     is how full of it he is, 0..1: the eased `heat` fills him over the third
+     of a second after the catch (so nothing snaps), and the fraction of the
+     gauge still standing lets it out, so he is lightest at the catch and his
+     own weight again by the time the bar is empty. Read against spicyTime()
+     and not SPICY_TIME for the reason the gauge is, and clamped because a
+     second hot drop tops the heat up to 1.6x and a balloon cannot be more
+     than full. lift(k) turns that into the multiplier the accessor wants,
+     and is exactly 1 for everyone without the field, for a cold Joe, and -
+     because die() zeroes the heat - for a popped one, who tumbles at full
+     weight. */
+  function hotAir() {
+    if (!doodad.hotAir || spicy <= 0) return 0;
+    return heat * clamp(spicy / spicyTime(), 0, 1);
+  }
+  function lift(k) {
+    var h = doodad.hotAir;
+    return h ? 1 - (1 - h[k]) * hotAir() : 1;
+  }
+
+  /* THE SPRING, Koa's: the one rule in the game about a flap taken while
+     falling fast. Everyone's flap SETS vy to flapV() whatever the doodad was
+     doing a frame ago, which is what makes the last-moment save the same
+     moment for everybody; `bounce` leaves that alone and adds to the lift.
+     A flap taken while falling faster than bounce.over px/s gets bounce.back
+     of the excess on top, so from a full-speed fall (545 - 420 = 125 over,
+     100 of it back) he leaves at -438 and rises 81px where the flap alone
+     rises 48. It is read in flap() and nowhere in the integrator, because
+     the bounce IS the flap: no gesture, no timer, no state, only what he was
+     falling at when the thumb landed. For a doodad without the field, or for
+     a flap taken from a hover or a rise, it is exactly 0. */
+  function springV() {
+    var b = doodad.bounce;
+    if (!b || player.vy <= b.over) return 0;
+    return (player.vy - b.over) * b.back;
+  }
 
   /* HOW LONG A POWER-UP LASTS, on the same pattern and for the same reason:
      `carry` is the duration axis, and a doodad who packs what he picks up is
@@ -1692,11 +1729,18 @@ var PlayScene = (function () {
   function bodyR()   { return BODY_R * shrink(); }
 
   function flap() {
-    player.vy = flapV();
+    var spring = springV();
+    player.vy = flapV() - spring;
+    /* how much of a spring that was, against the most he can take off a
+       full-speed fall: drawChars stretches him by it, so the rebound shows
+       in the body as well as in the arc, and a bigger puff goes with it.
+       updatePlayer runs it back down over a quarter of a second. */
+    player.spring = spring > 0
+      ? clamp(spring / ((maxFall() - doodad.bounce.over) * doodad.bounce.back), 0, 1) : 0;
     player.flapTimer = 0.22;
     player.angle = -0.36;
     Audio3.play('flap');
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0, n = 3 + Math.round(player.spring * 5); i < n; i++) {
       particles.push({ x: player.x - 6 + rand(-3, 3), y: player.y + rand(2, 8),
                        vx: rand(-40, -14) - speed * 0.2, vy: rand(-6, 22),
                        life: rand(0.18, 0.4), col: FX.puff, g: 60 });
@@ -1708,27 +1752,23 @@ var PlayScene = (function () {
     var want = 0;
     if (Input.down('left')) want -= 1;
     if (Input.down('right')) want += 1;
-    /* THE LANE AXIS, and nobody had ever touched it: `light` is the whole of
-       the vertical flight model and the left/right nudge has been the same two
-       constants for every doodad in the game. `bouncy` scales BOTH of them by
-       the same number on purpose - the speed alone would mean a doodad who
-       takes half again as long to get going, which feels like weight and not
-       like bounce, whereas scaling the acceleration with it keeps full speed
-       arriving in the same 0.13 seconds and simply gives him more of it. At
-       1.5 that is 174px/s, which is still slower than the room scrolls
-       (112..178) and is still only sideways: it buys room to dodge a drop or
-       reach a coaster, which is room the game already hands out, and it makes
-       nothing survivable that was not. */
-    var m = doodad.bouncy || 1;
-    player.vx = approach(player.vx, want * MOVE_SPD * m, MOVE_ACC * m * dt);
+    /* The same two constants for every doodad in the game. They were scaled
+       per doodad for one round (BOUNCY, x1.5 on both) and the owner sent it
+       back: a faster nudge was true to its word and could not be felt, and
+       an ability nobody can see is not one. The lane is nobody's axis. */
+    player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
     player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
     if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
 
-    /* gravity, integrated so a flap always reaches the same height */
+    /* gravity, integrated so a flap always reaches the same height. For a
+       doodad with hot air in him grav() is already the lighter number, and
+       it changes a little every frame as the gauge drains - which is fine,
+       because the integrator reads it fresh and never caches it. */
     var g = grav();
     player.y += player.vy * dt + 0.5 * g * dt * dt;
     player.vy = Math.min(player.vy + g * dt, maxFall());
     player.flapTimer -= dt;
+    if (player.spring > 0) player.spring = Math.max(0, player.spring - dt * 4);
 
     var br = bodyR();
 
@@ -1791,6 +1831,12 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    /* and the spring goes with it. It is decayed in updatePlayer, which the
+       dying and dead branches never reach - so a doodad killed on the frame
+       after a rebound kept his 22% stretch for the whole tumble and the
+       whole results screen behind it, frozen mid-squash. The stretch is a
+       flourish on a flap; a death is not a flap. */
+    player.spring = 0;
     /* and the room stands straight back up. The buzz may finish out - it is
        noise over a death that is already noisy - but a roll may not: the
        tumble and then the score panel would play out on a tilt, and the
@@ -2523,6 +2569,17 @@ var PlayScene = (function () {
       var sh = 1 + shrivel * 0.04 * Math.sin(t * 23);
       if (o) { o.squashX /= sh; o.squashY *= sh; }
       else o = { squashX: 1 / sh, squashY: sh };
+    }
+    /* and the stretch of a rebound, for the one doodad whose flap can be
+       one: a ball leaving the floor is taller than it is wide, and 22% at a
+       full spring is enough to be read and not enough to look like a new
+       sprite. It composes with the two above the way they compose with each
+       other; player.spring is 0 for everybody else, so for them this is a
+       comparison and nothing more. */
+    if (player.spring > 0.01) {
+      var sp = 1 + player.spring * 0.22;
+      if (o) { o.squashX /= sp; o.squashY *= sp; }
+      else o = { squashX: 1 / sp, squashY: sp };
     }
     /* the drawn size IS the current size - the sprite sits on the smooth
        layer, so any radius costs the same */
@@ -3306,6 +3363,11 @@ var PlayScene = (function () {
                                     nervePop: nervePop, nerveGain: nerveGain,
                                     goldPop: goldPop,
                                     ability: doodad ? doodad.ability : null,
+                                    /* how full of hot air he is and how much
+                                       his last flap sprang, so a headless
+                                       test can read the two newest abilities
+                                       off the run rather than infer them */
+                                    hotAir: doodad ? hotAir() : 0, spring: player.spring,
                                     difficulty: tune ? difficulty() : null }; }
   };
 })();
