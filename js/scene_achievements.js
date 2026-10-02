@@ -59,6 +59,11 @@ var AchievementsScene = (function () {
                                      374 spans 369..380, flush with the
                                      right column above it */
 
+  /* The two option objects the badge blitter takes. They never change, and
+     they were being rebuilt per row per frame - six objects a second times
+     sixty for two booleans. */
+  var DIM = { dim: true }, SECRET = { secret: true };
+
   var t = 0, scroll = 0;
   var page = 0;
   var slide = 0;
@@ -71,6 +76,13 @@ var AchievementsScene = (function () {
      that knows which rows were drawn, so it is the code that fills this,
      and exit() is what spends it. */
   var seenNow = [];
+
+  /* Is any plate on this screen one the save was able to PROVE rather than
+     count? Those are banked with no day and print '- - -', and the line
+     under the panel exists to say what the dash means. Worked out on the
+     way in because nothing on this screen can earn anything, so the answer
+     cannot change while it is up. */
+  var anyRetro = false;
 
   /* The rectangles this screen drew, refilled inside drawFg and handed
      to Input by Game.render - BACK and the two paging boards, or nothing
@@ -92,6 +104,11 @@ var AchievementsScene = (function () {
     slide = 0;
     seenNow = [];
     page = 0;
+    anyRetro = false;
+    for (var r = 0; r < Achievements.list.length; r++) {
+      var row = Achievements.list[r];
+      if (Achievements.earned(row) && !Achievements.when(row)) { anyRetro = true; break; }
+    }
     /* Arrive on the page the new thing is on. A player who comes here
        because the title said `1 NEW` is looking for one row, and the
        doodad select already makes the same promise by jumping the rail
@@ -115,10 +132,11 @@ var AchievementsScene = (function () {
      them to and find nothing gold on it. So the tag stays lit for the
      whole visit, and it is spent as the screen closes. */
   function exit() {
-    for (var i = 0; i < seenNow.length; i++) {
-      var a = Achievements.get(seenNow[i]);
-      if (a) Achievements.markSeen(a);
-    }
+    /* the whole list in one call, so the save is written once rather than
+       once per row - five rows banked out of history on a first boot all
+       sit on page one, and that was five JSON.stringify and five
+       synchronous writes inside the single frame of a scene swap */
+    if (seenNow.length) Achievements.markSeen(seenNow);
     seenNow = [];
   }
 
@@ -207,25 +225,24 @@ var AchievementsScene = (function () {
            bar, no need, no date - a shut row admits that it exists and
            nothing more, exactly like a shut room's three cards on the
            level select. */
-        Badges.draw(ctx, a.icon || a.id, x + BADGE_DX, ry + 7, { secret: true });
+        Badges.draw(ctx, a.icon || a.id, x + BADGE_DX, ry + 7, SECRET);
         UI.text(ctx, '? ? ?', x + TEXT_DX, ry + 6, { colour: UI.C.inkDim });
         UI.padlock(ctx, x + LOCK_DX, ry + 17, 1, UI.C.inkFaint);
         continue;
       }
 
       var done = Achievements.earned(a);
-      var p = Achievements.progress(a);
 
-      /* 18px of badge inside a 32px row leaves 4px above and 7px below
-         once the row's own stripe is accounted for, which sits it on the
-         optical middle of the two lines of text beside it. The dim tile
-         is the object as a shadow of itself, so a locked row still says
-         WHAT it is - that is the whole point of showing it. */
+      /* 18px of badge at ry + 7 in a 32px row leaves 7px above and 7
+         below: it is centred on the row, which also puts it on the optical
+         middle of the two lines of text beside it. The dim tile is the
+         object as a shadow of itself, so a locked row still says WHAT it
+         is - that is the whole point of showing it. */
       /* a.icon, not a.id: the roster says which badge a row wears, and the
          two happen to agree for all eleven. A twelfth row that borrowed
          another's art would otherwise ask Badges for an id it has never
          baked and be handed the padlock plate - on an EARNED row. */
-      Badges.draw(ctx, a.icon || a.id, x + BADGE_DX, ry + 7, done ? null : { dim: true });
+      Badges.draw(ctx, a.icon || a.id, x + BADGE_DX, ry + 7, done ? null : DIM);
 
       var nw = UI.text(ctx, a.name, x + TEXT_DX, ry + 6,
                        { colour: done ? UI.C.gold : UI.C.ink });
@@ -244,12 +261,26 @@ var AchievementsScene = (function () {
       if (done) {
         UI.text(ctx, 'EARNED', x + RIGHT_DX, ry + 6, { align: 'right', colour: UI.C.inkDim });
         var ts = Achievements.when(a);
-        /* a badge banked by a build that did not record dates has no day
-           to show, and 1970-01-01 would be a lie rather than a gap */
+        /* A DASH IS THE RETROACTIVE PLATES' DATE. Five of the eleven are
+           read out of save keys the game already kept, so a save that has
+           been played for weeks banks them on its first boot with this
+           build - and the save can prove they were done but cannot say
+           when. Achievements.init() records a 0 for exactly those, and
+           1970-01-01 would be a lie where a gap is the truth. */
         UI.text(ctx, ts ? stamp(ts) : '- - -', x + RIGHT_DX, ry + 17,
                 { align: 'right', colour: UI.C.inkFaint });
       } else {
-        UI.text(ctx, p.have + ' / ' + p.need, x + RIGHT_DX, ry + 6,
+        /* `p` here and not above the branch: an earned row draws no bar
+           and reads no number, and asking for one ran POULTRY CATCHER's
+           probe - eight doodads deep - sixty times a second for a figure
+           nothing printed. */
+        var p = Achievements.progress(a);
+        /* A SCORE ROW SAYS 'BEST 20', NOT '20 / 26'. You PASS 25, so the
+           bar has to finish at 26, and printing both numbers put two
+           different targets on one row - on the screen whose whole job is
+           to agree with itself. The bar still carries the fraction. */
+        UI.text(ctx, a.best ? 'BEST ' + p.have : p.have + ' / ' + p.need,
+                x + RIGHT_DX, ry + 6,
                 { align: 'right', colour: UI.C.inkDim });
         /* The doodad select's price plate at 120 wide instead of 160: a
            frame, a dark well, a goldDark fill and one gold pixel along
@@ -317,10 +348,53 @@ var AchievementsScene = (function () {
       }
     }
 
+    drawNote(ctx);
+
     /* nothing at all on a phone, where the arrows and the way back are
        boards you press rather than keys somebody has to be told about */
     UI.footer(ctx, '◀ ▶ PAGE    ESC BACK',
                    'CLICK ◀ ▶ TO PAGE    ESC BACK');
+  }
+
+  /* THE ONE LINE THIS SCREEN HAS TO SAY ABOUT ITSELF.
+
+     Two things on it can look like faults, and both of them were reported
+     as faults, so both get a sentence - the same sentence slot, because
+     there is one strip and they are never equally urgent.
+
+     THE PASSKEY, first, because it is the louder contradiction: IMP11
+     opens every stall and every door, so the character select shows eight
+     doodads while POULTRY CATCHER reads 1 / 3 and VOYAGER reads 0 / 1. The
+     counting is right - a badge is a record of what was done and a cheat
+     code does nothing - but the screen was asserting both halves and
+     explaining neither.
+
+     THE DASH, otherwise: five of the eleven are read out of save keys the
+     game already kept, so they arrive EARNED with no day, while six count
+     things nothing was counting before and start their bars at zero. Two
+     rows both saying COLLECT 20 behaved oppositely on one refresh, which
+     is exactly what it looks like when a counter is broken.
+
+     The strip is js/scene_scores.js's, copied: the same 28px on a keyboard
+     and 18 on a phone, the same faint rule along its top. Measured against
+     this screen - the panel's last row is 239, the keyboard rule lands at
+     242 and the text at 246..252 with its shadow on 253, and UI.footer's
+     own soft edge starts at 254. Nothing overlaps. It is NOT folded into
+     the footer string, because UI.footer draws nothing at all on touch and
+     a phone would then never be told any of this. */
+  function drawNote(ctx) {
+    var line = Doodads.masterKey() ? 'THE PASSKEY OPENS DOORS. IT EARNS NOTHING.'
+             : (anyRetro && Achievements.since()
+                  ? '- - - MEANS ALREADY DONE.  BARS COUNT FROM ' + stamp(Achievements.since())
+                  : '');
+    if (!line) return;
+    var strip = UI.touch() ? 18 : 28;
+    ctx.fillStyle = UI.C.darker;
+    ctx.fillRect(0, VH - strip, VW, strip);
+    ctx.fillStyle = UI.C.inkFaint;
+    ctx.fillRect(0, VH - strip, VW, 1);
+    UI.text(ctx, line, VW / 2, UI.touch() ? VH - 12 : VH - 24,
+            { align: 'center', colour: UI.C.inkFaint });
   }
 
   /* No refresh(). Game calls it on whatever scene is up when IMP11 is

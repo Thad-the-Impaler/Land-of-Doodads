@@ -48,10 +48,38 @@ var Scores = (function () {
       Save.remove(k);
     });
     Save.set('migrated.coop', true);
+    refresh();
   }
 
   function key(room, level) { return 'scores.' + room.id + '.' + level.id; }
   function pbKey(room, level, doodad) { return 'pb.' + room.id + '.' + level.id + '.' + doodad; }
+
+  /* A TABLE AND A PERSONAL BEST ARE READ FROM DRAW LOOPS, SO THEY ARE
+     CACHED - the shape js/doodads.js uses for 'reached' and 'succulents'
+     and js/levels.js for reachedOn, with the same one-line reason:
+     localStorage is not free.
+
+     Neither was. table() does a getItem, a JSON.parse and a sanitise that
+     builds ten fresh row objects and sorts them, and four draw loops ask
+     for one every frame - the title's HI readout, the high scores screen's
+     backdrop AND its doodad layer, and the results board. personalBest()
+     is a getItem and a parse apiece, and the high scores screen asks for
+     every unlocked doodad's, which is eight more. That screen alone was
+     running about ten save reads and a thousand throwaway objects a second
+     to draw a table that changes when somebody finishes a run.
+
+     The cached array is the live one, deliberately: submit() mutates it in
+     place through insert() and then writes it, so the cache cannot drift
+     from the save. Anything that wants to change a table without saving it
+     takes a .slice() first, which is what the results board already does
+     while initials are being typed. */
+  var tableCache = {};
+  var pbCache = {};
+
+  /* Both caches are emptied, for the same reason Levels.refresh exists:
+     the save can be changed underneath them. migrate() is the one that
+     does it today, renaming every 'coup' key before anything has read. */
+  function refresh() { tableCache = {}; pbCache = {}; }
 
   function fresh() {
     return HOUSE.map(function (e) { return { name: e.name, score: e.score, doodad: e.doodad, when: 0 }; });
@@ -72,15 +100,18 @@ var Scores = (function () {
 
   /* the table for a level, newest data first time it is asked for */
   function table(room, level) {
-    var list = sanitise(Save.get(key(room, level), null));
-    if (list) return list;
+    var k = key(room, level);
+    if (tableCache[k]) return tableCache[k];
+    var list = sanitise(Save.get(k, null));
+    if (list) { tableCache[k] = list; return list; }
 
     list = fresh();
     /* carry over the single best score saved by earlier versions */
     var legacyKey = 'best.' + room.id + '.' + level.id;
     var legacy = Save.get(legacyKey, 0) | 0;
     if (legacy > 0) insert(list, { name: 'YOU', score: legacy, doodad: null, when: Date.now() });
-    Save.set(key(room, level), list);
+    Save.set(k, list);
+    tableCache[k] = list;
     return list;
   }
 
@@ -104,6 +135,8 @@ var Scores = (function () {
   function submit(room, level, name, score, doodad) {
     var list = table(room, level);
     var at = insert(list, { name: name, score: score, doodad: doodad, when: Date.now() });
+    /* `list` IS the cached array - insert() has already changed it - so the
+       cache needs no update here, only the save does */
     Save.set(key(room, level), list);
     if (name) Save.set('initials', name);
     return at;
@@ -115,13 +148,17 @@ var Scores = (function () {
   }
 
   function personalBest(room, level, doodad) {
-    return Save.get(pbKey(room, level, doodad), 0) | 0;
+    var k = pbKey(room, level, doodad);
+    if (pbCache[k] === undefined) pbCache[k] = Save.get(k, 0) | 0;
+    return pbCache[k];
   }
 
   /* returns true when the run beat that doodad's previous best */
   function recordRun(room, level, doodad, score) {
     if (score > personalBest(room, level, doodad)) {
-      Save.set(pbKey(room, level, doodad), score);
+      var k = pbKey(room, level, doodad);
+      Save.set(k, score);
+      pbCache[k] = score;
       return true;
     }
     return false;
@@ -129,7 +166,9 @@ var Scores = (function () {
 
   /* back to the doodads' starting table; personal bests are left alone */
   function erase(room, level) {
-    Save.set(key(room, level), fresh());
+    var k = key(room, level), list = fresh();
+    Save.set(k, list);
+    tableCache[k] = list;
   }
 
   function lastInitials() {
@@ -150,7 +189,7 @@ var Scores = (function () {
   }
 
   return {
-    SIZE: SIZE, migrate: migrate, houseTop: houseTop,
+    SIZE: SIZE, migrate: migrate, houseTop: houseTop, refresh: refresh,
     table: table, rankFor: rankFor, submit: submit, top: top,
     personalBest: personalBest, recordRun: recordRun, erase: erase,
     lastInitials: lastInitials, ordinal: ordinal, rankColour: rankColour

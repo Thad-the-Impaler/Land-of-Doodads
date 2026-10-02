@@ -1655,13 +1655,17 @@ var Canopy = (function () {
     ctx.fillStyle = P.barkMid; ctx.fillRect(x, canopy - 3, w, 2);
 
     /* two or three sprays hanging out of it, one carrying an orange */
-    for (var v = 0; v < 3; v++) {
-      var vx = Math.round(x + ((v * 37 - s * 0.5) % (w + 14)) - 7);
+    /* `sv`, not `v`: a `var v` four hundred lines up in this same
+       function is the lattice sample at the top of drawPreview, and var is
+       function-scoped - one variable holding two meanings, which works only
+       because the first use is finished before this loop starts. */
+    for (var sv = 0; sv < 3; sv++) {
+      var vx = Math.round(x + ((sv * 37 - s * 0.5) % (w + 14)) - 7);
       if (vx < x - 2 || vx > x + w) continue;
-      var vlen = 8 + (v % 3) * 5;
+      var vlen = 8 + (sv % 3) * 5;
       ctx.fillStyle = P.stem; ctx.fillRect(vx, canopy, 1, vlen);
       ctx.fillStyle = P.leafSun; ctx.fillRect(vx - 2, canopy + vlen - 3, 5, 3);
-      if (v === 1) {
+      if (sv === 1) {
         ctx.fillStyle = P.orangeMid; ctx.fillRect(vx - 1, canopy + vlen, 3, 3);
         ctx.fillStyle = P.orangeLit; ctx.fillRect(vx - 1, canopy + vlen, 1, 1);
       }

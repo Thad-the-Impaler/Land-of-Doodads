@@ -129,6 +129,15 @@ var PlayScene = (function () {
      has one line to spend on the best news of the run, and the roster can
      only say what is earned, never what was earned on THIS flight. */
   var runAchv = [];
+  /* ONE BADGE SOUND A FRAME. bank() has two call sites that a single pickup
+     can reach together: takeGold runs checkUnlocks() - which ends in a
+     bank() of its own - and then banks its 'gold' tally, and takeBoon does
+     the same on a full pot. The fifth bonus drop whose +5 also carries the
+     score past the house high score is an ordinary early-run event, and it
+     fired the two-chord badge sound twice over itself and threw forty
+     particles from one point. The BANNERS were always right - two badges
+     take their turn in the queue - so only the flourish stands down. */
+  var bankedFrame = -1;
   /* Rings taken this run. A stun costs no life and leaves no trace in the
      state - that is the whole point of it - so nothing in the engine was
      counting them, and MOSQUITOS is a thing that happens inside one run
@@ -601,16 +610,31 @@ var PlayScene = (function () {
     var who = Doodads.noteMeet(ob.meet);
     ob.met = true;
     if (!who) return;                       /* already known; just the flinch */
-    unlocked.push(who);
-    announce('doodad', who);
-    Audio3.play('unlock');
-    Screen.shake(3, 0.35);
-    for (var k = 0; k < 30; k++) {
-      var a = rand(0, TAU), sp = rand(40, 170);
-      particles.push({ x: meetX(ob), y: meetCy(ob),
-                       vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
-                       life: rand(0.5, 1.2), g: -50,
-                       col: chance(0.45) ? UI.C.gold : (chance(0.5) ? who.accentLight : who.accent) });
+    /* The passkey guard every other unlock site in this file has had since
+       IMP11 was built - checkBoonUnlocks, checkLimeUnlocks and checkUnlocks
+       all suppress the banner, the fanfare and the burst when the stall is
+       already open, because announcing a door that is standing open is
+       nonsense. This site never did, and got away with it only because
+       meetable() asked isUnlocked() and so returned nobody at all while the
+       passkey was on. Fixing that bug in js/doodads.js makes this one live:
+       SADDAM is in the Garden again, and finding him with the passkey on
+       would otherwise shout DOODAD UNLOCKED for a stall unlocked by typing.
+
+       `ob.met` and the Achievements.check() below stay outside it. He was
+       still found, the save still has to remember it, and POULTRY CATCHER
+       counts the finding whether or not anything was shouted about it. */
+    if (!Doodads.masterKey()) {
+      unlocked.push(who);
+      announce('doodad', who);
+      Audio3.play('unlock');
+      Screen.shake(3, 0.35);
+      for (var k = 0; k < 30; k++) {
+        var a = rand(0, TAU), sp = rand(40, 170);
+        particles.push({ x: meetX(ob), y: meetCy(ob),
+                         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                         life: rand(0.5, 1.2), g: -50,
+                         col: chance(0.45) ? UI.C.gold : (chance(0.5) ? who.accentLight : who.accent) });
+      }
     }
     /* Finding him is the fourth way a doodad comes open, and the only one
        that no score and no tally can see, so POULTRY CATCHER needs its own
@@ -814,6 +838,14 @@ var PlayScene = (function () {
       boonBonus = true;
       score += BOON_BONUS;
       scorePop = 0.36;
+      /* checkPassed BEFORE checkUnlocks, the pair and the order takeGold
+         uses for its +5 and for the same reason: three points step over
+         things. Only checkUnlocks was called here, so a succulent taken on
+         a full pot could carry the score past a name on the table in total
+         silence - no PASSED caption, no chirp - and leave `target` pointing
+         at a row already behind, so the NEXT plank announced the wrong one
+         too. A score that moves has to be offered to both. */
+      checkPassed();
       checkUnlocks();
     } else {
       boonBonus = false;
@@ -1624,6 +1656,9 @@ var PlayScene = (function () {
 
   function update(dt) {
     t += dt;
+    /* a new frame, so the next bank() gets its sound back. t is the scene's
+       own clock and is the only thing here that reliably says "later". */
+    bankedFrame = -1;
 
     if (state === 'paused') {
       if (Game.locked()) return;
@@ -2411,6 +2446,8 @@ var PlayScene = (function () {
      rather than one that prevents anything. */
   function bank(won) {
     if (!won || !won.length) return;
+    var encore = bankedFrame === 1;
+    bankedFrame = 1;
     /* THE ONE CAPTION SLOT, STOOD DOWN - the precedent is checkBoonUnlocks,
        which kills its own EXTRA LIFE the frame a doodad comes out of its
        stall. Five of the eleven badges are earned BY a pickup, so for those
@@ -2428,6 +2465,9 @@ var PlayScene = (function () {
        on top of the news that you nearly died. */
     spicyBanner = 0; sourBanner = 0; stunBanner = 0; boonBanner = 0;
     for (var i = 0; i < won.length; i++) { runAchv.push(won[i]); announce('achievement', won[i]); }
+    /* everything above happens however many times this is reached; only the
+       noise and the confetti are once a frame */
+    if (encore) return;
     Audio3.play('badge');
     Screen.shake(1.5, 0.2);
     for (var k = 0; k < 20; k++) {
@@ -2465,12 +2505,16 @@ var PlayScene = (function () {
      counter that start() zeroes says what it means - the worst one run ever
      got - and is idempotent if it is ever called twice for the same ring.
 
-     Both writes are re-evaluated, which looks wasteful and is not: check()
-     is eleven rows of arithmetic over cached save values, and once an
-     achievement is banked it never comes back out of check() again, so the
-     concat can never report the same badge twice. */
+     BOTH KEYS GO IN ONE CALL. They did not: this was two noteRun calls
+     concatenated, and noteRun writes 'achv.n' and re-evaluates the roster
+     on every advancing call - so a run that took three rings on the Desk
+     did six JSON.stringify, six synchronous localStorage writes and six
+     full passes where three of each would do. note() had the shape right
+     all along (two bumps, one write, one evaluation); this now matches it,
+     and a badge still cannot be reported twice because a banked row never
+     comes back out of check(). */
   function runStat(key, v) {
-    return Achievements.noteRun(key, v).concat(Achievements.noteRun(key + '.' + level.id, v));
+    return Achievements.noteRun(key, v, key + '.' + level.id);
   }
 
   /* the one-off heads up when the rafters start letting go */

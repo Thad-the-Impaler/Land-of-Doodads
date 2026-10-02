@@ -200,11 +200,18 @@ var ScoresScene = (function () {
          carried it to five doodads and had bottomed out at seven, where it
          filled the screen to both edges with nothing to spare - and the
          art folder has four more in it. */
+      /* `showLabel`, not `label`: the level's name is already in a `label`
+         declared at the top of this function, and `var` is function-scoped,
+         so the two were one variable holding a string and then a boolean.
+         It worked only because every read of the string happens above this
+         line - which is the kind of "works" this project has been bitten by
+         four times, and it would stop working the day anything below here
+         wanted the level's name. */
       var BUDGET = VW - 20, by = UI.touch() ? VH - 12 : VH - 24;
-      var gap = 16, label = true, show = parts, hidden = 0;
+      var gap = 16, showLabel = true, show = parts, hidden = 0;
       var tail = function () { return hidden ? '+' + hidden : ''; };
       var measure = function () {
-        var w = label ? Font.measure('BESTS', 1) : -gap;
+        var w = showLabel ? Font.measure('BESTS', 1) : -gap;
         show.forEach(function (p) { w += gap + Font.measure(p.text, 1); });
         if (hidden) w += gap + Font.measure(tail(), 1);
         if (shut) w += gap + 13 + Font.measure(shut + ' LOCKED', 1);
@@ -212,7 +219,7 @@ var ScoresScene = (function () {
       };
       while (gap > 6 && measure() > BUDGET) gap -= 2;
       /* 1. the label goes first; it is the word that says least */
-      if (measure() > BUDGET) label = false;
+      if (measure() > BUDGET) showLabel = false;
       /* 2. then the ones with nothing to report, counted instead - a row
             of dashes is the least information on the line */
       while (measure() > BUDGET) {
@@ -226,7 +233,7 @@ var ScoresScene = (function () {
       while (measure() > BUDGET && show.length > 1) { show = show.slice(0, -1); hidden++; }
 
       var bx = Math.round(VW / 2 - measure() / 2);
-      if (label) { UI.text(ctx, 'BESTS', bx, by, { colour: UI.C.inkFaint }); bx += Font.measure('BESTS', 1) + gap; }
+      if (showLabel) { UI.text(ctx, 'BESTS', bx, by, { colour: UI.C.inkFaint }); bx += Font.measure('BESTS', 1) + gap; }
       show.forEach(function (p) {
         UI.text(ctx, p.text, bx, by, { colour: p.d.accentLight });
         bx += Font.measure(p.text, 1) + gap;
@@ -243,8 +250,13 @@ var ScoresScene = (function () {
 
     /* drawn over the bottom 13px of the strip above, and not at all on a
        phone - where the arrows and the way back are buttons you can press */
+    /* The mouse line was a copy of the keyboard one, which is the exact
+       contradiction UI.footer takes two strings to avoid: a cursor is
+       looking at two paging boards it can click while being told about
+       arrow keys. The achievements screen, which pages the same way, has
+       said it properly since it was written. */
     UI.footer(ctx, '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
-                   '◀ ▶ LEVEL    X RESET TABLE    ESC BACK');
+                   'CLICK ◀ ▶ FOR LEVEL    X RESET TABLE    ESC BACK');
 
     if (confirming && c) {
       UI.scrim(ctx, 10);

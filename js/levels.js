@@ -630,9 +630,31 @@ var Levels = (function () {
     if (!room || room.locked) return false;
     if (!room.unlock) return true;
     if (Doodads.masterKey()) return true;
+    return gateMet(room);
+  }
+
+  /* HAS THIS ROOM'S OWN PRICE ACTUALLY BEEN PAID? roomOpen() minus the
+     passkey line, the way Doodads.meets() is isUnlocked() minus it, and for
+     the same caller: VOYAGER is a record of a door the player opened, and
+     IMP11 opens every door without anybody flying anywhere.
+
+     It lives here rather than in js/achievements.js, which had its own copy
+     along with private roomById and levelById of its own that shadowed
+     these two - and whose levelById had quietly grown an extra guard, so
+     the copies would have answered differently the first time a room was
+     written without a `levels` array. One gate, one place, next to the
+     generous version so the two can be read together.
+
+     It differs from roomOpen on one more point, deliberately: an unlock
+     naming a room or a level that cannot be resolved is FALSE here where
+     roomOpen returns true. roomOpen is being generous about a door - better
+     open than permanently shut on a typo - and a badge has to be the other
+     way round, because a typo must not hand out something nobody earned. */
+  function gateMet(room) {
+    if (!room || !room.unlock) return !!room && !room.locked;
     var r = roomById(room.unlock.room);
     var lv = levelById(r, room.unlock.level);
-    if (!r || !lv) return true;
+    if (!r || !lv) return false;
     return reachedOn(r, lv) >= room.unlock.score;
   }
 
@@ -746,7 +768,8 @@ var Levels = (function () {
     mantle: MANTLE,
     whiteboard: WHITEBOARD,
     reachedOn: reachedOn, noteScore: noteScore,
-    roomOpen: roomOpen, levelsOf: levelsOf, keyFor: keyFor,
+    roomOpen: roomOpen, gateMet: gateMet, roomById: roomById,
+    levelsOf: levelsOf, keyFor: keyFor,
     isUnlocked: isUnlocked, requirement: requirement, refresh: refresh,
     buildArt: buildArt,
     /* Every level that is BUILT, in menu order - deliberately not filtered

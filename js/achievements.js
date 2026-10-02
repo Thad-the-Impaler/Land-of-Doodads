@@ -20,13 +20,15 @@
    WHAT THE SAVE HOLDS - two new keys, nothing existing touched or
    migrated, so erasing a score table (X on the High Scores screen) takes
    no plate away, for the same reason it takes no doodad away:
-     'achv'    { v: 1, got: { <id>: <timestamp> }, fresh: [ <id> ] }
+     'achv'    { v: 1, since: <timestamp>, got: { <id>: <day> },
+                 fresh: [ <id> ] }
      'achv.n'  { <tallyKey>: <number> }
-   Both are read ONCE into module scope and written when they change.
-   check() is called from gameplay and from draw loops - the title's NEW
-   tab and the achievements screen's eleven bars are drawn every frame -
-   and localStorage is not free. This is the shape js/doodads.js already
-   uses for 'reached', 'succulents' and 'limes'.
+   Both are read ONCE into module scope and written when they change, the
+   shape js/doodads.js already uses for 'reached', 'succulents' and 'limes'
+   and for the same reason: localStorage is not free. `since` is the day
+   counting began, because six of the eleven count things nothing in the
+   save was ever counting and the screen has to be able to say so. A `day`
+   of 0 means banked out of history, day unknown - see init().
 
    TALLY KEYS ARE FLAT. 'spicy.construction' is one string key inside
    'achv.n' and not a nested object: note('spicy', level) bumps 'spicy'
@@ -62,6 +64,14 @@ var Achievements = (function () {
      disagree with each other. */
   var PULLET = 25;
 
+  /* EVERY NUMBER IN A ROW IS WRITTEN ONCE. HATCHLING and PULLET already
+     built their how-line out of the constant their bar finishes at, for the
+     reason above; the other nine typed the number twice, once in the
+     sentence and once in `need`, so changing TOLERANCE to 25 would have
+     printed 'COLLECT 20 SPICY DROPS   0 / 25' with nothing to catch it. */
+  var DOODADS = 3, ROOMS = 1, SPICY = 20, BOONS = 20, GOLD = 5,
+      CANS = 5, RINGS = 3, COASTERS = 3, CAPYS = 3;
+
   /* Display order, which is also the order the screen pages through: the
      four that any player can see coming, the four collections, then the
      three Living Room plates last so a shut door's '? ? ?' rows sit
@@ -78,6 +88,13 @@ var Achievements = (function () {
       name: 'HATCHLING',
       how: 'PASS ' + HOUSE + ', THE HOUSE HIGH SCORE',
       need: HOUSE + 1,
+      /* A SCORE, NOT A COLLECTION. The right column prints 'have / need' for
+         everything that is counted up, which on this row read '12 / 13'
+         under a sentence saying 12 - two numbers for one target, on the one
+         screen whose whole job is to agree with itself. The screen prints
+         'BEST 12' for a row that says this, and the bar still carries the
+         fraction, which is where a fraction belongs. */
+      best: true,
       /* the honest "best anywhere, with anyone", which is its own save key
          in js/doodads.js and survives an erased table */
       probe: function () { return Doodads.bestReached(); },
@@ -88,30 +105,39 @@ var Achievements = (function () {
       name: 'PULLET',
       how: 'PASS ' + PULLET + ' ON ANY LEVEL',
       need: PULLET + 1,
+      best: true,
       probe: function () { return Doodads.bestReached(); },
       icon: 'pullet'
     },
     {
       id: 'poultry',
       name: 'POULTRY CATCHER',
-      how: 'UNLOCK 3 NEW DOODADS',
-      need: 3,
+      /* EARN, not UNLOCK. The passkey UNLOCKS all eight at a stroke, and
+         this row counts the ones whose price was actually paid - so with
+         IMP11 typed the character select showed eight open stalls while
+         this said 1 / 3 under the one verb the passkey satisfies. The
+         counting is right and stays; the word was wrong. An achievement is
+         a record of what was DONE, and EARN is that word. */
+      how: 'EARN ' + DOODADS + ' NEW DOODADS',
+      need: DOODADS,
       probe: function () { return doodadsBought(); },
       icon: 'poultry'
     },
     {
       id: 'voyager',
       name: 'VOYAGER',
-      how: 'UNLOCK A NEW ROOM',
-      need: 1,
+      /* and the same word here, for the same reason: the passkey opens the
+         Living Room's door on the level select while this row reads 0 / 1 */
+      how: 'EARN A NEW ROOM',
+      need: ROOMS,
       probe: function () { return roomsEarned(); },
       icon: 'voyager'
     },
     {
       id: 'tolerance',
       name: 'TOLERANCE',
-      how: 'COLLECT 20 SPICY DROPS',
-      need: 20,
+      how: 'COLLECT ' + SPICY + ' SPICY DROPS',
+      need: SPICY,
       /* every level's hot drop, whatever that level calls it: the deviled
          egg, the pepper, the butane can, the mint, the hot popcorn */
       tally: 'spicy',
@@ -120,8 +146,8 @@ var Achievements = (function () {
     {
       id: 'survivor',
       name: 'THE SURVIVOR MAN',
-      how: 'COLLECT 20 SUCCULENTS',
-      need: 20,
+      how: 'COLLECT ' + BOONS + ' SUCCULENTS',
+      need: BOONS,
       /* the EXISTING count - the one Inari's nine succulents are bought
          with - so a player who already has twenty earns this the moment
          the game next boots, which is the whole point of a probe */
@@ -131,8 +157,8 @@ var Achievements = (function () {
     {
       id: 'infinity',
       name: 'INFINITY POOL',
-      how: 'COLLECT 5 BONUS DROPS',
-      need: 5,
+      how: 'COLLECT ' + GOLD + ' BONUS DROPS',
+      need: GOLD,
       /* the +5 drop, which each level names for itself - the quarter, the
          mallow, the capybara, the canopy's golden apple */
       tally: 'gold',
@@ -141,8 +167,8 @@ var Achievements = (function () {
     {
       id: 'butane',
       name: 'BURN WITH THE FLAMES OF VICTORY',
-      how: 'COLLECT 5 BUTANE CANS',
-      need: 5,
+      how: 'COLLECT ' + CANS + ' BUTANE CANS',
+      need: CANS,
       /* the Construction Zone's hot drop and nothing else. One string,
          because note() wrote 'spicy.construction' for free. */
       tally: 'spicy.construction',
@@ -151,8 +177,8 @@ var Achievements = (function () {
     {
       id: 'mosquitos',
       name: 'MOSQUITOS',
-      how: 'SURVIVE 3 NOTIFICATIONS IN ONE RUN',
-      need: 3,
+      how: 'SURVIVE ' + RINGS + ' NOTIFICATIONS IN ONE RUN',
+      need: RINGS,
       /* A high-water mark within a single run, not a lifetime total:
          PlayScene counts the rings it has taken this run and hands the
          count over after each one, and noteRun keeps the largest ever
@@ -170,8 +196,8 @@ var Achievements = (function () {
     {
       id: 'wood',
       name: 'DO YOU RESPECT WOOD?',
-      how: 'COLLECT 3 COASTERS',
-      need: 3,
+      how: 'COLLECT ' + COASTERS + ' COASTERS',
+      need: COASTERS,
       /* every boon on the Couch is a coaster - the map one and the yarn
          one - so the level's id is the whole of the condition */
       tally: 'boon.couch',
@@ -181,8 +207,8 @@ var Achievements = (function () {
     {
       id: 'capy',
       name: "DON'T WORRY, BE CAPY",
-      how: 'COLLECT 3 CAPYBARAS',
-      need: 3,
+      how: 'COLLECT ' + CAPYS + ' CAPYBARAS',
+      need: CAPYS,
       /* and every gold drop on the Mantle is a capybara */
       tally: 'gold.mantle',
       room: 'livingroom',
@@ -198,12 +224,25 @@ var Achievements = (function () {
      All three are null until load() has run, which is how ensure() can
      tell "not read yet" from "read, and empty". */
 
-  var got = null;                     /* id -> the timestamp it was earned */
+  var got = null;                     /* id -> the day it was banked      */
   var fresh = null;                   /* earned but not yet seen on a row  */
   var n = null;                       /* the flat tally table              */
+  /* Ids in `fresh` that this build has never heard of. They are held aside
+     rather than dropped for the same reason `got` keeps unknown plates: the
+     game travels as one html file, and an older copy opened at the same
+     origin must not quietly delete what a newer one wrote. Nothing draws
+     them - freshCount and isFresh read `fresh` alone - and writeGot puts
+     them back. */
+  var freshUnknown = [];
+  /* The day counting began: the first boot that ever evaluated the roster.
+     Six of the eleven count things nothing in the save was ever counting,
+     so they start at zero on a save that has been played for weeks, and the
+     screen has to be able to say so. 0 means a save that has not been
+     through init() yet. */
+  var since = 0;
 
   function load() {
-    got = {}; fresh = []; n = {};
+    got = {}; fresh = []; n = {}; freshUnknown = []; since = 0;
 
     var stored = Save.get('achv', null);
     if (stored && typeof stored === 'object') {
@@ -217,7 +256,15 @@ var Achievements = (function () {
              game travels as one html file, and a save written by a later
              copy must not lose a plate just because an older copy opened
              it. earnedCount() counts roster ids, so they cost nothing. */
-          if (typeof rawGot[id] === 'number') got[id] = rawGot[id];
+          /* and inside the range Date can represent. A finite number
+             above 8.64e15 is JSON-legal, survives a round trip, and makes
+             new Date(ts) an Invalid Date whose getFullYear() is NaN - so
+             the row's date column printed NAN-NAN-NAN. Anything outside
+             becomes a 0, which when() and the screen already render as
+             '- - -': banked, day unknown. */
+          var ts = rawGot[id];
+          if (typeof ts === 'number' && isFinite(ts) && ts >= 0 && ts <= 8.64e15) got[id] = ts;
+          else if (typeof ts === 'number') got[id] = 0;
         }
       }
       var rawFresh = stored.fresh;
@@ -233,11 +280,18 @@ var Achievements = (function () {
              function on the prototype of each, pass both tests, and hang a
              permanent `1 NEW` on a board with no row behind it. Asking who
              OWNS the key is the same question badges.js's has() asks. */
-          if (typeof fid !== 'string' || !BY_ID.hasOwnProperty(fid)) continue;
+          if (typeof fid !== 'string') continue;
+          if (!BY_ID.hasOwnProperty(fid)) {
+            /* a plate from a later build: kept, not drawn, written back */
+            if (freshUnknown.indexOf(fid) < 0) freshUnknown.push(fid);
+            continue;
+          }
           if (!got.hasOwnProperty(fid) || fresh.indexOf(fid) >= 0) continue;
           fresh.push(fid);
         }
       }
+      if (typeof stored.since === 'number' && isFinite(stored.since) &&
+          stored.since > 0 && stored.since <= 8.64e15) since = stored.since;
       /* stored.v is deliberately not branched on: there is one version,
          and it is written so that the day there is a second one there is
          something to branch on rather than a shape to guess at. */
@@ -251,7 +305,12 @@ var Achievements = (function () {
         /* Counts, so: numbers only, whole, and a zero or a negative is
            simply left out - a missing key already reads as 0 everywhere,
            and a 1.5 would paint '1.5 / 5' on a progress row. */
-        if (typeof v === 'number' && isFinite(v) && v > 0) n[key] = Math.floor(v);
+        /* and inside what `| 0` can hold. have() reads n[key] | 0, which
+           is ToInt32: a tally of 3e9 came back as -1294967296, printed as
+           the row's count, and the next pickup wrote the negative number
+           back. The ceiling belongs where the save is read, once, not at
+           every use. */
+        if (typeof v === 'number' && isFinite(v) && v > 0 && v <= 0x7fffffff) n[key] = Math.floor(v);
       }
     }
   }
@@ -263,7 +322,10 @@ var Achievements = (function () {
      has the single path through check(). */
   function ensure() { if (n === null) load(); }
 
-  function writeGot() { Save.set('achv', { v: 1, got: got, fresh: fresh }); }
+  function writeGot() {
+    Save.set('achv', { v: 1, since: since, got: got,
+                       fresh: freshUnknown.length ? fresh.concat(freshUnknown) : fresh });
+  }
   function writeTallies() { Save.set('achv.n', n); }
 
   /* ------------------------------------------------------ what counts
@@ -290,57 +352,30 @@ var Achievements = (function () {
   /* ------------------------------------------------------- the probes
 
      The two that have to be computed rather than counted, and the two the
-     passkey would otherwise pay out on. */
-
-  function roomById(id) {
-    var rooms = Levels.rooms;
-    for (var i = 0; i < rooms.length; i++) if (rooms[i].id === id) return rooms[i];
-    return null;
-  }
-
-  function levelById(room, id) {
-    if (!room || !room.levels) return null;
-    for (var i = 0; i < room.levels.length; i++) if (room.levels[i].id === id) return room.levels[i];
-    return null;
-  }
-
-  /* Has this room's own price been paid? The same question
-     Levels.roomOpen() asks, MINUS the passkey line - which is the entire
-     reason it is asked again here instead of being borrowed.
-
-     It differs from roomOpen() on one other point: an unlock naming a room
-     or level that cannot be resolved returns FALSE here, where roomOpen
-     returns true. roomOpen is being generous about a door - better open
-     than permanently shut on a typo - and a plate has to be the other way
-     round, because a typo must not hand out an achievement nobody earned.
-
-     reachedOn() writes its key the first time it is asked, which is safe
-     for every gate that exists: a room's gate is always a level in a room
-     the player has already been shown, because otherwise the room could
-     never be earned. A gate pointing INTO a secret room would leak that
-     room's key into the save, the way js/levels.js is careful about
-     elsewhere - so if one is ever written, it is this call that has to
-     learn to hold back. */
-  function gateMet(room) {
-    var u = room.unlock;
-    if (!u) return true;
-    var gr = roomById(u.room);
-    var gl = levelById(gr, u.level);
-    if (!gr || !gl) return false;
-    return Levels.reachedOn(gr, gl) >= u.score;
-  }
+     passkey would otherwise pay out on. Neither looks a room or a doodad up
+     for itself any more: this file had private roomById and levelById that
+     shadowed two of the same names in js/levels.js, and its levelById had
+     grown an extra guard the original did not have, so the two copies would
+     have answered differently the first time a room was written without a
+     `levels` array. The honest room gate now lives in js/levels.js beside
+     the generous one, which is where the two can be read together. */
 
   /* POULTRY CATCHER. The doodads that cost something and have been paid
-     for: Doodads.requirement() is what says a doodad has a price at all
-     (the three free ones answer null), and Doodads.meets() is
-     isUnlocked() without the passkey line. Five doodads carry a price
-     today - a score, a score, nine succulents, three limes and being
-     found - and a sixth would count here the day it is written, without
-     this function naming any of them. */
+     for: Doodads.priced() is what says a doodad has a price at all (the
+     three free ones answer false), and Doodads.meets() is isUnlocked()
+     without the passkey line. Five doodads carry a price today - a score, a
+     score, nine succulents, three limes and being found - and a sixth would
+     count here the day it is written, without this function naming any.
+
+     priced(), not requirement(), which is what this asked first: the
+     question is "does this one cost anything", and requirement() answers it
+     by BUILDING the price plate - an object and two strings per priced
+     doodad, five objects and a dozen strings a call, every one thrown away
+     unread. This runs once per point scored. */
   function doodadsBought() {
-    var list = Doodads.list, out = 0;
+    var list = Doodads.list, best = Doodads.bestReached(), out = 0;
     for (var i = 0; i < list.length; i++) {
-      if (Doodads.requirement(list[i]) && Doodads.meets(list[i])) out++;
+      if (Doodads.priced(list[i]) && Doodads.meets(list[i], best)) out++;
     }
     return out;
   }
@@ -356,7 +391,7 @@ var Achievements = (function () {
     for (var i = 0; i < rooms.length; i++) {
       var r = rooms[i];
       if (r.locked || !r.unlock) continue;
-      if (gateMet(r)) out++;
+      if (Levels.gateMet(r)) out++;
     }
     return out;
   }
@@ -368,13 +403,24 @@ var Achievements = (function () {
      through here, so the banner, the sound and the particles can all live
      at the ONE call site in PlayScene that reads the return value.
 
-     Cheap on purpose: eleven rows, two of which read cached save values
-     and two of which walk nine levels' cached scores. It is called after
-     every pickup and once per frame from the screens that draw bars. */
-  function check() {
+     WHERE IT IS CALLED FROM, because the comment here used to say "once
+     per frame from the screens that draw bars" and no screen has ever
+     called it: PlayScene calls it once per point from checkUnlocks, after
+     every pickup through note(), after every ring through noteRun() and
+     once when SADDAM is found, and TitleScene calls it once in enter().
+     Nothing in a draw loop. The per-frame reader on the achievements screen
+     is progress(), which is why that is the one with the cheap probe.
+
+     Cheap anyway: eleven rows, and a row already banked is skipped BEFORE
+     have() is asked, so the only probes that ever run are the ones still
+     outstanding - bestReached and boonsTaken off cached save values,
+     doodadsBought over eight doodads and roomsEarned over three rooms.
+
+     `stamp` is the day to record. init() passes 0 on purpose - see there. */
+  function check(stamp) {
     ensure();
     var out = [];
-    var now = Date.now();
+    var now = stamp === undefined ? Date.now() : stamp;
     for (var i = 0; i < LIST.length; i++) {
       var a = LIST[i];
       /* "has this been banked" is whether the key is THERE, which is not
@@ -419,13 +465,26 @@ var Achievements = (function () {
      after each event, so three rings in one run beats three rings across
      three runs - and nothing has to be reset here when a run ends,
      because the run that is counting owns its own counter. */
-  function noteRun(key, v) {
-    if (!key || typeof v !== 'number' || !isFinite(v)) return [];
+  function noteRun(key, v, key2) {
+    if (typeof v !== 'number' || !isFinite(v)) return [];
     ensure();
-    if (v <= (n[key] | 0)) return [];
-    n[key] = Math.floor(v);
+    var moved = bumpRun(key, v);
+    if (bumpRun(key2, v)) moved = true;
+    if (!moved) return [];
     writeTallies();
     return check();
+  }
+
+  /* one key of a run statistic, high-water. Split out because noteRun takes
+     TWO - the plain 'run.stun' and the level's 'run.stun.desk' - the way
+     note() bumps both, and writing the save and re-evaluating the roster
+     once between them rather than once each is the whole point: a run that
+     took three rings was doing six localStorage writes and six full passes
+     where three of each would do. */
+  function bumpRun(key, v) {
+    if (!key || v <= (n[key] | 0)) return false;
+    n[key] = Math.min(Math.floor(v), 0x7fffffff);
+    return true;
   }
 
   /* ------------------------------------------------------------- public
@@ -439,7 +498,25 @@ var Achievements = (function () {
      save can give - the game never wrote down when any of it happened. */
   function init() {
     load();
-    check();
+    /* NO DATE ON A PLATE THAT CAME OUT OF HISTORY. check(0) stores a zero
+       where the day goes, and when() and the screen already render that as
+       '- - -'. The alternative, which is what shipped, was to stamp the
+       five retroactive plates with the day of this boot - and the screen
+       prints EARNED above that, which says a run from three weeks ago
+       happened this morning. A dash says what is true: the save could prove
+       it was done and could not say when.
+
+       It also makes the asymmetry legible, which is the real complaint.
+       Five rows say EARNED over a dash because they were read out of the
+       save, and six have bars that start at zero because nothing was
+       counting them before today - and the line under the panel says when
+       today was. */
+    var first = since === 0;
+    if (first) since = Date.now();
+    check(0);
+    /* `since` has to survive a boot that earns nothing, and check() only
+       writes when it banks something */
+    if (first) writeGot();
   }
 
   /* The secrecy gate, and the only thing in this file that is allowed to
@@ -452,7 +529,7 @@ var Achievements = (function () {
     var e = resolve(a);
     if (!e) return false;
     if (!e.room) return true;
-    return Levels.roomOpen(roomById(e.room));
+    return Levels.roomOpen(Levels.roomById(e.room));
   }
 
   /* have clamped to need, so a bar can never overrun its frame: somebody
@@ -495,23 +572,30 @@ var Achievements = (function () {
     return fresh.length;
   }
 
-  /* One row, or - called with nothing - every row. Written only when
-     something actually changed, because this is called from a scene's
-     exit() for each row that was displayed and most visits clear none. */
+  /* One row, or a LIST of them. The list is what the achievements screen
+     actually hands over on the way out - every row it put on screen - and
+     it used to call this once per row, each call writing the whole 'achv'
+     key again. The owner's own first boot is the worst case and is not
+     hypothetical: five plates banked out of history, all five FRESH, all
+     five on page one, five JSON.stringify and five synchronous writes in
+     the single frame of a scene swap. One write now.
+
+     Written only when something actually changed, because most visits
+     clear nothing. */
   function markSeen(a) {
     ensure();
-    if (a === undefined || a === null) {
-      if (!fresh.length) return;
-      fresh.length = 0;
-      writeGot();
-      return;
+    var list = (a === undefined || a === null) ? fresh.slice()
+             : (Array.isArray(a) ? a : [a]);
+    var moved = false;
+    for (var i = 0; i < list.length; i++) {
+      var e = resolve(list[i]);
+      if (!e) continue;
+      var at = fresh.indexOf(e.id);
+      if (at < 0) continue;
+      fresh.splice(at, 1);
+      moved = true;
     }
-    var e = resolve(a);
-    if (!e) return;
-    var at = fresh.indexOf(e.id);
-    if (at < 0) return;
-    fresh.splice(at, 1);
-    writeGot();
+    if (moved) writeGot();
   }
 
   /* The day it was banked, or 0 for a plate that is earned but carries no
@@ -528,7 +612,9 @@ var Achievements = (function () {
   return {
     list: LIST,
     init: init,
-    get: function (id) { return BY_ID[id] || null; },
+    /* the day counting began, 0 on a save that has not booted this build */
+    since: function () { ensure(); return since; },
+    get: function (id) { return BY_ID.hasOwnProperty(id) ? BY_ID[id] : null; },
     total: function () { return LIST.length; },
     earned: earned, earnedCount: earnedCount,
     visible: visible, progress: progress,

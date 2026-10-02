@@ -397,17 +397,30 @@ var Doodads = (function () {
   function metIds() {
     if (met !== null) return met;
     var stored = Save.get('met', []);
-    met = Array.isArray(stored) ? stored.filter(function (id) { return !!BY_ID[id]; }) : [];
+    met = Array.isArray(stored) ? stored.filter(function (id) { return BY_ID.hasOwnProperty(id); }) : [];
     return met;
   }
 
-  /* the doodad currently hiding in the world, if any: the first still-shut
+  /* The doodad currently hiding in the world, if any: the first still-shut
      one that is found rather than bought. Levels ask for this instead of
-     naming an id, so who is behind the plank stays the roster's business. */
+     naming an id, so who is behind the plank stays the roster's business.
+
+     IT ASKS meets(), NOT isUnlocked(), AND THE DIFFERENCE IS THE PASSKEY.
+     isUnlocked() short-circuits true on masterKey(), so with IMP11 typed
+     this returned null for everybody, PlayScene never set plank.meet on the
+     tenth stake in the Garden, and SADDAM was never placed again - on that
+     browser profile, permanently, because nothing in the game ever calls
+     setMasterKey(false). He stayed on his card saying FIND HIM IN THE
+     GARDEN for a doodad the world would never contain.
+
+     The question being asked here is "is this doodad's price still unpaid",
+     and the passkey does not pay a price - it opens a door. meets() is that
+     question. The passkey still opens his stall to fly, exactly as before;
+     what it no longer does is take him out of the world. */
   function meetable() {
     var best = bestReached();
     for (var i = 0; i < LIST.length; i++) {
-      if (LIST[i].unlockMeet && !isUnlocked(LIST[i], best)) return LIST[i];
+      if (LIST[i].unlockMeet && !meets(LIST[i], best)) return LIST[i];
     }
     return null;
   }
@@ -453,6 +466,21 @@ var Doodads = (function () {
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
     if (d.unlockMeet && metIds().indexOf(d.id) < 0) return false;
     return true;
+  }
+
+  /* DOES THIS DOODAD COST ANYTHING AT ALL?
+
+     The four prices are written down HERE, beside meets(), so a fifth kind
+     of lock is still one line in one file. It exists because the question
+     was being asked by building the answer: Achievements.doodadsBought()
+     called requirement() on all eight doodads purely to test the result for
+     truthiness, and requirement() allocates an object and concatenates two
+     strings for every priced one. Five objects and a dozen strings, thrown
+     away unread, once per point scored and - until the achievements screen
+     stopped asking an earned row for its progress - sixty times a second. */
+  function priced(d) {
+    if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
+    return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes || d.unlockMeet));
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey(),
@@ -507,17 +535,23 @@ var Doodads = (function () {
 
   return {
     list: LIST,
-    get: function (id) { return BY_ID[id]; },
+    /* hasOwnProperty, not truthiness: BY_ID is a plain object, so
+       get('toString') and has('toString') would otherwise hand back a
+       function off the prototype. That is reachable, not theoretical - the
+       saved 'doodad' key is an arbitrary string from the save file, and
+       Game.pickDoodad asks has() about it on the first frame of every
+       boot. */
+    get: function (id) { return BY_ID.hasOwnProperty(id) ? BY_ID[id] : null; },
     /* the cursor position for an id; 0 for anything unrecognised, so a
        stale save puts the player on the first doodad rather than nowhere */
     indexOf: function (id) { for (var i = 0; i < LIST.length; i++) if (LIST[i].id === id) return i; return 0; },
-    has: function (id) { return !!BY_ID[id]; },
+    has: function (id) { return BY_ID.hasOwnProperty(id); },
     draw: draw,
     bestReached: bestReached, noteScore: noteScore,
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
     limesTaken: limesTaken, noteLime: noteLime,
     meetable: meetable, noteMeet: noteMeet,
-    isUnlocked: isUnlocked, meets: meets, firstUnlocked: firstUnlocked,
+    isUnlocked: isUnlocked, meets: meets, priced: priced, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey
   };
 })();
