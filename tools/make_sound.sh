@@ -10,8 +10,9 @@
 # because loudnorm gates and pumps on clips this short - it turned a sequence
 # of sharp knocks into one spike and a lot of nothing.
 #
-# The four voices in Assets/sounds were made with:
+# The five voices in Assets/sounds were made with:
 #
+#   tools/make_sound.sh "Extra Sounds/Maximus Select.wav" Assets/sounds/maximusselect.mp3 0.09 1.22
 #   tools/make_sound.sh "Extra Sounds/Billy Select.m4a"   Assets/sounds/billyselect.mp3  0.19 1.95
 #   tools/make_sound.sh "Extra Sounds/Saddam Select.m4a"  Assets/sounds/saddamselect.mp3 0.19 2.27
 #   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/cookieselect.mp3 291.29 291.70 \

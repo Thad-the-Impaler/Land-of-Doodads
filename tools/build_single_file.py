@@ -30,6 +30,7 @@ SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve",
                # names the role in each doodad's `voice` field
                "cookieselect.mp3": "voiceCookie",
                "pepperselect.mp3": "voicePepper",
+               "maximusselect.mp3": "voiceMaximus",
                "billyselect.mp3": "voiceBilly",
                "saddamselect.mp3": "voiceSaddam"}
 

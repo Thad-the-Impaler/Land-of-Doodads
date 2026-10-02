@@ -122,6 +122,7 @@ var Doodads = (function () {
       unlockAt: 15,
       accent: '#c2a072', accentDark: '#6a4c25', accentLight: '#e8d2aa',
       sprite: { w: 361, h: 384, pivotX: 180.7, pivotY: 192.0, bodyR: 180.7, footOffset: 1.06 },
+      voice: 'voiceMaximus',
       title: { role: 'walk', r: 22, homeX: 392 }
     },
     {

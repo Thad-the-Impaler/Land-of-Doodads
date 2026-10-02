@@ -228,7 +228,7 @@ var Audio3 = (function () {
        voice-shaped arpeggio nobody asked for.
 
        They all share one CHANNEL. Holding an arrow walks the whole rail in
-       a second and a half, and without it that is four recordings playing
+       a second and a half, and without it that is five recordings playing
        over one another; with it, each one cuts the last off exactly the way
        moving the cursor cuts off the click. See playSample.
 
@@ -238,7 +238,8 @@ var Audio3 = (function () {
        spends on this screen, where the fanfares are heard once a week - so
        they belong under everything else rather than over it.
 
-       Billy and Saddam are their own recordings. Cookie and Pepper are cut
+       Billy, Saddam and Maximus are their own recordings, clean enough to
+       want nothing but a trim and the gain. Cookie and Pepper are cut
        out of one long yard recording, where the calls sit 26 and 32 dB down
        with the room floor right underneath, so both carry a 320 Hz high
        pass and FFT noise reduction before the gain goes on: the room drops
@@ -247,6 +248,8 @@ var Audio3 = (function () {
     voiceCookie: { src: 'Assets/sounds/cookieselect.mp3', vol: 0.40,
                    channel: 'voice', fallback: 'move' },
     voicePepper: { src: 'Assets/sounds/pepperselect.mp3', vol: 0.40,
+                   channel: 'voice', fallback: 'move' },
+    voiceMaximus:{ src: 'Assets/sounds/maximusselect.mp3', vol: 0.40,
                    channel: 'voice', fallback: 'move' },
     voiceBilly:  { src: 'Assets/sounds/billyselect.mp3',  vol: 0.40,
                    channel: 'voice', fallback: 'move' },
