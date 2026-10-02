@@ -10,18 +10,23 @@
 # because loudnorm gates and pumps on clips this short - it turned a sequence
 # of sharp knocks into one spike and a lot of nothing.
 #
-# The three voices in Assets/sounds were made with:
+# The four voices in Assets/sounds were made with:
 #
-#   tools/make_sound.sh "Extra Sounds/Billy Select.m4a"  Assets/sounds/billyselect.mp3  0.19 1.95
-#   tools/make_sound.sh "Extra Sounds/Saddam Select.m4a" Assets/sounds/saddamselect.mp3 0.19 2.27
-#   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/pepperselect.mp3 291.29 291.70 \
-#       "highpass=f=320,acompressor=threshold=-30dB:ratio=4:attack=5:release=120"
+#   tools/make_sound.sh "Extra Sounds/Billy Select.m4a"   Assets/sounds/billyselect.mp3  0.19 1.95
+#   tools/make_sound.sh "Extra Sounds/Saddam Select.m4a"  Assets/sounds/saddamselect.mp3 0.19 2.27
+#   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/cookieselect.mp3 291.29 291.70 \
+#       "highpass=f=320,afftdn=nr=12:nf=-38"
+#   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/pepperselect.mp3 327.29 329.34 \
+#       "highpass=f=320,afftdn=nr=12:nf=-38"
 #
-# Pepper's is the awkward one: a yard recording with the call 24 dB down and
-# the room floor right underneath it, so it gets a far higher high pass than
-# the others (a hen is well above 320 Hz, the room is not) and a little
-# compression to lift the call off the hiss before the gain goes on. The
-# extra-filter argument replaces the default chain's high pass.
+# The two cut out of the yard recording are the awkward ones: the calls sit
+# 26 and 32 dB down with the room floor right underneath, so they get a far
+# higher high pass than the others (a hen is well above 320 Hz, the room is
+# not) and FFT noise reduction before the gain goes on. Measured on the call
+# against the room, that chain takes Cookie from 21 dB of separation to 40
+# and Pepper from 12 to 23, and the calls themselves do not move - afftdn is
+# subtracting a noise profile rather than gating. The extra-filter argument
+# REPLACES the default chain's high pass, so repeat it if you want it.
 #
 # After adding a file: give it a role in js/audio.js SAMPLES, name that role
 # in SOUND_ROLES in tools/build_single_file.py so the single-file build

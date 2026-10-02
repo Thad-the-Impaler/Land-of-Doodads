@@ -228,25 +228,29 @@ var Audio3 = (function () {
        voice-shaped arpeggio nobody asked for.
 
        They all share one CHANNEL. Holding an arrow walks the whole rail in
-       a second and a half, and without it that is eight recordings playing
+       a second and a half, and without it that is four recordings playing
        over one another; with it, each one cuts the last off exactly the way
        moving the cursor cuts off the click. See playSample.
 
-       vol 0.55: louder than the in-play chirp and under the fanfares. These
-       are the only recordings in the game that fire on a cursor move, so
-       they are heard far more often than anything else here and have to sit
-       where a repeated sound is still welcome.
+       vol 0.40, down from the 0.55 these shipped at, and the same as the
+       in-play chirp. These are the only recordings in the game that fire on
+       a CURSOR MOVE - they are heard many times in the few seconds somebody
+       spends on this screen, where the fanfares are heard once a week - so
+       they belong under everything else rather than over it.
 
-       Billy and Saddam are their own recordings. Pepper is cut out of a
-       long yard recording and was 24dB down with the room floor right under
-       it, so it carries a 320Hz high pass and a little compression to lift
-       the call off the hiss - see tools/make_sound.sh, which has the exact
-       command every one of these was cut with. */
-    voiceBilly:  { src: 'Assets/sounds/billyselect.mp3',  vol: 0.55,
+       Billy and Saddam are their own recordings. Cookie and Pepper are cut
+       out of one long yard recording, where the calls sit 26 and 32 dB down
+       with the room floor right underneath, so both carry a 320 Hz high
+       pass and FFT noise reduction before the gain goes on: the room drops
+       by about 18 dB and the calls do not move. tools/make_sound.sh has the
+       exact command for each. */
+    voiceCookie: { src: 'Assets/sounds/cookieselect.mp3', vol: 0.40,
                    channel: 'voice', fallback: 'move' },
-    voiceSaddam: { src: 'Assets/sounds/saddamselect.mp3', vol: 0.55,
+    voicePepper: { src: 'Assets/sounds/pepperselect.mp3', vol: 0.40,
                    channel: 'voice', fallback: 'move' },
-    voicePepper: { src: 'Assets/sounds/pepperselect.mp3', vol: 0.55,
+    voiceBilly:  { src: 'Assets/sounds/billyselect.mp3',  vol: 0.40,
+                   channel: 'voice', fallback: 'move' },
+    voiceSaddam: { src: 'Assets/sounds/saddamselect.mp3', vol: 0.40,
                    channel: 'voice', fallback: 'move' }
   };
 

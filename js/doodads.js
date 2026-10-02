@@ -53,6 +53,7 @@ var Doodads = (function () {
       nerve: 7,
       accent: '#c9873c', accentDark: '#7a4a1c', accentLight: '#eab873',
       sprite: { w: 381, h: 384, pivotX: 219.6, pivotY: 222.8, bodyR: 161.1, footOffset: 1.00 },
+      voice: 'voiceCookie',
       title: { role: 'perch', r: 19 }
     },
     {

@@ -28,9 +28,10 @@ SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve",
                "wholenewworld.mp3": "room",
                # the doodads' own calls on the character select; js/doodads.js
                # names the role in each doodad's `voice` field
+               "cookieselect.mp3": "voiceCookie",
+               "pepperselect.mp3": "voicePepper",
                "billyselect.mp3": "voiceBilly",
-               "saddamselect.mp3": "voiceSaddam",
-               "pepperselect.mp3": "voicePepper"}
+               "saddamselect.mp3": "voiceSaddam"}
 
 
 def read(path):
