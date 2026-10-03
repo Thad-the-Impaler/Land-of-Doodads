@@ -463,12 +463,15 @@ var Doodads = (function () {
       lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
       /* HELIUM, which is what an inflatable donkey is full of if the owner
          is taken at his word. `helium` is the SIGN of the pull: the room
-         draws him toward the lid instead of the floor, with the same 1180
-         behind it, the same 545 cap and the same 338 off a flap - and the
-         flap pushes him DOWN, which is the whole of the input. 1 is an
-         exact mirror; the number multiplies the reversed gravity and
-         nothing else. He is drawn the same way up as everyone. The room is
-         turned over for him, not the donkey.
+         draws him toward the lid instead of the floor - and the flap
+         pushes him DOWN, which is the whole of the input. The number is
+         the STRENGTH of that reversed pull and nothing else: 0.72, which
+         is Billy's gravity scale, so the gentlest pull in the game is now
+         also the only one that points up. 1180 x 0.72 is 849.6, against the
+         same 545 cap and the same 338 off a flap - `light` is Billy's
+         block and Joe does not carry it, so he borrows the one number and
+         none of the model. He is drawn the same way up as everyone. The
+         room is turned over for him, not the donkey.
 
          It is the one axis nobody can borrow. Every other ability here is a
          number on something the game already does - lift, size, duration,
@@ -495,9 +498,18 @@ var Doodads = (function () {
          roster that is a skill rather than a stat - and his card and his
          first flap both say so.
 
-         Nothing is removed. Same hitbox, same arc, same first flap: 48px
-         off mid-room, 49.6px clear of the floor for him and of the lid for
-         everyone else, because 133 is the midpoint of 24 and 242. A popped
+         Nothing is removed, and the ARC is the one thing that is not a
+         mirror. He keeps everyone's 338 off a flap but falls back against
+         849.6 instead of 1180, so his flap digs 67.2px and takes 0.4s to do
+         it where everyone else's lifts 48.4 in 0.29 - a longer, lazier
+         stroke, which is what 0.72 buys and the whole reason it is the
+         number. Off mid-room his first flap puts him at 200.2 with 30.8px
+         of floor still under the hitbox, where everyone else's first flap
+         clears the lid by 49.6, because 133 is the midpoint of 24 and 242.
+         Drifting from rest he needs 0.64s and 174.8px to reach the 545 cap
+         against the roster's 0.46 and 125.9 - two tenths of a second more
+         to notice he is leaving, which on a lid that kills is the whole
+         difference between a mirror and a playable one. A popped
          balloon falls - down() is +1 outside play, so a dead Joe drops to
          land() and the results screen comes. The one asymmetry left is the
          Backyard's, where the lid bumps and the floor kills: his idle
@@ -508,7 +520,7 @@ var Doodads = (function () {
       abilityLive: true,
       abilityAbout: ['HE FLOATS UP. HE CANNOT HELP IT.', 'YOU ARE WHAT KEEPS HIM DOWN.'],
       abilityWarn: ['\u25B2 HELIUM \u25B2', 'HE FLOATS. YOU KEEP HIM DOWN.'],
-      helium: 1,
+      helium: 0.72,
       /* Neither collected nor scored: DONE. The engine reports the deed by
          this name and knows nothing whatever about what it opens, so the
          roster keeps the only copy of that fact - and the save remembers

@@ -1667,13 +1667,19 @@ var PlayScene = (function () {
      it - the integrator both ways, the dying branch downward only, since
      a popped balloon only ever falls. The FLIGHT MODEL is Billy's
      axis - the three scales - and the SIGN is Donkey Joe's; they compose
-     and neither knows the other's name. */
+     and neither knows the other's name. Joe wears Billy's 0.72 without
+     wearing `light`: he borrows the gravity NUMBER and none of the model,
+     so his flap is still everyone's 338 and his cap still everyone's 545,
+     and a doodad that one day carried both fields would get the two
+     scales multiplied, which is the right answer and needs no code. */
 
   /* WHICH WAY IS DOWN for this doodad, right now: +1 for the eleven the
      room pulls toward the floor, -1 for one full of helium while the run
-     is live. It is the sign and nothing else; `helium` is the multiplier
-     on the reversed gravity, 1 for an exact mirror, and it is applied in
-     grav() alone so that every other reader of down() gets a clean +-1.
+     is live. It is the sign and nothing else; `helium` is the STRENGTH of
+     the reversed pull - 0.72, which is Billy's gravity scale, so the
+     gentlest pull in the game is also the one that points up - and it is
+     applied in grav() alone, so that every other reader of down() gets a
+     clean +-1 and only the gravity knows how hard he is pulled.
 
      It is +1 outside play and pause, and that guard is the reason the
      ability can ship at all: the dying branch integrates with grav() and
@@ -1796,7 +1802,9 @@ var PlayScene = (function () {
        clamped at all. At the cap with dt at its 1/30 clamp the first line
        moves him 545 / 30 + 0.5 * 1180 / 900 = 18.167 + 0.656 = 18.8px a
        frame, not 18.2: that is the step every thin-hitbox argument on the
-       roster has to be measured against. */
+       roster has to be measured against. Joe's second term is half of
+       849.6 / 900 and his step is 18.64, so the 18.8 stays the worst case
+       and nothing measured against it has to be measured again. */
     var g = grav();
     player.y += player.vy * dt + 0.5 * g * dt * dt;
     player.vy = clamp(player.vy + g * dt, -maxFall(), maxFall());
