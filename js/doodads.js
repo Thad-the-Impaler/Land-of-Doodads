@@ -8,8 +8,8 @@
    tools/trim_sprites.py to regenerate it; do not hand-edit.
 
    unlockAt is the score the player has to have reached before a doodad
-   can be flown. No unlockAt means it was always there. There are SIX kinds
-   of price, and meets() is the one place all six are written down:
+   can be flown. No unlockAt means it was always there. There are SEVEN kinds
+   of price, and meets() is the one place all seven are written down:
      unlockAt     a score reached with anyone, on any level
      unlockBoons  succulents collected, any level, ever
      unlockLimes  limes caught, which only the Canopy grows
@@ -20,10 +20,12 @@
      unlockMeet   the id of the level he is HIDING in. Not bought: found.
      unlockDeed   the id of a deed the engine reports by name - something
                   the player DID, rather than something collected.
-   The last two share one save key ('met', a list of doodad ids), because
+     unlockChase  the id of the level with a hole in its floor. He is
+                  swimming behind it, and he is CAUGHT rather than found.
+   The last three share one save key ('met', a list of doodad ids), because
    they are the same shape of answer: one event that either happened or did
-   not, with nothing to total up and nothing to half-finish. A found doodad
-   and a deed doodad are one list for that reason and no other.
+   not, with nothing to total up and nothing to half-finish. A found doodad,
+   a deed doodad and a chased one are one list for that reason and no other.
    title says how the doodad behaves in the coop on the title screen.
 
    Every doodad has an ability, and every one of them is PASSIVE: it needs
@@ -31,13 +33,14 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm`, `pay` - so a new one is a new field rather than a new branch on
-   an id, and each sits on its own axis: points, sight, pickups, survival,
-   handling, room, spring, duration, direction, tempo. Donkey Joe is the
-   one doodad with two fields: `pay` is his second, on Cookie's points
-   axis, and it is there as the price of his first - his entry says why.
+   `calm`, `pay`, `dive` - so a new one is a new field rather than a new
+   branch on an id, and each sits on its own axis: points, sight, pickups,
+   survival, handling, room, spring, duration, direction, tempo, route.
+   Donkey Joe is the one doodad with two fields: `pay` is his second, on
+   Cookie's points axis, and it is there as the price of his first - his
+   entry says why.
 
-   The four newest axes, because their words are less obvious than the rest:
+   The five newest axes, because their words are less obvious than the rest:
    `bounce` is the SPRING - a flap taken from a fast fall gets part of the
    fall back as lift, which is a rule about the flap and not a weight.
    `carry` is DURATION - how long a power-up lasts, which nothing had ever
@@ -46,7 +49,12 @@
    the sign of the pull: the room draws him toward the lid and the flap
    pushes him down, with the three flight numbers the same 1180, 545 and
    338 under the turned sign, so the integrator still never learns a name -
-   it asks down() the way it asks grav().
+   it asks down() the way it asks grav(). `dive` is the ROUTE - the only
+   ability that is a WAY PAST A PLANK rather than a number on the flight:
+   beside a plank the floor is water for that many pixels before its face,
+   and under the plank he is safe and paid nothing. Its floor half overlaps
+   `trot`, which also makes the floor survivable; its plank half, which is
+   the half that matters, is his alone.
    `carry` and `calm` are each one multiplier read where a constant used to
    be read, which is the shape grav(), maxFall() and flapV() already set;
    `bounce` is a rule the flap carries, so the integrator still never learns
@@ -596,6 +604,54 @@ var Doodads = (function () {
       accent: '#98a63a', accentDark: '#535c1b', accentLight: '#cdd57a',
       sprite: { w: 369, h: 384, pivotX: 184.6, pivotY: 188.8, bodyR: 184.6, footOffset: 1.02 },
       title: { role: 'perch', r: 20 }
+    },
+    {
+      id: 'teef',
+      name: 'TEEF',                                        /* 4 ch, 69px at scale 3: holds scale 3 (NAME_SPAN 168) */
+      /* The one tagline on the rail that is DIALOGUE rather than a fact.
+         Every other card states something about the doodad; his is a line
+         spoken AT you, which is right for the one doodad who is a movie -
+         and it is a warning, which is what his ability needs the gold line
+         for. At 236px it is the widest tagline here (NEVER CHECKED, NEVER
+         CLAIMED is 194) and still clear of the chevrons, which sit at y 184
+         on a row the tagline at y 198 does not share. */
+      tagline: "YOU'RE GOING TO NEED A BIGGER BOAT",       /* 34 ch, 236px at spacing 2 (charselect :517), gold */
+      about: ['A SHARK. HE USED TO BE A DRAWING.',         /* 33 ch, 197px */
+              'HE IS STILL MOSTLY TEETH.'],                /* 25 ch, 149px */
+      lockedAbout: ['SOMETHING IS CIRCLING UNDER THE FLOOR.',   /* 38 ch, 227px */
+                    'THE WAY DOWN IS A FUNNEL. LAND IN IT.'],   /* 37 ch, 221px */
+      /* THE ROUTE AXIS - the header says what it is. The floor beside a
+         plank is water for 80px before its face and under it he cannot be
+         touched, and the plank he swims under pays him nothing while still
+         counting as distance, so the level gets no easier for him: he buys
+         a plank he could not have threaded with the point it would have
+         paid. 80 and not more because the water has to be a decision made
+         before the plank, not a floor he lives on. */
+      ability: 'GOES UNDER',                               /* 'ABILITY: GOES UNDER' 19 ch, 113px */
+      abilityLive: true,
+      abilityAbout: ['BESIDE A PLANK, THE FLOOR IS WATER.',     /* 35 ch, 209px */
+                     'UNDER IT HE IS SAFE AND PAID NOTHING.'],  /* 37 ch, 221px */
+      dive: 80,
+      /* No abilityWarn. The first-flap slot shows ONE fact, and in the
+         Living Room the lethal lid is the bigger one; his rule is drawn on
+         the floor instead, where he needs it. */
+      /* Neither collected nor scored, and not found either: CAUGHT. The
+         level says only that it has a hole in its floor - which doodad is
+         behind it is this roster's business, exactly as unlockMeet works -
+         and the save remembers the DOODAD in the same 'met' list the found
+         and the deed ones use, because a catch either happened or it did
+         not. */
+      unlockChase: 'whiteboard',
+      /* His own slate, one step darker and cooler. The art's dominant is
+         #5c6470 and taken straight it is neither Inari's #8d95a6 nor
+         Roller's #a7a6a0 by enough to tell at a glance on the rail; pushed
+         down and blue it is unmistakable, and on the rail the darkest grey
+         is the shark. The teeth cream was refused for Billy's reason (a
+         near-white sprite on a white board) and the gum maroon for
+         Saddam's - his #a4432a is two stalls away. */
+      accent: '#5a6878', accentDark: '#2e3640', accentLight: '#aebbc8',
+      sprite: { w: 330, h: 384, pivotX: 168.9, pivotY: 192.0, bodyR: 161.4, footOffset: 1.19 },
+      title: { role: 'perch', r: 19 }
     }
   ];
 
@@ -850,11 +906,35 @@ var Doodads = (function () {
     return null;
   }
 
-  /* found one. returns it if this was the moment, or null if it was
-     already known - so a second touch cannot fire the banner twice. */
+  /* THE DOODAD SWIMMING BEHIND THIS LEVEL, if any - meetable() with the
+     field renamed, and everything written above it applies word for word:
+     the level asks instead of naming an id, a falsy place returns null
+     rather than matching the twelve that carry no unlockChase at all, and
+     it asks meets() and not isUnlocked() so that IMP11 cannot take him out
+     of the world the way it once took Saddam out of the Garden.
+
+     It is a second function rather than a second argument to meetable()
+     because the two questions are asked from different places for
+     different reasons - who is hiding in this bay, and whether this bay's
+     floor still has a hole in it - and a level that one day had both
+     would want both answers, not one of them. */
+  function chaseable(place) {
+    if (!place) return null;
+    var best = bestReached();
+    for (var i = 0; i < LIST.length; i++) {
+      if (LIST[i].unlockChase === place && !meets(LIST[i], best)) return LIST[i];
+    }
+    return null;
+  }
+
+  /* found one, or caught one. returns it if this was the moment, or null if
+     it was already known - so a second touch cannot fire the banner twice.
+     The guard names both kinds, because without it a doodad that carries
+     neither field is written into the save as done the moment anything
+     passes it in - noteDeed states the same trap at length. */
   function noteMeet(d) {
     if (typeof d === 'string') d = BY_ID[d];
-    if (!d || !d.unlockMeet) return null;
+    if (!d || !(d.unlockMeet || d.unlockChase)) return null;
     var list = metIds();
     if (list.indexOf(d.id) >= 0) return null;
     list.push(d.id);
@@ -876,7 +956,7 @@ var Doodads = (function () {
      never learns what it bought. */
   function noteDeed(name) {
     /* noteMeet's guard, in the shape noteMeet states it: without it an
-       undefined name matches the eleven doodads that carry no unlockDeed
+       undefined name matches the twelve doodads that carry no unlockDeed
        field at all - `undefined === undefined` - and every one of them is
        written into the save as done. Nothing reaches it today, because the
        engine only ever names a deed it has a literal for, which is exactly
@@ -912,8 +992,8 @@ var Doodads = (function () {
      than the generous one. The achievements roster asks this: IMP11 opens
      every stall at once, and POULTRY CATCHER is a record of what the player
      DID, so a passkey must not hand it over. Split out of isUnlocked rather
-     than copied into js/achievements.js so that the six prices are written
-     down once - a seventh kind of lock is a line here and nowhere else. */
+     than copied into js/achievements.js so that the seven prices are written
+     down once - an eighth kind of lock is a line here and nowhere else. */
   function meets(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
@@ -921,34 +1001,37 @@ var Doodads = (function () {
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
     if (d.unlockGold && goldTaken(d.unlockGold.name) < d.unlockGold.need) return false;
-    /* one test for the found ones and the deed ones together, because they
-       share the one list: both are a yes that is remembered by the doodad's
-       own id, and neither has a number to fall short of */
-    if ((d.unlockMeet || d.unlockDeed) && metIds().indexOf(d.id) < 0) return false;
+    /* one test for the found ones, the deed ones and the chased one
+       together, because they share the one list: each is a yes that is
+       remembered by the doodad's own id, and none has a number to fall
+       short of */
+    if ((d.unlockMeet || d.unlockDeed || d.unlockChase) && metIds().indexOf(d.id) < 0) return false;
     return true;
   }
 
   /* DOES THIS DOODAD COST ANYTHING AT ALL?
 
-     The six prices are written down HERE, beside meets(), so a seventh kind
-     of lock is still one line in one file. It exists because the question
-     was being asked by building the answer: Achievements.doodadsBought()
-     called requirement() on all eight doodads purely to test the result for
-     truthiness, and requirement() allocates an object and concatenates two
-     strings for every priced one. Five objects and a dozen strings, thrown
-     away unread, once per point scored and - until the achievements screen
-     stopped asking an earned row for its progress - sixty times a second.
+     The seven prices are written down HERE, beside meets(), so an eighth
+     kind of lock is still one line in one file. It exists because the
+     question was being asked by building the answer:
+     Achievements.doodadsBought() called requirement() on all eight doodads
+     purely to test the result for truthiness, and requirement() allocates
+     an object and concatenates two strings for every priced one. Five
+     objects and a dozen strings, thrown away unread, once per point scored
+     and - until the achievements screen stopped asking an earned row for
+     its progress - sixty times a second.
 
      EVERY NEW KIND HAS TO BE ADDED HERE AS WELL AS TO meets(), and the two
      say different things: meets() asks whether the price was paid, this asks
      whether there was one. POULTRY CATCHER counts the doodads that are
      priced AND met, so a kind this test did not know about would make its
-     doodad free - it would never be counted toward the badge, and nine of
-     twelve would be as high as the badge could ever read. */
+     doodad free - it would never be counted toward the badge, and ten of
+     thirteen would be as high as the badge could ever read. */
   function priced(d) {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
     return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
-                    d.unlockMeet || d.unlockGold || d.unlockDeed));
+                    d.unlockMeet || d.unlockGold || d.unlockDeed ||
+                    d.unlockChase));
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey(),
@@ -1019,13 +1102,19 @@ var Doodads = (function () {
   /* What a locked doodad is still waiting for: the price to print, how far
      along the player is and what to call it. Here rather than on the select
      screen, so the card never has to know which kind of lock it is looking
-     at - and a seventh kind is a seventh branch in one place.
+     at - and an eighth kind is an eighth branch in one place.
 
      Every string is measured against drawLockedCard's fixed geometry: the
      price is drawn centred at VW/2 with spacing 2, so n characters measure
-     8n-2 px against a budget of about 460, and the longest of these is the
-     shut-room form of the capybara's at 42 characters and 334px. The plates
-     are spacing 1 (6n-1) and have to sit inside a stall's 92px pitch. */
+     7n-2 px against a budget of about 460, and the longest of these is the
+     shut-room form of the capybara's at 42 characters and 292px. The plates
+     are spacing 1 (6n-1) and have to sit inside a stall's 92px pitch.
+
+     7n-2 and not 8n-2: Font.measure (js/font.js:130-136) is
+     n*5*scale + (n-1)*spacing*scale, so spacing 2 at scale 1 is 5n + 2n - 2.
+     The old number was a glyph box of 6 rather than the font's 5, and every
+     width in this file derived from it read about an eighth too wide - a
+     comment that was buying headroom nobody had asked for. */
   function requirement(d) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return null;
@@ -1089,6 +1178,20 @@ var Doodads = (function () {
       return { price: 'BE HOT AND SOUR AT ONCE', plate: 'HOT + SOUR',
                hint: 'ONE BAY SHEDS BOTH', bar: false };
     }
+    /* a catch is one event as well, so no bar here either, and the copy is
+       written out for the deed's reason: there is exactly one chase and a
+       sentence reads better than a phrase assembled out of a level id.
+
+       It keeps the deed's secrecy rule too, and the same word for it. The
+       Whiteboard is the last bay of a secret room, so ONE BAY HAS A HOLE IN
+       IT is what the card says - true, naming nothing, and quite enough to
+       go looking with. The price does not say how to go down either: the
+       funnel and what landing in it costs are his own business, which is
+       what his lockedAbout is for. */
+    if (d.unlockChase) {
+      return { price: 'CATCH HIM IF YOU CAN', plate: 'AT LARGE',    /* 20 ch 138px at spacing 2; 8 ch 47px in a 92px pitch */
+               hint: 'ONE BAY HAS A HOLE IN IT', bar: false };      /* 24 ch, 143px */
+    }
     if (d.unlockAt) {
       return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
                plate: 'SCORE ' + d.unlockAt,
@@ -1126,8 +1229,11 @@ var Doodads = (function () {
        succulents and the limes; noteGold is what PlayScene calls on a catch,
        and it hands back whatever that catch just opened. */
     goldTaken: goldTaken, noteGold: noteGold,
-    /* meetable() takes the level id now - see its comment */
-    meetable: meetable, noteMeet: noteMeet, noteDeed: noteDeed,
+    /* meetable() takes the level id now - see its comment. chaseable()
+       takes one too, and noteMeet() is what answers both of them: a catch
+       and a find are one event in one save key. */
+    meetable: meetable, chaseable: chaseable,
+    noteMeet: noteMeet, noteDeed: noteDeed,
     isUnlocked: isUnlocked, meets: meets, priced: priced, firstUnlocked: firstUnlocked,
     masterKey: masterKey, setMasterKey: setMasterKey
   };

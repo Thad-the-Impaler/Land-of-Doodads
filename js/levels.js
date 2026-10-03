@@ -497,7 +497,18 @@ var Levels = (function () {
          because everything else here is worse */
       boonChance: 0.034, boonGap: 10,
       /* the markers come off the tray and start drawing */
-      lateScore: 16
+      lateScore: 16,
+      /* THERE IS A HOLE IN THIS BAY'S FLOOR, and this only says when it may
+         open and for how long you are down there. warpAt is the first plank
+         it may follow and warpSpan the spread above it, exactly as meetAt
+         and meetSpan name a hiding place; warpStay is how many planks the
+         stay lasts. The roll is start()'s, once per run, in js/scene_play.js
+         beside the meet's - and it only happens while Doodads.chaseable
+         says somebody is still behind this bay. Once he is caught the roll
+         comes back 0 and the floor is a floor again. WHAT is down there is
+         the roster's business and the art's, not this level's: nothing here
+         names it, the same way meetAt never names who is hiding. */
+      warpAt: 10, warpSpan: 10, warpStay: 10
     }
   };
 

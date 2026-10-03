@@ -185,7 +185,42 @@ var Audio3 = (function () {
     start:   function () { tone({ from: 392, to: 392, dur: 0.08, type: 'square', vol: 0.12 });
                            tone({ from: 523, to: 523, dur: 0.08, type: 'square', vol: 0.12, delay: 0.08 });
                            tone({ from: 659, to: 659, dur: 0.08, type: 'square', vol: 0.12, delay: 0.16 });
-                           tone({ from: 784, to: 784, dur: 0.2, type: 'square', vol: 0.12, delay: 0.24 }); }
+                           tone({ from: 784, to: 784, dur: 0.2, type: 'square', vol: 0.12, delay: 0.24 }); },
+
+    /* ---- the hole in the floor, and what is under it ----
+
+       SIX of these seven are a triangle, this table's quietest voice,
+       because they all happen while the room is already making noise -
+       the squares belong to the points, the plates and the fanfares, and
+       a hole in the floor that arrived on a square would be heard as
+       another pickup. BREACH is the seventh and has to be the exception:
+       it IS the flap, square and all, because the square is what the
+       player just got his wing back on. */
+    /* the funnel is still ahead of you: two notes up, two notes back,
+       which is the shape of a question and not of a prize */
+    funnelHint:function () { tone({ from: 440, to: 880, dur: 0.12, type: 'triangle', vol: 0.10 });
+                           tone({ from: 880, to: 440, dur: 0.14, type: 'triangle', vol: 0.08, delay: 0.12 }); },
+    /* and down. A long fall in the pitch with the air past the ears under
+       it - the one sound in the table that goes nowhere but down. */
+    funnel:  function () { tone({ from: 620, to: 110, dur: 0.40, type: 'triangle', vol: 0.14 });
+                           noise({ freq: 2400, dur: 0.35, vol: 0.07, q: 0.6 }); },
+    /* chalk on slate, and the low note is the room being a different room */
+    chalk:   function () { noise({ freq: 3200, dur: 0.28, vol: 0.12, q: 0.4 });
+                           tone({ from: 196, dur: 0.5, type: 'triangle', vol: 0.10 }); },
+    /* the board wiped, and the same low note taken back up: chalk's noise
+       one octave softer in the filter, then a rise where chalk held */
+    erase:   function () { noise({ freq: 1800, dur: 0.22, vol: 0.12, q: 0.5 });
+                           tone({ from: 330, to: 660, dur: 0.16, type: 'triangle', vol: 0.10 }); },
+    /* going under: the splash is the noise and the pitch follows him down */
+    dive:    function () { noise({ freq: 1400, dur: 0.20, vol: 0.18, q: 0.6 });
+                           tone({ from: 240, to: 90, dur: 0.18, type: 'triangle', vol: 0.10 }); },
+    /* and coming back up. It IS the flap, because that is what the player
+       just got back - a tight splash on top of it says where from. */
+    breach:  function () { SFX.flap();
+                           noise({ freq: 1100, dur: 0.14, vol: 0.12, q: 0.8 }); },
+    /* he is under a plank, and this fires on every one of them: bop's job
+       on bop's rules, one note, no noise, the quietest tone in the table */
+    under:   function () { tone({ from: 196, dur: 0.07, type: 'triangle', vol: 0.07 }); }
   };
 
   /* ---------------------------------------------------------- samples

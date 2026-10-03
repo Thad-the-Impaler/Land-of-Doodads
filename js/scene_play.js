@@ -139,7 +139,30 @@ var PlayScene = (function () {
      and the two his rate can bring early are the 25 and PULLET's 26, which
      is that same 25 one plank further on. Both arrive early for the same
      reason and with the same blessing: that is the reward working, not a
-     leak. */
+     leak.
+
+     AND THE ONE DELIBERATE BREAK IN THE PROOF ABOVE, which gets its own
+     paragraph because it is the only place the two totals are written apart.
+     A PLANK PASSED UNDER - the dive, js/doodads.js's `dive` field - pays NO
+     POINTS and still counts as DISTANCE. `score` is not written at all for
+     it, so checkPassed() and checkUnlocks() do not run either; `pace` IS
+     written, with the heat's multiplier on it exactly as a threaded plank
+     has.
+
+     Why, in the owner's terms: the plank he swam past does not pay, because
+     he did not thread it. But the level must not get EASIER for the one
+     doodad who can go round a plank - the spikes, the magnets and the late
+     phase have to arrive on the plank they arrive on for everybody, and all
+     three read `pace`. So for the twelve without the field nothing whatever
+     changes and the four-writes proof above holds to the integer; for the
+     one with it, `pace` runs AHEAD of `score` by exactly the number of
+     planks he swam under. A headless test reads that difference as the count
+     of dived planks, which is the honest way to see the ability working.
+
+     Note what is NOT in this exception. The planks of a WARP stay pay BOTH,
+     through the untouched body below: they are the player's points because
+     the owner said so, and they are distance because the stay is that many
+     planks of level. Only the dive splits the pair. */
   var pace = 0;
   var board = [];              /* the high score table as it stood when the run began */
   var rank = -1;               /* where this run lands on the table, -1 if it misses */
@@ -287,6 +310,73 @@ var PlayScene = (function () {
   var goldName = 'GOLD';
   var watchY0 = 0, watchY1 = 0, watchA = 0;   /* the gap she can see coming */
   var trotting = 0;            /* seconds of floor under a doodad that can */
+
+  /* ------------------------------------------------- THE HOLE IN THE FLOOR
+
+     A level may publish a WARP: an obstacle carrying `ob.warp`, and what is
+     on that field is ANOTHER ART MODULE. Fly into it and the engine swaps
+     `art` for that module for a set number of planks, then swaps it back.
+     This scene never learns the name of the place it leads to - it reaches
+     it only through `ob.warp` on the way in and `warp.home` on the way out -
+     so a second hole in a second bay is a field on an obstacle and not a
+     branch in here.
+
+     CEIL, FLOOR and CEIL_KILLS are deliberately NOT re-read across either
+     seam. Both ends of a warp are the same room, and not re-reading them
+     means a mis-authored module can never move a kill line out from under a
+     doodad mid-flight.
+
+     warp      null, or { art, home, need, scored } for as long as the stay
+               is on - which is the one test everything else in this file
+               asks: `if (warp)` means "we are somewhere else".
+     warpIn    seconds left of the pull INTO the hole. The world goes on
+               scrolling and nothing else updates at all.
+     warpOut   seconds left before the way back, set either by the planks
+               running out or by the catch that ends the stay early.
+     warpDone  the flag that says the stay is over. RAISED inside a
+               backwards walk over `obstacles` and SPENT by update() after
+               that walk returns, because endWarp() splices and splicing
+               under a live walk is the one thing this file legislates
+               against - see spookMeet for the whole of that reasoning.
+     warpHold  seconds the integrator is suspended on arrival, so a doodad
+               set down in an unfamiliar room is not already falling.
+     warpFlash the chalk clapped out of two erasers, at both seams.
+     warpHint  the heads-up is OWED: a gift's sentence, waiting for the
+               slot to be free while the hole is still ahead.
+     warpPlank which plank the hole stands one spacing after. Rolled in
+               start() exactly as meetPlank is, 0 if this run has none.
+     funnelOb  the warp obstacle itself while it is in the world. The pull
+               is drawn AT it, and it goes on scrolling with everything
+               else, so the doodad follows a moving target down.
+     dropHold  seconds of no falling hazards, so nothing is dropped into the
+               empty gap the hole stands in.                               */
+  var WARP_IN = 0.42, WARP_HOLD = 0.5, WARP_OUT = 1.0;
+  var warp = null;
+  var warpIn = 0, warpOut = 0, warpDone = false, warpHold = 0;
+  var warpFlash = 0, warpHint = false, warpPlank = 0;
+  var funnelOb = null;
+  var dropHold = 0;
+
+  /* ------------------------------------------------------------- THE DIVE
+
+     `doodad.dive` is a number of pixels: how far before a plank's left face
+     the floor stops being floor, for the one doodad who can go under it.
+     `diving` is the seconds left on a pass and `diveOb` is the plank being
+     passed. DIVE_MAX is a GUARD and not a duration - the pass ends at the
+     plank's far edge - and it is NEVER the thing that surfaces him. While a
+     plank is still over him the under-branch RENEWS this number instead of
+     spending it, because falling out of that branch under a plank is a
+     death on that same frame rather than a late surface; its comment has
+     the whole of that reasoning. And once he is clear of one, the far edge
+     comes first by a long way: `past` is `player.x - hitR() >= span.hi + 2`
+     and `span.hi` is `ob.x + 38`, so even a doodad pinned at X_MIN 32 has
+     passed the plank by ob.x = -19, which is 85px before the cull at
+     ob.x < -104. The plank culled out from under him therefore cannot
+     happen; this number survives as the backstop for a diveOb that has
+     stopped moving. */
+  var DIVE_MAX = 3.0;
+  var diving = 0, diveOb = null;
+
   var tune, level, roomRef, doodad;
   var readyPulse = 0;
   var prePause = 'play';
@@ -335,6 +425,19 @@ var PlayScene = (function () {
 
   function start() {
     state = 'ready';
+    /* THE ART IS RE-BOUND FIRST, and this is not belt and braces. start() is
+       what RETRY calls, and a run can end inside a warp: enterWarp() wrote
+       `art` and `FX`, and a retry that did not put them back would open the
+       next run in the other module's room - its backdrop up, its maker
+       building this bay's planks. enter() binds these too, where the level
+       is chosen; this is the line that survives a death in the hole.
+       CEIL, FLOOR and CEIL_KILLS are not re-read here for the same reason
+       they are not re-read across the swap: they never changed. */
+    art = level.art; FX = art.FX;
+    warp = null;
+    warpIn = 0; warpOut = 0; warpDone = false; warpHold = 0;
+    warpFlash = 0; warpHint = false; funnelOb = null; dropHold = 0;
+    diving = 0; diveOb = null;
     Input.setTouchMode('play');
     t = 0; runTime = 0;
     scroll = 0;
@@ -366,6 +469,19 @@ var PlayScene = (function () {
        lost him at plank 19 does not have to fly nineteen planks again to
        find out where he went. */
     meetPlank = tune.meetAt ? tune.meetAt + randInt(0, tune.meetSpan || 0) : 0;
+    /* AND THE SAME ROLL FOR THE HOLE IN THE FLOOR, for the same two reasons
+       meetPlank is rolled here: once per run, so it is not a per-plank
+       lottery some runs simply do not hold, and in start() rather than
+       enter(), so RETRY moves it.
+
+       Doodads.chaseable(level.id) is half the condition and not an
+       afterthought. The hole leads to a stay with no markers, no magnets and
+       no litter, so with nobody left to catch down there it would be a
+       once-per-run ten-plank holiday on this level's own high-score table
+       for the price of a dip. Once he is caught the hole closes - exactly as
+       a found hider's plank closes. */
+    warpPlank = (tune.warpAt && Doodads.chaseable(level.id))
+              ? tune.warpAt + randInt(0, tune.warpSpan || 0) : 0;
     fledPop = 0; fledName = '';
     bannerQueue.length = 0;
     lifePop = 0; boonBanner = 0; boonGap = 0; boonBonus = false; spikeArmed = false;
@@ -373,7 +489,8 @@ var PlayScene = (function () {
     goldName = 'GOLD';
     ceilHit = false;
     late = false;
-    run = { score: 0, time: 0, late: false, scroll: 0 };
+    run = { score: 0, time: 0, late: false, scroll: 0,
+            speed: tune.speedStart, px: X_START, py: (CEIL + FLOOR) / 2 };
     ringing = 0; stunTime = 0; ringAmp = 0; buzzTimer = 0;
     /* the stage itself, which is a DOM transform and so is not reset by
        zeroing any of the above: RETRY during a ring must not start the
@@ -451,6 +568,14 @@ var PlayScene = (function () {
      a hazard.                                                         */
 
   function spawnDrops(dt, d) {
+    /* NOTHING FALLS INTO THE HOLE'S GAP, and nothing falls during a stay.
+       This spawner is called separately from spawnAhead and knows nothing
+       about its `held`, so the hole buys its own quiet with a timer: the
+       magnets have been shedding since pace 5, and a magnet dropped into
+       the one gap the player has to get down into is a death in the middle
+       of a gift. `dropTimer` is simply frozen by this return and resumes
+       where it was, which is right - the magnets never left. */
+    if (warp || warpIn > 0 || dropHold > 0) return;
     if (tune.dropScore === undefined) return;
 
     if (!dropArmed) {
@@ -577,7 +702,13 @@ var PlayScene = (function () {
        moving one object argue with each other for as long as both are in
        reach. The tail reads this in the opposite direction and so leaves
        him alone too, which is also right - he is not a hazard to bat down. */
-    if (ob.type === 'boon') return !ob.taken && !ob.meet;
+    /* AND A HOLE IN THE FLOOR IS NOT A GIFT EITHER, for the first of those
+       two reasons raised to an absurdity: a magnet reach of 110px that reeled
+       a WARP into the doodad would take the player somewhere else from across
+       the room, and the sentence over the hole says LAND IN IT. The hunger
+       would also write ob.dx/ob.dy on it, which belong to the module drawing
+       the swirl. The tail reads this backwards and so leaves it alone too. */
+    if (ob.type === 'boon') return !ob.taken && !ob.meet && !ob.warp;
     return ob.type === 'drop' && (ob.spicy || ob.gold || ob.sour) && !ob.broken;
   }
 
@@ -747,6 +878,15 @@ var PlayScene = (function () {
   function takeMeet(ob) {
     var who = Doodads.noteMeet(ob.meet);
     ob.met = true;
+    /* AND A CATCH ENDS THE STAY. The planks were the chase's time limit and
+       not a sentence to be served after it, so catching him on plank four
+       brings the player back a second later with the banner still up, and
+       the rest of the planks are this bay's own and still count. One second
+       is the burst and the first beat of the banner on the other room's
+       floor; endWarp() does the rest. Above the `if (!who)` on purpose: he
+       was caught either way, and a stay that went on after a catch nobody
+       shouted about would be the same room with nothing left in it. */
+    if (warp) warpOut = WARP_OUT;
     if (!who) return;                       /* already known; just the flinch */
     /* The passkey guard every other unlock site in this file has had since
        IMP11 was built - checkBoonUnlocks, checkLimeUnlocks and checkUnlocks
@@ -899,6 +1039,13 @@ var PlayScene = (function () {
          because the two branches below both return early in their own ways
          and the question is already settled by the line above. */
       ob.seen = true;
+      /* AND A HIDER THE ART DRAWS ITSELF IS NOT DRAWN HERE. One line, for a
+         hiding place that is not a hiding place at all: the thing in the
+         other room is INKED ON THE ROOM LAYER by its own module, in its own
+         medium, and the sprite of whoever he turns out to be is never shown
+         until he is caught. `seen` is still set above it, so the spook rule
+         and everything else that reads it work on him unchanged. */
+      if (ob.selfDrawn) continue;
       if (ob.type === 'pillar') {
         var cut = meetY(ob);
         if (cut <= CEIL) continue;
@@ -1661,7 +1808,16 @@ var PlayScene = (function () {
          gap, so the only things in there to read are him and whatever the
          level's own carpet is doing - which is the dive the unlock is for. */
       var held = false;
-      if (meetPlank && ++planksUp === meetPlank) {
+      /* THE COUNT IS ITS OWN LINE NOW. It used to be a ++ inside the meet
+         test, so on a level with no tune.meetAt the test short-circuited and
+         nothing was ever counted: planksUp stayed 0 for the whole run on
+         seven of the nine levels. Two things read it now and the second of
+         them lives on a level with no hider, so the count has to happen
+         everywhere - and a headless test that asserted planksUp === 0 on
+         those seven was asserting a bug. The count is planks SPAWNED either
+         way; nothing about where anything is placed has moved. */
+      planksUp++;
+      if (meetPlank && planksUp === meetPlank) {
         var who = Doodads.meetable(level.id);
         if (who) {
           if (art.makeMeet) {
@@ -1676,9 +1832,41 @@ var PlayScene = (function () {
           }
         }
       }
+      /* THE HOLE IN THE FLOOR, one spacing past this plank.
+
+         ITS OWN `if` AND NOT AN `else` ON THE MEET. This bay has no hider
+         today, so chaining it off the meet happened to work - and a hider
+         added to this bay one day would then have silently eaten the hole,
+         which is a bug nobody would have gone looking for. `held` from the
+         meet still blocks it, because two things cannot own one gap.
+
+         AND IT STANDS IN THE MIDDLE OF A DOUBLED SPACING: a full spacing to
+         come down from the gap into it, and a full spacing of empty board
+         behind it, so plank N is at S, the hole at S + spacing and plank
+         N+1 at S + 2*spacing. The approach and the recovery are each
+         180-224px, 1.0-1.9s. A HALF spacing was 90-112px - half a second at
+         speedMax - and a player leaving a high gap with a flap just taken
+         needs about three quarters of a second to get down to the tray: the
+         hole could have been unreachable on the very run that offered it.
+         A miss has to be a miss and not a death. `held` clears this gap's
+         spike, litter and gift, and the extra spacing means no second
+         hazard roll happens in the empty half either. */
+      if (!held && warpPlank && planksUp === warpPlank && art.makeWarp && !warp) {
+        funnelOb = admit(art.makeWarp(spawnCursor + d.spacing, run));
+        held = true;
+        warpHint = true;                                /* the heads-up is owed */
+        /* and no magnet is dropped into that gap. Read BEFORE the cursor
+           moves: this is the distance from the doodad to 60px past the hole,
+           in seconds at the speed the room is running now. */
+        dropHold = (spawnCursor + d.spacing + 60 - player.x) / speed;
+        spawnCursor += d.spacing;                       /* the extra, empty spacing */
+      }
       admit(plank);
 
-      if (!held) {
+      /* and a stay has none of this: no markers, no magnets, no litter and
+         no gifts, which is the owner's "just 10 pillars" read as ONLY
+         pillars. Both guards come off together if that ever changes. */
+      if (!held && !warp) {
         /* hazards in the space between two pillars */
         if (spikesReady() && chance(d.spikes)) {
           var onCeiling = chance(0.42);
@@ -1798,6 +1986,13 @@ var PlayScene = (function () {
   function bodyR()   { return BODY_R * shrink(); }
 
   function flap() {
+    /* AND THE ARRIVAL HOLD ENDS HERE. The hold exists so a doodad set down
+       in an unfamiliar room is not already falling through it; the thumb
+       taking over is exactly the moment it has done its job, and a player
+       who knows where they are should never have to wait out the rest of it.
+       Zeroed before the integrator sees it: update() calls flap() from its
+       input block, above updatePlayer. */
+    warpHold = 0;
     var dn = down();
     var spring = springV();
     player.vy = flapV() - spring;
@@ -1824,6 +2019,173 @@ var PlayScene = (function () {
     }
   }
 
+  /* ------------------------------------------------------------- THE DIVE
+
+     GOES UNDER. `doodad.dive` pixels before a plank's left face, the floor
+     stops being floor: he flies into it, and he comes up the far side on his
+     own. PASSIVE BY CONSTRUCTION - no input starts it and none is required
+     to end it. The one input that touches it is the flap he already has,
+     which surfaces him early where it is safe to, which is Koa's precedent.
+
+     The axis is honestly named ROUTE: the thing he beats is the PLANK, not
+     the floor. Its floor half overlaps the trot and the glossary says so
+     rather than claiming a new verb; what no other doodad has is the way
+     under one.
+
+     "Near a plank" as a number: `dive` px before the face, through the 34px
+     plank. 114px, which is 63% of the floor at spacing 180 and 51% at 224 -
+     not "about half", and said so rather than rounded. It is NOT gated on
+     "the gap is unreachable from here": that is more machinery than the
+     ability is worth and would make the rule unpredictable from the
+     player's seat. The waterline drawn on the floor is what makes it
+     legible instead. */
+  function divePlank() {
+    if (!doodad.dive) return null;
+    var dp = null, i, ob;
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (ob.type === 'pillar' && player.x >= ob.x - doodad.dive && player.x <= ob.x + ob.w) { dp = ob; break; }
+    }
+    if (!dp) return null;
+    /* NOTHING STANDING IN THE WATER - one question, asked of diveSpans()
+       below, which the waterline asks as well so that the gap in the marks
+       IS this refusal. Without it the ability was simply false where it
+       mattered most: the Whiteboard's makeSpikes takes `x` as the stroke's
+       LEFT edge with `w` up to 30 and places it at mid +- 14, so a stroke
+       can run to mid + 44 while the window opens at mid + 10 at spacing 180.
+       With it, a diving doodad over a floor spike dies to it like anyone -
+       and because the window always begins AFTER a spike's left edge, no
+       submerged doodad ever reaches one from behind. */
+    if (diveBlocked(diveSpans([]), player.x)) return null;
+    return dp;
+  }
+
+  /* WHERE SOMETHING IS ACTUALLY STANDING IN THE WATER, in spans of screen x,
+     asked by divePlank() with the doodad's own x and by the waterline with
+     every mark it draws. ONE predicate for both, because the hole in the
+     marks is the only warning this rule ever gets and a second, narrower
+     drawing of it is a lie painted on the floor. It answers in spans rather
+     than per point because the waterline asks about twenty times a plank,
+     and a span list is one walk of the art's boxes a frame instead of
+     twenty.
+
+     Three things the obstacle's declared x-span could not answer, and all
+     three of them were wrong on a real bay:
+
+       A hazard that only RINGS is never the thing that refuses a dive. THE
+       DESK's notification carries `ob.stun` - it cannot kill anybody - and
+       it was taking the floor away from a doodad who then died on the
+       ground it had just been denied.
+
+       A hazard's HEIGHT is the ART'S to answer, so this asks rectsFor like
+       everything else that wants a box: `ob.x` and `ob.w` are a cull range
+       and not a body. That same notification's one box is 11px about an icon
+       that comes to rest at y 162..174 and is born no lower than 183, so its
+       bottom edge is 189 at the very worst against a diving doodad's hitbox
+       top of 220 - 31px of clear air, and nothing was in the water at all.
+       FLOOR - 2 * hitR() IS that top, because the dive is only offered
+       to a doodad already at `player.y + hitR() >= FLOOR`, so a box that
+       stops above the line is a box that could not have touched him down
+       there - and it scales with Turd and the shrivel like every other
+       threshold in this file instead of being a literal.
+
+       The refusal is his HITBOX overlapping a box, so a span is that box
+       swept by hitR(). A bare point test was 11px short at each end: on THE
+       COOP the nails are 2px columns and the declared `w` runs 4-7px past
+       the last of them, so there were bands either side of every heap where
+       the game painted water, refused the dive, and then charged
+       hurt('ground') with no nail standing near enough to kill him.
+
+     The bay this was written for is unaffected: the Whiteboard's floor
+     strokes are anchored at the tray and its rectsFor clips each box to
+     FLOOR, so a box does reach the water and a diving doodad over one still
+     dies to it, which is the sentence the brief wrote the rule for. Every
+     other bay's floor hazard reaches the tray too - the Coop's and the
+     Garden's and the Canopy's nails, the Construction blades, the Couch's
+     lowest drift band, the Mantle's pad and remote bodies - and the Deck's
+     mister stops at FLOOR - 14, which still crosses the 220. A mister that
+     is not spraying publishes no box at all, and refusing nothing there is
+     the honest answer: there is no spray to be standing in. */
+  function diveSpans(out) {
+    var hr = hitR(), top = FLOOR - 2 * hr, i, k, r, b, ob;
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (ob.type !== 'spike' || ob.side !== 'floor' || ob.stun) continue;
+      r = [];
+      art.rectsFor(ob, r);
+      for (k = 0; k < r.length; k++) {
+        b = r[k];
+        if (b[1] + b[3] > top) out.push([b[0] - hr, b[0] + b[2] + hr]);
+      }
+    }
+    return out;
+  }
+
+  function diveBlocked(spans, x) {
+    for (var i = 0; i < spans.length; i++) {
+      if (x >= spans[i][0] && x <= spans[i][1]) return true;
+    }
+    return false;
+  }
+
+  /* THE PLANK'S REAL SPAN, ASKED OF THE ART. `ob.x` and `ob.x + ob.w` are
+     the COLUMN's two edges and NOT the obstacle's: both modules' planks also
+     publish CAP boxes, 42 wide at `x - 4`, so the thing collide() will test
+     him against reaches `ob.x + 38`. A far-edge threshold derived from
+     `ob.w` therefore surfaced him two pixels inside the lower cap and killed
+     him on the frame he came up - measured in the browser, not reasoned
+     about, and it killed him on every plank he swam under. Asking rectsFor
+     is also the only version of this that stays true for a module nobody has
+     written yet: the art owns its own boxes, and this is the engine asking
+     rather than assuming. */
+  function plankSpan(ob) {
+    var r = [], lo = ob.x, hi = ob.x + (ob.w || 34), i, e;
+    art.rectsFor(ob, r);
+    for (i = 0; i < r.length; i++) {
+      if (r[i][0] < lo) lo = r[i][0];
+      e = r[i][0] + r[i][2];
+      if (e > hi) hi = e;
+    }
+    return { lo: lo, hi: hi };
+  }
+
+  /* UP OUT OF THE FLOOR. Reached three ways and by no new gesture: the flap
+     he already has, the plank's far edge, and the guard. */
+  function breach() {
+    /* A FLAP WHILE HE IS UNDER THE PLANK ITSELF IS SWALLOWED, because
+       surfacing into a column is a death the thumb would read as a bug - he
+       pressed the button he has always pressed and it killed him. The
+       under-branch's far-edge threshold is hitR()-derived for the same
+       reason: the lower column's box reaches FLOOR and circleHitsRect hits
+       whenever his hitbox has not cleared it, so a bare "+ 10" surfaced him
+       inside it one frame in several - and `ob.w` is not that edge either,
+       which is what plankSpan() above is for. */
+    var hr = hitR();
+    if (diveOb) {
+      var sp = plankSpan(diveOb);
+      if (player.x + hr > sp.lo && player.x - hr < sp.hi) return;
+    }
+    diving = 0; diveOb = null;
+    /* FLOOR - bodyR() against the kill test at FLOOR - hitR(): 229 + 11 =
+       240 < 242 for a full doodad, 240.6 for Turd and 240.8 shrivelled. He
+       comes up standing on the surface and from that frame he is everyone -
+       a full flap's rise is 48px over 0.57s, and the next plank's face is at
+       least 146px away, so he cannot chain planks under the sand. */
+    player.y = FLOOR - bodyR();
+    player.vy = flapV();
+    player.flapTimer = 0.22;
+    player.angle = -0.36;
+    player.spring = 0;
+    Audio3.play('breach');
+    Screen.shake(1.5, 0.12);
+    for (var i = 0; i < 14; i++) {
+      particles.push({ x: player.x + rand(-8, 8), y: FLOOR - 1,
+                       vx: rand(-50, 50) - speed * 0.25, vy: rand(-140, -60),
+                       life: rand(0.3, 0.8), g: 300,
+                       col: chance(0.5) ? FX.ground : FX.groundHi });
+    }
+  }
+
   function updatePlayer(dt) {
     /* horizontal nudging */
     var want = 0;
@@ -1837,6 +2199,75 @@ var PlayScene = (function () {
     player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
     if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
 
+    /* hoisted above the dive branch, which needs it and returns before the
+       old declaration point further down. One call either way, and `var` is
+       function-scoped, so there was never two of anything here. */
+    var hr = hitR();
+
+    /* UNDER THE FLOOR, TAKEN INSTEAD OF THE INTEGRATOR. He is held at a
+       fixed depth and comes up on his own at the plank's far edge - or, if
+       the plank stopped moving, on the guard once he is clear of it, which
+       is the only thing the guard is ever allowed to do. The sideways nudge
+       above still runs, because steering is everyone's; nothing below this
+       does, because none of it is true down there. */
+    if (diving > 0) {
+      diving -= dt;
+      player.y = FLOOR - 4;
+      player.vy = 0;
+      player.angle = damp(player.angle, 0, 0.0008, dt);
+      /* MARKED AT THE PASS AND NOT AT THE DIP. A doodad who dips at the
+         window's near edge and flaps straight back up has threaded the gap
+         honestly and is paid for it, so the flag that costs a plank its
+         points is only raised once his leading edge is actually under the
+         face. The scoring block reads it; see the pace declaration. */
+      if (!diveOb.dived && player.x + hr > diveOb.x) diveOb.dived = true;
+      if (chance(dt * 30)) {
+        particles.push({ x: player.x - 8, y: FLOOR - 1,
+                         vx: -speed * 0.4 + rand(-20, 0), vy: rand(-30, -5),
+                         life: 0.3, g: 200, col: FX.groundHi });
+      }
+      /* BOTH EDGES OFF plankSpan() AND NOT OFF ob.w - see its comment: the
+         caps stick out 4px each side, and a threshold two pixels short of
+         them brought him up inside the lower one. The two tests have to
+         agree on where the plank ends, so they ask the same question. */
+      var span = plankSpan(diveOb);
+      var overPlank = player.x + hr > span.lo && player.x - hr < span.hi;
+      var past = player.x - hr >= span.hi + 2;
+      /* AND THE GUARD MAY NOT PUT HIM DOWN UNDER A PLANK. He steers while
+         he is under - the sideways nudge at the top of this function is
+         still his - and MOVE_SPD 116 is the whole of the scroll: holding
+         LEFT, the plank closes on him at `speed - 116`, which is nothing at
+         all against the Whiteboard's speedStart of 116, about 3px/s once
+         that ramp has had three seconds, and NEGATIVE against the Coop's 104
+         until he is pinned at X_MIN. So a pass entered with the face still
+         ahead of him outlasts these three seconds with the plank over him,
+         and that is not a rare frame: replayed at 1/60 over every entry in
+         the lane, holding LEFT from player.x 264 or further right did it on
+         the Whiteboard and from 226 on the slower Coop.
+
+         Falling out of here in that state is not a late surface, it is a
+         death on this very frame. collide()'s own gate is `diving > 0` and
+         it is already false by the time it runs, the two lines above are
+         holding him at FLOOR - 4, and FLOOR - 4 + hitR() is 249 against a
+         FLOOR of 242 - the ground kill, which is the whole reason breach()
+         comes up at FLOOR - bodyR() and 240 instead. breach() would refuse
+         to surface him into the column anyway, since its own test is this
+         same overPlank, so inside the span there was no exit at all.
+
+         While a plank is over him the guard therefore WAITS. Renewed to its
+         full length and not to `dt`, because game.js clamps a frame delta
+         that is zero or negative to exactly 0, and `diving = 0` fails the
+         test above next frame and drops him out exactly as before. It cannot
+         wait forever: the plank is scrolling, and a culled one sits at
+         ob.x < -104, where `span.hi` is under -66 and overPlank would need
+         him at player.x < -55, 87px below X_MIN. This is the guard deferred
+         for the one case it was never meant to catch, not the guard
+         disarmed - the two real exits above are untouched. */
+      if (!overPlank && (past || diving <= 0)) breach();
+      else if (diving <= 0) diving = DIVE_MAX;
+      return;
+    }
+
     /* gravity, integrated so a flap always reaches the same height. The
        clamp bounds him toward HIS OWN down. For the eleven it is the old
        Math.min(vy + g * dt, maxFall()) to the float, because nothing they do
@@ -1849,9 +2280,33 @@ var PlayScene = (function () {
        moves him 545 / 30 + 0.5 * 1180 / 900 = 18.167 + 0.656 = 18.8px a
        frame, not 18.2: that is the step every thin-hitbox argument on the
        roster has to be measured against. */
+    /* AND THE ARRIVAL HOLD, which is these two lines and nothing else. For
+       half a second after a warp the integrator is suspended, so a doodad
+       set down in the middle of an unfamiliar room is not already falling
+       through it while the player works out where they are. It ends early on
+       the first flap - flap() zeroes it - and it is SHOWN while it runs, by
+       the ring below, because a game that quietly stops obeying gravity has
+       to say so. From rest at mid-room the fall to the kill line is 0.41s,
+       so this is 0.9s of thumb time at the outside and never a free ride.
+       vy is already 0 here: enterWarp() set it, and nothing writes it during
+       the hold except a flap, which ends the hold in the same frame. */
     var g = grav();
-    player.y += player.vy * dt + 0.5 * g * dt * dt;
-    player.vy = clamp(player.vy + g * dt, -maxFall(), maxFall());
+    if (warpHold > 0) {
+      warpHold -= dt;
+      /* A RING OF CHALK DUST THAT THINS AND COLLAPSES as the hold runs out:
+         two specks a frame, one of them only in the last quarter second, so
+         the tell gets quieter rather than stopping dead. Born on the ring
+         and moving inward, which is the shape of something gathering. */
+      for (var h = 0; h < (warpHold < 0.25 ? 1 : 2); h++) {
+        var ha = rand(0, TAU), hc = Math.cos(ha), hs = Math.sin(ha);
+        particles.push({ x: player.x + hc * 20, y: player.y + hs * 20,
+                         vx: -hc * 30, vy: -hs * 30,
+                         life: 0.2, g: 0, col: FX.motesHi });
+      }
+    } else {
+      player.y += player.vy * dt + 0.5 * g * dt * dt;
+      player.vy = clamp(player.vy + g * dt, -maxFall(), maxFall());
+    }
     player.flapTimer -= dt;
     if (player.spring > 0) player.spring = Math.max(0, player.spring - dt * 4);
 
@@ -1867,8 +2322,8 @@ var PlayScene = (function () {
        simply leave through the top of the screen. It stops at the HITBOX
        radius rather than the drawn one: the floor kills at the hitbox, and
        the two edges of the room have no business using different numbers -
-       so both use the forgiving one. */
-    var hr = hitR();
+       so both use the forgiving one. `hr` is the one hoisted to the top of
+       this function for the dive branch; it was declared here. */
     if (CEIL_KILLS) {
       ceilHit = player.y - hr < CEIL;
       if (ceilHit) {
@@ -1906,6 +2361,42 @@ var PlayScene = (function () {
       trotting = 0;
     }
 
+    /* AND BESIDE A PLANK THE FLOOR IS WATER, for the one doodad it is water
+       for. Here rather than in collide() for the trot's reason: by the time
+       collide() looks he is already under, and its ground check cannot fire.
+
+       The test is THE KILL TEST'S OWN LINE - `player.y + hr >= FLOOR` - so
+       the dive is only ever an alternative to a death he was already taking.
+       Away from a plank, or where something is actually standing in the
+       water, nothing is written here and the ground kills him like anyone.
+
+       AND IT IS AN ENTRY, which is why the sound, the shake and the ten
+       specks are unconditional: the only states that reach it are a doodad
+       who has never dived and one whose pass is over, because `diving <= 0`
+       with `diveOb` still set cannot happen. The under-branch either keeps
+       the timer above zero or breaches, breach() nulls `diveOb`, and die()
+       clears both. That is worth knowing because it was once false: the
+       guard could expire with a plank still over him, and this block then
+       re-armed the same pass and played the dive a second time, and a third
+       three seconds later. The fix is up there, where the question belongs,
+       and not a `dp !== diveOb` here - a test here would answer a renewal
+       with a refusal, and a refused dive at the floor is a death. */
+    if (doodad.dive && diving <= 0 && player.y + hr >= FLOOR) {
+      var dp = divePlank();
+      if (dp) {
+        diving = DIVE_MAX; diveOb = dp;
+        player.y = FLOOR - 4; player.vy = 0; player.spring = 0;
+        Audio3.play('dive');
+        Screen.shake(1.2, 0.1);
+        for (var sp = 0; sp < 10; sp++) {
+          particles.push({ x: player.x + rand(-8, 8), y: FLOOR - 1,
+                           vx: rand(-60, 40) - speed * 0.3, vy: rand(-120, -40),
+                           life: rand(0.3, 0.7), g: 320,
+                           col: chance(0.5) ? FX.ground : FX.groundHi });
+        }
+      }
+    }
+
     /* tilt follows the arc, in HIS frame - v is his speed toward his own
        floor - so a doodad dropping noses down and one thrown up noses up,
        and for a helium doodad the same two sentences hold with the room
@@ -1923,6 +2414,13 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    /* and he is never under the floor on the way out. This is unreachable
+       while diving - collide() returns on its first line, and the ground
+       test is in there - but it is cleared anyway, because the dying branch
+       integrates a tumble and drawChars would still be clipping him to the
+       waterline: the player would watch an empty room while the results
+       screen waited on a doodad falling somewhere nobody can see. */
+    diving = 0; diveOb = null;
     /* and the spring goes with it. It is decayed in updatePlayer, which the
        dying and dead branches never reach - so a doodad killed on the frame
        after a rebound kept his 22% stretch for the whole tumble and the
@@ -2129,6 +2627,15 @@ var PlayScene = (function () {
   /* walked backwards, because catching or cooking an egg takes it out
      of the list mid-loop */
   function collide() {
+    /* NOTHING ABOVE THE FLOOR CAN REACH HIM WHILE HE IS UNDER IT, including
+       this function's own ground test and its ceiling flag. A falling magnet,
+       a kernel, a pepper or a lime passes straight over a submerged doodad -
+       and nothing is CAUGHT down there either, which is the other half of
+       the same rule and the reason this is a return rather than a filter per
+       obstacle: under is under. It is also why a dive can never reach hurt()
+       and so can never reach save() - the trouble is not in the world he is
+       in. See the pace declaration for what the pass costs him instead. */
+    if (diving > 0) return;
     var rects = [];
     var hr = hitR();
     for (var i = obstacles.length - 1; i >= 0; i--) {
@@ -2150,6 +2657,16 @@ var PlayScene = (function () {
          touched is out of the world, found or not, and a met one that somehow
          reached here has nothing left to give. */
       if (ob.type === 'boon') {
+        /* A HOLE IN THE FLOOR IS NOT A GIFT EITHER, and it is read ABOVE the
+           hider fork for the reason the hider fork is read above the gift:
+           the most specific clothes win. Two things make it its own branch
+           rather than a third case of the splice below. It DOES NOT SPLICE -
+           the funnel stays in the world and goes on being drawn, and
+           scrolling, for the whole of the pull, which is what the doodad
+           follows down. And it RETURNS, as hurt() does rather than as the
+           splice does: the world is about to change under the rects this
+           loop is holding, so the loop has no further business. */
+        if (ob.warp) { if (!ob.taken) takeWarp(ob); return; }
         if (ob.meet) { if (!ob.met) takeMeet(ob); }
         else takeBoon(ob);
         obstacles.splice(i, 1);
@@ -2195,6 +2712,158 @@ var PlayScene = (function () {
        head-bump is one death and not one per frame spent held against the
        moulding. */
     if (ceilHit) { ceilHit = false; hurt('ceiling'); }
+  }
+
+  /* ------------------------------------------------------------- THE HOLE
+
+     A WARP IS A GIFT THAT MOVES YOU. The engine knows three things about the
+     place it leads to: it is an art module, it arrives on `ob.warp`, and the
+     way home is `warp.home`. Everything else down there - the floor, the
+     walls, the planks and whoever is swimming about in it - belongs to that
+     module, and this scene never learns its name.
+
+     NO LIFE IS SPENT ANYWHERE IN HERE. hurt() is never called and `invuln`
+     is never touched at either seam: being swallowed is not being hit.
+
+     Three functions and a timer between them. takeWarp() starts the pull and
+     splices nothing. enterWarp() is the cut, called by the pull running out,
+     from update() and nowhere else. endWarp() is the way back, called by the
+     warpDone flag, from update() and nowhere else - see the comment on that
+     flag at the head of this file for why it may never be called from
+     inside a walk over `obstacles`. */
+
+  function takeWarp(ob) {
+    warpIn = WARP_IN;
+    ob.taken = true;          /* the box is gone, and isPowerUp is false */
+    ob.gulp = 1;              /* and the art spins its swirl up */
+    funnelOb = ob;
+    /* player.x, player.y and player.vy are NOT WRITTEN. The pull is a DRAW -
+       see drawChars - so there is never a frame on which he has been put
+       somewhere the collision path would disagree with, and a pull that was
+       somehow interrupted leaves him exactly where he was. */
+    Audio3.play('funnel');
+    Screen.shake(1.5, 0.3);
+  }
+
+  /* The dust going down with him: a ring closing on the throat, half this
+     bay's own puff and half THE DESTINATION'S - read off the module sitting
+     on the obstacle, which is the only thing in this file that knows where
+     the hole goes. Minus `speed` in x because the funnel is still scrolling
+     and the dust has to travel with it rather than hang in the air behind. */
+  function pullDust() {
+    var k = 1 - warpIn / WARP_IN;
+    var r = 22 - 16 * k;
+    var far = funnelOb.warp && funnelOb.warp.FX ? funnelOb.warp.FX.motesHi : FX.motesHi;
+    for (var i = 0; i < 5; i++) {
+      var a = rand(0, TAU), ca = Math.cos(a), sa = Math.sin(a);
+      particles.push({ x: funnelOb.x + ca * r, y: FLOOR - 14 + sa * r * 0.5,
+                       /* 60 tangential and 80 inward, the y of both halved
+                          because the ring is drawn as an ellipse */
+                       vx: -sa * 60 - ca * 80 - speed,
+                       vy: (ca * 60 - sa * 80) * 0.5,
+                       life: rand(0.25, 0.45), g: 0,
+                       col: chance(0.5) ? FX.puffHi : far });
+    }
+  }
+
+  function enterWarp(mod) {
+    /* EVERY OBSTACLE GOES, all of them. A spike, a drop, a litter scrap and
+       a boon all carry art-specific payloads, and the next rectsFor would be
+       the wrong module asked about the wrong shape. The marker planks in
+       flight go too, and that is not a loss: he is down at the tray and the
+       next plank is a second away. `.length = 0` and not a fresh array,
+       because inspect() is holding this one. */
+    obstacles.length = 0;
+    funnelOb = null;
+    warp = { art: mod, home: level.art, need: tune.warpStay || 10, scored: 0 };
+    /* THE SWAP, and it is `art` and `FX` only. CEIL, FLOOR and CEIL_KILLS
+       are held: both ends are the same room, and not re-reading them means a
+       mis-authored module cannot move a kill line out from under a doodad
+       mid-flight. FX has to be re-bound because the room dust and the speed
+       streaks read it live; particles already in the air keep the colour
+       they were born with and expire inside a second, which is right - they
+       are the old room's dust, and it went with him. */
+    art = mod;
+    FX = art.FX;
+    player.y = (CEIL + FLOOR) / 2;
+    player.vy = 0; player.vx = 0; player.angle = 0;
+    player.flapTimer = 0; player.spring = 0;      /* x untouched */
+    warpHold = WARP_HOLD;
+    /* The first plank of the stay stands at x 540 - 2.4s away at speedMax,
+       3.7s at speedStart - which is long enough for the arrival to be over
+       before it arrives. `lastGapY` is CARRIED on purpose: the gap ladder
+       goes on climbing from where it had got to, so the stay is the same
+       level at the same difficulty in a different room. `scroll`, `runTime`
+       and difficulty() are all carried for the same reason. */
+    spawnCursor = VW + 60;
+    warnLines = null; hazardWarn = 0; warpHint = false; dropHold = 0;
+    warpFlash = 0.18;
+    Audio3.play('chalk');
+    Screen.shake(2.5, 0.25);
+    /* AND WHOEVER IS DOWN THERE, through the same three-way split the plank
+       hider has: THE ROSTER says who is behind this level, THE ART says how
+       he is built, and the engine sets `meet` after the maker returns so the
+       module never learns whose hiding place it just made. There is no
+       arrival sentence of the engine's own: there is no stay without
+       somebody to catch, so his is the only one there is to say. */
+    var who = Doodads.chaseable(level.id);
+    if (who && art.makeMeet) {
+      var m = admit(art.makeMeet(VW + 48, run));
+      m.meet = who;
+    }
+    var w = who && art.WARN && art.WARN.chase;
+    if (w) { warnLines = w; hazardWarn = 2.4; }
+  }
+
+  function endWarp() {
+    /* the room he is leaving, read BEFORE the swap puts this bay's own
+       pigment back: the burst is made of the place that is going away */
+    var dust = FX.motesHi;
+    for (var i = obstacles.length - 1; i >= 0; i--) {
+      var ob = obstacles[i];
+      /* THE PLANKS STAY, and that is the whole of why this reads as a
+         teleport and not as a crash. Both makePillar's produce the same
+         fields, so this bay's drawPillar and rectsFor take the departing
+         room's planks as their own on the very next frame: nothing on screen
+         moves a pixel, it simply changes medium under the player. */
+      if (ob.type === 'pillar') continue;
+      /* and if he was still out there when the planks ran out, he GOT AWAY.
+         The spook's caption, built the same way for the same reasons -
+         measured, clamped, anchored above him - and Doodads.noteMeet is NOT
+         called, so the save never learns his name and the next hole offers
+         him again. He got away, he was not lost. */
+      if (ob.meet && !ob.met && fledPop <= 0) {
+        var who = ob.meet;
+        fledName = who.name + ' GOT AWAY';
+        var half = Math.min(VW / 2, Math.ceil(Font.measure(fledName, 1) / 2) + 2);
+        fledX = clamp(meetAtX(ob), half, VW - half);
+        fledY = Math.max(CEIL + 6, meetAtY(ob) - 22);
+        fledPop = 0.9;
+      }
+      obstacles.splice(i, 1);
+    }
+    art = warp.home;
+    FX = art.FX;
+    warp = null;
+    warpOut = 0;
+    /* The stay's sentence yields to this bay's own. No heads-up is given on
+       the return, deliberately: the late phase arms on the next update() if
+       `pace` crossed its threshold in the hole, spikesReady() was never
+       called during the stay and spawnDrops returned on its first line, so
+       all three resume on the first eligible gap - and the magnet sentence
+       does not re-fire, because dropArmed latched long ago and the magnets
+       never left. */
+    warnLines = null; hazardWarn = 0;
+    warpFlash = 0.14;
+    Audio3.play('erase');
+    Screen.shake(2, 0.2);
+    /* player.x, y, vy and angle are UNTOUCHED. Nothing swallowed him this
+       time; he is simply somewhere else, in mid-flap, mid-arc. */
+    for (var k = 0; k < 30; k++) {
+      particles.push({ x: player.x, y: player.y,
+                       vx: rand(-90, 90), vy: rand(-110, -20),
+                       life: rand(0.4, 0.9), g: 120, col: dust });
+    }
   }
 
   /* --------------------------------------------------------- update */
@@ -2248,6 +2917,11 @@ var PlayScene = (function () {
     if (nervePop > 0) nervePop -= dt;
     if (goldPop > 0) goldPop -= dt;
     if (fledPop > 0) fledPop -= dt;
+    if (warpFlash > 0) warpFlash -= dt;
+    /* the quiet before the hole. It runs down here with every other timer so
+       that pause, the death tumble and the results screen all freeze it,
+       which is the rule every one of these obeys. */
+    if (dropHold > 0) dropHold -= dt;
     if (flickCool > 0) {
       flickCool -= dt;
       if (flickCool <= 0) { flickCool = 0; if (state === 'play') flickReady(); }
@@ -2316,7 +2990,13 @@ var PlayScene = (function () {
           Audio3.play('pause');
           return;
         }
-        if (Input.hit('up')) flap();
+        /* THE ONE INPUT EITHER NEW THING TOUCHES, and neither of them adds a
+           gesture to it. Under the floor the flap is a SURFACE - no new
+           button, and the move is passive without it. Inside the pull it is
+           NOTHING AT ALL: this line sits above where the warp block does its
+           own return, and a wingbeat out of a doodad already spiralling down
+           a hole reads as the game having lost track of him. */
+        if (Input.hit('up') && warpIn <= 0) { if (diving > 0) breach(); else flap(); }
       }
       runTime += dt;
       var d = difficulty();
@@ -2365,16 +3045,68 @@ var PlayScene = (function () {
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
+
+      /* THE PULL INTO THE HOLE. Everything below this is skipped for its
+         0.42s: no late arm, no spawning, no player, no hunger, no collide.
+         The world GOES ON SCROLLING, because the lines above this already
+         ran - so the funnel slides left with everything else and the doodad,
+         which is drawn and not moved, follows a moving target down.
+
+         The two decays are repeated from the foot of this branch because
+         this return would otherwise skip them, freezing a score pop and a
+         PASSED banner for the length of the pull. */
+      if (warpIn > 0) {
+        warpIn -= dt;
+        pullDust();
+        if (scorePop > 0) scorePop -= dt;
+        if (passedTimer > 0) passedTimer -= dt;
+        if (warpIn <= 0) enterWarp(funnelOb.warp);
+        return;
+      }
+      /* THE WAY BACK, AND THE ONE PLACE IT MAY BE TAKEN. warpDone is raised
+         inside moveObstacles' backwards walk, by the last plank's scoring
+         block, and warpOut is set inside collide()'s, by the catch that ends
+         the stay early. endWarp() splices, so it runs HERE: after both of
+         those loops have returned and nobody is holding an index. It is the
+         hazard spookMeet documents, with a bigger blast radius - the thing
+         being removed is at index 0, admitted before any plank of the stay,
+         so splicing it from under the walk would double-step the plank just
+         processed and cull by a stale index. */
+      if (warpOut > 0) { warpOut -= dt; if (warpOut <= 0) warpDone = true; }
+      if (warpDone) { warpDone = false; endWarp(); }
+
       /* The late phase, armed once and never disarmed. It is read AFTER
          moveObstacles, because that is what banks the plank that just
          crossed the threshold, and BEFORE `run` is built, so the very first
-         maker call of the phase already knows. */
-      if (!late && tune.lateScore !== undefined && pace >= tune.lateScore) {
+         maker call of the phase already knows. Not during a stay: the
+         sentence is about this bay's own hazards, which do not follow the
+         player down the hole - it arms on the first update() after the
+         return instead, off the `pace` the stay was adding to all along. */
+      if (!late && !warp && tune.lateScore !== undefined && pace >= tune.lateScore) {
         late = true;
         var wl = art.WARN && art.WARN.late;
         if (wl && hazardWarn <= 0) { warnLines = wl; hazardWarn = 2.4; Audio3.play('warn'); }
       }
-      run = { score: pace, time: runTime, late: late, scroll: scroll };
+      /* THE HEADS-UP FOR THE HOLE, which is a GIFT'S sentence and so yields
+         to a hazard's. It is spoken on the first frame the slot is free
+         while the hole is still ahead of the player, and DROPPED otherwise:
+         a sentence pointing at something already behind you is worse than
+         silence. THEY START WHERE YOU FLY arms at pace 16, inside the window
+         the hole is rolled in, so the two do collide - and the spikes win,
+         because one of them ends runs. */
+      if (warpHint && hazardWarn <= 0) {
+        if (funnelOb && !funnelOb.taken && funnelOb.x > player.x + 100) {
+          var ww = art.WARN && art.WARN.warp;
+          if (ww) { warnLines = ww; hazardWarn = 2.4; Audio3.play('funnelHint'); }
+        }
+        warpHint = false;
+      }
+      /* `speed`, `px` and `py` are for a hider that has to hold station or
+         find the player - see the contract comment on stepBoon. Built after
+         the loop, so an art module reads them one frame stale, which is the
+         staleness the Deck already accepted. */
+      run = { score: pace, time: runTime, late: late, scroll: scroll,
+              speed: speed, px: player.x, py: player.y };
       spawnAhead();
       spawnDrops(dt, d);
       updatePlayer(dt);
@@ -2513,39 +3245,90 @@ var PlayScene = (function () {
          land: a gift stays where it was put and a hopper goes on hopping, so
          the hook is a step and not a step-and-finish. No art module outside
          the Couch publishes this, and a level that does not simply has still
-         boons, exactly as before. */
+         boons, exactly as before.
+
+         AND THE FOURTH ARGUMENT IS `run`, which is the same object a maker
+         gets, with three fields on it that only a STEP has any use for.
+         Three sentences, because getting any of them wrong is a boon that
+         drifts out of the room:
+
+         THE ENGINE TOOK THE ROOM'S SPEED OFF BEFORE YOU WERE CALLED. The
+         `ob.x -= spd * dt` above runs on every obstacle as the walk reaches
+         it, so by the time a step sees its boon the boon has already slid
+         left this frame. A step that writes nothing holds still in the
+         WORLD and travels left on the screen, which is what a gift does.
+
+         SO A HIDER THAT HOLDS STATION ADDS `run.speed` BACK. Work in the
+         SCREEN frame and say so: `ob.x += (run.speed + ob.vx) * dt`, where
+         a vx of 0 holds station against the player and +130 opens 130px/s on
+         him. A bare +-130 in the world frame was slower than the room and
+         read as something being left behind.
+
+         `px` AND `py` ARE FOR A HIDER THAT HAS TO FIND THE PLAYER, and they
+         are one frame stale by design - `run` is rebuilt after this loop
+         returns, which is at most a pixel on the frame it matters. A MAKER
+         MAY NOT READ THEM: a maker runs at the right-hand edge of the world
+         and the player's position there is an accident of when the spawner
+         happened to catch up, so a thing placed off it would be placed
+         differently at two framerates. Station-keeping is a step's job.
+
+         The Couch ignores the fourth argument entirely, which is the test
+         that this is additive. */
       if (ob.type === 'boon' && art.stepBoon) {
-        art.stepBoon(ob, dt, obstacles);
+        art.stepBoon(ob, dt, obstacles, run);
         if (ob.bounced) bounced(ob);
       }
       if (ob.type === 'pillar' && !ob.scored && ob.x + ob.w < player.x) {
         ob.scored = true;
-        var base = spicy > 0 ? SPICY_MULT : 1;
-        /* a plank threaded close is worth two of itself, and the heat still
-           doubles on top of that - nerve and spicy stack, which is exactly
-           the run you want to be having */
-        var tight = doodad.nerve && ob.skim !== undefined &&
-                    ob.skim >= 0 && ob.skim <= doodad.nerve;
-        var worth = tight ? base * 2 : base;
-        /* `pay` is Donkey Joe's flat rate: a plank is worth that many of
-           itself to him, on top of the heat and on top of a tight pass -
-           one more factor on the expression everyone's planks go through,
-           not a different expression. It is THE PLANK AND ONLY THE PLANK.
-           BOON_BONUS and GOLD_BONUS are not his to double: those are
-           handed to him, a plank is threaded, and the plank is the thing
-           the helium makes hard - the owner's words were "for each
-           pillar". Do not "fix" this. For the eleven without the field
-           the rate is 1 and worth * 1 is worth, to the integer. `pace`
-           takes the undoubled worth; its declaration says why the level
-           must never learn his rate. */
-        var pay = doodad.pay || 1;
-        score += worth * pay;
-        pace += worth;
-        scorePop = (spicy > 0 || tight) ? 0.42 : 0.32;
-        Audio3.play(spicy > 0 ? 'scoreHot' : 'score');
-        if (tight) takeNerve(ob, base * pay);
-        checkPassed();
-        checkUnlocks();
+        /* A PLANK PASSED UNDER PAYS NOTHING AND STILL COUNTS AS DISTANCE,
+           which is the one deliberate break in the pace declaration's proof
+           and has its own paragraph there. `score` is not written, so
+           checkPassed() and checkUnlocks() never run for it - there is
+           nothing for either of them to see. `pace` IS, with the heat's
+           multiplier on it exactly as a threaded plank has, because a hot
+           run has always met its spikes sooner and swimming does not change
+           that. updateNerve already writes NO_NERVE that far under a gap, so
+           a dive can never be a tight pass either.
+           THE COST HAS A SOUND. Everyone else hears two notes here; silence
+           would read as a dropped frame rather than as a decision, so a dull
+           low note says the plank went by and paid nothing. No scorePop. */
+        if (ob.dived) {
+          pace += spicy > 0 ? SPICY_MULT : 1;
+          Audio3.play('under');
+        } else {
+          var base = spicy > 0 ? SPICY_MULT : 1;
+          /* a plank threaded close is worth two of itself, and the heat still
+             doubles on top of that - nerve and spicy stack, which is exactly
+             the run you want to be having */
+          var tight = doodad.nerve && ob.skim !== undefined &&
+                      ob.skim >= 0 && ob.skim <= doodad.nerve;
+          var worth = tight ? base * 2 : base;
+          /* `pay` is Donkey Joe's flat rate: a plank is worth that many of
+             itself to him, on top of the heat and on top of a tight pass -
+             one more factor on the expression everyone's planks go through,
+             not a different expression. It is THE PLANK AND ONLY THE PLANK.
+             BOON_BONUS and GOLD_BONUS are not his to double: those are
+             handed to him, a plank is threaded, and the plank is the thing
+             the helium makes hard - the owner's words were "for each
+             pillar". Do not "fix" this. For the eleven without the field
+             the rate is 1 and worth * 1 is worth, to the integer. `pace`
+             takes the undoubled worth; its declaration says why the level
+             must never learn his rate. */
+          var pay = doodad.pay || 1;
+          score += worth * pay;
+          pace += worth;
+          scorePop = (spicy > 0 || tight) ? 0.42 : 0.32;
+          Audio3.play(spicy > 0 ? 'scoreHot' : 'score');
+          if (tight) takeNerve(ob, base * pay);
+          checkPassed();
+          checkUnlocks();
+        }
+        /* THE PLANKS OF A STAY, COUNTED WHICHEVER WAY THEY WERE PASSED -
+           outside the fork on purpose, because the stay is a distance and a
+           plank swum under is distance travelled. Raising a flag is ALL this
+           is allowed to do: endWarp() splices, and this is the inside of a
+           backwards walk. update() spends the flag once this loop returns. */
+        if (warp && ++warp.scored >= warp.need) warpDone = true;
       }
       if (ob.x + (ob.w || 40) < -70) obstacles.splice(i, 1);
     }
@@ -2602,6 +3385,11 @@ var PlayScene = (function () {
       }
     }
 
+    /* and the rule the one doodad with it flies by, drawn on the floor it
+       is a rule about - after everything standing on that floor, so the
+       waterline is the last thing laid over it */
+    if (doodad.dive) drawDiveWater(ctx);
+
     for (var d = 0; d < dust.length; d++) {
       var p = dust[d];
       ctx.fillStyle = p.bright ? FX.motesHi : FX.motes;
@@ -2618,6 +3406,45 @@ var PlayScene = (function () {
 
     if (heat > 0.02) drawHeat(ctx);
     if (shrivel > 0.02) drawSourAura(ctx);
+  }
+
+  /* SHOWING THE RULE. An ability the player cannot see is not one, so the
+     stretch of floor that is water gets a broken waterline along it whenever
+     he is low enough for the question to be live - 60px, about a flap and a
+     half. Every other mark sits a pixel higher, which is what makes a row of
+     3px dashes read as a surface rather than as a dotted line.
+
+     IN FX.groundHi: THE BAY'S OWN GROUND HIGHLIGHT, never the destination's
+     chalk and never the doodad's accent, because this ships to all nine bays
+     and a mark on a floor has to belong to that floor. And NO MARK WHERE THE
+     DIVE IS REFUSED, so the refusal is drawn as well as the permission - but
+     asked of diveSpans(), the function divePlank() asks, and NOT of a second
+     test of its own. That second test was a bare point against the hazard's
+     declared span: 11px narrower than the rule at each end, where the game
+     painted water, refused the dive and then charged hurt('ground'), and
+     11px wider than the rule where the hazard was a harmless hovering thing
+     that was never in the water at all. The gap in the marks is where the
+     dive will not be given, hitR() halo and all, which is the only warning
+     that rule ever gets. */
+  function drawDiveWater(ctx) {
+    if (player.y <= FLOOR - 60) return;
+    /* ONE walk of the art's boxes for the whole waterline rather than one
+       per 6px mark: the marks are about twenty to a plank and rectsFor walks
+       a polyline, so the question is asked once a frame and answered from
+       the list. */
+    var spans = diveSpans([]);
+    ctx.fillStyle = FX.groundHi;
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar') continue;
+      var x0 = ob.x - doodad.dive, x1 = ob.x + ob.w;
+      if (x1 < 0 || x0 > VW) continue;
+      for (var x = x0, n = 0; x <= x1; x += 6, n++) {
+        if (x < -3 || x > VW) continue;
+        if (diveBlocked(spans, x)) continue;
+        ctx.fillRect(Math.round(x), FLOOR - (n % 2 ? 3 : 2), 3, 1);
+      }
+    }
   }
 
   /* The lime, in the room: a green light closing in on the doodad, and
@@ -2671,6 +3498,43 @@ var PlayScene = (function () {
   function drawChars(ctx) {
     /* whoever is hiding goes first, so the player passes in front of him */
     drawMeet(ctx);
+
+    /* THE PULL INTO THE HOLE IS A DRAW. player.x and player.y are never
+       written by it, which is why there is no frame on which he is somewhere
+       the collision path would disagree with. He follows the funnel - still
+       scrolling left with the rest of the world - spins one and a half turns
+       into the throat on a cubed ease, and is one fifth his size at the cut.
+       Above everything below it, because none of the rest is about him any
+       more: the blink, the heat throb and the rebound stretch all belong to
+       a doodad who is still flying. */
+    if (warpIn > 0 && funnelOb) {
+      var pk = 1 - warpIn / WARP_IN, k = pk * pk * pk, sq = 1 - 0.8 * k;
+      Doodads.draw(ctx, doodad.id,
+                   lerp(player.x, funnelOb.x, k), lerp(player.y, FLOOR - 10, k),
+                   bodyR(), player.angle + k * k * TAU * 1.5, false,
+                   { squashX: sq, squashY: sq });
+      return;
+    }
+
+    /* UNDER THE FLOOR, clipped at the waterline - the plank hider's own clip,
+       and the fin, the head and the teeth are what is left above it.
+
+       ABOVE THE GRACE BLINK ON PURPOSE. A doodad who takes a save and then
+       dives would otherwise show nothing at all above the water for 1.7s,
+       and a save puts him near the floor, which is exactly where he dives.
+       The blink becomes an alpha here instead: the same information without
+       the absence. */
+    if (diving > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, CEIL, VW, FLOOR - CEIL);
+      ctx.clip();
+      Doodads.draw(ctx, doodad.id, player.x, FLOOR + 5 + Math.sin(t * 7), bodyR(), -0.6, false,
+                   invuln > 0 ? { alpha: 0.5 } : undefined);
+      ctx.restore();
+      return;
+    }
+
     /* blink through the grace period, faster as it runs out */
     if (invuln > 0 && Math.floor(invuln * (invuln < 0.6 ? 22 : 12)) % 2 === 0) return;
     /* mouth open while his hunger has hold of something, and only if he
@@ -2724,6 +3588,25 @@ var PlayScene = (function () {
       Tint.rect(ctx, 0, 0, 6, VH, '#c9f0dd', rim * 12);
       Tint.rect(ctx, VW - 6, 0, 6, VH, '#c9f0dd', rim * 12);
     }
+    /* CHALK CLAPPED OUT OF TWO ERASERS, at both seams of a warp. The save's
+       own shape - a wash plus four rim tints - because it is the same kind
+       of event: the run carries straight on underneath it and the player has
+       to keep seeing the room they have just arrived in. The arrival is
+       0.18s and the return 0.14s against the same divisor, so the way back
+       is the quieter of the two, which is right: one of them is a surprise
+       and the other is a thing the player has been counting down to. */
+    if (warpFlash > 0) {
+      var wa = ctx.globalAlpha;
+      var wk = clamp(warpFlash / 0.18, 0, 1);
+      ctx.globalAlpha = wa * wk * 0.55;
+      ctx.fillStyle = '#e9efe4';
+      ctx.fillRect(0, 0, VW, VH);
+      ctx.globalAlpha = wa;
+      Tint.rect(ctx, 0, 0, VW, 6, '#e9efe4', wk * 12);
+      Tint.rect(ctx, 0, VH - 6, VW, 6, '#e9efe4', wk * 12);
+      Tint.rect(ctx, 0, 0, 6, VH, '#e9efe4', wk * 12);
+      Tint.rect(ctx, VW - 6, 0, 6, VH, '#e9efe4', wk * 12);
+    }
     if (spicyFlash > 0) {
       var fa = ctx.globalAlpha;
       ctx.globalAlpha = fa * clamp(spicyFlash / 0.14, 0, 1);
@@ -2760,7 +3643,14 @@ var PlayScene = (function () {
         outline: spiced ? '#5c1a08' : UI.C.shadow,
         wave: spiced ? t * 9 : undefined, waveAmp: 1
       });
-      drawChase(ctx, 34 + s * 7 + 4);
+      /* THE CHASE LINE'S SLOT, WHICH A STAY BORROWS. There is no table to
+         chase down there - the place the hole leads to is not a level, has no
+         scores and no card - so the slot shows the one number that is true
+         instead. A PASSED banner still wins it: that is news about the table
+         this run IS on, and it is gone in under two seconds. */
+      var cy = 34 + s * 7 + 4;
+      if (warp && passedTimer <= 0) drawStay(ctx, cy);
+      else drawChase(ctx, cy);
       drawLives(ctx);
       drawSpicy(ctx);
       drawSour(ctx);
@@ -3194,6 +4084,17 @@ var PlayScene = (function () {
      a whiteboard, a plaster ceiling - it disappears entirely. The score
      above it has had an outline since the first level for the same reason;
      this is general, not the Whiteboard's special case. */
+  /* and what stands in that line's place during a stay: how many planks are
+     left of it. In gold with the shadow every line in this slot carries,
+     because in a LIGHT room a dim grey disappears entirely - and the room a
+     hole leads to may be any colour at all. Clamped at 0 so the frame
+     between the last plank and endWarp() cannot print a negative. */
+  function drawStay(ctx, y) {
+    if (state === 'dead' || state === 'entry') return;
+    UI.text(ctx, 'PLANKS LEFT: ' + Math.max(0, warp.need - warp.scored), VW / 2, y,
+            { align: 'center', colour: UI.C.gold, shadow: UI.C.shadow });
+  }
+
   function drawChase(ctx, y) {
     if (state === 'dead' || state === 'entry') return;
     if (passedTimer > 0) {
@@ -3442,6 +4343,22 @@ var PlayScene = (function () {
     }
   }
 
+  /* THE ONE THING IN A STAY NOTHING ELSE IN inspect() CAN SEE: the hider the
+     art draws and moves itself. Reported in the art's own terms - the five
+     fields it writes - because the thing a headless test has to assert is
+     that a cruising hider HOLDS STATION, which is a fact about its x against
+     the player's and nothing this scene computes. Null when there is none,
+     which is also the answer after a catch. */
+  function selfDrawnMeet() {
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.meet && ob.selfDrawn) {
+        return { x: ob.x, y: ob.y, mode: ob.mode, under: !!ob.under, face: ob.face };
+      }
+    }
+    return null;
+  }
+
   return {
     enter: enter, exit: exit, update: update, drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
     targets: function () { return hot; },
@@ -3468,6 +4385,20 @@ var PlayScene = (function () {
                                        off - fledPop is the only trace the
                                        spook leaves anywhere */
                                     meetPlank: meetPlank, fled: fledPop > 0,
+                                    /* and the same window onto the hole in
+                                       the floor, because a headless test
+                                       cannot see any of this any other way:
+                                       whether we are down there, which plank
+                                       this run rolled for it, how much of the
+                                       stay is left, whether the floor has him
+                                       at this instant, where the funnel is
+                                       while it is still takeable, and what
+                                       the art is doing with its own hider */
+                                    warp: !!warp, warpPlank: warpPlank,
+                                    stay: warp ? { need: warp.need, scored: warp.scored } : null,
+                                    diving: diving,
+                                    funnel: funnelOb && !funnelOb.taken ? { x: funnelOb.x } : null,
+                                    shark: selfDrawnMeet(),
                                     flick: doodad && doodad.flick ? doodad.flick.reach : 0,
                                     banners: bannerQueue.map(function (b) { return b.kind + ':' + (b.it.id || b.it.name); }),
                                     meetOn: obstacles.filter(function (o) { return o.meet && !o.met; }).length,

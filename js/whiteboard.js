@@ -228,6 +228,25 @@ var Whiteboard = (function () {
     potOrange:  '#c9783f',
     potHi:      '#e8a46e',
 
+    /* ---- THE FUNNEL, and the only three pigments in this table that
+       are not the bay's own. Everything above is a thing somebody drew
+       on this board or left lying in its tray; these three are a colour
+       the board does not own, and that is the entire reason they work.
+       The funnel's bowl is not a drawing of a hole, it IS the hole, and
+       what shows through it is the slate of the place it leads to.
+
+       The header's value rule still holds and is why the green is
+       allowed to be this dark: 101 against the ink's 23 is 78 clear
+       points, which is more than the 74 the red bar magnet keeps. The
+       HUE rule does the rest - nothing else in the bay is green, so no
+       pixel of this can be read as a stroke, and nothing else in the
+       bay shows a colour the bay does not own. See bakeFunnel. */
+    funnelDeep: '#45765e',   /* 101 - the inside of the bowl. Lifted off
+                                the Chalkboard's own slate at 65, because
+                                a hole seen from a lit room is lit        */
+    swirl:      '#8fc0a4',   /* 174 - the whirlpool turning in the bowl   */
+    funnelDust: '#d8e3d3',   /* the chalk dust leaking back out of it     */
+
     /* ---- the marker tray along the bottom */
     trayChannel:'#8f949b',
     trayDeep:   '#6a6f76',
@@ -333,6 +352,14 @@ var Whiteboard = (function () {
        start at, and a player who does not learn that will keep reading a
        half-drawn stroke as a half-length one. */
     late:  ['▲ MARKERS ▲', 'THEY START WHERE YOU FLY'],
+    /* THE ONLY GIFT IN THE GAME THAT IS ANNOUNCED, because it is the
+       only one that changes the level you are playing and a player who
+       flies over it has not declined it, they have missed it. The arrows
+       point DOWN, which is the gift's direction in this bay and the
+       opposite of the two hazards above - and it is a gift's sentence,
+       so it yields to a hazard's: the funnel asks for the slot and only
+       takes it if nothing lethal wants it (see PlayScene's warpHint). */
+    warp:  ['▼ A FUNNEL ▼', 'LAND IN IT. IF YOU CAN.'],
     /* the lid here is the frame's top rail, not a ceiling - see bakeTop */
     ceil:  ['▲ THE FRAME ENDS HERE ▲', 'THE TOP RAIL IS SOLID']
   };
@@ -1719,6 +1746,219 @@ var Whiteboard = (function () {
     return t;
   }
 
+  /* ================================================== THE FUNNEL
+
+     A kitchen funnel standing in the tray, mouth up, drawn in the
+     parabola's blue with the fat nib - and the inside of its bowl is
+     not board. It is the slate of the place it leads to, with a
+     whirlpool turning in it and chalk dust leaking back out, and it is
+     the only green thing, the only hole and the ONLY THING THAT TURNS
+     anywhere in this bay. Three separations for one object, because
+     this one object is the only gift on the board that does not give
+     you a point or a life - it gives you somewhere else to be.
+
+     40x34, blitted at (round(ob.x) - 20, FLOOR - 34), so the tile's
+     last row is FLOOR and the spout ends on the tray lip rather than
+     hanging in the air over it. In tile coordinates, x right and y down
+     from that top-left corner:
+
+       rim          (2,2)  -> (38,2)    36 wide - ten wider than the
+                                        26px body a pillar would have,
+                                        so it reads as a MOUTH, not a
+                                        pipe, from the right-hand edge
+       bowl sides   (2,2)  -> (15,21)
+                    (38,2) -> (25,21)
+       spout        (15,21) -> (15,33)  10 wide, down to the lip
+                    (25,21) -> (25,33)
+
+     Every stroke is pline2 - the fat nib the parabola and the face were
+     drawn with - so the funnel is 2px like every other drawing in here
+     and can never be confused with the 3px zigzag or the 34px bar. The
+     hand wobble is the thing that keeps it from reading as a diagram,
+     and the endpoints are never moved, so the spout still meets the lip
+     and the walls still meet the rim. */
+  var FUNNEL_W = 40, FUNNEL_H = 34;
+
+  /* one stroke, walked in 5-7px steps with the joints jittered a pixel
+     off the dominant axis. 5 to 7 and not a fixed 6: a fixed step is a
+     wave with a period, and a wave with a period is a machine. */
+  function wobble(c, r, x0, y0, x1, y1, col) {
+    var dx = x1 - x0, dy = y1 - y0;
+    var len = Math.sqrt(dx * dx + dy * dy);
+    var horiz = Math.abs(dx) > Math.abs(dy);
+    var px = x0, py = y0, t = 0, step, nt, nx, ny, j;
+    while (t < 1) {
+      step = (5 + Math.floor(r() * 3)) / len;
+      nt = Math.min(1, t + step);
+      nx = x0 + dx * nt; ny = y0 + dy * nt;
+      if (nt < 1) {
+        j = Math.floor(r() * 3) - 1;              /* -1, 0 or +1 */
+        if (horiz) ny += j; else nx += j;
+      }
+      pline2(c, px, py, nx, ny, col);
+      px = nx; py = ny; t = nt;
+    }
+  }
+
+  function bakeFunnel() {
+    var t = makeCanvas(FUNNEL_W, FUNNEL_H), c = t.ctx;
+    var r = mulberry32(4411);
+    var y, lx, rx;
+
+    /* THE INSIDE GOES DOWN FIRST, so the wall lands on top of it and
+       the bowl has no thread of board showing inside its own ink. The
+       span is taken a pixel wide of each plotted column on both sides,
+       because pline2's stamp is a 2x2 drawn DOWN AND RIGHT of the pixel
+       it is plotted at and the wobble can carry it a pixel either way:
+       at its outermost the wall still has green behind it, and at its
+       innermost it simply covers a pixel of green, which is what a
+       thick nib does to the thing it is outlining. */
+    c.fillStyle = P.funnelDeep;
+    for (y = 2; y <= 20; y++) {
+      lx = Math.round(2 + 13 * (y - 2) / 19);
+      rx = Math.round(38 - 13 * (y - 2) / 19);
+      c.fillRect(lx + 1, y, rx - lx, 1);
+    }
+    /* the throat, straight down to the clip at row 33 - the spout pours
+       into the tray and the tray lip is painted over it by drawFloor */
+    c.fillRect(16, 21, 10, FUNNEL_H - 21);
+
+    /* and the wall. ONE stream for all five strokes, taken in this
+       order, so the tile is the same tile on every boot and the funnel
+       the player learns on plank 11 is the funnel they get on the
+       retry. */
+    wobble(c, r,  2,  2, 38,  2, P.inkBlue);     /* the rim             */
+    wobble(c, r,  2,  2, 15, 21, P.inkBlue);     /* the left bowl wall  */
+    wobble(c, r, 38,  2, 25, 21, P.inkBlue);     /* the right bowl wall */
+    wobble(c, r, 15, 21, 15, 33, P.inkBlue);     /* the left spout      */
+    wobble(c, r, 25, 21, 25, 33, P.inkBlue);     /* the right spout     */
+
+    /* AND THE ONE PASS THAT MAKES THE WOBBLE SAFE, which is here because
+       the first version of this tile did not have it and the tile was
+       WRONG: the fill above is laid out row by row off the ideal
+       trapezoid, and the rim is a hand line that steps a pixel up and
+       down across the top of it. Wherever the rim stepped DOWN, the
+       fill had already painted green on the row above where the ink
+       actually landed - ten columns of 1px green fringe floating over
+       the lip, measured.
+
+       A green pixel OUTSIDE the vessel is the one thing this object may
+       not do. It is the only green in the bay, the header's hue rule is
+       what lets it be this dark, and that rule reads "the inside of the
+       bowl": green over the rim is not an inside, it is a smudge on a
+       white board, and at 1x it reads as a second thinner lip in a
+       colour the bay does not own.
+
+       So: walk each column from the top and drop every green pixel
+       until the first pixel of wall. Green with no ink over it is green
+       that is not in the bowl. It cannot eat anything legitimate - the
+       bowl is closed at the top by the rim and on the sides by the
+       walls, so every pixel of true interior has ink somewhere above it
+       in its own column, including the spout's, whose own walls are
+       over it. The bottom stays open on purpose: the spout pours into
+       the tray and drawFloor paints the lip over that row. */
+    var g0 = parseInt(P.funnelDeep.slice(1, 3), 16),
+        g1 = parseInt(P.funnelDeep.slice(3, 5), 16),
+        g2 = parseInt(P.funnelDeep.slice(5, 7), 16);
+    var img = c.getImageData(0, 0, FUNNEL_W, FUNNEL_H), d = img.data;
+    var col, i, wall;
+    for (col = 0; col < FUNNEL_W; col++) {
+      wall = false;
+      for (y = 0; y < FUNNEL_H && !wall; y++) {
+        i = (y * FUNNEL_W + col) * 4;
+        if (d[i + 3] === 0) continue;                      /* board showing */
+        if (d[i] === g0 && d[i + 1] === g1 && d[i + 2] === g2) d[i + 3] = 0;
+        else wall = true;                                  /* the ink: stop */
+      }
+    }
+    c.putImageData(img, 0, 0);
+    return t;
+  }
+
+  /* THE SWIRL. Four frames, 28x10, three concentric ellipses with a
+     quarter of each one missing, and the missing quarter walks 90
+     degrees per frame.
+
+     A broken ring whose gap goes round reads as rotation, and it costs
+     four blits: the magnets' precedent, and the magnets' reason - the
+     Bayer grid is anchored in user space and a ctx.rotate on a layer
+     that scrolls boils the pixels (see the header). All three rings
+     share the gap, so what the eye follows is ONE wedge of missing
+     chalk sweeping round the bowl, rather than three rings arguing
+     about which way they are going.
+
+     rx 13/9/5 against ry 4/3/2 is a circle seen at a steep angle, which
+     is what the inside of a funnel standing in a tray is. 1px, because
+     the swirl is the one mark in the bay allowed to be finer than a
+     doodle: it is not something somebody drew, it is water. */
+  var SWIRL_RX = [13, 9, 5], SWIRL_RY = [4, 3, 2];
+  var SWIRL_W = 28, SWIRL_H = 10, SWIRL_FRAMES = 4;
+
+  /* WHERE THE SWIRL SITS INSIDE THE FUNNEL TILE, and the reason these are
+     two named numbers rather than two literals in drawFunnel: the mask
+     below and the blit in drawFunnel both come off this pair, so the
+     water cannot drift out of the bowl by somebody adjusting one of
+     them. The tile goes down at (x - 20, FLOOR - 34) and the swirl at
+     (x - 14, FLOOR - 29), which is these two exactly. */
+  var SWIRL_DX = 6, SWIRL_DY = 5;
+
+  function bakeSwirl(i, funnelTile) {
+    var t = makeCanvas(SWIRL_W, SWIRL_H), c = t.ctx;
+    var cx = 14, cy = 5, gap0 = i * (TAU / SWIRL_FRAMES);
+    var k, s, a, steps;
+    c.fillStyle = P.swirl;
+    for (k = 0; k < 3; k++) {
+      /* stepped off the ring's own circumference, so the big one comes
+         out solid and the small one is not plotted forty times into the
+         same pixel */
+      steps = Math.max(48, Math.ceil(TAU * SWIRL_RX[k] * 2));
+      for (s = 0; s < steps; s++) {
+        a = s / steps * TAU;
+        if (wrap(a - gap0, TAU) < TAU / 4) continue;        /* the gap */
+        c.fillRect(cx + Math.round(Math.cos(a) * SWIRL_RX[k]),
+                   cy + Math.round(Math.sin(a) * SWIRL_RY[k]), 1, 1);
+      }
+    }
+
+    /* AND THE BOWL CROPS IT, which is the second thing measured rather
+       than assumed. The swirl is a 28x10 RECTANGLE and the bowl is a
+       taper: at the swirl's own bottom rows the outer ring is 27px wide
+       and the bowl has already closed to about 20, so the ring's lower
+       arc ran straight through the blue wall and, in three places, out
+       onto the bare board beyond it - 34 pixels on the ink and 3 outside
+       the funnel altogether, counted across the four frames.
+
+       Either one is the same offence as green over the rim. The 3 put
+       the bay's only green on the white board outside the vessel; the 34
+       chew pale pixels out of the one 2px outline that makes the thing
+       read as something somebody DREW, and they do it at the shoulders,
+       where the taper is the whole silhouette.
+
+       So each frame is cropped to the funnel's INTERIOR once, at bake
+       time, against the tile it will be blitted into. Water stops at the
+       wall, which is what water does, and the blit stays a single
+       drawImage with no clip and no per-frame work. */
+    var fd = funnelTile.ctx.getImageData(0, 0, FUNNEL_W, FUNNEL_H).data;
+    var g0 = parseInt(P.funnelDeep.slice(1, 3), 16),
+        g1 = parseInt(P.funnelDeep.slice(3, 5), 16),
+        g2 = parseInt(P.funnelDeep.slice(5, 7), 16);
+    var img = c.getImageData(0, 0, SWIRL_W, SWIRL_H), d = img.data;
+    var sx, sy, si, fi, fx, fy;
+    for (sy = 0; sy < SWIRL_H; sy++) {
+      for (sx = 0; sx < SWIRL_W; sx++) {
+        si = (sy * SWIRL_W + sx) * 4;
+        if (d[si + 3] === 0) continue;
+        fx = sx + SWIRL_DX; fy = sy + SWIRL_DY;
+        fi = (fy * FUNNEL_W + fx) * 4;
+        if (fx < 0 || fx >= FUNNEL_W || fy < 0 || fy >= FUNNEL_H ||
+            fd[fi + 3] === 0 ||
+            fd[fi] !== g0 || fd[fi + 1] !== g1 || fd[fi + 2] !== g2) d[si + 3] = 0;
+      }
+    }
+    c.putImageData(img, 0, 0);
+    return t;
+  }
+
   /* ------------------------------------------------------------ build */
 
   function build() {
@@ -1782,6 +2022,26 @@ var Whiteboard = (function () {
     T.sucRosetteUp = bakeRosette(true);
     T.sucPot       = bakePot(false);
     T.sucPotUp     = bakePot(true);
+    /* the hole and the water in it - see bakeFunnel */
+    T.funnel  = bakeFunnel();
+    T.swirl   = [];
+    /* the funnel first: each swirl frame is cropped to that tile's bowl */
+    for (var sw = 0; sw < SWIRL_FRAMES; sw++) T.swirl.push(bakeSwirl(sw, T.funnel));
+
+    /* AND THE PLACE THE FUNNEL GOES, which is why this line is in this
+       function and not in some loader. Levels.buildArt walks lv.art and
+       nothing else, and the Chalkboard is deliberately in no level entry
+       - it is not a level, it has no cover, no high-score key and no
+       row on the select screen - so if this call is not here nothing
+       ever bakes it and the first landing in a funnel arrives in an
+       empty room with no tiles in it.
+
+       It is LAST because it is not this bay's furniture. It is safe
+       because Chalkboard.build() is self-guarded (`if (T.board)
+       return;`), so the second boot of this level costs nothing, and
+       because it does its own LivingRoom.build() for exactly the reason
+       the first line of this function does. */
+    Chalkboard.build();
   }
 
   /* ========================================================= drawing */
@@ -2209,6 +2469,9 @@ var Whiteboard = (function () {
   function boonY(ob) { return ob.y === undefined ? FLOOR - 12 : ob.y; }
 
   function drawBoon(ctx, ob) {
+    /* a funnel is a boon with somewhere else in it: no plant, no pot, no
+       sparkle, and it stays on the board after it is taken (see makeWarp) */
+    if (ob.warp) { drawFunnel(ctx, ob); return; }
     if (ob.taken) return;
     var high = ob.y !== undefined && ob.y < 120;
     var ax = Math.round(ob.x), ay = Math.round(boonY(ob));
@@ -2245,6 +2508,44 @@ var Whiteboard = (function () {
       var s = wrap(clock * 0.012 + ob.phase + i * 0.25, 1);
       ctx.fillStyle = P.sucHi;
       ctx.fillRect(rx - 9 + Math.round(s * 18), ry - 12 + (i % 2) * 20, 1, 1);
+    }
+  }
+
+  /* -------------------------------------------------------- the funnel
+
+     The glow goes down FIRST and under everything, because a gift glows
+     in this bay and because this one has to be readable from the
+     right-hand edge: it enters at x 578 to 824 and the player gets two
+     and a half to six seconds of green on a white wall to decide
+     whether to come down off a gap for it. Then the tile, then the
+     swirl inside the bowl, then the dust - the dust last because half
+     of its travel is ABOVE the tile's top row.
+
+     The swirl's frame and the dust's climb both come off `clock`, the
+     level's own clock in PIXELS OF SCROLL, for the reason the
+     succulent's sparkle does: a paused board is a still board, and a
+     turning hole behind the pause scrim is a hole somebody can line
+     themselves up on at their leisure. The one exception is the gulp -
+     once it has been landed in, the swirl spins up to three times the
+     speed and keeps turning while the pull takes the player down. */
+  function drawFunnel(ctx, ob) {
+    var x = Math.round(ob.x), k, s;
+
+    LivingRoom.glow(ctx, x, FLOOR - 18, 24, 'rgba(143,192,164,0.28)',
+                    'rgba(69,118,94,0.12)', 'rgba(69,118,94,0)');
+    ctx.drawImage(T.funnel.canvas, x - 20, FLOOR - FUNNEL_H);
+    ctx.drawImage(T.swirl[Math.floor(wrap(clock * (ob.gulp > 0 ? 0.09 : 0.03)
+                                          + ob.phase * 4, SWIRL_FRAMES))].canvas,
+                  x - 20 + SWIRL_DX, FLOOR - FUNNEL_H + SWIRL_DY);
+
+    /* three specks going up out of the bowl on a sine, which is the only
+       thing in the bay leaving the board's plane - and 1px, so it is
+       dust and not a fourth ring of the swirl */
+    ctx.fillStyle = P.funnelDust;
+    for (k = 0; k < 3; k++) {
+      s = wrap(clock * 0.02 + ob.phase + k * 0.33, 1);
+      ctx.fillRect(x - 2 + k * 2 + Math.round(Math.sin(s * TAU) * 2),
+                   FLOOR - 30 - Math.round(s * 14), 1, 1);
     }
   }
 
@@ -2616,6 +2917,41 @@ var Whiteboard = (function () {
              name: BOON_NAME };
   }
 
+  /* ----------------------------------------------------------- the warp
+
+     THE ONLY OBSTACLE THIS FILE MAKES THAT IS NOT MADE OF THIS LEVEL,
+     and it is a 'boon' and nothing else. A boon is already drawn in
+     drawBg's third pass in front of the tray, already carried through
+     save(), already culled on x + w and already reached in collide()
+     through rectsFor - four things the engine does for free and none of
+     which had to be taught a new type string. The word Chalkboard
+     appears in ONE place in the whole engine, this object's `warp`
+     field, and PlayScene only ever asks it for `warp.home` and hands
+     the rest of it to the art slot.
+
+     Being a 'boon' is also why isPowerUp has to be taught to say no:
+     Gerald's watch reels in the nearest power-up, and a hole in the
+     world is not a thing anybody should be able to drag across the
+     screen by the rim.
+
+     `w: 40` is the TILE's width, not the box's - the box is the bowl
+     and it is 24 wide, see rectsFor - because w is what the cull
+     measures, and a funnel is not gone until the last blue pixel of it
+     has left the screen.
+
+     `y: FLOOR - 17` is the ordinary tray-standing boon's y, so anything
+     in the engine that reads a boon's y for a caption or a particle
+     finds the number it expects there. drawFunnel does not read it at
+     all: the tile is pinned to FLOOR.
+
+     `Chalkboard` is resolved when this function RUNS, not when the file
+     loads, so the only load-order debt in this file is build()'s call
+     to Chalkboard.build(). */
+  function makeWarp(x, run) {
+    return { type: 'boon', warp: Chalkboard, x: x, y: FLOOR - 17, w: 40,
+             dx: 0, dy: 0, taken: false, phase: rand(0, TAU), gulp: 0 };
+  }
+
   /* ---------------------------------------------- collision rectangles
 
      Every lethal pixel has a box and nothing harmless has one: the
@@ -2675,6 +3011,16 @@ var Whiteboard = (function () {
       }
 
     } else if (ob.type === 'boon') {
+      /* THE BOX IS THE BOWL, and it is the only box in this file that is
+         not on a lethal thing. 24 wide against a 36px rim and 24 tall
+         off FLOOR - 31: with hitR 11 that is a centre anywhere within
+         +/-23 of the rim's middle and a 31px band of height above the
+         ground death at FLOOR, which clears this file's worst frame
+         step of 18.8px by twelve. Both edges are hitR-derived, so a
+         shrivelled doodad gets the same 31px a fat one does. It goes
+         the moment the funnel is taken - the tile stays drawn for the
+         pull, but there is nothing left to land in. */
+      if (ob.warp) { if (!ob.taken) out.push([ob.x - 12, FLOOR - 31, 24, 24]); return out; }
       /* the plant is what you collect, so the box travels with it and the
          drawn pot it came out of has none */
       if (!ob.taken) out.push([ob.x + ob.dx - 9, boonY(ob) + ob.dy - 10, 18, 20]);
@@ -2694,7 +3040,14 @@ var Whiteboard = (function () {
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
-    makeLitter: makeLitter, makeBoon: makeBoon,
-    rectsFor: rectsFor
+    makeLitter: makeLitter, makeBoon: makeBoon, makeWarp: makeWarp,
+    rectsFor: rectsFor,
+    /* THE FOUR PLOTTERS, exported for js/chalkboard.js and for nothing
+       else. A chalkboard is a board somebody drew on, which is this
+       file's entire trade, and js/chalkboard.js aliases these four at
+       the top level of its own IIFE - so it must load AFTER this file,
+       and these four names are a contract that cannot be renamed on one
+       side of it. 1px line, 1px circle, 2px line, 2px circle. */
+    pline: pline, pline2: pline2, pcircle: pcircle, pcircle2: pcircle2
   };
 })();
