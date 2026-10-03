@@ -106,6 +106,134 @@ var Input = (function () {
     repeatTimer[action] = REPEAT_DELAY;
   }
 
+  /* ---------------------------------------------------------- the pad
+
+     An Xbox controller, and anything else the browser reports under the
+     STANDARD mapping, which is every modern pad worth owning. It produces
+     the same actions the keys do - 'up', 'left', 'confirm' and the rest -
+     so no scene learns that a pad exists, exactly as none of them learned
+     what a finger was.
+
+     IT IS POLLED, not listened to. The Gamepad API fires no button events
+     at all: navigator.getGamepads() hands back a snapshot and the edges
+     have to be worked out by comparing it with the last one. That is what
+     padDown is for, and why this runs at the top of update() - before the
+     repeat timers below, so a held d-pad auto-repeats through exactly the
+     same path a held arrow key does.
+
+     A IS CONTEXT-SENSITIVE, and it has to be. In a run the one verb is
+     FLAP, which is 'up'; in a menu the one verb is CHOOSE, which is
+     'confirm'. Binding A to both would mean that on the results board a
+     press moved the cursor up AND confirmed whatever it had moved off.
+     Input already knows which of those two worlds it is in, because the
+     touch zones needed the same answer - a tap in the middle means flap in
+     a run and choose this in a menu - so A asks touchMode the same
+     question. The choice is LATCHED at the press and held until the button
+     comes up: without that, holding A through RETRY would carry a press
+     out of the results board and into the next run's GET READY, and the
+     run would start before the player had let go.
+
+     The left stick is folded into the d-pad with a deadzone rather than
+     given its own actions, because every screen in this game is a list or
+     a lane and none of them wants an analogue amount of anything. */
+
+  var PAD_BTN = {
+    1: 'back',                                  /* B      */
+    2: 'erase',                                 /* X      */
+    3: 'mute',                                  /* Y      */
+    8: 'back',                                  /* View   */
+    9: 'pause',                                 /* Menu   */
+    12: 'up', 13: 'down', 14: 'left', 15: 'right'   /* d-pad */
+  };
+  var PAD_DEAD = 0.55;        /* a stick is not a d-pad until it means it */
+
+  /* every action a button or the stick can produce, so pollPad walks a
+     fixed list rather than diffing two snapshots. A is not in it: it is
+     latched separately, because which action it means depends on where the
+     game is when it goes down. */
+  var PAD_ACTIONS = { up: 1, down: 1, left: 1, right: 1,
+                      confirm: 1, back: 1, pause: 1, mute: 1, erase: 1 };
+
+  var padDown = {};           /* action -> the pad is holding it this frame */
+  var padA = null;            /* what button A is holding, latched at press */
+  var padAWasDown = false;
+
+  /* is any key still holding this action? an action can be bound to a key
+     AND to a button, and letting go of one must not release the other */
+  function keyHolds(action) {
+    for (var code in downCodes) if (downCodes[code] === action) return true;
+    return false;
+  }
+
+  /* the actions the pad is asking for right now, or null if none is there */
+  function padState() {
+    if (!navigator.getGamepads) return null;
+    var list = navigator.getGamepads(), out = null, i, b, g, a, ax;
+    for (i = 0; i < list.length; i++) {
+      g = list[i];
+      if (!g || !g.connected || g.mapping === 'xr-standard') continue;
+      out = out || {};
+      for (b = 0; b < g.buttons.length; b++) {
+        if (!g.buttons[b] || !g.buttons[b].pressed) continue;
+        if (b === 0) { out.__a = true; continue; }
+        a = PAD_BTN[b];
+        if (a) out[a] = true;
+      }
+      ax = g.axes || [];
+      if (ax[0] < -PAD_DEAD) out.left = true;
+      if (ax[0] > PAD_DEAD) out.right = true;
+      if (ax[1] < -PAD_DEAD) out.up = true;
+      if (ax[1] > PAD_DEAD) out.down = true;
+    }
+    return out;
+  }
+
+  function padPress(action) {
+    padDown[action] = true;
+    held[action] = true;
+    pressAction(action);
+    /* a button means the on-screen pads are in the way rather than in use,
+       the same thing a keypress means */
+    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null;
+    /* It will not always work: a browser wants a real user gesture before
+       it will start an audio context, and a gamepad press is not one of
+       them. Asked anyway, because the first KEY press or tap of the session
+       then costs nothing, and a player who only ever touches the pad is no
+       worse off than if this line were missing. */
+    Audio3.unlock();
+  }
+
+  function padRelease(action) {
+    padDown[action] = false;
+    if (!keyHolds(action)) held[action] = false;
+  }
+
+  function pollPad() {
+    var now = padState(), action, aNow;
+
+    /* A, latched: the mode is read once, at the press */
+    aNow = !!(now && now.__a);
+    if (aNow && !padAWasDown) {
+      padA = (touchMode === 'play') ? 'up' : 'confirm';
+      padPress(padA);
+    } else if (!aNow && padAWasDown && padA) {
+      padRelease(padA);
+      padA = null;
+    }
+    padAWasDown = aNow;
+
+    for (action in PAD_ACTIONS) {
+      /* Skip whatever A is currently holding. A latches into this same
+         table through padPress, and the d-pad does not report it - so
+         without this line the loop would find 'confirm' held by nothing
+         and release it on the very frame A pressed it. */
+      if (action === padA) continue;
+      var want = !!(now && now[action]);
+      if (want && !padDown[action]) padPress(action);
+      else if (!want && padDown[action]) padRelease(action);
+    }
+  }
+
   /* ----------------------------------------------------------- pointers
 
      Touch does not get its own path through the game, and neither does the
@@ -386,6 +514,7 @@ var Input = (function () {
 
   /* called once per frame, before scene updates */
   function update(dt) {
+    pollPad();
     if (touchGuard > 0) touchGuard -= dt;
     for (var action in repeatTimer) {
       if (!held[action]) continue;
