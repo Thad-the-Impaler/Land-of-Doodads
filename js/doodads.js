@@ -31,9 +31,11 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm` - so a new one is a new field rather than a new branch on an id,
-   and each sits on its own axis: points, sight, pickups, survival,
-   handling, room, spring, duration, direction, tempo.
+   `calm`, `pay` - so a new one is a new field rather than a new branch on
+   an id, and each sits on its own axis: points, sight, pickups, survival,
+   handling, room, spring, duration, direction, tempo. Donkey Joe is the
+   one doodad with two fields: `pay` is his second, on Cookie's points
+   axis, and it is there as the price of his first - his entry says why.
 
    The four newest axes, because their words are less obvious than the rest:
    `bounce` is the SPRING - a flap taken from a fast fall gets part of the
@@ -463,15 +465,12 @@ var Doodads = (function () {
       lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
       /* HELIUM, which is what an inflatable donkey is full of if the owner
          is taken at his word. `helium` is the SIGN of the pull: the room
-         draws him toward the lid instead of the floor - and the flap
-         pushes him DOWN, which is the whole of the input. The number is
-         the STRENGTH of that reversed pull and nothing else: 0.72, which
-         is Billy's gravity scale, so the gentlest pull in the game is now
-         also the only one that points up. 1180 x 0.72 is 849.6, against the
-         same 545 cap and the same 338 off a flap - `light` is Billy's
-         block and Joe does not carry it, so he borrows the one number and
-         none of the model. He is drawn the same way up as everyone. The
-         room is turned over for him, not the donkey.
+         draws him toward the lid instead of the floor, with the same 1180
+         behind it, the same 545 cap and the same 338 off a flap - and the
+         flap pushes him DOWN, which is the whole of the input. 1 is an
+         exact mirror; the number multiplies the reversed gravity and
+         nothing else. He is drawn the same way up as everyone. The room is
+         turned over for him, not the donkey.
 
          It is the one axis nobody can borrow. Every other ability here is a
          number on something the game already does - lift, size, duration,
@@ -498,29 +497,51 @@ var Doodads = (function () {
          roster that is a skill rather than a stat - and his card and his
          first flap both say so.
 
-         Nothing is removed, and the ARC is the one thing that is not a
-         mirror. He keeps everyone's 338 off a flap but falls back against
-         849.6 instead of 1180, so his flap digs 67.2px and takes 0.4s to do
-         it where everyone else's lifts 48.4 in 0.29 - a longer, lazier
-         stroke, which is what 0.72 buys and the whole reason it is the
-         number. Off mid-room his first flap puts him at 200.2 with 30.8px
-         of floor still under the hitbox, where everyone else's first flap
-         clears the lid by 49.6, because 133 is the midpoint of 24 and 242.
-         Drifting from rest he needs 0.64s and 174.8px to reach the 545 cap
-         against the roster's 0.46 and 125.9 - two tenths of a second more
-         to notice he is leaving, which on a lid that kills is the whole
-         difference between a mirror and a playable one. A popped
+         Nothing is removed. Same hitbox, same arc, same first flap: 48px
+         off mid-room, 49.6px clear of the floor for him and of the lid for
+         everyone else, because 133 is the midpoint of 24 and 242. A popped
          balloon falls - down() is +1 outside play, so a dead Joe drops to
          land() and the results screen comes. The one asymmetry left is the
          Backyard's, where the lid bumps and the floor kills: his idle
          failure costs him the next plank instead of the frame, and his
          eager one costs him the run, where everyone else has those the
-         other way round. */
+         other way round.
+
+         THE PAY. The mirror is not harder than the game - the loop is the
+         same loop, drift into a wall if you do nothing - but it is harder
+         than the roster, because the thumb has to unlearn the one thing it
+         knows, and that is a cost in SKILL where every other cost here is
+         a stat. The owner wanted it balanced and wanted the balance in the
+         score, so `pay` is a flat 2 on every plank: the heat still doubles
+         it and a tight pass would too, so it is one more factor on the
+         expression everyone's planks go through and not a different one,
+         and it is only the plank - the full pot's 3 and the can's 5 are
+         handed to him, not threaded, and the plank is the thing the helium
+         makes hard. That puts a second doodad on Cookie's axis, which this
+         roster has been careful never to do - the header and Capybara's
+         note both say "the points are untouched" - so the difference has
+         to be said plainly rather than wished away. Her nerve is EARNED,
+         plank by plank, by taking a line within seven pixels of an edge,
+         and a run that does not shave planks sees none of it. His is a
+         RATE, paid for the room being upside down, and he collects it on
+         the plank he threads straight down the middle. One is a bonus for
+         a risky line; the other is hazard pay. The card says PAYS where
+         hers says SCORES for that reason. And the level never learns his
+         rate: spikesReady, spawnDrops, the late phase and run.score pace
+         themselves off `pace` in js/scene_play.js, the same run scored at
+         everybody else's rate, so his drops, his spikes and the Mantle's
+         controllers come on the plank they come on for anyone - armed off
+         his doubled score they would come at half the distance, which is a
+         punishment, and this is a reward. The tables, Levels.noteScore,
+         the stalls' unlockAt and the achievements all see the doubled
+         score, on purpose: it is his score. */
       ability: 'HELIUM',
       abilityLive: true,
-      abilityAbout: ['HE FLOATS UP. HE CANNOT HELP IT.', 'YOU ARE WHAT KEEPS HIM DOWN.'],
+      abilityAbout: ['HE FLOATS UP. HE CANNOT HELP IT.', 'EVERY PLANK PAYS HIM DOUBLE.'],
       abilityWarn: ['\u25B2 HELIUM \u25B2', 'HE FLOATS. YOU KEEP HIM DOWN.'],
-      helium: 0.72,
+      helium: 1,
+      /* the flat rate on a plank - THE PAY, above */
+      pay: 2,
       /* Neither collected nor scored: DONE. The engine reports the deed by
          this name and knows nothing whatever about what it opens, so the
          roster keeps the only copy of that fact - and the save remembers

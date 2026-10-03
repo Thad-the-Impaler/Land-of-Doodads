@@ -95,6 +95,52 @@ var PlayScene = (function () {
   var obstacles = [], particles = [], dust = [];
   var spawnCursor = 0, lastGapY = 0;
   var score = 0;
+  /* What the run would have scored with nobody's flat rate on it, and the
+     number the LEVEL paces itself against. spikesReady(), spawnDrops(), the
+     late phase and run.score read THIS and never `score`. It is fed by the
+     same four writes as score - zeroed in start(), BOON_BONUS, GOLD_BONUS and
+     the plank - with the plank's `pay` left off. So for the eleven doodads
+     without `pay` the two variables receive identical writes in identical
+     order, and are equal at every point either of them can be read - the
+     two lines of a pair sit together with no call between them, so no
+     reader ever sees them apart; for Donkey Joe `pace` is the score the
+     same run would have had under anyone else. The heat's x2 and Cookie's
+     tight pass DO go in, because they always did: a hot run has always met
+     its spikes sooner, and that is not being changed. Only a permanent flat
+     rate is kept out, because a level that armed its hazards off a doubled
+     score would bring the drops, the spikes, the late phase and the
+     Mantle's controllers at half the distance - a punishment bolted onto
+     what the owner asked for as a reward. The high score tables,
+     Levels.noteScore, Doodads.noteScore and the achievements all read
+     `score`, on purpose: his points are real.
+
+     The proof that the eleven are untouched, and it is a proof rather than a
+     hope: grepping this file for assignments to `score` finds the zeroing in
+     start(), the full pot's 3, the can's 5 and the plank, and nothing else -
+     four writes, plus this declaration, which the one below mirrors. Each of
+     the four now has a `pace` write on the next line taking the same
+     operand, the plank excepted, where the operands are `worth * pay` and
+     `worth` and `pay` is 1 for every doodad without the field. Same values,
+     same order, and nothing runs between a pair, so after each pair the two
+     totals are the same integer and no reader of either can tell them
+     apart.
+
+     What the doubled score DOES reach, said out loud so it reads as a
+     decision: the score gates in the game are two doodads' unlockAt of 15
+     and 25, every room's and bay's `unlock.score` of 20, and the two plates
+     the badge check below calls THE SCORE-GATED BADGES - HATCHLING and
+     PULLET in js/achievements.js, which probe the same
+     Doodads.bestReached() the stalls price themselves against and finish at
+     Scores.houseTop() + 1, 13 off today's seed, and at 26. Joe is himself
+     unlocked by the hot-and-sour deed, which only the Whiteboard can grant
+     because it is the only bay that sheds both a heat and a sour, and the
+     Whiteboard is the last bay in the house behind that whole chain of 20s -
+     so anyone holding him has cleared every 20, the 15 and the 13 already,
+     and the two his rate can bring early are the 25 and PULLET's 26, which
+     is that same 25 one plank further on. Both arrive early for the same
+     reason and with the same blessing: that is the reward working, not a
+     leak. */
+  var pace = 0;
   var board = [];              /* the high score table as it stood when the run began */
   var rank = -1;               /* where this run lands on the table, -1 if it misses */
   var entryPending = false;    /* a qualifying run waiting for its initials */
@@ -177,7 +223,11 @@ var PlayScene = (function () {
      1.1% of tested frames the beam you could be killed by and the beam
      drawn on the screen were on opposite sides of the lethal window. A
      maker that needs to know where the world is reads it HERE, from the
-     live value, in the same pass that spawned it. */
+     live value, in the same pass that spawned it.
+
+     `score` in here is `pace`, not `score`: the run scored at everybody's
+     rate, which is what a maker deciding how hard to be is allowed to
+     know. */
   var run = { score: 0, time: 0, late: false, scroll: 0 };
   /* ob.stun: a hazard that punishes without killing.
      ringing  seconds of buzz left, topped up the way the heat is
@@ -290,7 +340,7 @@ var PlayScene = (function () {
     scroll = 0;
     speed = tune.speedStart;
     obstacles.length = 0; particles.length = 0;
-    score = 0; flash = 0; deadTimer = 0; scorePop = 0;
+    score = 0; pace = 0; flash = 0; deadTimer = 0; scorePop = 0;
     board = Scores.table(roomRef, level).slice();
     rank = -1; entryPending = false; savedRow = -1; pbNew = false;
     dropArmed = false; dropTimer = 0; hazardWarn = 0; warnLines = null;
@@ -366,7 +416,7 @@ var PlayScene = (function () {
      has; one that sets it gets its own heads-up when they arrive. */
   function spikesReady() {
     if (tune.spikeScore === undefined) return true;
-    if (score < tune.spikeScore) return false;
+    if (pace < tune.spikeScore) return false;
     if (!spikeArmed) {
       spikeArmed = true;
       var w = art.WARN && art.WARN.spike;
@@ -404,7 +454,7 @@ var PlayScene = (function () {
     if (tune.dropScore === undefined) return;
 
     if (!dropArmed) {
-      if (score < tune.dropScore) return;
+      if (pace < tune.dropScore) return;
       dropArmed = true;
       warnLines = art.WARN && art.WARN.drop;
       hazardWarn = warnLines ? 2.4 : 0;
@@ -1060,6 +1110,7 @@ var PlayScene = (function () {
          at the cap in the instant they committed to the dive. */
       boonBonus = true;
       score += BOON_BONUS;
+      pace += BOON_BONUS;
       scorePop = 0.36;
       /* checkPassed BEFORE checkUnlocks, the pair and the order takeGold
          uses for its +5 and for the same reason: three points step over
@@ -1129,6 +1180,7 @@ var PlayScene = (function () {
      middle of any of them. */
   function takeGold(ob) {
     score += GOLD_BONUS;
+    pace += GOLD_BONUS;
     scorePop = 0.42;
     goldPop = 0.6;
     /* THE CLAMP IS THE CAPTION'S OWN HALF WIDTH, not a flat 30. It was
@@ -1667,19 +1719,13 @@ var PlayScene = (function () {
      it - the integrator both ways, the dying branch downward only, since
      a popped balloon only ever falls. The FLIGHT MODEL is Billy's
      axis - the three scales - and the SIGN is Donkey Joe's; they compose
-     and neither knows the other's name. Joe wears Billy's 0.72 without
-     wearing `light`: he borrows the gravity NUMBER and none of the model,
-     so his flap is still everyone's 338 and his cap still everyone's 545,
-     and a doodad that one day carried both fields would get the two
-     scales multiplied, which is the right answer and needs no code. */
+     and neither knows the other's name. */
 
   /* WHICH WAY IS DOWN for this doodad, right now: +1 for the eleven the
      room pulls toward the floor, -1 for one full of helium while the run
-     is live. It is the sign and nothing else; `helium` is the STRENGTH of
-     the reversed pull - 0.72, which is Billy's gravity scale, so the
-     gentlest pull in the game is also the one that points up - and it is
-     applied in grav() alone, so that every other reader of down() gets a
-     clean +-1 and only the gravity knows how hard he is pulled.
+     is live. It is the sign and nothing else; `helium` is the multiplier
+     on the reversed gravity, 1 for an exact mirror, and it is applied in
+     grav() alone so that every other reader of down() gets a clean +-1.
 
      It is +1 outside play and pause, and that guard is the reason the
      ability can ship at all: the dying branch integrates with grav() and
@@ -1802,9 +1848,7 @@ var PlayScene = (function () {
        clamped at all. At the cap with dt at its 1/30 clamp the first line
        moves him 545 / 30 + 0.5 * 1180 / 900 = 18.167 + 0.656 = 18.8px a
        frame, not 18.2: that is the step every thin-hitbox argument on the
-       roster has to be measured against. Joe's second term is half of
-       849.6 / 900 and his step is 18.64, so the 18.8 stays the worst case
-       and nothing measured against it has to be measured again. */
+       roster has to be measured against. */
     var g = grav();
     player.y += player.vy * dt + 0.5 * g * dt * dt;
     player.vy = clamp(player.vy + g * dt, -maxFall(), maxFall());
@@ -2325,12 +2369,12 @@ var PlayScene = (function () {
          moveObstacles, because that is what banks the plank that just
          crossed the threshold, and BEFORE `run` is built, so the very first
          maker call of the phase already knows. */
-      if (!late && tune.lateScore !== undefined && score >= tune.lateScore) {
+      if (!late && tune.lateScore !== undefined && pace >= tune.lateScore) {
         late = true;
         var wl = art.WARN && art.WARN.late;
         if (wl && hazardWarn <= 0) { warnLines = wl; hazardWarn = 2.4; Audio3.play('warn'); }
       }
-      run = { score: score, time: runTime, late: late, scroll: scroll };
+      run = { score: pace, time: runTime, late: late, scroll: scroll };
       spawnAhead();
       spawnDrops(dt, d);
       updatePlayer(dt);
@@ -2482,10 +2526,24 @@ var PlayScene = (function () {
            the run you want to be having */
         var tight = doodad.nerve && ob.skim !== undefined &&
                     ob.skim >= 0 && ob.skim <= doodad.nerve;
-        score += tight ? base * 2 : base;
+        var worth = tight ? base * 2 : base;
+        /* `pay` is Donkey Joe's flat rate: a plank is worth that many of
+           itself to him, on top of the heat and on top of a tight pass -
+           one more factor on the expression everyone's planks go through,
+           not a different expression. It is THE PLANK AND ONLY THE PLANK.
+           BOON_BONUS and GOLD_BONUS are not his to double: those are
+           handed to him, a plank is threaded, and the plank is the thing
+           the helium makes hard - the owner's words were "for each
+           pillar". Do not "fix" this. For the eleven without the field
+           the rate is 1 and worth * 1 is worth, to the integer. `pace`
+           takes the undoubled worth; its declaration says why the level
+           must never learn his rate. */
+        var pay = doodad.pay || 1;
+        score += worth * pay;
+        pace += worth;
         scorePop = (spicy > 0 || tight) ? 0.42 : 0.32;
         Audio3.play(spicy > 0 ? 'scoreHot' : 'score');
-        if (tight) takeNerve(ob, base);
+        if (tight) takeNerve(ob, base * pay);
         checkPassed();
         checkUnlocks();
       }
@@ -3389,7 +3447,8 @@ var PlayScene = (function () {
     targets: function () { return hot; },
     /* a window into the run, for tuning and for testing */
     inspect: function () { return { state: state, player: player, obstacles: obstacles,
-                                    score: score, runTime: runTime, rank: rank,
+                                    score: score, pace: pace,
+                                    runTime: runTime, rank: rank,
                                     spicy: spicy, heat: heat, dropArmed: dropArmed,
                                     ceilKills: CEIL_KILLS, ringing: ringing,
                                     late: late,
