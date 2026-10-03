@@ -1696,26 +1696,30 @@ var Assets = (function () {
    no button of its own. The one that did (a dash on a double-tap) was cut,
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
-   `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `hotAir`,
+   `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `flat`,
    `calm` - so a new one is a new field rather than a new branch on an id,
    and each sits on its own axis: points, sight, pickups, survival,
-   handling, room, spring, duration, hot air, tempo.
+   handling, room, spring, duration, shape, tempo.
 
    The four newest axes, because their words are less obvious than the rest:
    `bounce` is the SPRING - a flap taken from a fast fall gets part of the
    fall back as lift, which is a rule about the flap and not a weight.
    `carry` is DURATION - how long a power-up lasts, which nothing had ever
-   scaled. `hotAir` is what the HEAT DOES TO HIM - a lift that arrives with
-   the heat and cools away with the gauge, where Billy's `light` is a weight
-   he has on every plank. `calm` is TEMPO - how much of the heat's hurry a
-   doodad declines, where the points it pays out are untouched. `carry` and
-   `calm` are each one multiplier read where a constant used to be read,
-   which is the shape grav(), maxFall() and flapV() already set; `bounce`
-   and `hotAir` are rules the flap and those same three accessors carry, so
-   the integrator still never learns a name. Two axes were held and given
-   back in between - the LANE (a faster sideways nudge) and the ODDS (more
-   hot and sour drops) - because neither could be SEEN in a run, and an
-   ability the player cannot see is not one.
+   scaled. `calm` is TEMPO - how much of the heat's hurry a doodad declines,
+   where the points it pays out are untouched. `flat` is the SHAPE - the one
+   doodad whose hitbox is not a circle: his width and his height trade
+   against each other as he picks up speed and multiply back to the same
+   area, so the integrator and the three flight numbers never learn about
+   him at all - only collide(), the floor and lid tests and the draw do.
+   `carry` and `calm` are each one multiplier read where a constant used to
+   be read, which is the shape grav(), maxFall() and flapV() already set;
+   `bounce` is a rule the flap carries, so the integrator still never learns
+   a name. Three axes were held and given back in between - the LANE (a
+   faster sideways nudge), the ODDS (more hot and sour drops) and HOT AIR
+   (Billy's three numbers on a timer the heat wound up). The first two went
+   because neither could be SEEN in a run, and an ability the player cannot
+   see is not one; the third went because what it COULD be seen doing was
+   already somebody else's, which is the other half of the same test.
 
    `voice` is the sound a doodad makes when the character select lands on
    it: the ROLE js/audio.js plays, not a path, so a doodad that borrows
@@ -2121,62 +2125,140 @@ var Doodads = (function () {
       tagline: 'LOUD IN BOTH DIRECTIONS',
       about: ['AN INFLATABLE DONKEY WITH A LOT OF TEETH.', 'HAS NEVER ONCE BEEN WRONG.'],
       lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
-      /* HOT AIR, which is what an inflatable is full of. `hotAir` names the
-         same three numbers Billy's `light` scales - gravity, the fall cap,
-         the flap - but it is not a weight: it is what the HEAT does to his
-         body, and it is there only while the heat is. Catch a hot drop and
-         it fills him: gravity goes to 0.55 of itself, the fall cap to 0.6,
-         the flap to 0.72 (softened for the reason Billy's is, so a beat
-         still lifts him about 46px and what changes is the time it takes -
-         a hang of 0.75s against the standard 0.57). Then it COOLS.
-         PlayScene scales the lift by what is left on the gauge, so he is
-         lightest at the catch and back to his own weight by the time the
-         bar is empty - for him the heat bar is an altimeter. Nothing about
-         the heat's own terms moves: the room still runs at 1.55x and the
-         planks are still double.
+      /* The SHAPE, which is a lever nobody had ever pulled: eleven doodads
+         are circles and he is the one ellipse. `flat` is how WIDE he is at
+         full fall speed - one and a half times - and his height takes the
+         reciprocal of the same number, so width times height is 1 and the
+         AREA of him never changes. In between it is linear in |vy| over the
+         fall cap. Hanging at the top of an arc he is exactly everyone's
+         11px circle; at the hover rhythm's 338px/s he is 14.4 across and
+         8.4 tall; in a full dive at 545 he is 16.5 by 7.33. It is a pure
+         function of how fast he is going, with no timer and no damping
+         anywhere in it, which is the point: the shape IS the speed, so the
+         hitbox cannot lag the body the player is watching, and the drawn
+         outline is the same axis-aligned ellipse the planks test on every
+         single frame.
 
-         That is why it is a different KIND of thing from PAPER-LIGHT and
-         not a different number of it. Billy IS light: a property, the same
-         on the first plank as the fiftieth. Joe is as heavy as anyone until
-         the heat is in him, and he loses it continuously, in the fast room,
-         while the room is still fast - the back half of every hot run is
-         him near his full weight at 1.55x, which is everyone's hot run.
-         What the heat buys him is the front half, and that is where a slow
-         fall is worth most. Capybara refuses the hurry, Roller stretches
-         the clock; Joe is the first doodad the heat changes bodily. And a
-         hot balloon rises: with more hang in him he drifts up more easily,
-         and in the Living Room the lid is still the lid. A popped balloon
-         falls, too - die() zeroes the heat, so the tumble is at full weight.
-         Nothing in it removes a death: no hit he could not take before
-         becomes survivable, and the longer hang COSTS him timing room at the
-         top of a gap exactly as PAPER-LIGHT already does, under a lid that
-         in the Living Room's four bays kills. It is Billy's kind of help on
-         a timer, and only while a dare the player chose to take is running.
+         This is the owner's key taken literally instead of metaphorically,
+         which is what the two earlier passes failed to do. An inflatable is
+         a fixed volume of air in a soft skin, and a soft thing full of air
+         flattens ACROSS its motion as it moves - a water balloon dropped
+         off a roof, a raindrop, a beach ball slapped down on water - where
+         a rubber ball stretches ALONG it. So Koa stretches tall on a
+         rebound and Joe spreads flat at speed: the opposite body language,
+         and the two of them tell the player they are made of different
+         stuff before either ability has done anything at all.
 
-         Rejected, with reasons, because the obvious readings are obvious.
-         x1.5 on the odds of a hot or sour drop went first: nothing about it
-         could be seen in a run, and the owner said so. A balloon that
-         floats up on its own, the tap pulling him DOWN, is the most honest
-         reading of all and fails twice: the Backyard's rafters are solid
-         and survivable, so a doodad that falls upward would rest on them
-         between planks and the fall death would simply leave the game for
-         him in five levels - a death removed by geometry - and it asks the
-         thumb to unlearn the one thing it knows. A plain buoyancy
-         multiplier, always on, is Billy with a different name. A balloon
-         that bounces off things is Koa's word, and off a plank it is a
-         life. Swelling with the heat (hot air expands) was weighed and
-         dropped because a bigger hitbox turns the reward into a way of
-         losing, and letting the lime deflate him further is only visible in
-         the three bays that grow limes. Three more were weighed and left: a
-         string that catches gifts below him is Gerald's axis with a longer
-         arm; a kite that lifts with the room's speed is a Billy that
-         varies, and nobody in a run could tell it from Billy; and 'full of
-         hot air' as a hot START to every run is a pun rather than a balloon
-         the player could see. */
-      ability: 'HOT AIR',
+         It is not Turd's axis, and the difference is worth writing down
+         because it is the one a reader reaches for first. Turd is 0.7 of a
+         doodad, always, for free, and the player's sentence for him is "he
+         is small". Joe is never LESS of a doodad - the area is constant, it
+         is the same amount of donkey reshaped - he is only ever spread
+         sideways, only while he is fast, and he pays for it on the flanks:
+         28.8px across at a hover flap and 33 in a dive against everyone's
+         22, so a 7-9px drop's hit window grows from about 15px to 18.4 and
+         20.5 (a quarter to a third more often found) the whole time he is
+         moving, and he enters a plank's span 3-5px sooner. At a hover he is
+         nobody special. And it changes how a gap is FLOWN - you dive into
+         it, deliberately, which is the opposite of what the arc wants -
+         where being small changes nothing about how you fly. The sentence
+         is "he squashes flat when he's going fast, like a water balloon".
+
+         It is not Koa's either, though both are paid out of a fast fall.
+         Koa's spring is nothing at all under 420px/s and is read in flap();
+         Joe's squash is continuous from zero and is read in collide(). Koa's
+         dive buys ALTITUDE, after the gap, and in a tight one it is what
+         kills him; Joe's dive buys CLEARANCE, inside the gap, and what it
+         costs him is width. One of them is a rule about the flap and the
+         other is a rule about the body, and they go opposite ways.
+
+         It is not Billy's, and this is where HOT AIR died. grav(), maxFall()
+         and flapV() are not touched: the arc is everyone's arc, 48.4px of
+         lift and 0.57s of hang, on his first plank and his fiftieth. HOT
+         AIR was those same three numbers on a timer the heat wound up, and
+         the owner said so twice - a field of somebody else's with a trigger
+         bolted on top is not an axis, whatever the trigger is.
+
+         Nor is it a death removed, which is the bar every balloon idea on
+         the list below failed. Nothing that visibly touches him stops
+         killing him: the hitbox is the drawn body, the floor and the Living
+         Room's lid are tested at the same honest vertical radius the planks
+         are, and the trade is paid in both directions on every frame.
+         Measured on the Coop's lower cap, one falling frame then a flap, 44
+         trials: at 338px/s a round doodad survives down to a centre 11.36px
+         above the cap and dies at 10.62, where Joe survives at 8.97 and
+         dies at 8.26 - about 2.5px later, which at that speed is a quarter
+         of a frame of lateness forgiven; at 545 it is 11.53/10.14 against
+         7.81/6.97, about 3.7px. In the Backyard's 78px gap the room to time
+         a flap in goes from everyone's 8px to about 10.6 at a hover flap
+         and 11.7 in a dive. Turd's is 14.6 (a 15.4px hitbox against
+         everyone's 22) and Billy's is 11 - his flap only lifts 45.2 of the
+         standard 48.4, which his own card already says. So Joe at a hover
+         is the SMALLEST forgiveness on the roster, under Billy's, and a
+         dive buys him Billy's back - conditionally, and paid for on the
+         flanks, where the other two are free and permanent.
+         The lime composes through the hitbox the way Turd's size does: a
+         shrivelled Joe in a full dive is 4.55px of half-height, which is
+         the margin Turd-with-a-lime has stood on at 4.7 since his card was
+         written, comfortably above anything that could tunnel a cap.
+
+         1.5 and not another number because it is the first one a player
+         notices in a single run. At 1.4 the dive is 7.9px tall and the
+         hover flap 8.8 - 3.1 and 2.2px off round - which is under what a
+         thumb can feel, and an ability nobody can feel is the LANE's and
+         the ODDS' whole problem. 1.6 (6.9 and 8.0 tall, 35px across) is the
+         next notch if it is ever wanted louder, and at that point the
+         lime's 4.3px wants a floor under the vertical radius.
+
+         Rejected, with reasons, because at twelve doodads every obvious
+         lever belongs to somebody and the balloon's own verbs are the worst
+         offenders. Inflation as a GAUGE - air that fills and drains and
+         drives something - is the brief's own suggestion and has no legal
+         consumer: size is Turd's, lift is Billy's, the flap is Koa's, lives
+         are Inari's, points are Cookie's, duration is Roller's, tempo is
+         Capybara's, so it is a timer on someone else's field whatever it
+         drives, which is HOT AIR again under a new name. Deflating over the
+         run is Turd getting smaller as the score climbs, which is the
+         owner's own warning about slow Maximus turned sideways. Swelling
+         with the heat was already refused on the HOT AIR card - a bigger
+         hitbox turns the reward into a way of losing. Size by altitude (a
+         real balloon does expand as it rises) makes a high gap a lottery by
+         gap height. A breath on its own clock, swelling and shrinking on a
+         1.6s period, is a coin flip the player cannot shift the phase of -
+         a curse half the time. Squash on the FLAP alone, the cartoon bop,
+         is this same lever with the impulse as its driver and is worse for
+         it: the same flatness on a hover as on a dive, no new skill in it,
+         and the honest description is "a flat Turd with a pump". FLAT OUT
+         keeps the hover standard and makes the dive the thing. Then the
+         deaths removed, every one of which is Inari's spare life in
+         another coat: a soft skin that deflects grazes saves the slow ones
+         and nothing else, drops that curve away from him are Saddam's REACH
+         with a gentler verb, drops that fall slower near him are Pepper's
+         and Saddam's between them, the bray's downwash IS Saddam's card
+         text, bouncing off things is Koa's, and stun immunity is invisible
+         in eight bays of nine. Bray recoil on the lane is 2-5px a flap and
+         invisible, or big enough to pin him at the left wall where he
+         cannot dodge. The heat's wind blowing him back pays out
+         Capybara's more-time-in-the-fast-room by another route and would be
+         a third heat-tied idea after two were refused. A hot start, triple
+         points while hot and drops that give a little of both are puns on
+         his unlock, and the points stayed Cookie's even for Capybara. A
+         rested flap that lifts higher after a glide is Koa's spring with a
+         different question asked of the same fall, and a handicap when the
+         thumb hammers. Variable jump height, flap on release, a held hover:
+         gestures, and the thumb has one job - that is the rule the cut dash
+         wrote. The x1.5 sideways nudge is refused twice over now. Two
+         honest runners-up were weighed and set behind this one: a big soft
+         skin that catches pickups outside the solid core is Gerald at a
+         seventh of his strength and it bends the rule that what the player
+         sees is what the planks test; and the wind blowing him to the back
+         of the room is the one genuinely open axis, the LANE, but it hands
+         him reaction time in a game whose bottleneck is precision, and the
+         LANE has already told us once that it cannot be felt. */
+      ability: 'FLAT OUT',
       abilityLive: true,
-      abilityAbout: ['THE HEAT FILLS HIM UP AND HE FLOATS.', 'HE SINKS BACK AS IT COOLS.'],
-      hotAir: { gravity: 0.55, fall: 0.6, flap: 0.72 },
+      abilityAbout: ['THE FASTER HE GOES, THE FLATTER HE GETS.', 'FLAT FITS WHERE ROUND WOULD NOT.'],
+      flat: 1.5,
       /* Neither collected nor scored: DONE. The engine reports the deed by
          this name and knows nothing whatever about what it opens, so the
          roster keeps the only copy of that fact - and the save remembers
@@ -2257,6 +2339,13 @@ var Doodads = (function () {
     var s = r / d.sprite.bodyR;
     ctx.save();
     ctx.translate(x, y);
+    /* a flatten in SCREEN axes, applied before the tilt: for the one doodad
+       whose hitbox is an ellipse, the drawn outline has to be the same
+       axis-aligned ellipse the planks test whatever way he is pitched.
+       squashX/squashY below are in the body's own axes and are flourishes
+       (Koa's stretch, the heat's throb); these two are the shape itself.
+       A no-op for anybody who does not pass them. */
+    if (o.flatX || o.flatY) ctx.scale(o.flatX || 1, o.flatY || 1);
     if (angle) ctx.rotate(angle);
     if (o.alpha !== undefined) ctx.globalAlpha = o.alpha;
     var sx = s * (o.squashX || 1), sy = s * (o.squashY || 1);
@@ -28059,8 +28148,17 @@ var PlayScene = (function () {
   function meetAtY(ob) { return ob.type === 'pillar' ? meetCy(ob) : grabY(ob); }
 
   function updateMeet() {
-    /* his bulge is his own size; a shrivelled doodad has to get closer to
-       touch him, which is the same bargain the planks strike */
+    /* His bulge is his own size; a shrivelled doodad has to get closer to
+       touch him, which is the same bargain the planks strike.
+
+       IT IS A PROXIMITY CIRCLE AND NOT THE HITBOX, and since one doodad's
+       hitbox became an ellipse the two are no longer the same thing for
+       him: a flattened Joe reaches a hider 11px above his centre while his
+       body only reaches 7.3px there, and falls 8.5px short of where his
+       flank visibly goes. Left round deliberately - catching somebody is a
+       reward and the generous shape is the right one for it, where a plank
+       is a punishment and wants the honest one - but it is the only contact
+       test left whose shape disagrees with what is drawn. */
     var reach = MEET_R + hitR();
     for (var i = 0; i < obstacles.length; i++) {
       var ob = obstacles[i];
@@ -29029,37 +29127,21 @@ var PlayScene = (function () {
   /* -------------------------------------------------------- physics
 
      The three numbers a doodad's flight is made of, each run through its
-     own `light` scale if it has one, and then through whatever hot air is
-     in him - lift() below. Everything that moves the player asks for them
-     rather than reading the constants, so a doodad that weighs less than
-     the others is data and not a special case - and so is one who weighs
-     less for a while. */
+     own `light` scale if it has one. Everything that moves the player asks
+     for them rather than reading the constants, so a doodad that weighs
+     less than the others is data and not a special case.
 
-  function grav()    { return GRAVITY  * (doodad.light ? doodad.light.gravity : 1) * lift('gravity'); }
-  function maxFall() { return MAX_FALL * (doodad.light ? doodad.light.fall    : 1) * lift('fall'); }
-  function flapV()   { return FLAP     * (doodad.light ? doodad.light.flap    : 1) * lift('flap'); }
+     The FLIGHT MODEL is Billy's axis and these three lines are the whole of
+     it. Donkey Joe borrowed them for one round - HOT AIR, a gauge the heat
+     filled that made him lighter while it drained - and the owner sent it
+     back for what it was: Billy's three scales with a timer bolted on top.
+     He flies on FLAT OUT now, which is his SHAPE and deliberately reaches
+     nowhere near here: the arc is everyone's arc, 48.4px and 0.57s, and
+     these three know about exactly one doodad, the paper-light one. */
 
-  /* HOT AIR, Donkey Joe's: the heat changes what HE weighs, for as long as
-     it is in him. `hotAir` carries the same three scales `light` does, but
-     where `light` is a property this is a quantity, and it drains. hotAir()
-     is how full of it he is, 0..1: the eased `heat` fills him over the third
-     of a second after the catch (so nothing snaps), and the fraction of the
-     gauge still standing lets it out, so he is lightest at the catch and his
-     own weight again by the time the bar is empty. Read against spicyTime()
-     and not SPICY_TIME for the reason the gauge is, and clamped because a
-     second hot drop tops the heat up to 1.6x and a balloon cannot be more
-     than full. lift(k) turns that into the multiplier the accessor wants,
-     and is exactly 1 for everyone without the field, for a cold Joe, and -
-     because die() zeroes the heat - for a popped one, who tumbles at full
-     weight. */
-  function hotAir() {
-    if (!doodad.hotAir || spicy <= 0) return 0;
-    return heat * clamp(spicy / spicyTime(), 0, 1);
-  }
-  function lift(k) {
-    var h = doodad.hotAir;
-    return h ? 1 - (1 - h[k]) * hotAir() : 1;
-  }
+  function grav()    { return doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY; }
+  function maxFall() { return doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL; }
+  function flapV()   { return doodad.light ? FLAP * doodad.light.flap : FLAP; }
 
   /* THE SPRING, Koa's: the one rule in the game about a flap taken while
      falling fast. Everyone's flap SETS vy to flapV() whatever the doodad was
@@ -29106,6 +29188,83 @@ var PlayScene = (function () {
   function hitR()    { return HIT_R * shrink(); }
   function bodyR()   { return BODY_R * shrink(); }
 
+  /* FLAT OUT, Donkey Joe's, and the one doodad in the game whose hitbox is
+     not a circle. `flat` is how wide he gets at full fall speed; squash()
+     is where he is between round and that, linear in |vy| / maxFall(), and
+     it is the WIDTH scale with 1/squash() the height scale - so rx * ry is
+     hitR() squared whatever he is doing. The area never changes. That is
+     the whole defence of the ability and it is arithmetic rather than a
+     promise: he is never less of a doodad than anyone else, which is
+     Turd's axis and stays Turd's; he is the same amount of donkey spread
+     sideways, and only while he is fast. An inflatable is a fixed volume
+     of air in a soft skin, and a soft thing full of air flattens ACROSS
+     its motion - a water balloon, a raindrop - where a rubber ball
+     stretches along it. So Koa goes tall off a rebound and Joe goes flat
+     at speed, and the two bodies say they are different things before
+     either ability has done anything.
+
+     A pure function of |vy| with no timer, no gauge and no damping, the
+     way Koa's springV() is a pure function of the fall it was taken from:
+     the shape IS the speed, so the drawn body and the hitbox are the same
+     ellipse on every single frame and neither can lag the other. Through a
+     flap taken at the hover rhythm |vy| is continuous (338 in, 338 out) and
+     nothing jumps; out of a glide it does (0 -> -338, round to 1.31 in one
+     frame), and that two-pixel pop reads as the flap's own impulse bopping
+     him, which is the one place the engine gets a cartoon for free.
+
+     It is 1 outside play and pause. In 'ready' vy is 0 and he is round
+     anyway, so that costs nothing; what it buys is the death animation,
+     because a popped balloon should tumble round - and because land() puts
+     him down at FLOOR - bodyR(), which is only honest if nothing is
+     flattening the body it is measuring. */
+  function squash() {
+    var f = doodad.flat;
+    if (!f || f <= 1 || (state !== 'play' && state !== 'paused')) return 1;
+    return 1 + (f - 1) * clamp(Math.abs(player.vy) / maxFall(), 0, 1);
+  }
+  function hitRx()  { return hitR() * squash(); }
+  function hitRy()  { return hitR() / squash(); }
+  function bodyRy() { return bodyR() / squash(); }
+
+  /* AND THE FORGIVENESS STOPS BEING THE SAME BOTH WAYS FOR HIM. Every
+     doodad is drawn at BODY_R 13 and collided at HIT_R 11, so two pixels of
+     his outline may overlap a plank and live. Those two pixels go through
+     the same squash as everything else, which means at a full dive he is
+     forgiven 2 * 1.5 = 3px on the flanks and 2 / 1.5 = 1.33px above and
+     below. It is left that way rather than floored at 2, because flooring
+     it would make the drawn body and the hitbox two different shapes and
+     the whole argument for this ability is that they are one - but it is
+     worth knowing that his flank is the one edge in the game with three
+     pixels of grace, and his top and bottom the one with less than two. */
+
+  /* the ellipse against one of art.rectsFor()'s rects, which are all axis
+     aligned. Scaling y about the player's own centre by k = rx / ry, which
+     for a constant-area squash is simply s * s, turns the ellipse into a
+     circle of radius rx and carries the rect to another axis-aligned rect -
+     so the existing test answers it EXACTLY, not approximately, for every
+     plank, pillar, spike, drop and boon in the game. The s === 1 branch is
+     the old call bit for bit, which is what the other eleven doodads run
+     down to the last float: nobody else's collisions move by a pixel.
+
+     The lime composes through hitR() the way everything does, and that is
+     the tightest corner of the ability: a shrivelled Joe at a full dive is
+     4.55px of half-height against the Coop cap's 9px of clearance. The
+     frame step to measure that against is 18.8 and not 18.2 - updatePlayer
+     integrates `vy * dt + 0.5 * g * dt * dt`, so at terminal velocity with
+     dt at its 1/30 clamp he moves 18.167 + 0.656 - which leaves 9.73px
+     between one frame's hitbox and the next's. That is half a pixel thinner
+     than the thinnest thing already shipped: Turd with a lime is 4.77px of
+     radius and 9.27px of gap on the same cap, and the owner signed that
+     off. So it is not a new KIND of thin, but it is the thinnest, and it is
+     the number to look at first if a plank is ever flown through. */
+  function hitsRect(r) {
+    var s = squash();
+    if (s === 1) return circleHitsRect(player.x, player.y, hitR(), r[0], r[1], r[2], r[3]);
+    var k = s * s;
+    return circleHitsRect(player.x, player.y, hitR() * s,
+                          r[0], player.y + (r[1] - player.y) * k, r[2], r[3] * k);
+  }
+
   function flap() {
     var spring = springV();
     player.vy = flapV() - spring;
@@ -29138,17 +29297,18 @@ var PlayScene = (function () {
     player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
     if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
 
-    /* gravity, integrated so a flap always reaches the same height. For a
-       doodad with hot air in him grav() is already the lighter number, and
-       it changes a little every frame as the gauge drains - which is fine,
-       because the integrator reads it fresh and never caches it. */
+    /* gravity, integrated so a flap always reaches the same height */
     var g = grav();
     player.y += player.vy * dt + 0.5 * g * dt * dt;
     player.vy = Math.min(player.vy + g * dt, maxFall());
     player.flapTimer -= dt;
     if (player.spring > 0) player.spring = Math.max(0, player.spring - dt * 4);
 
-    var br = bodyR();
+    /* the VERTICAL drawn radius, because every use of it below is a lid or a
+       floor stopping him at the top or the bottom of the body, and for a
+       flattened doodad that is a shorter distance than the sideways one.
+       bodyRy() is bodyR() for the eleven who are round. */
+    var br = bodyRy();
 
     /* The lid. In the Backyard the rafters are solid but survivable; in the
        Living Room they end the run, and the two paths share exactly one
@@ -29160,8 +29320,10 @@ var PlayScene = (function () {
        simply leave through the top of the screen. It stops at the HITBOX
        radius rather than the drawn one: the floor kills at the hitbox, and
        the two edges of the room have no business using different numbers -
-       so both use the forgiving one. */
-    var hr = hitR();
+       so both use the forgiving one, and both use the VERTICAL one for the
+       same reason br does: a ceiling is met by the top of the hitbox. The
+       flag logic underneath is untouched. */
+    var hr = hitRy();
     if (CEIL_KILLS) {
       ceilHit = player.y - hr < CEIL;
       if (ceilHit) {
@@ -29416,7 +29578,9 @@ var PlayScene = (function () {
      of the list mid-loop */
   function collide() {
     var rects = [];
-    var hr = hitR();
+    /* no radius is hoisted here any more: hitsRect() asks for the shape it
+       needs, and the cheap x-cull below culls on constants rather than on
+       the body, so nothing in this loop has to know how wide he is today */
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
       if (ob.type === 'litter') continue;
@@ -29427,7 +29591,7 @@ var PlayScene = (function () {
       var hit = false;
       for (var k = 0; k < rects.length && !hit; k++) {
         var r = rects[k];
-        hit = circleHitsRect(player.x, player.y, hr, r[0], r[1], r[2], r[3]);
+        hit = hitsRect(r);
       }
       if (!hit) continue;
       /* A boon is a gift unless it is a HIDER wearing a boon's clothes, and
@@ -29475,7 +29639,9 @@ var PlayScene = (function () {
       if (spicy > 0) { smashDrop(ob); obstacles.splice(i, 1); continue; }
       if (hurt('drop')) return;
     }
-    if (player.y + hr >= FLOOR) hurt('ground');
+    /* the bedding, met by the BOTTOM of the hitbox - the vertical radius,
+       exactly as the lid above is met by the top of it */
+    if (player.y + hitRy() >= FLOOR) hurt('ground');
     /* and the other edge of the room, in the rooms that have one. The flag
        was set by updatePlayer this same frame; it is spent here so that a
        head-bump is one death and not one per frame spent held against the
@@ -29959,6 +30125,19 @@ var PlayScene = (function () {
       if (o) { o.squashX /= sp; o.squashY *= sp; }
       else o = { squashX: 1 / sp, squashY: sp };
     }
+    /* and the FLATTEN, which is not one of the three above. Those are
+       flourishes: a throb, a buzz, a stretch, all of them drawn in the
+       body's own axes so they lean over with the tilt, and none of them
+       changing what can kill him. This one IS the hitbox - the same
+       axis-aligned ellipse collide() tests this frame - so it goes through
+       flatX/flatY, which Doodads.draw applies in SCREEN axes and before the
+       tilt, and the outline stays square to the room however he is pitched.
+       Multiplying into o rather than replacing it means it composes with the
+       heat, the lime and Koa's spring precisely the way those three compose
+       with each other; for the eleven without `flat` sq is 1 and this is a
+       comparison and nothing more. */
+    var sq = squash();
+    if (sq > 1.001) { o = o || {}; o.flatX = sq; o.flatY = 1 / sq; }
     /* the drawn size IS the current size - the sprite sits on the smooth
        layer, so any radius costs the same */
     Doodads.draw(ctx, doodad.id, player.x, player.y, bodyR(), player.angle, frame, o);
@@ -30741,11 +30920,21 @@ var PlayScene = (function () {
                                     nervePop: nervePop, nerveGain: nerveGain,
                                     goldPop: goldPop,
                                     ability: doodad ? doodad.ability : null,
-                                    /* how full of hot air he is and how much
+                                    /* the SHAPE he is this frame and how much
                                        his last flap sprang, so a headless
                                        test can read the two newest abilities
-                                       off the run rather than infer them */
-                                    hotAir: doodad ? hotAir() : 0, spring: player.spring,
+                                       off the run rather than infer them.
+                                       hitRx/hitRy are the two semi-axes of
+                                       the ellipse collide() actually tested,
+                                       which is what a sweep of the Coop's cap
+                                       has to compare against a round doodad -
+                                       and multiplying them back out is the
+                                       cheapest check that the area really is
+                                       constant. */
+                                    squash: doodad ? squash() : 1,
+                                    hitRx: doodad ? hitRx() : 0,
+                                    hitRy: doodad ? hitRy() : 0,
+                                    spring: player.spring,
                                     difficulty: tune ? difficulty() : null }; }
   };
 })();
