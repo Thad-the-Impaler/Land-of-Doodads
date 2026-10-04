@@ -597,9 +597,13 @@ var LivingRoom = (function () {
   /* A calm version of the room for the menus to sit on: bare plaster, the
      dado line, the ceiling and the floor, and none of the furniture that
      would fight the ui. All four bays export this as their own
-     drawMenuBackdrop. Nothing calls it today - the menus are still the
-     Coop's - and it exists so that the day one of them does, there is a
-     Living Room to show. */
+     drawMenuBackdrop. The porch (js/scene_porch.js) is the first caller:
+     its 480-wide Living Room bay resolves room.levels[0] to THE DESK
+     (levels.js:541), and the Desk's drawMenuBackdrop is a bare delegate
+     to this one (desk.js:1697). The porch bakes the result into a tile
+     once per session at a frozen scroll, so this runs once rather than
+     sixty times a second. The game's own menus - scores, achievements,
+     level select, character select - are still the Coop's. */
   function drawMenuBackdrop(ctx, scroll) {
     ctx.fillStyle = P.plasterDim;
     ctx.fillRect(0, 0, VW, VH);
@@ -609,10 +613,13 @@ var LivingRoom = (function () {
        Tint.rect(ctx, 0, VH - 120, VW, 120, P.void, 4) - 4/16 of void with a
        hard top edge on row 150, which is the same shape, in the same
        pigment, as the FLOOR-80 and FLOOR-40 rects that measured 37 and 39
-       of luminance in one row and started this whole rebuild. Nothing
-       calls this function yet, which is the only reason it survived; the
-       header of this file promises there is nothing left in here to have
-       an edge, and a backdrop nobody has used yet is not an exception.
+       of luminance in one row and started this whole rebuild. The hard
+       version survived the rebuild only as long as nothing called this
+       function; the header of this file promises there is nothing left
+       in here to have an edge, and this backdrop is not an exception -
+       the porch bakes it behind a full-width Living Room bay on the
+       second title screen, so the soft ramp is load-bearing rather than
+       hypothetical.
        Nothing at the top, and the old 4/16 exactly where the wash meets
        the boards - the strip is 92 rows, from 150 down to FLOOR, for the
        same reason bakeLight's void ramp is full at FLOOR: the deepest the

@@ -100,6 +100,9 @@ var Doodads = (function () {
       accent: '#c9873c', accentDark: '#7a4a1c', accentLight: '#eab873',
       sprite: { w: 381, h: 384, pivotX: 219.6, pivotY: 222.8, bodyR: 161.1, footOffset: 1.00 },
       voice: 'voiceCookie',
+      /* title: how this doodad lives on the title screens. Both read role and
+         r. homeX/homeY/spanX/spanY belong to the Coop title alone - the porch
+         (js/scene_porch.js) places everyone by stage order and ignores them. */
       title: { role: 'perch', r: 19 }
     },
     {
@@ -1045,6 +1048,17 @@ var Doodads = (function () {
     return meets(d, best);
   }
 
+  /* HOW MANY DOODADS THAT HAVE A PRICE ARE OPEN. The three free ones never
+     count, so adding a free doodad cannot move the porch's line. isUnlocked,
+     not meets: the second title screen is a door, and the passkey opens
+     doors - POULTRY CATCHER (achievements.js) is a record and keeps meets. */
+  function pricedOpen(best) {
+    if (best === undefined) best = bestReached();
+    var n = 0;
+    for (var i = 0; i < LIST.length; i++) if (priced(LIST[i]) && isUnlocked(LIST[i], best)) n++;
+    return n;
+  }
+
   /* WHICH LEVEL IS THIS, AND WHAT IS IT CALLED?
 
      Two of the prices name a level - "find him" and "collect three of
@@ -1235,6 +1249,7 @@ var Doodads = (function () {
     meetable: meetable, chaseable: chaseable,
     noteMeet: noteMeet, noteDeed: noteDeed,
     isUnlocked: isUnlocked, meets: meets, priced: priced, firstUnlocked: firstUnlocked,
+    pricedOpen: pricedOpen,
     masterKey: masterKey, setMasterKey: setMasterKey
   };
 })();

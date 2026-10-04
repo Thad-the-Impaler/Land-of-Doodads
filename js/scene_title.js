@@ -1,5 +1,6 @@
 /* ------------------------------------------------------------------
    Land of Doodads - title screen
+   The first title screen; the dispatcher at the foot of this file chooses between this and the porch (js/scene_porch.js).
    A slow pan through the coop with everyone the player has earned
    living in it. Each doodad carries a `title` role in js/doodads.js:
    a percher hops between the perches as they drift past, a flyer
@@ -10,7 +11,7 @@
 ------------------------------------------------------------------ */
 'use strict';
 
-var TitleScene = (function () {
+var CoopTitle = (function () {
 
   var SCROLL = 15;                 /* px per second of camera drift */
   var CEIL = Coop.CEIL, FLOOR = Coop.FLOOR;
@@ -909,4 +910,24 @@ var TitleScene = (function () {
   return { enter: enter, refresh: refresh, update: update,
            drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
            targets: function () { return hot; } };
+})();
+
+/* WHICH TITLE SCREEN. The Coop until ten priced doodads are open, the porch
+   from then on. One constant, evaluated on every enter(): unlocks change
+   only inside PlayScene, so the next visit re-picks. */
+var PORCH_AT = 10;
+var TitleScene = (function () {
+  var impl = null;
+  function pick() { return Doodads.pricedOpen() >= PORCH_AT ? PorchScene : CoopTitle; }
+  function enter(p) { impl = pick(); impl.enter(p); }
+  function refresh() {
+    if (pick() !== impl) Game.go(TitleScene, {});
+    impl.refresh();
+  }
+  return { enter: enter, refresh: refresh,
+           update: function (dt) { impl.update(dt); },
+           drawBg: function (c) { impl.drawBg(c); },
+           drawChars: function (c) { impl.drawChars(c); },
+           drawFg: function (c) { impl.drawFg(c); },
+           targets: function () { return impl.targets(); } };
 })();
