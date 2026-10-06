@@ -35,6 +35,8 @@ var PlayScene = (function () {
   var MOVE_SPD  = 116;
   var MOVE_ACC  = 880;
   var X_MIN     = 32, X_MAX = 304, X_START = 116;
+  /* a bop's rebound, as a fraction of his own flap - see bop() */
+  var BOP_LIFT  = 0.72;
   var BODY_R    = 13;          /* drawn body radius */
   var HIT_R     = 11;          /* forgiving hitbox  */
 
@@ -132,9 +134,9 @@ var PlayScene = (function () {
      PULLET in js/achievements.js, which probe the same
      Doodads.bestReached() the stalls price themselves against and finish at
      Scores.houseTop() + 1, 13 off today's seed, and at 26. Joe is himself
-     unlocked by the hot-and-sour deed, which only the Whiteboard can grant
-     because it is the only bay that sheds both a heat and a sour, and the
-     Whiteboard is the last bay in the house behind that whole chain of 20s -
+     unlocked by the hot-and-sour deed, which two bays grant, both behind
+     the same chain of 20s - they are the only two that shed both a heat and
+     a sour, and they stand at the far end of the house behind every 20 in it -
      so anyone holding him has cleared every 20, the 15 and the 13 already,
      and the two his rate can bring early are the 25 and PULLET's 26, which
      is that same 25 one plank further on. Both arrive early for the same
@@ -224,6 +226,25 @@ var PlayScene = (function () {
      plant from a different level. The Garden's own defaults sit here. */
   var boonName = 'SUCCULENT';
   var spikeArmed = false;
+  /* spikeArmed's twin for the things that stand on the floor and act: armed
+     once by foesReady() when pace reaches tune.foeScore, which is the moment
+     art.WARN.foe is spoken. A level without the key never arms it. */
+  var foeArmed = false;
+  /* THE FOE WARNING WAITS ITS TURN instead of being dropped. Every other
+     arming sentence is spoken only if the slot is free (hazardWarn <= 0) and
+     is lost otherwise, and for those that is a measured non-event: their
+     scores sit planks apart. The foe sentence is the exception twice over -
+     it is the one that names a thing that SHOOTS BACK, and it is asked at a
+     bay's birth, where the slot can be full of the drop or spike sentence
+     (a test tune of drop 0 / foe 2 lost it three runs out of three) or the
+     sentence can be up but hidden behind an unlock banner, which does not
+     stop hazardWarn counting down. So it is parked here and spoken on the
+     first playing frame where the slot is free AND no banner is covering it
+     - after the late sentence, which outranks it, and before the hole's
+     hint, which yields to both. Only foesReady() writes it, so a level
+     without tune.foeScore never touches it and hears exactly what it heard
+     before. Cleared by start(). */
+  var pendingWarn = null;
   /* The third armed slot, beside spikeArmed and dropArmed: a level may name
      a score at which it starts doing something WORSE than it has been doing
      (tune.lateScore), and `late` is how the makers find out. No maker may
@@ -252,6 +273,38 @@ var PlayScene = (function () {
      rate, which is what a maker deciding how hard to be is allowed to
      know. */
   var run = { score: 0, time: 0, late: false, scroll: 0 };
+  /* THE BORN QUEUE AND THE LEDGER: how a step that is not allowed to touch
+     the list still gets things into it, and how an art module that is not
+     allowed to call Audio3 still gets a banner, a noise and a badge out of
+     the engine. Both hang off `run` (run.ledger, run.born) and both are the
+     SAME two objects for the whole run, reset in start() and nowhere else -
+     `run` itself is rebuilt every frame, so anything an art module kept on it
+     would be gone by the next one, and the ledger is the one place a level
+     may keep per-run state of its own.
+
+     ledger  the art's per-run notebook. Every key in it is the art's own
+             business EXCEPT four the engine reads and clears in
+             drainLedger(): warn (a key into art.WARN), cry (an Audio3 role),
+             shake (an amplitude), deed (an achievement event string). A
+             level that never writes them never meets drainLedger doing
+             anything at all.
+     born    obstacles a step asked for this frame. A step walks inside
+             moveObstacles' backwards loop, where a push would be stepped
+             again by nobody and a splice would double-step a neighbour, so
+             it pushes HERE and admitBorn() lets them in once the walk has
+             returned. A born thing may carry `cry`, the noise it is born
+             with, played through the same rate limit for all of them.
+     bopCool seconds during which a thing just bopped is not there to be
+             bopped again - see bop().
+     prevY   player.y as it stood before this frame's integration: the
+             "came down from above" half of a bop.
+     cryAt   the last time a born thing made its noise; bopAt's twin, so a
+             volley born on one frame is one report and not three. */
+  var ledger = {};
+  var born = [];
+  var bopCool = 0;
+  var prevY = 0;
+  var cryAt = -1;
   /* ob.stun: a hazard that punishes without killing.
      ringing  seconds of buzz left, topped up the way the heat is
      stunTime  what the current ringing started at, so the pulses decay
@@ -489,8 +542,17 @@ var PlayScene = (function () {
     goldName = 'GOLD';
     ceilHit = false;
     late = false;
+    /* A fresh notebook and an empty queue for every run, RETRY included:
+       whatever a level wrote down about the last run - who has been met,
+       what is still owed - must not leak into this one. New objects for the
+       ledger (nothing outside this closure holds the old one but inspect()'s
+       last answer), `.length = 0` for the queue for the same reason the
+       obstacle list is never replaced. */
+    ledger = {}; born.length = 0; bopCool = 0; prevY = (CEIL + FLOOR) / 2;
+    cryAt = -1; foeArmed = false; pendingWarn = null;
     run = { score: 0, time: 0, late: false, scroll: 0,
-            speed: tune.speedStart, px: X_START, py: (CEIL + FLOOR) / 2 };
+            speed: tune.speedStart, px: X_START, py: (CEIL + FLOOR) / 2,
+            pvy: 0, hr: HIT_R, under: false, grace: false, ledger: ledger, born: born };
     ringing = 0; stunTime = 0; ringAmp = 0; buzzTimer = 0;
     /* the stage itself, which is a DOM transform and so is not reset by
        zeroing any of the above: RETRY during a ring must not start the
@@ -538,6 +600,24 @@ var PlayScene = (function () {
       spikeArmed = true;
       var w = art.WARN && art.WARN.spike;
       if (w && hazardWarn <= 0) { warnLines = w; hazardWarn = 2.4; Audio3.play('warn'); }
+    }
+    return true;
+  }
+
+  /* spikesReady's twin for a level that publishes makeFoe, with one
+     difference on purpose: a level that leaves tune.foeScore out has NO
+     foes, rather than having them from the first pillar. Spikes predate the
+     key and the Coop has always had them from the start; foes are new, and
+     a level that grows a makeFoe without saying when it starts is a mistake
+     better caught as nothing happening than as a shooter on plank one. */
+  function foesReady() {
+    if (tune.foeScore === undefined || pace < tune.foeScore) return false;
+    if (!foeArmed) {
+      foeArmed = true;
+      var w = art.WARN && art.WARN.foe;
+      if (w && hazardWarn <= 0 && unlockBanner <= 0) {
+        warnLines = w; hazardWarn = 2.4; Audio3.play('warn');
+      } else if (w) pendingWarn = w;     /* see pendingWarn */
     }
     return true;
   }
@@ -640,9 +720,23 @@ var PlayScene = (function () {
     Audio3.play(spicy ? 'sizzle' : 'crack');
   }
 
-  /* an egg that made it all the way down */
+  /* an egg that made it all the way down - or, for a drop the level says has
+     POPPED (ob.pop), one that met something on the way and bursts where it
+     struck. Two optional fields ride with it: `splat`, how long the remains
+     stay up in place of the bay's SPLAT_TIME, and `burst`, an [hi, body]
+     colour pair for the splatter in place of the bay's FX pair. A popped
+     drop is a small thing stopping, not a big thing landing, so it gets the
+     quiet `bop` tick through the shared rate limit rather than a splat, and
+     it is NOT moved to the floor: a thing that hit a wall at head height
+     leaves its mess at head height. A drop without `pop` is exactly the
+     egg it always was - `ob.splat` undefined reads as SPLAT_TIME. */
   function landDrop(ob) {
-    ob.broken = art.SPLAT_TIME;
+    ob.broken = ob.splat || art.SPLAT_TIME;
+    if (ob.pop) {
+      splatter(ob.x, ob.y, !!ob.spicy, 5, ob.burst);
+      if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
+      return;
+    }
     ob.y = FLOOR;
     splatter(ob.x, FLOOR - 1, ob.spicy, 9);
     Audio3.play(ob.spicy ? 'fizzle' : 'splat');
@@ -650,19 +744,27 @@ var PlayScene = (function () {
 
   /* an ordinary egg flown straight through while the run is hot */
   function smashDrop(ob) {
-    splatter(ob.x, ob.y, true, 14);
+    /* a drop that carries its own burst colours bursts in them, whoever
+       broke it; one without them is the heat's, as it always was */
+    splatter(ob.x, ob.y, !ob.burst, 14, ob.burst);
     Screen.shake(1.6, 0.14);
     Audio3.play('splat');
   }
 
-  /* `spiced` rather than `hot`: `hot` is this scene's target list */
-  function splatter(x, y, spiced, n) {
+  /* `spiced` rather than `hot`: `hot` is this scene's target list.
+     `cols` is an optional [hi, body] pair for a drop that carries its own
+     colours (ob.burst): a bay may shed more than one kind of small thing and
+     its FX pair can only be the colour of one of them. Every caller that
+     passes four arguments gets the FX pair, and the dice are rolled in the
+     same order either way, so nothing that was splattering before moves. */
+  function splatter(x, y, spiced, n, cols) {
+    var hi = cols ? cols[0] : FX.splatHi, body = cols ? cols[1] : FX.splat;
     for (var i = 0; i < n; i++) {
       particles.push({ x: x + rand(-3, 3), y: y + rand(-3, 3),
                        vx: rand(-64, 64) - speed * 0.12, vy: rand(-120, -20),
                        life: rand(0.3, 0.8), g: 380,
                        col: spiced ? (chance(0.5) ? FX.hotMid : FX.hot)
-                                   : (chance(0.45) ? FX.splatHi : FX.splat) });
+                                   : (chance(0.45) ? hi : body) });
     }
   }
 
@@ -731,7 +833,12 @@ var PlayScene = (function () {
       nudge(ob, (dx / d) * sp, (dy / d) * sp);
       /* a falling tomato must stop falling once he has hold of it, or
          gravity and the hunger spend the whole time arguing */
-      if (ob.type === 'drop') ob.vy *= 0.72;
+      /* and a SHOT - a drop the level fires sideways rather than lets fall
+         - must stop flying for the same reason, so its vx is damped too.
+         Gated on `ob.shot` and NOT on `ob.vx`: a hopping kernel carries a vx
+         of its own that is its bounce, and taking it off would flatten the
+         hop of a thing that is not travelling anywhere. */
+      if (ob.type === 'drop') { ob.vy *= 0.72; if (ob.shot) ob.vx *= 0.72; }
       /* the thread of motes between him and it */
       if (chance(dt * 26)) {
         var f = rand(0.15, 0.85);
@@ -1140,6 +1247,11 @@ var PlayScene = (function () {
          foresee, and a line drawn to it is a line drawn to the floor. The
          art sets ob.landed; the engine only reads it. */
       if (ob.landed) continue;
+      /* Nor is there a line for a SHOT. It is not falling - it is crossing
+         the room sideways - so "where it will land" has no answer, and a
+         line dropped from it to the floor would mark a spot it will never
+         reach. Her ability is about the sky coming down. */
+      if (ob.shot) continue;
       if (ob.x < player.x - 24) continue;
       out.push(ob);
     }
@@ -1444,11 +1556,30 @@ var PlayScene = (function () {
 
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
+      /* ob.keep: a thing the level says is too big to be taken out of the
+         world by a spare life. It stays, and the grace is what protects him
+         from it - the house rule bends here rather than breaks, because the
+         trouble a keeper causes is what it SENDS, and that is cleared below
+         like anything else in reach. */
+      if (ob.keep) continue;
       if (ob.type === 'litter' || ob.type === 'boon') continue;
       if (ob.type === 'drop' && ob.broken > 0) continue;
+      /* A SHOT IS CLEARED WHEREVER IT IS, reach or no reach: the keeper's
+         argument above made general - what a shooter SENT is the trouble.
+         Not for safety: a shot in flight is at most ~230px out and crosses
+         that in well under the 1.7s grace, so it could only pass through
+         him harmlessly. For the read: a save is the world's trouble taken
+         away, and shots sailing through a blinking doodad say it was not.
+         Only a level that fires (ob.shot) ever reaches this line. */
+      if (ob.shot) {
+        splatter(ob.x, ob.y, !!ob.spicy, 8, ob.burst);
+        obstacles.splice(i, 1);
+        continue;
+      }
       if (ob.x + (ob.w || 40) < player.x - SAVE_BEHIND) continue;
       if (ob.x > player.x + SAVE_AHEAD) continue;
-      if (ob.type === 'drop') splatter(ob.x, ob.y, !!ob.spicy, 8);
+      /* in its own colours if it carries a pair (ob.burst): see splatter */
+      if (ob.type === 'drop') splatter(ob.x, ob.y, !!ob.spicy, 8, ob.burst);
       else clearBurst(ob.x + (ob.w || 20) / 2);
       obstacles.splice(i, 1);
     }
@@ -1571,6 +1702,74 @@ var PlayScene = (function () {
     bank(runStat('run.stun', stuns));
   }
 
+  /* --------------------------------------------------------- the bop
+
+     A THING LANDED ON. collide() calls this only for a flagged rect struck
+     from above (see the test there); everything about what the bop MEANS -
+     a hit point, a reward, a fall - is the level's, through art.bopFoe, and
+     everything about what it FEELS like is here, because it is the doodad
+     that bounces and the doodad is the engine's.
+
+     He is put on top of the rect, one pixel clear, so the frame after a bop
+     cannot test him inside the thing he just came off. The rebound is
+     BOP_LIFT of a flap through flapV(), so a light doodad bounces lightly,
+     and the spring is zeroed - Koa's spring is about a flap taken while
+     falling, and a bop is not a flap. For a balloon (down() < 0) only a
+     nudge: his own gravity is already throwing him at the lid, and a full
+     flap downward off a bop would be the room hitting him twice - -40 is
+     0.43s to the lid from a surface 129px above the floor, the same as any
+     doodad falling that far.
+
+     WHY 0.72 AND NOT A FULL FLAP. The rebound is a movement he did not
+     make, so it must never carry him somewhere he would not have gone. It
+     was flapV() * 1.05, -355: a 53px rise in 0.30s, and off a surface whose
+     top is at 176 that put his hitbox top at 100 - inside every upper
+     column whose gap starts below 100, about a third of them at gapMin 82,
+     a death by a plank that arrived during a bounce. -338 * 0.72 = -243
+     rises 243^2 / 2360 = 25px and peaks at 0.21s (Billy: -199 over his 850,
+     23px), so off that 176 the apex hitbox top is 176 - 1 - 11 - 25 - 11 =
+     128, past the deepest gapY of 126: the bounce alone can no longer lift
+     him into a column, and it only ever moves him away from a lower one.
+     A surface set HIGHER than 175 gives that guarantee up, and then keeping
+     the rebound out of the planks is the level's job - it withdraws the
+     surface (drops the flagged rect) while a plank is near him, which it
+     can see in the list and the engine cannot judge for it. It still reads
+     as a bounce, and inside the level's own hurt window he pogoes on the
+     thing harmlessly.
+
+     bopCool is the 0.3s in which the surface is not there, so one landing
+     is one bop however many frames the hitbox spends overlapping it on the
+     way back up. It is NOT a hurt: the grace after a save does not stop it,
+     no life is spent and nothing is spliced.
+
+     The particles are the thing's own colours when it carries a pair
+     (ob.burst) and the bay's puff otherwise. Then the level is told, and
+     because the level may have just pushed something into the born queue
+     and written a deed, a banner and a cry into the ledger, both are
+     emptied HERE: collide() runs after the per-frame drain, and this may be
+     the last thing a run does before the same walk ends it. */
+  function bop(ob, r) {
+    bopCool = 0.3;
+    player.y = r[1] - hitR() - 1;
+    player.vy = down() > 0 ? flapV() * BOP_LIFT : -40;
+    player.spring = 0;
+    player.flapTimer = 0.22;
+    player.angle = -0.36 * down();
+    Audio3.play('stomp');
+    Screen.shake(2.5, 0.2);
+    for (var i = 0; i < 12; i++) {
+      var a = rand(-TAU / 2, 0), sp = rand(40, 140);
+      particles.push({ x: player.x + rand(-6, 6), y: r[1],
+                       vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                       life: rand(0.25, 0.6), g: 300,
+                       col: ob.burst ? ob.burst[i % ob.burst.length]
+                                     : (chance(0.5) ? FX.puffHi : FX.puff) });
+    }
+    if (art.bopFoe) art.bopFoe(ob, run);
+    if (born.length) admitBorn();
+    drainLedger();
+  }
+
   /* --------------------------------------------------------- the heat */
 
   function grabSpicy(ob) {
@@ -1679,7 +1878,7 @@ var PlayScene = (function () {
     checkLimeUnlocks();
     /* No achievement reads 'sour' today. It is wired anyway because the cost
        is one line and the alternative is a lime tally that starts at zero on
-       the day the twelfth achievement is written - the four pickups are a
+       the day the thirteenth achievement is written - the four pickups are a
        set, and an uncounted one is the kind of hole that is only ever found
        by shipping it and then telling players their limes did not count. */
     bank(Achievements.note('sour', level));
@@ -1711,9 +1910,10 @@ var PlayScene = (function () {
      either happened or it did not - so the roster remembers it in the same
      list it remembers a found doodad in, and the engine reports it by a plain
      string and never learns what it opens or whether it opens anything at
-     all. Nine bays out of ten call this and get an empty list back because
-     nothing in the roster is waiting on that string, which costs one array
-     walk at the instant a power-up is caught.
+     all. Every bay but the two that shed both a heat and a sour calls this
+     and gets an empty list back because nothing in the roster is waiting on
+     that string, which costs one array walk at the instant a power-up is
+     caught.
 
      SO THIS IS SAFE TO CALL AS OFTEN AS THE EVENT HAPPENS. noteDeed writes
      the doodad's id down the first time and returns [] every time after, so
@@ -1729,7 +1929,7 @@ var PlayScene = (function () {
      because finding a doodad is an event nothing else looks at; this is
      called from inside grabSpicy and grabSour, and both of them end in a
      bank(Achievements.note(...)) which runs check() a few lines later. A
-     second check() would re-read all eleven rows for nothing. */
+     second check() would re-read all twelve rows for nothing. */
   function checkDeed(name) {
     var won = Doodads.noteDeed(name);
     if (!won.length || Doodads.masterKey()) return;
@@ -1778,6 +1978,51 @@ var PlayScene = (function () {
     return ob;
   }
 
+  /* THE BORN QUEUE, LET IN. A step may not admit - it is inside a walk over
+     the list - so it pushes into run.born and this runs once the walk has
+     returned: everything goes through admit() and gets its clock like any
+     other newcomer, at the END of the list, which the next backwards walk
+     reaches first. A born thing that names a `cry` makes that noise, here
+     and not in the art (no art module calls Audio3), rate limited through
+     cryAt so a volley of three on one frame is one report. */
+  function admitBorn() {
+    for (var i = 0; i < born.length; i++) {
+      var ob = admit(born[i]);
+      if (ob.cry && t - cryAt > 0.05) { cryAt = t; Audio3.play(ob.cry); }
+    }
+    born.length = 0;
+  }
+
+  /* THE LEDGER DRAIN, a function because it is called from two places: once
+     per frame after the obstacles have moved, and again at the end of bop(),
+     which runs inside collide() - after the per-frame drain - and may be the
+     last thing a run does. A deed written there and read next frame is a
+     deed lost to the 'dying' state and the ledger reset on retry.
+
+     Four keys and only four. `deed` is an achievement event, noted against
+     THIS level object exactly as the pickups note theirs, so the roster
+     sees both the event and the event-on-this-level and the engine names
+     neither. `warn` is a key into art.WARN and it OVERWRITES the heads-up
+     slot, which is the drop's precedent rather than the spikes' polite
+     wait: the art asks only for its biggest news, and news that waits its
+     turn behind a two-second banner has already happened. Its tone is
+     'warn' unless the same frame named a `cry` of its own, in which case
+     the cry is the tone - one noise per piece of news. `shake` is an
+     amplitude for 0.4s. Each is cleared as it is read, so a level that
+     writes one once hears it once. */
+  function drainLedger() {
+    if (ledger.deed) { bank(Achievements.note(ledger.deed, level)); ledger.deed = null; }
+    var cry = null;
+    if (ledger.cry) { cry = ledger.cry; ledger.cry = null; }
+    if (ledger.warn) {
+      var lw = art.WARN && art.WARN[ledger.warn];
+      if (lw) { warnLines = lw; hazardWarn = 2.4; if (!cry) cry = 'warn'; }
+      ledger.warn = null;
+    }
+    if (cry) Audio3.play(cry);
+    if (ledger.shake) { Screen.shake(ledger.shake, 0.4); ledger.shake = 0; }
+  }
+
   function spawnAhead() {
     var d = difficulty();
     while (spawnCursor < VW + 120) {
@@ -1811,7 +2056,7 @@ var PlayScene = (function () {
       /* THE COUNT IS ITS OWN LINE NOW. It used to be a ++ inside the meet
          test, so on a level with no tune.meetAt the test short-circuited and
          nothing was ever counted: planksUp stayed 0 for the whole run on
-         seven of the nine levels. Two things read it now and the second of
+         seven of the then nine levels. Two things read it now and the second of
          them lives on a level with no hider, so the count has to happen
          everywhere - and a headless test that asserted planksUp === 0 on
          those seven was asserting a bug. The count is planks SPAWNED either
@@ -1885,6 +2130,20 @@ var PlayScene = (function () {
         else if (art.makeBoon && tune.boonChance && chance(tune.boonChance)) {
           admit(art.makeBoon(mid + rand(-30, 30), run));
           boonGap = tune.boonGap || 5;
+        }
+
+        /* SOMETHING THAT STANDS IN THE BAY AND ACTS: a level that publishes
+           makeFoe is asked once per bay, from tune.foeScore on, and may say
+           no by returning null - the dice, the caps and what kind of thing
+           it is are all the art's. LAST in the bay on purpose: the spike,
+           the litter and the boon makers have already run, so a level that
+           keeps one thing per floor can read its own notes about this bay
+           off run.ledger before it decides. foesReady() is asked only when
+           the hook exists, so a level without it never arms, never warns
+           and never rolls a die it did not roll before. */
+        if (art.makeFoe && foesReady()) {
+          var foe = art.makeFoe(mid, d.spacing, run);
+          if (foe) admit(foe);
         }
       }
 
@@ -2105,12 +2364,17 @@ var PlayScene = (function () {
      lowest drift band, the Mantle's pad and remote bodies - and the Deck's
      mister stops at FLOOR - 14, which still crosses the 220. A mister that
      is not spraying publishes no box at all, and refusing nothing there is
-     the honest answer: there is no spray to be standing in. */
-  function diveSpans(out) {
+     the honest answer: there is no spray to be standing in.
+
+     `foes` narrows the walk to things that stand and act (ob.foe), for
+     breach(): see the comment there for why only those. Every caller from
+     before passes one argument and walks exactly what it always walked. */
+  function diveSpans(out, foes) {
     var hr = hitR(), top = FLOOR - 2 * hr, i, k, r, b, ob;
     for (i = 0; i < obstacles.length; i++) {
       ob = obstacles[i];
       if (ob.type !== 'spike' || ob.side !== 'floor' || ob.stun) continue;
+      if (foes && !ob.foe) continue;
       r = [];
       art.rectsFor(ob, r);
       for (k = 0; k < r.length; k++) {
@@ -2164,6 +2428,27 @@ var PlayScene = (function () {
     if (diveOb) {
       var sp = plankSpan(diveOb);
       if (player.x + hr > sp.lo && player.x - hr < sp.hi) return;
+    }
+    /* NOR INTO SOMETHING STANDING ON THE FLOOR AND HOLDING ITS GROUND.
+       divePlank() asks diveSpans() on the way IN only, and for a hazard that
+       scrolls with the room that is enough: the window opens after its left
+       edge, so a doodad under the sand never meets one. A thing that holds
+       station on the SCREEN instead - it walks forward as fast as the room
+       goes back - does not keep that promise: one standing at screen x
+       238..258 with a box reaching the water 20px either side of its middle
+       is passed at the entry test by a doodad diving at 180..206, who then
+       holds RIGHT under the plank at 116 px/s for ~0.24s, covers 28px, and
+       surfaces at FLOOR - bodyR() inside it - the death on the surfacing
+       frame these comments call a bug when a plank does it. So he stays
+       under (0.05s at a time, renewed) and is carried out of its LEFT side
+       by updatePlayer, the one direction that is always open. Asked of
+       ob.foe things only: those are the only floor hazards that move
+       against the scroll, and every bay without them keeps the surfacing
+       it has always had, bit for bit. */
+    if (diveBlocked(diveSpans([], true), player.x)) {
+      player.vx = Math.min(player.vx, 0);
+      diving = Math.max(diving, 0.05);
+      return;
     }
     diving = 0; diveOb = null;
     /* FLOOR - bodyR() against the kill test at FLOOR - hitR(): 229 + 11 =
@@ -2221,6 +2506,17 @@ var PlayScene = (function () {
          points is only raised once his leading edge is actually under the
          face. The scoring block reads it; see the pace declaration. */
       if (!diveOb.dived && player.x + hr > diveOb.x) diveOb.dived = true;
+      /* CARRIED OUT FROM UNDER A FOE - breach()'s refusal above, and not
+         optional: without it a doodad parked under one would stay submerged
+         and therefore untouchable for as long as it stood there. MOVE_SPD,
+         his own steering speed, out of its left side; his RIGHT is
+         overruled while it lasts - vx pinned at 0 or below, or a held RIGHT
+         at the same 116 would cancel the carry and park him there anyway.
+         A bay with no foes asks and is told no, with no box ever built. */
+      if (diveBlocked(diveSpans([], true), player.x)) {
+        player.vx = Math.min(player.vx, 0);
+        player.x = Math.max(X_MIN, player.x - MOVE_SPD * dt);
+      }
       if (chance(dt * 30)) {
         particles.push({ x: player.x - 8, y: FLOOR - 1,
                          vx: -speed * 0.4 + rand(-20, 0), vy: rand(-30, -5),
@@ -2548,8 +2844,8 @@ var PlayScene = (function () {
        rather than on a results screen three seconds later.
 
        check() takes no argument because it is not told what changed; it
-       re-reads all eleven rows, and that is on purpose. This function runs
-       once per point, so eleven comparisons against values the roster keeps
+       re-reads all twelve rows, and that is on purpose. This function runs
+       once per point, so twelve comparisons against values the roster keeps
        cached in module scope is the whole cost, and in exchange no caller
        anywhere has to know which achievements a score could possibly move.
        An achievement already banked never comes back out of check() again,
@@ -2640,6 +2936,9 @@ var PlayScene = (function () {
     var hr = hitR();
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
+      /* a thing its level has retired this frame is not there to be hit;
+         moveObstacles takes it out of the list on the next walk */
+      if (ob.gone) continue;
       if (ob.type === 'litter') continue;
       if (ob.type === 'drop' && ob.broken > 0) continue;
       if (ob.x > player.x + 46 || ob.x + (ob.w || 40) < player.x - 46) continue;
@@ -2673,6 +2972,35 @@ var PlayScene = (function () {
         continue;
       }
       if (ob.type !== 'drop') {
+        /* THE BOP. An obstacle may carry ob.bop, and a rect of it may carry a
+           fifth element, [x, y, w, h, 1]: that rect is a thing to be landed
+           ON. ONLY A FLAGGED RECT IS A BOP SURFACE, and it is harmless from
+           the side - a doodad flying past a face flies past a face.
+           FROM ABOVE, IN THE ROOM'S FRAME: last frame's hitbox bottom was at
+           or above the struck rect's top and he is moving down the screen.
+           The room's frame and not his own on purpose: the thing is standing
+           on the floor, and a helium doodad reaches its top the only way he
+           can, by flapping down onto it. bopCool is the no-double-bop
+           window; inside it the surface is simply not there. It is read
+           ahead of the ring and of hurt() because it is neither: a bop is
+           not a hurt, so it lands during the grace after a save as well. */
+        if (ob.bop && r[4]) {
+          if (bopCool <= 0 && player.vy > 0 && prevY + hr <= r[1] + 3) { bop(ob, r); continue; }
+          /* Side contact with the bop surface hides nothing: the inner loop
+             stopped at the first rect that hit, so look on for a LETHAL rect
+             of the same thing under him - a head and a body are one object
+             and the body still kills. `k` was left one past the rect that
+             hit, which is exactly where the search has to start. */
+          var lethal = null;
+          for (var k2 = k; k2 < rects.length; k2++) {
+            var q = rects[k2];
+            if (!q[4] && circleHitsRect(player.x, player.y, hr, q[0], q[1], q[2], q[3])) { lethal = q; break; }
+          }
+          if (!lethal) continue;
+          r = lethal;
+        }
+        /* an unflagged rect of a bop object, or any rect of anything else, is
+           ordinary from here down: a ring or a hurt */
         /* A hazard that only RINGS. It is read before hurt(), so a level
            can have both kinds of obstacle in the air at once and the engine
            never has to ask which level it is; the grace after a save covers
@@ -2902,6 +3230,7 @@ var PlayScene = (function () {
     if (stunFlash > 0) stunFlash -= dt;
     if (stunBanner > 0) stunBanner -= dt;
     if (hazardWarn > 0) hazardWarn -= dt;
+    if (bopCool > 0) bopCool -= dt;
     if (unlockBanner > 0) {
       unlockBanner -= dt;
       if (unlockBanner <= 0) {
@@ -3045,6 +3374,15 @@ var PlayScene = (function () {
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
+      /* What the steps asked for while they walked: the born queue let in
+         and the ledger read. HERE, straight after the walk and BEFORE the
+         pull's return below, so a thing born on the frame the hole takes
+         him is still admitted (and then cleared by enterWarp with
+         everything else) rather than left in the queue for a world it does
+         not belong to. A level that writes neither costs one length test
+         and four falsy reads. */
+      if (born.length) admitBorn();
+      drainLedger();
 
       /* THE PULL INTO THE HOLE. Everything below this is skipped for its
          0.42s: no late arm, no spawning, no player, no hunger, no collide.
@@ -3087,6 +3425,12 @@ var PlayScene = (function () {
         var wl = art.WARN && art.WARN.late;
         if (wl && hazardWarn <= 0) { warnLines = wl; hazardWarn = 2.4; Audio3.play('warn'); }
       }
+      /* the parked foe sentence, on the first free and uncovered frame -
+         see pendingWarn for why it alone is queued */
+      if (pendingWarn && hazardWarn <= 0 && unlockBanner <= 0) {
+        warnLines = pendingWarn; hazardWarn = 2.4; Audio3.play('warn');
+        pendingWarn = null;
+      }
       /* THE HEADS-UP FOR THE HOLE, which is a GIFT'S sentence and so yields
          to a hazard's. It is spoken on the first frame the slot is free
          while the hole is still ahead of the player, and DROPPED otherwise:
@@ -3104,11 +3448,20 @@ var PlayScene = (function () {
       /* `speed`, `px` and `py` are for a hider that has to hold station or
          find the player - see the contract comment on stepBoon. Built after
          the loop, so an art module reads them one frame stale, which is the
-         staleness the Deck already accepted. */
+         staleness the Deck already accepted.
+         `pvy` and `hr` are for a thing that aims at him (where he is
+         heading, and how big he is); `under` and `grace` are the two states
+         in which nothing may be aimed at him at all - submerged, or inside
+         the grace after a save. `ledger` and `born` are the same two
+         objects every frame of the run: see their declaration. */
       run = { score: pace, time: runTime, late: late, scroll: scroll,
-              speed: speed, px: player.x, py: player.y };
+              speed: speed, px: player.x, py: player.y,
+              pvy: player.vy, hr: hitR(), under: diving > 0, grace: invuln > 0,
+              ledger: ledger, born: born };
       spawnAhead();
       spawnDrops(dt, d);
+      /* where he was before he moved, for the bop's "from above" */
+      prevY = player.y;
       updatePlayer(dt);
       updateHunger(dt);
       updateNerve();
@@ -3172,7 +3525,8 @@ var PlayScene = (function () {
      module in this project calls Audio3 or touches the particle list, and
      because the rate limit has to be shared - a carpet of popcorn can land
      fifteen kernels in one frame and fifteen ticks at once is a crack, not a
-     tick.
+     tick. And the born queue's cry, for the same reason: admitBorn plays it
+     on this side of the line, through cryAt, this function's twin limit.
 
      Pulled out of moveObstacles because there are two callers now: the
      level's drop step and the level's boon step. They were one block inside
@@ -3198,6 +3552,11 @@ var PlayScene = (function () {
   function moveObstacles(dt, spd) {
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
+      /* RETIRED BY ITS LEVEL. A step may not splice, so a thing that has
+         finished - flown off the screen, fallen over, been called away - is
+         marked ob.gone and taken out HERE, by the walk that owns the list,
+         before it is scrolled, stepped or tested again. */
+      if (ob.gone) { obstacles.splice(i, 1); continue; }
       /* The one clock an art module may read: seconds since this obstacle
          came into the world (admit() starts it). Per-obstacle rather than
          shared, so a deck of misters is never all in phase, and advanced
@@ -3223,8 +3582,11 @@ var PlayScene = (function () {
              pillar at a lower index is at most one frame - 6px at the worst
              dt the game allows - stale to a drop testing against it; the
              Deck accepted exactly that staleness for its mister clock.
-             Returning true lands the drop, which is the ordinary splat. */
-          if (art.stepDrop(ob, dt, obstacles)) landDrop(ob);
+             Returning true lands the drop, which is the ordinary splat -
+             or, with ob.pop raised, a burst where it struck (landDrop).
+             The fourth argument is `run`, on the stepBoon contract below;
+             a step that does not want it simply declares three. */
+          if (art.stepDrop(ob, dt, obstacles, run)) landDrop(ob);
           /* a flag the level sets when its drop has just come off something -
              see bounced() for why the noise is on this side of the line */
           if (ob.bounced) bounced(ob);
@@ -3273,9 +3635,26 @@ var PlayScene = (function () {
          differently at two framerates. Station-keeping is a step's job.
 
          The Couch ignores the fourth argument entirely, which is the test
-         that this is additive. */
+         that this is additive.
+
+         AND TWO THINGS A STEP MAY DO WITHOUT SPLICING. It may push NEW
+         obstacles into run.born, which the engine admits after this walk
+         returns (admitBorn), and it may set ob.gone to retire the one it was
+         handed, which the next walk takes out at its top. Those are the only
+         doors in and out of the list a step has; the list itself stays the
+         engine's. */
       if (ob.type === 'boon' && art.stepBoon) {
         art.stepBoon(ob, dt, obstacles, run);
+        if (ob.bounced) bounced(ob);
+      }
+      /* stepBoon's twin for a thing that STANDS IN THE BAY AND ACTS
+         (ob.foe, made by art.makeFoe), on exactly the contract above: it is
+         handed one obstacle, may read the list, writes only that obstacle
+         and run.ledger, reaches the list only through run.born and ob.gone,
+         and raises ob.bounced if it wants the engine's tick. A level that
+         publishes no stepFoe never sets ob.foe and never reaches this line. */
+      if (ob.foe && art.stepFoe) {
+        art.stepFoe(ob, dt, obstacles, run);
         if (ob.bounced) bounced(ob);
       }
       if (ob.type === 'pillar' && !ob.scored && ob.x + ob.w < player.x) {
@@ -3415,7 +3794,7 @@ var PlayScene = (function () {
      3px dashes read as a surface rather than as a dotted line.
 
      IN FX.groundHi: THE BAY'S OWN GROUND HIGHLIGHT, never the destination's
-     chalk and never the doodad's accent, because this ships to all nine bays
+     chalk and never the doodad's accent, because this ships to all ten bays
      and a mark on a floor has to belong to that floor. And NO MARK WHERE THE
      DIVE IS REFUSED, so the refusal is drawn as well as the permission - but
      asked of diveSpans(), the function divePlank() asks, and NOT of a second
@@ -3496,6 +3875,15 @@ var PlayScene = (function () {
   }
 
   function drawChars(ctx) {
+    /* THE LEVEL'S ACTORS, on this smooth layer, before anything else and
+       before every early return below: the pull, the dive and the grace
+       blink are all about the doodad, and an actor that vanished whenever
+       he dived or blinked would be the world blinking with him. The art
+       leaves the context exactly as it found it (its own save/restore
+       around the whole call); the engine does not wrap it. Drawn under the
+       hider and the doodad, so the player always passes in front. */
+    if (art.drawActors) art.drawActors(ctx, obstacles);
+
     /* whoever is hiding goes first, so the player passes in front of him */
     drawMeet(ctx);
 
@@ -3937,7 +4325,7 @@ var PlayScene = (function () {
 
          The name is scale 2 for EVERY achievement, where the other kinds use
          3. BURN WITH THE FLAMES OF VICTORY measures 370 at scale 2 and 555 at
-         scale 3, and the screen is 480 - so one of the eleven would not fit,
+         scale 3, and the screen is 480 - so one of the twelve would not fit,
          and a banner that silently shrinks its heading for one entry in a
          list is worse than a banner that is one size smaller for all of them.
          At scale 2 the widest unit is 36 + 8 + 370 = 414, which leaves 33px
@@ -4000,7 +4388,7 @@ var PlayScene = (function () {
     bankedFrame = 1;
     /* THE ONE CAPTION SLOT, STOOD DOWN - the precedent is checkBoonUnlocks,
        which kills its own EXTRA LIFE the frame a doodad comes out of its
-       stall. Five of the eleven badges are earned BY a pickup, so for those
+       stall. Five of the twelve badges are earned BY a pickup, so for those
        five the collision is not a coincidence that might happen, it is the
        guaranteed shape of the moment: SPICY! and the rest draw their heading
        at y 112 and their second line at 136..140, and the banner's badge
@@ -4423,6 +4811,26 @@ var PlayScene = (function () {
                                     down: doodad ? down() : 1,
                                     /* and how much his last flap sprang */
                                     spring: player.spring,
+                                    /* the level's per-run notebook, live,
+                                       and what stands and acts in the bays
+                                       and what is in flight from them -
+                                       the only way a headless test can see
+                                       a march, an aim, a volley or a bop,
+                                       because all of it is the art's */
+                                    ledger: ledger,
+                                    foes: obstacles.filter(function (o) { return o.foe && !o.gone; })
+                                                   .map(function (o) {
+                                                     return { kind: o.kind, x: o.x, y: o.y, w: o.w, off: o.off,
+                                                              hp: o.hp, mode: o.mode, bop: !!o.bop,
+                                                              keep: !!o.keep, shielded: !!o.shielded };
+                                                   }),
+                                    shots: obstacles.filter(function (o) { return o.shot && !o.broken && !o.gone; })
+                                                    .map(function (o) {
+                                                      return { kind: o.kind, x: o.x, y: o.y, vx: o.vx, vy: o.vy,
+                                                               spicy: !!o.spicy, gold: !!o.gold, sour: !!o.sour,
+                                                               homeT: o.homeT, name: o.name };
+                                                    }),
+                                    born: born.length, bopCool: bopCool, prevY: prevY,
                                     difficulty: tune ? difficulty() : null }; }
   };
 })();

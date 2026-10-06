@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------
    Land of Doodads - ACHIEVEMENT BADGES
 
-   Eleven 18x18 tiles, one per achievement, baked once into offscreen
+   Twelve 18x18 tiles, one per achievement, baked once into offscreen
    canvases and blitted whole thereafter. Each tile is a PLATE and an
    OBJECT: a dark rounded square with a one-pixel rim, and the thing
    the achievement is about sitting on it.
@@ -22,9 +22,10 @@
    wants it to double cleanly to 36 beside a scale-2 name. 16 is the
    object, and the plate is a pixel of rim either side of it.
 
-   WHAT THE OBJECTS ARE MADE OF. Seven are hand-plotted from 16x16
+   WHAT THE OBJECTS ARE MADE OF. Eight are hand-plotted from 16x16
    string maps, in colours taken BY REFERENCE from the level the thing
-   belongs to - Coop.P.eggShell, not a copied hex - so that a level
+   belongs to - Coop.P.eggShell, not a copied hex; the King's from
+   js/cupmen.js, the Fort's second module - so that a level
    repainted tomorrow repaints its badge with it. The other four blit
    the level's own baked tile: the butane can, the capybara, the Desk's
    ringing notification and the Garden's potted succulent. Those four
@@ -33,7 +34,7 @@
    the first. That is why build() must run after Levels.buildArt().
 
    The price of the blits is that this file knows four level modules by
-   name. It reads them off the window rather than as bare identifiers,
+   name, and the King makes it five, since it now knows Cupmen too. It reads them off the window rather than as bare identifiers,
    and treats a missing palette colour as the plate showing through, so
    a level file pulled out of index.html leaves a badge with a hole in
    it instead of a ReferenceError thrown inside Game.init() - which is
@@ -61,7 +62,7 @@ var Badges = (function () {
 
      They are duplicated here on purpose rather than called through
      LivingRoom. A badge is a piece of menu furniture, not a piece of a
-     level, and these eleven tiles bake inside Game.init() - the one place
+     level, and these twelve tiles bake inside Game.init() - the one place
      in the game where a missing module is fatal and invisible. Six lines
      is cheaper insurance than the dependency. */
   function rowsFill(c, rows, x, y, colour) {
@@ -268,11 +269,40 @@ var Badges = (function () {
     '......ooooo.....'
   ];
 
-  /* ------------------------------------------------------- the eleven
+  /* The King Cupman, for LONG LIVE THE KING. He is a painting on the
+     smooth layer in play (Assets/sprites/cup_king.png), and Badges.build()
+     runs in Game.init() BEFORE Assets.load(), so the painting cannot be
+     sampled here and he is plotted instead: the upside-down party cup,
+     narrow under the crown and widening to the rolled rim at the foot,
+     the pink crown with three points and a white jewel, the V of angry
+     brows over two eye pixels - the right one red, the eye that glows in
+     the painting - and the zigzag mouth as two staggered rows of ink, the
+     same tell every Cupman's face has. Shade down the right, as the Coop
+     egg's is, and the rim in the dark gold. */
+  var MAP_KING = [
+    '...o...oo...o...',
+    '..opo.oppo.opo..',
+    '..oppoppppoppo..',
+    '..oqpppwwpppqo..',
+    '..oqqqqqqqqqqo..',
+    '..ogggggggggdo..',
+    '..ogggggggggdo..',
+    '.oggggoggggogdo.',
+    '.ogggggwggrggdo.',
+    '.oggggogogoggdo.',
+    '.ogggggogogogdo.',
+    'oggggggggggggddo',
+    'oggggggggggggddo',
+    'oggggggggggggddo',
+    'oddddddddddddddo',
+    '.oooooooooooooo.'
+  ];
+
+  /* ------------------------------------------------------- the twelve
 
      id -> the function that paints that badge's object on its own
      transparent 18x18 layer. This table is also the id list: build() and
-     has() both read it, so a twelfth badge is added in exactly one place.
+     has() both read it, so a thirteenth badge is added in exactly one place.
 
      Each function resolves its own palette when it runs, which is inside
      build(), which is inside Game.init() - by then every level module has
@@ -446,6 +476,21 @@ var Badges = (function () {
        so they are not touched; the tile is simply centred on the plate. */
     capy: function (c) {
       blit(c, tileOf('Mantle', 'capy'), 3, 4);
+    },
+
+    /* 12 LONG LIVE THE KING - the King Cupman, crowned, off MAP_KING above,
+       in js/cupmen.js's own colours read by reference: palOf('Cupmen') is
+       resolved here, inside build(), long after cupmen.js has loaded (it
+       sits in index.html with the Fort, ahead of this file), and a Cupmen
+       pulled out of the build is a plate with nothing on it, not a throw.
+       Plotted rather than blitted: his only pixel tile, crownMini, is a
+       crown without the man under it, and the badge is the man. */
+    king: function (c) {
+      var K = palOf('Cupmen');
+      plot(c, MAP_KING, {
+        o: K.outline, g: K.cupGold, d: K.cupGoldDk, p: K.crown, q: K.crownDk,
+        w: K.eyeWhite, r: K.eyeRed
+      }, 1, 1);
     }
   };
 
@@ -469,7 +514,7 @@ var Badges = (function () {
 
      getImageData is safe here: every pixel on this canvas was put there
      by a fillRect or by a drawImage from another canvas we baked, so
-     nothing taints it, and it runs eleven times at boot and never again. */
+     nothing taints it, and it runs twelve times at boot and never again. */
   function dimTile(t) {
     var img = t.ctx.getImageData(0, 0, W, H);
     var d = img.data, i, l;
@@ -483,7 +528,7 @@ var Badges = (function () {
     t.ctx.putImageData(img, 0, 0);
   }
 
-  /* Bake all twenty-three tiles. Idempotent, and nothing above this line
+  /* Bake all twenty-five tiles. Idempotent, and nothing above this line
      runs until it is called: Game.init() calls it after Levels.buildArt()
      because four of the objects are level tiles, and after ui.js has
      loaded because every plate is UI.C.
@@ -514,8 +559,8 @@ var Badges = (function () {
 
     /* One secret plate for all of them, not one per id. A '? ? ?' row is
        withholding the badge as much as the name, so every hidden
-       achievement has to look like every other one - eleven different
-       padlocked plates would leak eleven different silhouettes. */
+       achievement has to look like every other one - twelve different
+       padlocked plates would leak twelve different silhouettes. */
     SECRET = plateTile(ui.inkFaint);
     if (typeof UI !== 'undefined' && UI.padlock) UI.padlock(SECRET.ctx, 8, 8, 1, ui.inkDim);
   }

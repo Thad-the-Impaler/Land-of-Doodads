@@ -41,11 +41,31 @@ var Assets = (function () {
     capybara_fall: 'Assets/sprites/capybara_fall.png',
     capybara_fly:  'Assets/sprites/capybara_fly.png',
     teef_fall:     'Assets/sprites/teef_fall.png',
-    teef_fly:      'Assets/sprites/teef_fly.png'
+    teef_fly:      'Assets/sprites/teef_fly.png',
+    /* THE FORT'S CUPMEN, and the guns they hold, a cup then its gun, in
+       the order they arrive in a run. These are not doodads and do not come
+       in pairs: one painting each, trimmed by the FOES pass in
+       tools/trim_sprites.py at ONE shared scale (0.25) so a gun keeps its
+       painted size against the cup that holds it, and drawn by js/cupmen.js
+       on the smooth layer the doodads use. gun_king is the King's floating
+       gun, summoned, never held. */
+    cup_crimson:   'Assets/sprites/cup_crimson.png',
+    gun_crimson:   'Assets/sprites/gun_crimson.png',
+    cup_green:     'Assets/sprites/cup_green.png',
+    gun_green:     'Assets/sprites/gun_green.png',
+    cup_silver:    'Assets/sprites/cup_silver.png',
+    gun_silver:    'Assets/sprites/gun_silver.png',
+    cup_gold:      'Assets/sprites/cup_gold.png',
+    gun_gold:      'Assets/sprites/gun_gold.png',
+    cup_king:      'Assets/sprites/cup_king.png',
+    gun_king:      'Assets/sprites/gun_king.png'
   };
-  /* every doodad in js/doodads.js needs both frames listed here: the load
-     loop walks MANIFEST, and window.DOODAD_SPRITES from the single file
-     build only redirects keys that are already in it, it cannot add any.
+  /* every doodad in js/doodads.js needs both frames listed here, and every
+     Cupman and gun its one row: the load loop walks MANIFEST, and
+     window.DOODAD_SPRITES from the single file build only redirects keys
+     that are already in it, it cannot add any. (A Cupman left out falls
+     back the same quiet way - js/cupmen.js draws a flat cup in his colour
+     when Assets.img finds nothing.)
      A doodad left out of this table does not throw: Doodads.draw finds no
      image and falls back to a flat circle in the doodad's accent, and
      because no request was ever made for it, failed() never mentions it and

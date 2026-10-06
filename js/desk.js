@@ -111,7 +111,7 @@ var Desk = (function () {
        put it. The base coat is written at the photograph's UPPER-LEFT
        wall (131, its brightest patch) and not its mid-left (100), because
        the room's own light sheet - night up off the boards, void at the
-       skirting and the sides, shared by four bays and not this file's to
+       skirting and the sides, shared by five bays and not this file's to
        touch - takes about a tenth off whatever this wall is painted, more
        toward the skirting: painted 131 it renders about 120 at mid lane
        and about 100 above the desk, which is the photograph's own range.
@@ -520,7 +520,7 @@ var Desk = (function () {
   };
 
   /* The heads-up for each hazard as it arms: the thing, then the excuse.
-     `ceil` is the ROOM's, word for word, in all four bays - it is the
+     `ceil` is the ROOM's, word for word, in every bay it roofs - it is the
      same ceiling, and a player who learns it here and then reads
      something different next door has been told the rule twice and
      believed it once. */
@@ -1675,7 +1675,7 @@ var Desk = (function () {
   /* Three baked layers at the Coop's rates, the live screens over the
      top of the nearest one, and then the ROOM's light. There is no
      vignette and no gloom in here: drawLight blits the one baked sheet
-     that lights all four bays - it was five flat Tints and has not been
+     that lights all five bays - it was five flat Tints and has not been
      since the pass was rebuilt - and a bay that shaded its own corners
      would read as a different house. */
   function drawBackdrop(ctx, scroll) {

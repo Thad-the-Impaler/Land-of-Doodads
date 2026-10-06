@@ -92,7 +92,7 @@ var LevelSelectScene = (function () {
      carousel is already sitting on it (IMP11 typed into this screen, or a
      run that crosses 20 and drops the player back onto the plate they
      were last on), and then there is no move left to make: the player
-     reads LIVING ROOM, goes down into its cards, plays all four, and the
+     reads LIVING ROOM, goes down into its cards, plays all five, and the
      gold tab is still there the next time and the time after that, for
      ever. Going down to the cards is a reading of the name every bit as
      much as arriving on it is, and so is walking away from the screen. */

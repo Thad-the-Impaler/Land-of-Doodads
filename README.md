@@ -259,6 +259,55 @@ Zone leaves a **heart of junk** on a pallet. Only the Coop grows none. They all
 glow the same jade, because a colour that means *one more mistake* has to mean
 it everywhere - and every one of them counts towards Inari's nine.
 
+## The Living Room
+
+The second room, and a secret until it is earned: **20** in the Construction
+Zone opens the door and its first bay together, and until then the level select
+shows three padlocked `? ? ?` cards where its bays will be. Inside it is after
+dark, and **the ceiling kills** - the same as the floor. That is one rule for all
+five bays, so the gaps never close quite as far as the Backyard's (82 or 80
+rather than 78): overshooting upward used to bounce, and in here it ends the run.
+
+| | | opens on | |
+|---|---|---|---|
+| **THE DESK** | 2-1 | **20** in the Construction Zone | three screens, four drawers, and something always ringing |
+| **THE COUCH** | 2-2 | **20** in the Desk | movie night across the back of the sectional; nobody swept up the popcorn |
+| **THE MANTLE** | 2-3 | **20** in the Couch | a switched-off flatscreen, and somebody sitting on the remotes |
+| **THE WHITEBOARD** | 2-4 | **20** in the Mantle | nothing on it was ever erased; the magnets hold it all down |
+| **THE FORT** | 2-5 | **20** in the Whiteboard | the whole room swallowed by a cardboard box fort, and the Cupmen have toy guns |
+
+| | pillars | spikes | falling | the power-ups | the spare life |
+|---|---|---|---|---|---|
+| THE DESK | book towers | notifications out of the monitors, past **10** - they ring you, they do not kill | books, past **7** | a breath mint; a quarter is +5 | a coffee |
+| THE COUCH | stacks of throw pillows | heaps of popcorn, past **12** | popcorn, past **4**, which never stops bouncing | hot cheddar popcorn; a marshmallow is +5 | a coaster |
+| THE MANTLE | ledger stone | remotes, past **8**, firing beams; game controllers that wander, past **18** | dead pixels, past **6** | a lime-green volume key, which *shrinks* you; the capybara is +5 | a fresh battery |
+| THE WHITEBOARD | bars of black marker | markers drawing lines, past **7** | magnets, past **5** | every one in the game, drawn in marker - the only lid that sheds the heat *and* the sour | a drawn succulent |
+| THE FORT | stacks of corrugated panels | tripod light stands and ribbon pull-tabs, past **8**, and rare | black foam biscuits, past **5**, rarer than any other bay's drops | none off the lid - every gift is shot at you | the sloth plushie off the sofa |
+
+**THE FORT** is the last bay, and the only one where something shoots back. The
+room has been built over with a box fort of corrugated panels joined by black
+foam discs, and the furniture of the four bays before it shows over the
+cardboard roofline. From **12** the **Cupmen** - upside-down party cups,
+painted by hand like the doodads - march the rug between the planks, and when you
+fly toward one it turns, raises its gun, shows you three aim dots and fires:
+
+| | from | gun | shoots |
+|---|---|---|---|
+| **Crimson Cupmen** | **12** | a blue pistol | yellow pellets that end the run, and now and then a **red** one that is the heat |
+| **Green Cupmen** | **12**, rarer | a white shotgun | pairs of small **green** pellets - sours |
+| **Silver Sentinels** | **19** | a SAW | bursts of three, yellow and red, three times the Crimsons' rate; they move like robots |
+| **Golden Order** | **19** | a gold pistol | quick **silver** pellets that curve after you, and spinning **gold** coins worth +5 |
+| **King Cupman** | **25**, once a run | none in hand | summons two floating guns; **bop him on the crown three times** |
+
+The Cupmen are fair on purpose: they only fire at a doodad still ahead of them,
+never from off screen, never at point blank, never through or into a plank, and
+the last moment of every aim is frozen so the line you were shown is the line the
+pellet takes. Touching a Cupman ends the run. The King is the one thing in the
+game you can land on: he keeps pace with the screen while the planks pass
+through him, every bop knocks a gold **crown** out of his head, and when he falls
+he drops three more, the ordinary Cupmen come back, and the badge **LONG LIVE THE
+KING** is yours. While he reigns, only the odd Golden Order cupman still turns up.
+
 ## Abilities
 
 Every doodad has one, and **every one of them is passive**. An earlier version
@@ -513,9 +562,12 @@ set in. None of it is shared between players or computers.
 Land of Doodads.html  the built single file game - double-click this one
 index.html            page shell: three stacked canvases
 css/style.css         letterboxing and the pixel-perfect upscale
-tools/trim_sprites.py prepares character frames from the source artwork
+tools/trim_sprites.py prepares character frames from the source artwork,
+                      and (its FOES pass) the Cupmen and their guns at one
+                      shared scale, so a gun keeps its size against its cup
 tools/build_single_file.py  bundles everything into Land of Doodads.html
-Assets/sprites/       game-ready character frames (trimmed from Assets/Doodads)
+Assets/sprites/       game-ready character frames and the Cupmen (trimmed from
+                      Assets/Doodads (Characters))
 js/
   core.js             constants, maths, save helpers
   font.js             the hand-plotted 5x7 bitmap font
@@ -529,14 +581,26 @@ js/
   deck.js             BACKYARD / THE DECK: patio heaters, misters on a timer
   canopy.js           BACKYARD / THE CANOPY: dark trunks in dense foliage
   construction.js     BACKYARD / THE CONSTRUCTION ZONE: lumber, buzzsaws, a gear
+  livingroom.js       LIVING ROOM: the room itself - ceiling, floor, pigments, the light
+  desk.js             LIVING ROOM / THE DESK: book towers, ringing notifications
+  couch.js            LIVING ROOM / THE COUCH: pillows, bouncing popcorn
+  mantle.js           LIVING ROOM / THE MANTLE: ledger stone, remotes and their beams
+  whiteboard.js       LIVING ROOM / THE WHITEBOARD: marker lines, tumbling magnets
+  chalkboard.js       the Whiteboard's second art module
+  cupmen.js           the Fort's Cupmen, their pellets and the King
+  fort.js             LIVING ROOM / THE FORT: the box fort, biscuits, tripods
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
   ui.js               boards, buttons, panels, padlocks, the on-screen pads
+  badges.js           the achievement badges, baked once
+  achievements.js     the achievements and how each is counted
   scene_title.js      the animated coop and the doodads living in it
+  scene_porch.js      the second title screen: every bay as a row on the porch
   scene_levelselect.js  room carousel then level carousel
   scene_charselect.js doodad stalls
   scene_play.js       the run itself, plus initials entry and results
   scene_scores.js     the high score screen
+  scene_achievements.js  the achievements screen
   game.js             boot, scene manager, main loop
 ```
 
@@ -560,7 +624,7 @@ so they stay smooth against the pixelated world.
 
 * **A new level** - write an art module implementing the level contract, add its
   script tag to `index.html` (**after** the core, screen and doodad files and
-  **before** `js/levels.js`, where the five existing levels sit) and drop a level
+  **before** `js/levels.js`, where the ten existing levels sit) and drop a level
   object into a room's `levels` array. There are five worked examples; `js/coop.js`
   is the smallest and `js/garden.js` the one to read second, and between them they
   cover every member. The contract is:

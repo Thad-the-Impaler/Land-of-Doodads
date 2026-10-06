@@ -1,9 +1,9 @@
 /* ------------------------------------------------------------------
    Land of Doodads - rooms and levels
 
-   Nine built bays in two rooms, run in the order they are earned in,
+   Ten built bays in two rooms, run in the order they are earned in,
    each one gated on the one before it: the BACKYARD's five, and then
-   the LIVING ROOM's four.
+   the LIVING ROOM's five.
 
    ONE locked placeholder is left, and it stands to the RIGHT of the
    last real room. The one that used to sit to the LEFT of the Backyard
@@ -218,8 +218,8 @@ var Levels = (function () {
   /* ================================================== THE LIVING ROOM
 
      Indoors, after dark, and the first room where the CEILING KILLS. That
-     is one rule for four bays and it is published by js/livingroom.js as
-     LivingRoom.CEIL_KILLS, which every one of the four art modules exports
+     is one rule for five bays and it is published by js/livingroom.js as
+     LivingRoom.CEIL_KILLS, which every one of the five art modules exports
      as its own CEIL_KILLS - so the engine reads a boolean off the level and
      never asks which level it is.
 
@@ -466,8 +466,9 @@ var Levels = (function () {
     blurb: ['NOTHING ON IT WAS EVER ERASED.', 'THE MAGNETS HOLD IT ALL DOWN.'],
     art: Whiteboard,
     tune: {
-      /* the room's last bay, and the fastest thing in the game alongside
-         the Canopy's ceiling of 178 */
+      /* the fastest thing in the game alongside the Canopy's ceiling of
+         178 - and the Fort after it, which matches this rather than
+         passing it, because it leads on its shooters and not on speed */
       speedStart: 116, speedMax: 178, speedRamp: 0.86,
       gapStart: 102, gapMin: 80, gapRamp: 0.32,
       spacingStart: 224, spacingMin: 180, spacingRamp: 0.46,
@@ -483,14 +484,17 @@ var Levels = (function () {
       dropEvery: 2.1, dropEveryMin: 0.98, dropEveryRamp: 0.03,
       dropAheadMin: 104, dropAheadMax: 200,
       dropFallMin: 4, dropFallMax: 30,
-      /* THE ONLY LEVEL THAT SHEDS BOTH. Every power-up in the game is
+      /* THE FIRST LEVEL THAT SHEDS BOTH. Every power-up in the game is
          drawn on this board in marker - the pepper, the lime, the
-         succulent and the golden apple - so it is the one bay where the
+         succulent and the golden apple - so it is the first bay where the
          heat and the sour can both be running, and drawGauge in
          js/scene_play.js grew a `y` for it: the lime's gauge moves to 92
          rather than standing down. Each is a shade rarer than it would be
          alone, because two power-ups at the same rate is twice as many
-         power-ups. */
+         power-ups. It is no longer the only one: the Fort after it sheds
+         both as well, though not off its ceiling - its heat and its sour
+         are pellets out of a Cupman's gun - so this is still the only
+         bay whose LID drops them. */
       spicyChance: 0.07,
       sourChance: 0.07,
       /* and the drawn succulent, the least rare spare life in the game,
@@ -509,6 +513,93 @@ var Levels = (function () {
          the roster's business and the art's, not this level's: nothing here
          names it, the same way meetAt never names who is hiding. */
       warpAt: 10, warpSpan: 10, warpStay: 10
+    }
+  };
+
+  var FORT = {
+    id: 'fort',
+    name: 'THE FORT',
+    code: '2-5',
+    unlock: { room: 'livingroom', level: 'whiteboard', score: 20 },
+    blurb: ['THE ROOM IS ALL CARDBOARD NOW.', 'THE CUPMEN HAVE TOY GUNS.'],
+    art: Fort,
+    tune: {
+      /* The Whiteboard's speed, exactly, and on purpose: this bay leads on
+         its shooters and not on its pace, the Construction Zone's argument
+         again. Passing 178 would make it the fastest thing in the game AND
+         the only one that shoots back, which is two difficulties stacked
+         where one was asked for. 116 + 0.86 a second reaches 178 at 72s. */
+      speedStart: 116, speedMax: 178, speedRamp: 0.86,
+      /* 82, the room's entry fee, and two more than the Whiteboard's 80: a
+         shooter standing on the rug is the squeeze in this bay, and a gap
+         that is also the narrowest in the room would be a second squeeze
+         on top of it. 104 down at 0.30 holds 82 from 73s. */
+      gapStart: 104, gapMin: 82, gapRamp: 0.30,
+      /* The widest planks in the game at the close: 190 against the Coop's
+         188 and the Whiteboard's 180. A Cupman patrols the rug BETWEEN two
+         planks, his window is 2 x (reach + 14) = 88 wide and sits 14px
+         right of the bay's centre so Teef never surfaces into him (the
+         reasoning is js/cupmen.js's, "Teef's surfacing rule"), and at 190
+         that leaves 36px of rug between his right-hand reach and the next
+         cap. Any tighter and the patrol would be standing in a plank. */
+      spacingStart: 232, spacingMin: 190, spacingRamp: 0.40,
+      gapDrift: 54,
+      /* RARE, because the floor belongs to the Cupmen. js/fort.js lets a
+         bay hold ONE thing on its rug - a tripod, a ribbon, a spare life or
+         a shooter - through two flags in run.ledger that each plank resets,
+         so every spike here is a Cupman that did not get that bay. 0.16
+         rising to 0.34 by 30s is half the Whiteboard's 0.40/0.76. */
+      spikeScore: 8,
+      spikeChance: 0.16, spikeChanceMax: 0.34,
+      /* the cream ribbon pull-tab, hanging off a roof panel */
+      spikeCeilMin: 16, spikeCeilMax: 26,
+      /* A tripod light stand's height. The Mantle's measurement applies
+         unchanged (a centre crossing a bay lives in y 69..197): a 56px pole
+         tips out at 186 and is lethal to a centre at 175 and below, which
+         is what it takes for a floor hazard to reach the gap band at all. */
+      spikeFloorMin: 36, spikeFloorMax: 56,
+      /* THE BISCUITS: the black foam connectors working loose from the
+         roof panels, from 5. RARER THAN ANY OTHER BAY'S DROPS, because the
+         owner asked for exactly that - "less common than the other dropping
+         obstacles, because of the other, harder obstacle of the level". 3.4
+         falling to 1.7 at 0.03 a second against the Coop's 2.6/1.15, the
+         Whiteboard's 2.1/0.98 and the Couch's 0.9/0.40: 1.6x rarer than the
+         Whiteboard at the start and 1.7x at the floor, which is reached at
+         57s rather than 37s. The engine's own jitter (x0.78..1.28) is
+         unchanged, so the first twenty seconds see five to seven. */
+      dropScore: 5,
+      dropEvery: 3.4, dropEveryMin: 1.7, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 26,
+      /* NO spicyChance, goldChance or sourChance, and that absence is the
+         decision. A biscuit is always a plain lethal puck; every gift in
+         this bay is a PELLET out of a Cupman's gun - the Crimsons' red
+         heat, the Greens' sour, the Golden Order's +5 coin and the King's
+         crowns (js/cupmen.js). These three keys drive the CEILING spawner,
+         so leaving them out is how the lid is told to shed nothing but
+         hazards. */
+      /* the sloth plushie off the sofa (Fort ref 4), the room's usual rate:
+         10 + 1/0.032 = 41 planks between spare lives. A sloth on the rug
+         also takes the bay from a Cupman, as a tripod does. */
+      boonChance: 0.032, boonGap: 10,
+      /* THE CUPMEN, from 12, which is the owner's number: "they appear after
+         the player reaches 12 pillars". foeScore is a NEW ENGINE KEY - the
+         engine rolls art.makeFoe once per bay from here and shows
+         art.WARN.foe once, exactly as spikeScore arms the spikes and shows
+         art.WARN.spike - and like every key here it is a number the engine
+         reads without asking which level it is. A level without it never
+         meets a foe. The Crimsons and the Greens come first. */
+      foeScore: 12,
+      /* The Silver Sentinels and the Golden Order, from 19 (the owner's
+         number again), on the engine's existing late pair: art.WARN.late
+         and run.late. Nothing may get more lethal without that pair.
+
+         The King Cupman's 25 is deliberately NOT here. A maker is never
+         handed tune, so a threshold only the art reads lives in the art,
+         the way the quarter's roll lives in js/desk.js: it is
+         Cupmen.tune.kingAt, and Cupmen.tune is left mutable so a headless
+         test can call him at 0. */
+      lateScore: 19
     }
   };
 
@@ -538,7 +629,7 @@ var Levels = (function () {
        because this IS its price - the room and its first bay open on one
        plank, and two fields that have to agree would one day not. */
     unlock: { room: 'backyard', level: 'construction', score: 20 },
-    levels: [DESK, COUCH, MANTLE, WHITEBOARD],
+    levels: [DESK, COUCH, MANTLE, WHITEBOARD, FORT],
     /* opens on THE DESK, as the Backyard opens on THE COOP */
     startLevel: 0
   };
@@ -798,6 +889,7 @@ var Levels = (function () {
     couch: COUCH,
     mantle: MANTLE,
     whiteboard: WHITEBOARD,
+    fort: FORT,
     reachedOn: reachedOn, noteScore: noteScore,
     roomOpen: roomOpen, gateMet: gateMet, roomById: roomById,
     levelsOf: levelsOf, keyFor: keyFor,

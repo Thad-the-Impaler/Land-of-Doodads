@@ -220,7 +220,59 @@ var Audio3 = (function () {
                            noise({ freq: 1100, dur: 0.14, vol: 0.12, q: 0.8 }); },
     /* he is under a plank, and this fires on every one of them: bop's job
        on bop's rules, one note, no noise, the quietest tone in the table */
-    under:   function () { tone({ from: 196, dur: 0.07, type: 'triangle', vol: 0.07 }); }
+    under:   function () { tone({ from: 196, dur: 0.07, type: 'triangle', vol: 0.07 }); },
+
+    /* ---- toy guns, and the King ----
+
+       Named for the sound and not for the level, like every other entry
+       here, though for now only the Fort's Cupmen ask for them. The art
+       never plays these itself: a shot carries its sound in `cry` and the
+       engine plays it as the shot is admitted, one at a time through its
+       own rate limit, and the King's arrival and fall ask through the run's
+       ledger the same way. The three gun voices fire a dozen times a
+       minute between them, so they are short and quiet, under half the
+       flap's volume, and each is a different SHAPE rather than a different
+       pitch of one shape - the player has to hear which rank fired without
+       looking, and three pitches of one snap are a tune. A pellet popping
+       on cardboard is not here at all: it is bop, the quiet tick a kernel
+       makes on the floor, because that is what it is. */
+    /* a toy blaster's spring: a short bright snap falling in pitch, square
+       for the spring and a breath of high noise for the air it pushes */
+    pew:     function () { tone({ from: 1400, to: 380, dur: 0.07, type: 'square', vol: 0.06 });
+                           noise({ freq: 2600, dur: 0.04, vol: 0.05, q: 1.4 }); },
+    /* the Sentinel's SAW, one tick of a burst of three 0.14s apart: dry
+       and narrow (q 2), lower than pew so three in a row read as a
+       mechanism and not as three blasters */
+    rattle:  function () { noise({ freq: 1500, dur: 0.035, vol: 0.06, q: 2 });
+                           tone({ from: 520, to: 300, dur: 0.035, type: 'square', vol: 0.04 }); },
+    /* the Green's shotgun: two pellets leave in one frame, so ONE sound,
+       wide and low - mostly noise, with a short square thump under it */
+    blast:   function () { noise({ freq: 700, dur: 0.12, vol: 0.10, q: 0.9 });
+                           tone({ from: 240, to: 120, dur: 0.08, type: 'square', vol: 0.06 }); },
+    /* landing on a crown: a hollow plastic cup going boing. The pitch goes
+       UP, the one landing in the table that does, because the player went
+       up off it; triangle because it is a soft thing being struck */
+    stomp:   function () { tone({ from: 320, to: 640, dur: 0.12, type: 'triangle', vol: 0.14 });
+                           noise({ freq: 800, dur: 0.08, vol: 0.10, q: 0.8 }); },
+    /* something called up out of nothing - the King's floating guns, and
+       his own arrival: one rising sweep, struck twice, 0.1s apart, so it
+       shimmers instead of zipping */
+    summon:  function () { tone({ from: 220, to: 880, dur: 0.25, type: 'triangle', vol: 0.09 });
+                           tone({ from: 220, to: 880, dur: 0.25, type: 'triangle', vol: 0.09, delay: 0.1 }); },
+    /* THE KING IS DOWN. Three two-voice chords FALLING a step at a time
+       and then one long low triangle under them - a toppling, not a
+       triumph. Chords for badge's reason (every rising arpeggio here
+       already means something: the stall unlock, the heat, the life, the
+       start), and falling because the unlock fanfare climbs and this must
+       never be heard as a doodad coming free. The badge chime follows it
+       on the same frame, so it stays at 0.10 against the fanfare's 0.13. */
+    regicide:function () { tone({ from: 784, dur: 0.12, type: 'square', vol: 0.10 });
+                           tone({ from: 988, dur: 0.12, type: 'square', vol: 0.10 });
+                           tone({ from: 659, dur: 0.12, type: 'square', vol: 0.10, delay: 0.12 });
+                           tone({ from: 830, dur: 0.12, type: 'square', vol: 0.10, delay: 0.12 });
+                           tone({ from: 523, dur: 0.12, type: 'square', vol: 0.10, delay: 0.24 });
+                           tone({ from: 659, dur: 0.12, type: 'square', vol: 0.10, delay: 0.24 });
+                           tone({ from: 196, dur: 0.5, type: 'triangle', vol: 0.10, delay: 0.36 }); }
   };
 
   /* ---------------------------------------------------------- samples

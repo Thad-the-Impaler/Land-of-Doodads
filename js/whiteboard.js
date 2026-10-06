@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------
    Land of Doodads - LIVING ROOM / THE WHITEBOARD
 
-   The last bay in the house. A long whiteboard scrolls past with NOTHING
+   The fourth bay of five. A long whiteboard scrolls past with NOTHING
    behind it: every doodle, tally and parabola anybody ever drew on it is
    still there, stuck magnets and all. Markers dart in from the right and
    draw a thick black zigzag off the top rail or off the tray while you
@@ -55,7 +55,8 @@
    THE SIGNATURE IS THAT EVERYTHING IS DRAWN IN MARKER. Every power-up
    in the game shows up on this board as a dry-erase sketch of itself -
    the pepper, the lime, the succulent and the golden apple - which makes
-   this the only bay that sheds BOTH the heat and the sour. drawGauge in
+   this the first bay that sheds BOTH the heat and the sour (the Fort
+   after it is the second, out of its Cupmen's guns). drawGauge in
    js/scene_play.js grew a `y` parameter for it, so the lime's gauge
    moves to 92 rather than standing down while the heat has the 80. Each
    of the two is a shade rarer than it would be alone, because two
@@ -320,8 +321,8 @@ var Whiteboard = (function () {
      player would read an incoming puck and dodge a +5.
 
      0.035 rather than the Construction's 0.04, because this is already
-     the only bay in the game shedding a pepper AND a lime AND the least
-     rare succulent, and a board that hands out four kinds of present is
+     the only bay in the game whose lid sheds a pepper AND a lime AND the
+     least rare succulent, and a board that hands out four kinds of present is
      a board where the fifth has to be worth stopping for. */
   var GOLD_CHANCE = 0.035, GOLD_GAP = 6;
   var goldGap = 0;
@@ -2068,7 +2069,7 @@ var Whiteboard = (function () {
        the light and the light is not going anywhere. */
     ctx.drawImage(T.glare.canvas, 0, CEIL);
 
-    /* and the room's own lighting pass, last, as it is in all four bays.
+    /* and the room's own lighting pass, last, as it is in all five bays.
        The vignette lands over a BRIGHT board here rather than a dim wall,
        which is right and is the whole reason this level does not look
        washed out: on the Desk the gloom at the skirting is the room's
@@ -2289,8 +2290,9 @@ var Whiteboard = (function () {
      and never on anything the maker stored: the engine sets ob.sour (and
      may set ob.gold) AFTER makeDrop returns, so a module that remembered
      a kind would paint a magnet with a lime's hitbox. Four answers rather
-     than the Canopy's three, because this is the one bay that sheds the
-     heat and the sour both. */
+     than the Canopy's three, because this is the one bay whose LID sheds
+     the heat and the sour both (the Fort's come out of guns, and it
+     draws its own). */
   function kindOf(ob) {
     if (ob.gold) return 'apple';
     if (ob.spicy) return 'pepper';

@@ -1,12 +1,12 @@
 /* ------------------------------------------------------------------
    Land of Doodads - achievements
 
-   Eleven plates, and the table below is the whole of them. A row says
+   Twelve plates, and the table below is the whole of them. A row says
    what it is called, how the player is told to earn it, the number that
    finishes it, and ONE way of counting: either a `tally` key the game
    bumps as it is played, or a `probe` that reads a total the save
    already keeps. Nothing anywhere branches on an achievement id. A
-   twelfth achievement is a twelfth row - the same discipline as the five
+   thirteenth achievement is a thirteenth row - the same discipline as the five
    obstacle type strings and the doodads' passive ability fields, where a
    new one is a new value rather than a new `if`.
 
@@ -26,8 +26,8 @@
    Both are read ONCE into module scope and written when they change, the
    shape js/doodads.js already uses for 'reached', 'succulents' and 'limes'
    and for the same reason: localStorage is not free. `since` is the day
-   counting began, because six of the eleven count things nothing in the
-   save was ever counting and the screen has to be able to say so. A `day`
+   counting began, because seven of the twelve count things nothing in
+   the save was ever counting and the screen has to be able to say so. A `day`
    of 0 means banked out of history, day unknown - see init().
 
    TALLY KEYS ARE FLAT. 'spicy.construction' is one string key inside
@@ -70,15 +70,17 @@ var Achievements = (function () {
      sentence and once in `need`, so changing TOLERANCE to 25 would have
      printed 'COLLECT 20 SPICY DROPS   0 / 25' with nothing to catch it. */
   var DOODADS = 3, ROOMS = 1, SPICY = 20, BOONS = 20, GOLD = 5,
-      CANS = 5, RINGS = 3, COASTERS = 3, CAPYS = 3;
+      CANS = 5, RINGS = 3, COASTERS = 3, CAPYS = 3, KINGS = 1;
 
   /* Display order, which is also the order the screen pages through: the
      four that any player can see coming, the four collections, then the
-     three Living Room plates last so a shut door's '? ? ?' rows sit
+     four Living Room plates last so a shut door's '? ? ?' rows sit
      together at the end of page two - the way a shut room's three
-     placeholder cards sit together on the level select.
+     placeholder cards sit together on the level select. Twelve rows is
+     two full pages of six, so the King's row filled page two rather than
+     opening a third.
 
-     `icon` is the badge id and is the achievement id for all eleven. It
+     `icon` is the badge id and is the achievement id for all twelve. It
      is still its own field because the badge sheet and the roster are two
      different things that happen to agree today, and a plate that wanted
      to borrow another's art should not have to be renamed to do it. */
@@ -139,7 +141,9 @@ var Achievements = (function () {
       how: 'COLLECT ' + SPICY + ' SPICY DROPS',
       need: SPICY,
       /* every level's hot drop, whatever that level calls it: the deviled
-         egg, the pepper, the butane can, the mint, the hot popcorn */
+         egg, the pepper, the butane can, the mint, the hot popcorn - and
+         the Fort's red pellet, which is a drop with `spicy` on it and is
+         counted by the same note() as all of them */
       tally: 'spicy',
       icon: 'tolerance'
     },
@@ -160,7 +164,10 @@ var Achievements = (function () {
       how: 'COLLECT ' + GOLD + ' BONUS DROPS',
       need: GOLD,
       /* the +5 drop, which each level names for itself - the quarter, the
-         mallow, the capybara, the canopy's golden apple */
+         mallow, the capybara, the canopy's golden apple, the Order's gold
+         shot and the King's crowns (the Fort pays all of those through the
+         engine's own takeGold, so they count here without a line of
+         their own) */
       tally: 'gold',
       icon: 'infinity'
     },
@@ -213,6 +220,24 @@ var Achievements = (function () {
       tally: 'gold.mantle',
       room: 'livingroom',
       icon: 'capy'
+    },
+    {
+      id: 'king',
+      name: 'LONG LIVE THE KING',
+      how: 'TOPPLE THE KING CUPMAN',
+      need: KINGS,
+      /* A DEED, counted as a tally. The King's third bop writes 'king' into
+         the run's ledger, the engine drains it into note('king', level) -
+         never naming the level - and note() bumps 'king' and 'king.fort'.
+         The suffixed key is the condition, the way BURN WITH THE FLAMES OF
+         VICTORY reads 'spicy.construction': only the Fort has a King today,
+         so 'king' alone would work, and would quietly become a different
+         plate the day a second bay crowned one. He appears once a run, so
+         one is the honest number. The name is 18 characters, well inside
+         the 31 the row's NEW tab and the banner at scale 2 allow. */
+      tally: 'king.fort',
+      room: 'livingroom',
+      icon: 'king'
     }
   ];
 
@@ -235,7 +260,7 @@ var Achievements = (function () {
      them back. */
   var freshUnknown = [];
   /* The day counting began: the first boot that ever evaluated the roster.
-     Six of the eleven count things nothing in the save was ever counting,
+     Seven of the twelve count things nothing in the save was ever counting,
      so they start at zero on a save that has been played for weeks, and the
      screen has to be able to say so. 0 means a save that has not been
      through init() yet. */
@@ -447,7 +472,7 @@ var Achievements = (function () {
 
   /* ------------------------------------------------- the one evaluation
 
-     Walk the eleven, compare have against need, bank what is newly done
+     Walk the twelve, compare have against need, bank what is newly done
      and hand it back. Everything that can earn an achievement comes
      through here, so the banner, the sound and the particles can all live
      at the ONE call site in PlayScene that reads the return value.
@@ -460,7 +485,7 @@ var Achievements = (function () {
      Nothing in a draw loop. The per-frame reader on the achievements screen
      is progress(), which is why that is the one with the cheap probe.
 
-     Cheap anyway: eleven rows, and a row already banked is skipped BEFORE
+     Cheap anyway: twelve rows, and a row already banked is skipped BEFORE
      have() is asked, so the only probes that ever run are the ones still
      outstanding - bestReached and boonsTaken off cached save values,
      doodadsBought over eight doodads and roomsEarned over three rooms.
@@ -557,7 +582,7 @@ var Achievements = (function () {
 
        It also makes the asymmetry legible, which is the real complaint.
        Five rows say EARNED over a dash because they were read out of the
-       save, and six have bars that start at zero because nothing was
+       save, and seven have bars that start at zero because nothing was
        counting them before today - and the line under the panel says when
        today was. */
     var first = since === 0;
@@ -569,8 +594,9 @@ var Achievements = (function () {
   }
 
   /* The secrecy gate, and the only thing in this file that is allowed to
-     follow the passkey. Three of the eleven name a Living Room bay - the
-     Desk's notification, the Couch's coasters, the Mantle's capybaras -
+     follow the passkey. Four of the twelve name a Living Room bay - the
+     Desk's notification, the Couch's coasters, the Mantle's capybaras,
+     the Fort's King -
      and while that door is shut they must give away nothing: no name, no
      how-line, no badge. The screen draws them as '? ? ?' with a padlock,
      exactly the way the level select draws a shut room's three cards. */
@@ -600,7 +626,7 @@ var Achievements = (function () {
 
   /* Roster ids only. A save that has travelled through a later build may
      hold plates this one does not know, and counting them would print
-     EARNED 12 / 11. */
+     EARNED 13 / 12. */
   /* HOW MANY PLATES CAME OUT OF HISTORY RATHER THAN OUT OF PLAY. A plate
      with no day is one the save could prove and could not date; a plate
      dated before counting began is the same thing on a save whose repair

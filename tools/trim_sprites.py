@@ -99,5 +99,67 @@ def main():
         print("  %s: sprite: %s," % (key, json.dumps(m)))
 
 
+# THE CUPMEN, for THE FORT (js/fort.js). They are not doodads - no fall/fly
+# pair, no bodyR - so they get their own table and their own pass. Every
+# file is cropped to its own opaque box and scaled by ONE shared factor, so
+# a gun and the cup holding it keep the size relationship they were painted
+# at, and the King is taller than the rest by exactly his crown.
+# For a gun the pass also measures the MUZZLE (the centre of the right-hand
+# face of the barrel, where a pellet leaves) and the GRIP (the middle of the
+# bottom of the handle, where a cup holds it), both in output pixels.
+FOE_SRC = os.path.join(SRC, "Cupmen")
+FOES = {
+    "cup_crimson": "CrimCup", "gun_crimson": "CrimGun",
+    "cup_green": "GreeCup", "gun_green": "GreeGun_",
+    "cup_silver": "SilvCup", "gun_silver": "SilvGun",
+    "cup_gold": "GoldCup_", "gun_gold": "GoldGun",
+    "cup_king": "KingCup", "gun_king": "KingGun",
+}
+FOE_SCALE = 0.25
+
+
+def gun_points(im):
+    a = im.getchannel("A")
+    w, h = im.size
+    px = a.load()
+    # muzzle: the rightmost column with any ink, and the middle of its run
+    for x in range(w - 1, -1, -1):
+        ys = [y for y in range(h) if px[x, y] > 128]
+        if ys:
+            mx, my = x, (min(ys) + max(ys)) / 2
+            break
+    # grip: the lowest row with ink, and the middle of its run
+    for y in range(h - 1, -1, -1):
+        xs = [x for x in range(w) if px[x, y] > 128]
+        if xs:
+            gx, gy = (min(xs) + max(xs)) / 2, y
+            break
+    return {"muzzleX": round(mx, 1), "muzzleY": round(my, 1),
+            "gripX": round(gx, 1), "gripY": round(gy, 1)}
+
+
+def foes():
+    cut = [0 if v < ALPHA_FLOOR else v for v in range(256)]
+    meta = {}
+    for key, stem in FOES.items():
+        im = Image.open(os.path.join(FOE_SRC, stem + ".png")).convert("RGBA")
+        im.putalpha(im.getchannel("A").point(cut))
+        box = im.getchannel("A").getbbox()
+        w, h = box[2] - box[0], box[3] - box[1]
+        out_w, out_h = max(1, round(w * FOE_SCALE)), max(1, round(h * FOE_SCALE))
+        out = (im.crop(box).convert("RGBa")
+                 .resize((out_w, out_h), Image.LANCZOS).convert("RGBA"))
+        out.save(os.path.join(DST, key + ".png"), optimize=True)
+        m = {"w": out_w, "h": out_h}
+        if key.startswith("gun_"):
+            m.update(gun_points(out))
+        meta[key] = m
+        print("%-12s %4dx%-4d -> %s" % (key, out_w, out_h, DST))
+    print("\nfoe sprite metadata (js/fort.js):\n")
+    for key, m in meta.items():
+        print("  %s: %s," % (key, json.dumps(m)))
+
+
 if __name__ == "__main__":
     main()
+    foes()

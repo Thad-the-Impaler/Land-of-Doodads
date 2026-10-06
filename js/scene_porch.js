@@ -188,6 +188,12 @@ var PorchScene = (function () {
     { room: 'backyard',   level: 'garden',       w: 240, k: 48,  phase: 0 },
     { room: 'backyard',   level: 'construction', w: 240, k: 144, phase: 0 },
     { room: 'livingroom',                        w: 480, k: 0,   phase: 0 }
+    /* ONE row for the whole room, and it stays the Desk's for all five
+       bays: room.levels[0] is THE DESK, whose drawMenuBackdrop is the
+       room's own calm wall. The Fort exports the same delegate rather
+       than a row of its own, because another 240 row would make WORLD
+       1920 rather than 1680 and put a second cardboard-dark seam on a
+       loop that was laid out around one luminance cut. */
   ];
 
   /* ----------------------------------------------------- scene state */

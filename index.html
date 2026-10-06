@@ -32,18 +32,24 @@
   <script src="js/deck.js"></script>
   <script src="js/canopy.js"></script>
   <script src="js/construction.js"></script>
-  <!-- the Living Room: the room itself, then its four bays, then levels.js,
+  <!-- the Living Room: the room itself, then its five bays, then levels.js,
        which is where they are named. Load order is the dependency order.
-       chalkboard.js is not a fifth bay - it is the second art module the
+       chalkboard.js is not a bay - it is the second art module the
        Whiteboard swaps in, and it sits after whiteboard.js because it
        aliases that module's plotters (and the room's) at load, while
-       Whiteboard.build() only reaches Chalkboard.build() at boot. -->
+       Whiteboard.build() only reaches Chalkboard.build() at boot.
+       cupmen.js is not a bay either: it is the Fort's second module, the
+       Cupmen and their pellets, and it sits before fort.js because fort.js
+       aliases its palette at load while Fort.build() reaches Cupmen.build()
+       only at boot. -->
   <script src="js/livingroom.js"></script>
   <script src="js/desk.js"></script>
   <script src="js/couch.js"></script>
   <script src="js/mantle.js"></script>
   <script src="js/whiteboard.js"></script>
   <script src="js/chalkboard.js"></script>
+  <script src="js/cupmen.js"></script>
+  <script src="js/fort.js"></script>
   <script src="js/levels.js"></script>
   <script src="js/scores.js"></script>
   <script src="js/ui.js"></script>

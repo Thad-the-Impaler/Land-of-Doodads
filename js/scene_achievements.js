@@ -11,14 +11,16 @@
    way back and the two that turn the page, which is why `hot` is short
    and why it is refilled inside drawFg beside the buttons that fill it.
 
-   THE PAGE COUNT IS DERIVED, NEVER TYPED. There are eleven rows today
+   THE PAGE COUNT IS DERIVED, NEVER TYPED. There are twelve rows today
    and the roster is meant to grow - every new bay is one more line in
    the Achievements table and nothing else - so a hardcoded 2 would rot
-   the first time a twelfth row landed. See pages().
+   the first time a thirteenth row landed. See pages(). (The twelfth, the
+   Fort's King, filled page two to six and needed nothing here: 12 / 6
+   is still 2.)
 
-   AND THREE OF THE ELEVEN ARE SECRET. Mosquitos, Do You Respect Wood?
-   and Don't Worry, Be Capy all name a Living Room bay, and the Living
-   Room is a secret until it is earned: js/levels.js hands the level
+   AND FOUR OF THE TWELVE ARE SECRET. Mosquitos, Do You Respect Wood?,
+   Don't Worry, Be Capy and Long Live the King all name a Living Room
+   bay, and the Living Room is a secret until it is earned: js/levels.js hands the level
    select three '? ? ?' placeholders rather than a shut room's bays, and
    the high scores screen pages Levels.shown() rather than playable()
    because merely READING a table would write its key into the save file
@@ -102,8 +104,8 @@ var AchievementsScene = (function () {
      at all before anything has pointed. */
   var hot = [];
 
-  /* Derived from the roster's own length, so a twelfth achievement is
-     two pages of six and a thirteenth is three, with nothing here to
+  /* Derived from the roster's own length, so twelve achievements are
+     two pages of six and a thirteenth makes three, with nothing here to
      edit. Never below one: a modulo by zero in the paging code below
      would turn the arrow keys into a crash. */
   function pages() {
@@ -221,7 +223,7 @@ var AchievementsScene = (function () {
       var ry = ROW0 + i * ROWH;
 
       /* a banded table reads down a column without a rule between every
-         row, which at 32px pitch would be eleven more lines than the
+         row, which at 32px pitch would be twelve more lines than the
          panel wants */
       if (i % 2 === 0) { ctx.fillStyle = '#22170d'; ctx.fillRect(x + 3, ry, PW - 6, ROWH - 1); }
 
@@ -229,7 +231,7 @@ var AchievementsScene = (function () {
          caches its two keys in module scope and Levels caches what a
          room's gate reached, so asking every frame costs nothing. It is
          asked every frame on purpose - IMP11 can be typed with this
-         screen open, and a cached answer would leave the three secret
+         screen open, and a cached answer would leave the four secret
          rows padlocked until the player left and came back. */
       var vis = Achievements.visible(a);
 
@@ -255,7 +257,7 @@ var AchievementsScene = (function () {
          object as a shadow of itself, so a locked row still says WHAT it
          is - that is the whole point of showing it. */
       /* a.icon, not a.id: the roster says which badge a row wears, and the
-         two happen to agree for all eleven. A twelfth row that borrowed
+         two happen to agree for all twelve. A thirteenth row that borrowed
          another's art would otherwise ask Badges for an id it has never
          baked and be handed the padlock plate - on an EARNED row. */
       Badges.draw(ctx, a.icon || a.id, x + BADGE_DX, ry + 7, done ? null : DIM);
@@ -277,7 +279,7 @@ var AchievementsScene = (function () {
       if (done) {
         UI.text(ctx, 'EARNED', x + RIGHT_DX, ry + 6, { align: 'right', colour: UI.C.inkDim });
         var ts = Achievements.when(a);
-        /* A DASH IS THE RETROACTIVE PLATES' DATE. Five of the eleven are
+        /* A DASH IS THE RETROACTIVE PLATES' DATE. Five of the twelve are
            read out of save keys the game already kept, so a save that has
            been played for weeks banks them on its first boot with this
            build - and the save can prove they were done but cannot say
@@ -321,7 +323,7 @@ var AchievementsScene = (function () {
     UI.heading(ctx, 'ACHIEVEMENTS', VW / 2, 8, 2, { colour: UI.C.gold });
 
     /* 142px of heading centred is 169..311; this is 83px at its widest
-       (EARNED 11 / 11) ending at 474, so the two never meet. It is dim
+       (EARNED 12 / 12) ending at 474, so the two never meet. It is dim
        ink while there is anything left to earn and gold once there is
        not, which is the only congratulation this screen offers - and a
        full roster takes the results board's own 3Hz gold/ink blink,
@@ -385,8 +387,8 @@ var AchievementsScene = (function () {
      code does nothing - but the screen was asserting both halves and
      explaining neither.
 
-     THE DASH, otherwise: five of the eleven are read out of save keys the
-     game already kept, so they arrive EARNED with no day, while six count
+     THE DASH, otherwise: five of the twelve are read out of save keys the
+     game already kept, so they arrive EARNED with no day, while seven count
      things nothing was counting before and start their bars at zero. Two
      rows both saying COLLECT 20 behaved oppositely on one refresh, which
      is exactly what it looks like when a counter is broken.
@@ -423,7 +425,7 @@ var AchievementsScene = (function () {
   /* No refresh(). Game calls it on whatever scene is up when IMP11 is
      typed, for screens that cached the unlock state - and this one
      caches nothing: drawBg asks Achievements.visible() per row per
-     frame, so the three secret rows turn into real rows on the very
+     frame, so the four secret rows turn into real rows on the very
      next frame without being asked to. */
   return { enter: enter, exit: exit, update: update,
            drawBg: drawBg, drawFg: drawFg,

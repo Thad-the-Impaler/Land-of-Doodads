@@ -92,7 +92,7 @@
    become reachable, the guard that made it unreachable has been taken off
    and this comment is the record of which one.
 
-   Same discipline as the four bays: every pixel in here is generated and
+   Same discipline as the five bays: every pixel in here is generated and
    baked once, nothing rotates a canvas, and there is NO CALL TO
    Dither.rect anywhere in this file - the Bayer grid is anchored in user
    space and a dithered rect that scrolls re-phases against the pattern

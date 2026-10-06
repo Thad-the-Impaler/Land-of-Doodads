@@ -326,7 +326,8 @@ var Mantle = (function () {
   };
 
   /* the one-off heads up when a hazard arms: the thing, then the
-     excuse. `ceil` is the room's, word for word, in all four bays. */
+     excuse. `ceil` is the room's, word for word, in every bay it roofs;
+     this one is roofed by the television's stone and says so. */
   var WARN = {
     drop:  ['▼ DEAD PIXELS ▼', 'THE PICTURE IS COMING APART'],
     spike: ['▲ REMOTES ▲', 'SOMEBODY IS SITTING ON THEM'],
@@ -459,7 +460,7 @@ var Mantle = (function () {
   var hash = LivingRoom.hash;
   var rowsFill = LivingRoom.rowsFill;
   /* The room's smoothstep and its per-row colour. They are published for
-     exactly this: four bays each writing their own ramp is four chances
+     exactly this: five bays each writing their own ramp is five chances
      to put an edge back, and this bay is the one that proved it. */
   var ease = LivingRoom.ease;
   var rgba = LivingRoom.rgba;
@@ -1361,7 +1362,7 @@ var Mantle = (function () {
 
   /* The room first, then the bay, then the sprites. Nothing here
      depends on an earlier tile; LivingRoom.build() guards itself, so
-     the four bays calling it at boot cut the oak once. */
+     the five bays calling it at boot cut the oak once. */
   function build() {
     LivingRoom.build();
     T.top     = bakeTop();
@@ -1417,7 +1418,7 @@ var Mantle = (function () {
     /* and the whole wall stands back a step behind the action */
     Tint.rect(ctx, 0, 0, VW, VH, P.void, 3);
 
-    /* the room's lighting pass, last, the same one sheet in all four
+    /* the room's lighting pass, last, the same one sheet in all five
        bays. No bay paints a vignette or a gloom of its own. */
     LivingRoom.drawLight(ctx);
   }

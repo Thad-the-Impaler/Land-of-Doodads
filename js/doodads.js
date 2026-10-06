@@ -373,7 +373,7 @@ var Doodads = (function () {
          novelty - each is a death removed, however it is dressed, and a
          death removed is Inari's spare life in another coat. A hard rebound
          off the Backyard's rafters is real and literal and has nowhere to
-         happen in the Living Room, whose four bays end the run at the lid
+         happen in the Living Room, whose five bays end the run at the lid
          instead, so nearly half the game would never see it - and in the
          Backyard everybody already gets a small one (vy x -0.18 off the
          wall). A flap that ADDED to a rise, so that quick taps climbed
@@ -1068,7 +1068,7 @@ var Doodads = (function () {
 
      The walk is cached because of where it is called from. The select
      screen asks requirement() for a locked stall's `.plate` on every frame
-     it draws the rail, so this would otherwise walk two rooms and nine bays
+     it draws the rail, so this would otherwise walk two rooms and ten bays
      per locked doodad per frame, forever, to answer a question whose answer
      cannot change: ids are fixed in the source. A miss is cached as null
      along with the hits, so a typo in an unlockGold.where costs one walk
@@ -1168,7 +1168,7 @@ var Doodads = (function () {
        IN or ON belongs to each level's name (in the garden, but on the
        couch) and nothing in js/levels.js stores which, so the line is built
        without one rather than with the wrong one. Giving every level a
-       `prep` key would be nine rows touched for one word.
+       `prep` key would be ten rows touched for one word.
 
        It is also why neither of them says here what finding him COSTS. The
        Garden asks for nothing but a close pass; the Couch asks for a dive
@@ -1184,24 +1184,28 @@ var Doodads = (function () {
        second deed would want a small table keyed by that id rather than a
        second branch.
 
-       The hint deliberately does not name the Whiteboard. It is the last
-       bay of a secret room, so naming it would spend the room's secret on a
-       locked card - and ONE BAY SHEDS BOTH is true, gives away nothing and
-       is quite enough to go looking with. */
+       The hint deliberately names neither bay. Two shed both a heat and a
+       sour now - the Whiteboard off its lid, and the Fort out of its
+       Cupmen's guns, a red pellet and a green one - and they are the
+       fourth and fifth bays of a secret room, so naming either would spend
+       the room's secret on a locked card. TWO BAYS SHED BOTH is true,
+       gives away nothing and is quite enough to go looking with; it used
+       to say ONE, and one stopped being true the day the Fort was built. */
     if (d.unlockDeed) {
       return { price: 'BE HOT AND SOUR AT ONCE', plate: 'HOT + SOUR',
-               hint: 'ONE BAY SHEDS BOTH', bar: false };
+               hint: 'TWO BAYS SHED BOTH', bar: false };          /* 18 ch, as ONE was */
     }
     /* a catch is one event as well, so no bar here either, and the copy is
        written out for the deed's reason: there is exactly one chase and a
        sentence reads better than a phrase assembled out of a level id.
 
        It keeps the deed's secrecy rule too, and the same word for it. The
-       Whiteboard is the last bay of a secret room, so ONE BAY HAS A HOLE IN
-       IT is what the card says - true, naming nothing, and quite enough to
-       go looking with. The price does not say how to go down either: the
-       funnel and what landing in it costs are his own business, which is
-       what his lockedAbout is for. */
+       Whiteboard is the fourth bay of a secret room, so ONE BAY HAS A HOLE
+       IN IT is what the card says - still ONE, because the Fort's floor is
+       a floor - true, naming nothing, and quite enough to go looking with.
+       The price does not say how to go down either: the funnel and what
+       landing in it costs are his own business, which is what his
+       lockedAbout is for. */
     if (d.unlockChase) {
       return { price: 'CATCH HIM IF YOU CAN', plate: 'AT LARGE',    /* 20 ch 138px at spacing 2; 8 ch 47px in a 92px pitch */
                hint: 'ONE BAY HAS A HOLE IN IT', bar: false };      /* 24 ch, 143px */

@@ -520,7 +520,7 @@ var Couch = (function () {
 
   /* the 15 neutral effect colours PlayScene paints its particles, its
      dust and its washes out of. It never reads P. The air is the
-     room's, shared by all four bays, so the dust drifting through the
+     room's, shared by all five bays, so the dust drifting through the
      Couch is the dust drifting through the Desk. */
   var FX = {
     motes:    LivingRoom.AIR.motes,  motesHi: LivingRoom.AIR.motesHi,
@@ -2411,8 +2411,8 @@ var Couch = (function () {
   /* ---------------------------------------------------------- build */
 
   function build() {
-    /* the room first, and it guards itself - four bays in one room is
-       four calls at boot and the oak only needs cutting once */
+    /* the room first, and it guards itself - five bays in one room is
+       five calls at boot and the oak only needs cutting once */
     LivingRoom.build();
     T.ceiling = LivingRoom.bakeCeiling(null);
 
@@ -2472,8 +2472,8 @@ var Couch = (function () {
        5. LivingRoom.drawLight
 
      Nothing else: this bay draws no vignette and no gloom of its own,
-     because drawLight is the room's and four bays that shaded their own
-     corners would read as four different houses.
+     because drawLight is the room's and five bays that shaded their own
+     corners would read as five different houses.
 
      LAYER 3 IS DOING TWO JOBS. A sofa standing against a wall darkens
      the wall just above where it meets it, which is in every one of the

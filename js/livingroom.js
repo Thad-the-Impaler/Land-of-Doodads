@@ -1,13 +1,16 @@
 /* ------------------------------------------------------------------
    Land of Doodads - THE LIVING ROOM, the room itself
-   Four bays share one house after dark: oak boards underfoot, warm
+   Five bays share one house after dark: oak boards underfoot, warm
    plaster overhead, crown moulding, and a line of pendant lamps that
    are the only reason anything in here is lit at all. The Desk, the
-   Couch, the Mantle and the Whiteboard each paint their own wall and
-   their own hazards; the ceiling, the floor, the pigments and the
-   lighting pass live here, once, so that all four agree.
+   Couch, the Mantle, the Whiteboard and the Fort each paint their own
+   wall and their own hazards; the ceiling, the floor, the pigments and
+   the lighting pass live here, once, so that all five agree. (The Fort
+   has swallowed the room in cardboard and lays its own rugs over the
+   boards, but they are these boards - its floor strip cuts the oak with
+   paintOak, seed 7 - and its pendants are these pendants, switched off.)
 
-   WHY THIS FILE EXISTS. Four copies of a ceiling drift the first time
+   WHY THIS FILE EXISTS. Five copies of a ceiling drift the first time
    one builder nudges a crown colour, and the ceiling is the one thing
    in this room the player has to learn exactly once - because in here
    it KILLS, the same as the floor. A rule that ends runs cannot be a
@@ -20,13 +23,15 @@
    and the owner is keeping those for a CEILING level of their own. The
    Desk and the Couch keep this band - they are rooms you look across,
    with a ceiling over them, and the owner says it works there. The
-   Mantle and the Whiteboard bake a band of their own (bakeTop in each
-   file: the stone above a television, the top rail of a rolling frame)
-   and draw it themselves. What every bay shares, whatever the band is
-   made of, is the CONTRACT: 240 wide so it tiles on one beat, CEIL = 24
-   rows deep, row 23 a hard dark edge on the kill line, nothing solid
-   below it, and the room's crownShade strip laid under it so the rows
-   the player flies through carry the same shade in all four.
+   Mantle, the Whiteboard and the Fort bake a band of their own (bakeTop
+   in each file: the stone above a television, the top rail of a rolling
+   frame, the scalloped edge of a cardboard roof panel with the blue LED
+   strip above it) and draw it themselves. What every bay shares,
+   whatever the band is made of, is the CONTRACT: 240 wide so it tiles
+   on one beat, CEIL = 24 rows deep, row 23 a hard dark edge on the kill
+   line, nothing solid below it, and the room's crownShade strip laid
+   under it so the rows the player flies through carry the same shade in
+   all five.
 
    WHY THE CEILING IS FOUR HARD ROWS. Everywhere else in the game the
    lid is texture and the player learns it by bumping it. Here bumping
@@ -112,7 +117,7 @@ var LivingRoom = (function () {
     outline:    '#1a1410'
   };
 
-  /* The playfield, for all four bays. 24 and 242 are the Coop's numbers
+  /* The playfield, for all five bays. 24 and 242 are the Coop's numbers
      and the room keeps them: a player who has come through the Backyard
      has five levels of muscle memory for where the lid and the ground
      are, and this room changes what the lid DOES, which is quite enough
@@ -124,7 +129,7 @@ var LivingRoom = (function () {
      enter() and reads a plain boolean - the five Backyard levels publish
      nothing, !!undefined is false, and their rafters go on bouncing.
      Every Living Room module exports LivingRoom.CEIL_KILLS, not a literal,
-     so the room cannot end up with three bays that kill and one that does
+     so the room cannot end up with four bays that kill and one that does
      not. */
   var CEIL_KILLS = true;
 
@@ -132,7 +137,8 @@ var LivingRoom = (function () {
   var END_MIN = 34;
 
   /* The heads-up every bay shows on the very first flap. It is the same
-     two lines in all four because it is the same ceiling in all four, and
+     two lines in every bay roofed by this ceiling because it is the same
+     ceiling in each of them, and
      because a player who learns it in the Desk and then reads something
      different in the Couch has been told the rule twice and believed it
      once. PlayScene shows this without the 'warn' tone: the doodad has
@@ -140,7 +146,8 @@ var LivingRoom = (function () {
   /* The default lid warning. A bay whose lid is NOT the room's ceiling says
      what its own is instead - the Mantle is roofed by a television and the
      Whiteboard by the frame it hangs on, and telling either player about a
-     ceiling they cannot see is worse than telling them nothing. */
+     ceiling they cannot see is worse than telling them nothing. The Fort
+     is roofed by a cardboard panel, and says so. */
   var WARN_CEIL = ['▲ LOW CEILING ▲', 'THIS ONE ENDS THE RUN'];
 
   /* The two neutral colours the air in this room is made of. Every level's
@@ -596,7 +603,7 @@ var LivingRoom = (function () {
 
   /* A calm version of the room for the menus to sit on: bare plaster, the
      dado line, the ceiling and the floor, and none of the furniture that
-     would fight the ui. All four bays export this as their own
+     would fight the ui. All five bays export this as their own
      drawMenuBackdrop. The porch (js/scene_porch.js) is the first caller:
      its 480-wide Living Room bay resolves room.levels[0] to THE DESK
      (levels.js:541), and the Desk's drawMenuBackdrop is a bare delegate
@@ -632,7 +639,7 @@ var LivingRoom = (function () {
   }
 
   /* Bake the room. Every bay's build() calls this FIRST, and the guard is
-     what makes that safe: four levels in one room means four calls at boot
+     what makes that safe: five levels in one room means five calls at boot
      and the oak only needs cutting once. */
   function build() {
     if (T.oak) return;
