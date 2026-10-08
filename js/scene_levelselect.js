@@ -599,7 +599,7 @@ var LevelSelectScene = (function () {
 
     /* a doodad silhouette flying it */
     var bx = Math.round(x + w * 0.32);
-    var by = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.18));
+    var by = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
     var sz = big ? 7 : 5;
     ctx.fillStyle = '#20150c';
     ctx.fillRect(bx - sz / 2 - 1, by - sz / 2 - 1, sz + 2, sz + 2);

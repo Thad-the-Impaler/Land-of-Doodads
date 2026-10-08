@@ -25,98 +25,113 @@
                 row). From pace 12.
      GREEN      white shotgun. A blast of two small GREEN pellets, which
                 are sours, and nothing else. Rarer. From pace 12.
-     SILVER     the SENTINELS, with the cream SAW. Robotic: 10px steps,
-                no waddle, an aim that ticks 15 degrees at a time and only
-                shows its dots once it has ticked onto you, and a burst of
-                three - yellow and red, three times the Crimson's rate.
-                From pace 19.
+     SILVER     the SENTINELS, with the cream SAW. Robotic: 10px steps
+                and no waddle, a quicker (but as smooth) aim, and a burst
+                of three - yellow and red. From pace 20.
      GOLD       the GOLDEN ORDER, gold pistols. Quick SILVER pellets that
                 curve after you (3 in 4) and spinning GOLD COINS that are
-                worth +5 (1 in 4). From pace 19.
-     KING       once per run at pace 25. A hundred pixels of gold cup -
+                worth +5 (1 in 4). From pace 20.
+     KING       once per run at pace 30. A hundred pixels of gold cup -
                 3.3 cupmen tall, 76 wide - with a pink crown and a red
                 eye. He holds station on the screen like the Chalkboard's
                 shark, summons two floating orange guns on the side the
                 player is coming from, and is bopped three times ON THE
-                CROWN.
+                CROWN. While he is up, the biscuits stop falling.
+
+   A cupman stands on nearly every bay (0.9 of them), and any of them
+   but the King goes over if you LAND ON HIS HEAD - a bop, no points.
+   From the side he is as lethal as he ever was.
 
    THEY MARCH. The owner's words are "march back and forth", so a
-   cupman walks 40..58px/s (the Sentinel 33) inside a 60px patrol - a
-   leg is about 1.3s, so a turn falls inside the second or so he is on
-   screen before he engages in about three encounters in four - and he
-   walks again BETWEEN shots, from 0.25s after he fires until 0.25s
-   before his next telegraph could start, so the muzzle never moves under
-   a line it has shown. He stands still only while aiming and while the
-   player is 0..40px ahead of him (a lethal body that sets off towards
-   you is unreadable); once passed by 24px he goes back to his patrol.
+   cupman walks 40..58px/s (the Sentinel 33) inside a 60px patrol, and
+   walks again BETWEEN shots - still facing the doodad, a strafe - from
+   the moment he fires until 0.15s before his next telegraph could
+   start, so the muzzle never moves under a line it has shown. He stands
+   still while aiming and while the player is 0..40px ahead of him (a
+   lethal body that sets off towards you is unreadable); once passed by
+   24px he goes back to his patrol, turning at most once as a doodad
+   goes over him (see stepCupman). A TURN IS INSTANT: the owner asked
+   for no in-between frames, which squeezing the painting through zero
+   width had shown as the flat card it is.
+
+   THE GUN IS HELD LOW AND FORWARD, past the brim at the foot of the cup,
+   never across the face - and drawn behind the cup on the rare aim steep
+   enough to cross it (see GUN).
 
    THE FAIRNESS RULES, every one, because a shooter that is not fair is
    not an obstacle, it is a coin toss:
 
-     1. AHEAD ONLY. A cupman engages when the player is 40..230px to his
-        LEFT - 190px, about 1.1..1.6s of scroll. The owner's words are
-        "when the player approaches"; a cupman already passed never
-        fires - a pellet from behind, at a doodad who only ever looks
-        right, is not a hazard anyone can read. Under 40px his body is
-        the hazard, and rule 3 holds his gun anyway. The King's guns:
-        40px, and they float AHEAD of him (64 and 112px), so they cover
-        the doodad who is fighting him.
-     2. NOTHING FIRES FROM OFF SCREEN. The cup, the gun and the aim dots
-        must all be on it: the centre inside 8..VW-24.
-     3. NEVER POINT BLANK. A target nearer than 84px holds fire (56 for
-        the floating guns, whose pellets are slower on the screen): at
-        the quickest screen speed below, 84px is 0.32s of flight AFTER
-        at least 0.12s of locked line, and a 15px dodge takes 0.05s (a
-        flap) to 0.16s (from rest, falling). Measured: no pellet arrived
-        in under 0.37s.
+     1. AHEAD ONLY. A cupman engages when the player is 40..400px to his
+        LEFT - his gun comes up as soon as half of him is on the screen
+        (READY), about 2s of scroll at the doodad's start x. The owner's words are "when the
+        player approaches"; a cupman already passed never fires - a
+        pellet from behind, at a doodad who only ever looks right, is
+        not a hazard anyone can read. Under 40px his body is the hazard,
+        and rule 3 holds his gun anyway. The King's guns: 40px, and they
+        float AHEAD of him (64 and 112px), so they cover the doodad who
+        is fighting him.
+     2. NOTHING FIRES FROM OFF SCREEN. The whole cup must be on it (the
+        centre inside 16..VW-16); the gun and the dots are on the screen
+        side of him whenever he aims.
+     3. NEVER POINT BLANK. A doodad whose hitbox edge is nearer the
+        MUZZLE than 60px, or than 0.44s of the pellet's own flight,
+        whichever is further, holds the shot (56px for the floating guns):
+        with at least 0.15s of locked line in front of it, every pellet
+        that can reach him gives him ~0.6s from the frozen line, and a
+        15px dodge takes 0.05s (a flap) to 0.16s (from rest, falling).
+        Measured headless against an autopilot that flies INTO the line
+        (it steers for the next gap and ignores pellets): the quickest
+        of ~1000 pellets arrived 0.38s after it left the muzzle, 0.53s
+        after its line froze.
      4. NOTHING FIRES DURING THE GRACE after a save, nor at a submerged
         Teef.
-     5. NOTHING FIRES INTO OR THROUGH A PLANK. A player whose hitbox
-        overlaps any plank's column union - x in [p.x-4-hr, p.x+38+hr],
-        64px for an 11px hitbox - is held: a corridor gives +-30px of
-        room and no horizontal escape, and a half-lead pellet down it is
-        near unavoidable. A muzzle-to-target segment that crosses a
-        column is held too. This gates the SHOT, not the aim: see 6.
-        (It was [x-20, x+58], 78px of a ~200px bay; with the segment
-        test that left a floor shooter ~17px of scroll, 0.1s, to fire
-        in - under his own telegraph - and the measured rate was one
-        pellet in thirty seconds of cupmen.)
-     6. THE TELEGRAPH. Raised gun, three aim dots growing out of the
-        muzzle, never shorter than 0.21s. It starts the moment he is
-        engaged and on his mark, BLOCKED OR NOT, and runs down behind
-        the cardboard with the dots showing, so a doodad threading a
-        plank sees the line waiting for him on the far side. THE AIM
-        LOCKS - the dots freeze - only while the line is clear, and the
-        gun fires only after 0.12s of clear, locked line: if the
-        telegraph runs out behind a plank it is held, tracking, until
-        the line opens, then locks for 0.12s, then fires. "Dodge the
-        line you were shown" is literally true of every pellet. The
-        King's two guns never fire within 0.6s of each other.
+     5. NOTHING FIRES DOWN A CORRIDOR. A player whose hitbox overlaps any
+        plank's column union - x in [p.x-4-hr, p.x+38+hr], 64px for an
+        11px hitbox - with a CLEAR line to the muzzle is held: a corridor
+        gives +-30px of room and no horizontal escape, and a half-lead
+        pellet down it is near unavoidable. A line that crosses cardboard
+        is NOT held any more - the pellet pops on the plank (round 1 held
+        those, which was most shots: 0.6..1 shot per cupman encounter,
+        and the owner saw them "already gone before they can shoot").
+     6. THE TELEGRAPH. Three aim dots growing out of the muzzle and
+        following the aim, never shorter than 0.26s. It starts the moment
+        he is engaged, his cooldown spent and his gun on its mark. Its
+        last 0.15s is THE LOCK: the aim freezes and the dots take the
+        colour of the pellet; the lock waits, tracking, until the shot is
+        fair (rules 3 and 5), and once locked it never unlocks - it fires,
+        or if the shot has stopped being fair it stands down and starts
+        again. "Dodge the line you were shown" is literally true of every
+        pellet. The King's two guns never fire within 0.6s of each other.
      7. HALF LEAD. The gun aims at where you are plus half of where your
         vertical speed is taking you: a doodad that keeps moving is
-        missed and a doodad that hovers is hit.
+        missed and a doodad that hovers is hit. The aim FOLLOWS that point
+        on a critically damped spring - no snaps, no ticks, no overshoot.
      8. NEVER FASTER THAN run.speed + 90 ON THE SCREEN. A pellet's
         muzzle speed M (48..88) is set against the RUG, because the
-        cupman is standing on it: it leaves the gun at M in the room and
-        so at run.speed + M on the screen - 178..240 for a yellow, 204..266
-        for a silver. (A pellet set at a flat 145 on the screen moved at
-        run.speed - 145 in the room: it hung on the muzzle at pace 12 and
-        drifted back through the cup under the heat.) From the 230px range
-        it arrives in 0.86..1.29s after the dots; a flap from rest rises
-        48px with its apex at 0.29s, about 37px in the first 0.15s.
+        cupman is standing on it; round 2 takes it to 0.85 of
+        run.speed + M, never under run.speed + 34 - 164..226px/s on the
+        screen at the Fort's pace (SHOT). (A pellet set at a flat 145 on
+        the screen moved at run.speed - 145 in the room: it hung on the
+        muzzle at pace 12 and drifted back through the cup under the
+        heat.) From across the screen it arrives in about 1..2s.
      9. SIX LIVE PELLETS AT MOST, counting the ones born this frame. The
         cap gates FIRE, never engagement, so a full sky does not make
         every cupman flinch.
     10. A CUPMAN NEVER FIRES IN HIS FIRST HALF SECOND. He is admitted at
-        about VW+90 and scrolls in at <= 178px/s, and rule 2 needs his
-        centre under VW-24 - that, and not his cooldown, is the real
+        about VW+90 and scrolls in at <= 334px/s even under the heat and
+        marching; his telegraph cannot start before VW+READY and lasts
+        0.30s, and rule 2 holds the lock until his centre is under VW-16 -
+        0.53s at the very fastest. That, and not his cooldown, is the real
         guarantee.
-    11. HOMING IS DODGED BY MOVING. 2.4 rad/s for 1.1s, and never once
+    11. HOMING IS DODGED BY MOVING. 2.0 rad/s for 1.3s, and never once
         the pellet is past you.
     12. THE KING'S BOP NEVER THROWS YOU INTO CARDBOARD. His crown is bop
         only, and it is withdrawn while a plank overlaps the doodad or
         will within 0.3s - the rebound's rise (25px, apex at 0.21s) plus
-        a margin - so a bop only ever happens between planks.
+        a margin - so a bop only ever happens between planks. A cupman's
+        head needs no such shield: his patrol keeps him 36px clear of
+        the next plank, and a doodad down on the rug to bop him is under
+        that plank's gap whether he bops or not.
 
    WHY THEY LIVE ON THE SMOOTH LAYER. The sprites are the owner's
    paintings, in the same style as the doodads, and the doodads are drawn
@@ -151,10 +166,11 @@
    LUMINANCE (Rec. 601, measured off the PNGs and the hexes below): the
    painted crimson cup averages 86, green 59, silver 137, gold 188, the
    King 180. The red and the green are the two that sink into the foot of
-   a near wall in shadow (~80 after the room's light), which is why
-   EVERY cup gets a cool 1.5px rim light from the blue strip along its top
-   and left edge and the GREEN and SILVER get a warm backlight glow behind
-   them: by value alone the green is 21 points under its wall.
+   a near wall in shadow (~80 after the room's light), which is why the
+   GREEN and SILVER get a warm backlight glow behind them: by value alone
+   the green is 21 points under its wall. (Round 1 also stroked a cool
+   rim light along every cup's top-left edge; the owner read it as a
+   stray white line following them, and it is gone.)
 
    Same discipline as the art modules where it applies: no Math.random in
    a draw, no Dither.rect, no Audio3 and no particles from in here (the
@@ -223,7 +239,6 @@ var Cupmen = (function () {
     flash:         '#fff1b0',   /* 238  aim dots and the muzzle halo        */
     flashCore:     '#ffffff',   /* 255                                      */
     shade:         '#3a2c1f',   /*  47  the contact shadow under a cup      */
-    rim:           'rgba(180,200,255,0.75)',  /* the blue strip on a cup's shoulder */
     gunBlue:       '#1f4fb8',   /*  77  the Crimson's pistol                */
     gunWhite:      '#f2f3f0',   /* 242  the shotgun and the SAW             */
     gunGold:       '#e0a020',   /* 165  the Order's pistol                  */
@@ -235,7 +250,7 @@ var Cupmen = (function () {
      and the King's threshold has to be forceable by a headless test, so
      it lives here as art data rather than in the level's tune - and
      js/levels.js says so beside the Fort's foeScore. */
-  var tune = { kingAt: 25, kingHp: 3 };
+  var tune = { kingAt: 30, kingHp: 3 };
 
   var T = {};
 
@@ -259,46 +274,103 @@ var Cupmen = (function () {
   var KING_HALF = 38;       /* drawn half-width: the fade test, and fort.js's
                                plank-over-the-King redraw uses the same 38 */
   var CROWN_H = 17;         /* the painting's crown, on screen */
+  var HEAD_H = 6;           /* a cupman's bop strip, the top of his cup */
   var GUN_S_KING = 0.125;
 
   /* the guns as the trimmer measured them: muzzle = the middle of the
      barrel's mouth, grip = the middle of the lowest row of the handle.
      A held gun pivots on its grip. A FLOATING gun has no hand, and a
      thing pivoting on its bottom-left corner swings like a door, so the
-     King's guns pivot on the painting's centre (`px`, `py`) instead. */
+     King's guns pivot on the painting's centre (`px`, `py`) instead.
+
+     THE HOLD, LOW AND FORWARD, so the gun never covers the face. The
+     face is painted on the facing side of the upper half: eyes, brows
+     and the zigzag mouth sit in x 0..+10.5 (face side), y -24.5..-14.5
+     from the foot, measured off the PNGs at the 30px draw (the Sentinel's
+     eyes are nearer the middle, -3..+3, hence the union box). The hand
+     used to be at (+7, -13) - INSIDE the body at mouth height - and the
+     barrel, 6.7px above the grip, went straight across the eyes at every
+     angle. Now the grip is at (hx, hy) = (+16, -5) out past the brim
+     (the cup is 13.3px wide each side at that height): level, the gun's
+     nearest pixel is 1px clear of the body, and a scan of every opaque
+     gun pixel against that face box, every half degree of elevation,
+     first touches it at 58.5 degrees up for the pistols, 68.5 for the
+     shotgun and 62 for the SAW (held 2px further out and 1px lower: its
+     painting is the biggest). `beh` is that threshold less about
+     five degrees, in radians (54, 64 and 57 degrees): aimed steeper, the gun is drawn BEHIND the cup, which hides
+     the part that would cross the face and leaves the barrel and muzzle
+     showing past the rim. Only a doodad nearly overhead and close puts a
+     gun there - and point blank (rule 3) holds that shot anyway. */
   var GUN = {
-    crimson: { img: 'gun_crimson', mx: 205, my: 39,   gx: 19.5, gy: 121 },
-    gold:    { img: 'gun_gold',    mx: 205, my: 39,   gx: 19.5, gy: 121 },
-    green:   { img: 'gun_green',   mx: 267, my: 34.5, gx: 30,   gy: 107 },
-    silver:  { img: 'gun_silver',  mx: 319, my: 47,   gx: 14,   gy: 145 },
+    crimson: { img: 'gun_crimson', mx: 205, my: 39,   gx: 19.5, gy: 121, hx: 16, hy: 5, beh: 0.95 },
+    gold:    { img: 'gun_gold',    mx: 205, my: 39,   gx: 19.5, gy: 121, hx: 16, hy: 5, beh: 0.95 },
+    green:   { img: 'gun_green',   mx: 267, my: 34.5, gx: 30,   gy: 107, hx: 16, hy: 5, beh: 1.12 },
+    silver:  { img: 'gun_silver',  mx: 319, my: 47,   gx: 14,   gy: 145, hx: 18, hy: 4, beh: 1.0 },
     king:    { img: 'gun_king',    mx: 319, my: 47,   gx: 160,  gy: 73 }
   };
 
   /* THE RANKS. tele = the first telegraph; cool = the cycle from one
      shot to the next INCLUDING the short telegraph in front of it (so a
-     Crimson fires every 1.5s while you are in front of him). The
-     Sentinel's 1.4 carries a burst of three, which is three times the
-     Crimson's rate in pellets. `speed` is the march in the ROOM: at 22
-     against a 137..178 scroll it was a 12..16% wobble and a turn needed
-     2.7s, seen in ~30% of encounters; at 40..58 a 60px leg is ~1.3s.
-     `reach` is NOT a speed knob - the 88px window and Teef's +14 rule
-     below are built on it. */
+     Crimson fires every 1.60s while you are in front of him). Round 1
+     had 1.5 / 2.4 / 1.4 / 1.3 and a 0.42 telegraph, and measured ~0.6..1
+     shot per encounter: a cupman is ahead of the doodad and on screen
+     for about 1..2s, minus the point-blank tail, and one 1.5s cycle does
+     not fit twice in that. At 0.30 + 0.62 the first shot is ~0.4s into
+     an engagement and the next every 0.62s. Measured headless (js/
+     cupmen.js stepped against a rail autopilot, 2 minutes each, round
+     2's whole cycle and rules): 3.2 shots per Crimson at run.speed 130
+     with the doodad at x 116, 2.2 at 150 / x 160, 1.3 at the top speed
+     178 / x 200, ~1 under the heat; about 1 cupman in 100 never fired,
+     and none from x 160 down. Those were at 0.62; the final check of
+     round 2 measured 1.64 per Crimson and 1.33 per Gold over a late run
+     at the top speed, under the owner's "typically 2-3", so both went to
+     0.50 - and with a cupman in nine bays of ten that was a wall of
+     pellets: the owner played it and found them "very fast and too hard
+     to get past". Doubling every cycle (Crimson and Gold 1.10) still
+     measured 2.2 shots per Crimson at a normal 147px/s scroll, so they
+     went further: Crimson and Gold 1.60, Green 2.20, the Sentinel 2.40,
+     the King's guns 2.6, and the sky holds six live pellets, not nine.
+     A cupman still gets a shot at you on every pass - the first comes
+     ~0.4s into the engagement whatever the cycle - and a second only if
+     you are slow getting past him. The Green's blast is two pellets, so
+     it cycles slower; the Sentinel's 2.40 carries a burst of three, so it
+     still out-fires the Crimson 1.25 pellets a second to 0.63, which is
+     the owner's "much faster rate". `aimW` is the aim's spring (aimAt): the natural
+     frequency of a critically damped follow, rad/s - 14 settles a flick
+     of the target in ~0.3s, the Sentinel's 22 in ~0.2s, quicker but as
+     smooth. `speed` is the march in the ROOM: at 22 against a 137..178
+     scroll it was a 12..16% wobble and a turn needed 2.7s; at 40..58 a
+     60px leg is ~1.3s. `reach` is NOT a speed knob - the 88px window and
+     Teef's +14 rule below are built on it. */
   var RANK = {
-    crimson: { reach: 30, speed: 46, tele: 0.42, cool: 1.5, cry: 'pew',    body: 'cupRed',    dark: 'cupRedDk' },
-    green:   { reach: 30, speed: 40, tele: 0.42, cool: 2.4, cry: 'blast',  body: 'cupGreen',  dark: 'cupGreenDk' },
-    silver:  { reach: 22, speed: 0,  tele: 0.30, cool: 1.4, cry: 'rattle', body: 'cupSilver', dark: 'cupSilverDk' },
-    gold:    { reach: 30, speed: 58, tele: 0.42, cool: 1.3, cry: 'pew',    body: 'cupGold',   dark: 'cupGoldDk' },
-    king:    { reach: 0,  speed: 0,  tele: 0,    cool: 0,   cry: null,     body: 'cupGold',   dark: 'cupGoldDk' },
-    gun:     { reach: 0,  speed: 0,  tele: 0.35, cool: 1.7, cry: 'pew',    body: 'gunOrange', dark: 'crownDk' }
+    crimson: { reach: 30, speed: 46, tele: 0.30, cool: 1.60, aimW: 14, cry: 'pew',    body: 'cupRed',    dark: 'cupRedDk' },
+    green:   { reach: 30, speed: 40, tele: 0.30, cool: 2.20, aimW: 14, cry: 'blast',  body: 'cupGreen',  dark: 'cupGreenDk' },
+    silver:  { reach: 22, speed: 0,  tele: 0.26, cool: 2.40, aimW: 22, cry: 'rattle', body: 'cupSilver', dark: 'cupSilverDk' },
+    gold:    { reach: 30, speed: 58, tele: 0.30, cool: 1.60, aimW: 14, cry: 'pew',    body: 'cupGold',   dark: 'cupGoldDk' },
+    king:    { reach: 0,  speed: 0,  tele: 0,    cool: 0,    aimW: 0,  cry: null,     body: 'cupGold',   dark: 'cupGoldDk' },
+    gun:     { reach: 0,  speed: 0,  tele: 0.35, cool: 2.6,  aimW: 12, cry: 'pew',    body: 'gunOrange', dark: 'crownDk' }
   };
 
   /* THE PELLETS. M is the MUZZLE SPEED AGAINST THE RUG (the room
-     frame): the screen speed is run.speed + M - see speedOf and rule 8.
-     A horizontal yellow leaves the gun at 62px/s against the rug, still
-     +34 at 30 degrees up and about nothing at 45 (which reads as "fired
-     upward"), and it now out-runs the planks by M cos a, so "pellets stop
-     on cardboard" actually happens. `box` is the hit square's side; `r`
-     the drawn radius. Silver is the quick one. */
+     frame), round 1's whole speed: the screen speed WAS run.speed + M -
+     see speedOf and rule 8. A horizontal yellow left the gun at 62px/s
+     against the rug, and it out-runs the planks by its room speed times
+     cos a, so "pellets stop on cardboard" actually happens. `box` is the
+     hit square's side; `r` the drawn radius. Silver is the quick one.
+     THEN "A LITTLE SLOWER" (round 2): the screen speed is SLOW = 0.85 of
+     that, but never under run.speed + M_MIN. A flat 0.85 of the screen
+     speed would take 15% of run.speed off the ROOM speed too, and at the
+     heat's 1.55x a green would have hung on its own muzzle again (0.85 x
+     (276 + 48) = 275 against a 276 rug). 34px/s against the rug is the
+     least that still reads as a shot leaving the gun: 17px clear of the
+     muzzle in half a second, and every pellet still beats the planks.
+     What it comes to, screen px/s (round 1 in brackets):
+       run.speed 130   yellow 164 (192)  red/green 164 (182/178)  silver 185 (218)
+       run.speed 178   yellow 212 (240)  red/green 212 (230/226)  silver 226 (266)
+     The yellow and the silver are 0.85 of round 1 at the Fort's usual
+     pace and the slower red and green ~0.9 (the floor holds them); at
+     the top speed and under the heat the floor holds them all, 0.85..0.96.
+     The King's crown coins are gifts and keep their arc. */
   var SHOT = {
     yellow: { M: 62, r: 3,   box: 7, tile: 7, hi: 'pelletYellowHi', body: 'pelletYellow' },
     red:    { M: 52, r: 3.5, box: 8, tile: 8, hi: 'pelletRedHi',    body: 'pelletRed' },
@@ -306,30 +378,35 @@ var Cupmen = (function () {
     silver: { M: 88, r: 3,   box: 7, tile: 7, hi: 'pelletSilverHi', body: 'pelletSilver' },
     gold:   { M: 52, r: 4,   box: 9, tile: 11, hi: 'pelletGold',    body: 'pelletGoldEdge' }
   };
+  var SLOW = 0.85, M_MIN = 34;
   /* THE KING'S FLOATING GUNS hold station on the SCREEN, not the rug, so
-     their 150 stays a screen speed: from 17..159px ahead of a doodad at
-     his crown it arrives in 0.1..1.1s after a 0.35s telegraph. */
-  var GUN_V = 150;
+     theirs stays a plain screen speed, 150 x 0.85 = 128: from GUN_MIN
+     (56px) to 159px ahead of a doodad at his crown it arrives in
+     0.44..1.24s after a 0.35s telegraph. */
+  var GUN_V = 128;
   var KINDS = ['yellow', 'red', 'green', 'silver', 'gold'];
 
   /* the fairness numbers, named where the essay above argues them */
   var ENGAGE_MIN = 40;      /* rule 1: the nearest a cupman engages      */
   var GUN_MIN = 56;         /* rule 3 for the floating guns              */
   var GUN_GAP = 0.6;        /* rule 6: the King's two guns never together */
-  var FIRE_MIN = 84;        /* rule 3 for a cupman's faster pellets      */
-  var FIRE_T = 0.37;        /* rule 3 again, in seconds to impact        */
-  var RANGE = 230;          /* rule 8's distance                         */
+  var FIRE_MIN = 60;        /* rule 3: muzzle to hitbox edge, in px      */
+  var FIRE_T = 0.44;        /* rule 3 again, in seconds to impact        */
+  var RANGE = 400;          /* rule 1's far end: the whole screen ahead  */
+  var EDGE = 16;            /* rule 2: the whole cup inside the screen   */
+  var READY = 14;           /* the gun comes up from c <= VW + READY     */
   var GUN_AHEAD = 40;       /* rule 1 for the floating guns              */
-  var LOCK = 0.12;          /* rule 6: the frozen tail of a telegraph    */
-  var TELE_MIN = 0.21;      /* rule 6: never shorter                     */
+  var LOCK = 0.15;          /* rule 6: the frozen tail of a telegraph    */
+  var TELE_MIN = 0.26;      /* rule 6: never shorter                     */
   var MAX_SHOTS = 6;        /* rule 9                                    */
-  var AIM_RATE = 9;         /* rad/s, the eased aim                      */
-  var SNAP_T = 0.07, SNAP_A = 0.26;   /* the Sentinel's 15-degree ticks  */
+  var REST_W = 9;           /* the carry's spring, rad/s (aimAt)         */
+  var AIM_VMAX = 9;         /* rad/s, the most any aim swings            */
   var VOLLEY_DT = 0.14;     /* the Sentinel's burst spacing              */
   var STEP_T = 0.30, STEP_PX = 10, SLIDE_T = 0.08;   /* 33px/s, the Sentinel */
   var PLANT_T = 0.05;       /* the 0.94 squash as a Sentinel's foot lands */
-  var TURN = 2.4, HOME_T = 1.1;       /* rule 11                         */
-  var REST = 0.5;           /* a lowered gun points half a radian down   */
+  var TURN = 2.0, HOME_T = 1.3;       /* rule 11                         */
+  var REST = 0.3;           /* a lowered gun points 0.3 rad down          */
+  var DOWN_T = 0.55;        /* a bopped cupman's topple                   */
   var KING_X = 248;         /* where the King keeps station              */
   /* the floating guns' stations, AHEAD of him: slot 0 high, slot 1 mid.
      kx 238..258 puts them at 302..370 (<= VW-24 with 20px of gun either
@@ -667,8 +744,9 @@ var Cupmen = (function () {
      THE ONE FORMULA for where the gun is, used by the step that fires
      and by the draw that shows the sprite, the dots and the flash - so
      the pellet leaves exactly where the dots were. A held gun hangs at
-     the hand (c + face*7, FLOOR-13: 17px down a 30px cup); a floating
-     gun pivots on its centre. The draw does translate(h) . rotate(a) .
+     the hand, LOW AND FORWARD (c + face*hx, FLOOR - hy: 16..18px out
+     from the centre and 4..5px off the rug, see GUN); a floating gun
+     pivots on its centre. The draw does translate(h) . rotate(a) .
      (flip y when aiming left, so the gun is never upside down) .
      scale(gs) . drawImage(-pivot), so the muzzle in the world is that
      same chain applied to (mx - pivot): with fy = cos(a) < 0 ? -1 : 1,
@@ -682,7 +760,7 @@ var Cupmen = (function () {
       g = GUN.king; gs = GUN_S_KING; hx = ob.x + 18; hy = ob.y;
     } else {
       g = GUN[ob.kind] || GUN.crimson; gs = CUP_S;
-      hx = cx(ob) + (ob.face < 0 ? -7 : 7); hy = FLOOR - CUP_H + 17;
+      hx = cx(ob) + (ob.face < 0 ? -g.hx : g.hx); hy = FLOOR - g.hy;
     }
     var fy = Math.cos(a) < 0 ? -1 : 1;
     var lx = (g.mx - g.gx) * gs, ly = (g.my - g.gy) * gs;
@@ -712,26 +790,30 @@ var Cupmen = (function () {
     return true;
   }
 
-  /* RULE 5. Is the player in a plank's corridor, or is cardboard in the
-     way? Off p.x/p.gapY/p.gapH directly - never rectsFor, never an array.
-     The column union [p.x-4, p.x+38] is the caps' width taken all the way
-     up and down: 4px conservative on a column row, which only ever
-     withholds a shot, never lets one through. THE CORRIDOR is that same
-     union widened by the hitbox, [p.x-4-hr, p.x+38+hr]: the x-range in
-     which the doodad's box overlaps cardboard and so has no horizontal
-     escape - 64px for an 11px hitbox. It was [p.x-20, p.x+58], 78px of a
-     ~200px bay, and together with the segment test (a floor shooter's
-     line to a doodad in the next gap almost always crosses that plank's
-     lower column) it left ~17px of scroll, 0.1s, in which a cupman could
-     fire - shorter than his own 0.42s telegraph. One pellet in thirty
-     seconds. A negative `hr` asks about the cardboard alone (a burst
-     already on its way - see cycle). */
-  function blocked(obstacles, px, hr, x0, y0, x1, y1) {
+  /* RULE 5. Off p.x/p.gapY/p.gapH directly - never rectsFor, never an
+     array. The column union [p.x-4, p.x+38] is the caps' width taken all
+     the way up and down: 4px conservative on a column row. THE CORRIDOR
+     is that same union widened by the hitbox, [p.x-4-hr, p.x+38+hr]: the
+     x-range in which the doodad's box overlaps cardboard and so has no
+     horizontal escape - 64px for an 11px hitbox.
+
+     lineBlocked: does cardboard stand between the muzzle and the target?
+     ROUND 1 HELD EVERY SUCH SHOT, and that was most of them: a floor
+     shooter's line to a doodad in the next gap crosses that plank's
+     lower column for most of every bay, and the measured rate was 0.6..1
+     shot per cupman encounter - "they're already gone before they can
+     shoot". Round 2 FIRES IT: a blocked pellet pops on the plank
+     (stepShot), which is the cupmen visibly fighting the room the doodad
+     is threading, and costs the doodad nothing.
+
+     downCorridor: the doodad is in a corridor AND the line to him is
+     clear - a pellet down a plank's slot at a doodad with nowhere to go
+     but along it. That one is still held. */
+  function lineBlocked(obstacles, x0, y0, x1, y1) {
+    var lo = Math.min(x0, x1), hi = Math.max(x0, x1);
     for (var i = 0; i < obstacles.length; i++) {
       var p = obstacles[i];
       if (p.type !== 'pillar') continue;
-      if (hr >= 0 && px >= p.x - 4 - hr && px <= p.x + 38 + hr) return true;
-      var lo = Math.min(x0, x1), hi = Math.max(x0, x1);
       if (p.x + 38 < lo || p.x - 4 > hi) continue;
       if (segHitsRect(x0, y0, x1, y1, p.x - 4, CEIL, 42, p.gapY - CEIL)) return true;
       var by = p.gapY + p.gapH;
@@ -739,10 +821,21 @@ var Cupmen = (function () {
     }
     return false;
   }
+  function downCorridor(obstacles, px, hr, x0, y0, x1, y1) {
+    var inside = false;
+    for (var i = 0; i < obstacles.length && !inside; i++) {
+      var p = obstacles[i];
+      if (p.type === 'pillar') inside = px >= p.x - 4 - hr && px <= p.x + 38 + hr;
+    }
+    return inside && !lineBlocked(obstacles, x0, y0, x1, y1);
+  }
 
   /* RULE 9, counted with a loop: live pellets in the world plus the
      ones already queued this frame, so two cupmen firing on one frame
-     cannot both see five */
+     cannot both see five. Six: round 2 raised it to 9 so the cap would
+     not hold fire, and the owner found the result too hard to get past;
+     with the cycles doubled the cap is the ceiling on a crowded sky
+     again, which is what it is for. */
   function room(obstacles, run, n) {
     var live = 0, i, o;
     for (i = 0; i < obstacles.length; i++) {
@@ -813,16 +906,21 @@ var Cupmen = (function () {
   function makeCupman(kind, mid) {
     var rk = RANK[kind], half = rk.reach + 14, centre = mid + 14;
     var off = rand(-rk.reach, rk.reach), dir = chance(0.5) ? 1 : -1;
+    /* `bop` makes his flagged head strip a bop surface (foeRects), and
+       `burst` is the colour of the stomp's particles: his own plastic and
+       the white of his rim */
     return {
-      type: 'spike', foe: true, kind: kind, side: 'floor',
+      type: 'spike', foe: true, kind: kind, side: 'floor', bop: true,
       x: centre - half, w: half * 2, y: FLOOR,
-      reach: rk.reach, off: off, dir: dir, face: dir, turnK: dir,
+      reach: rk.reach, off: off, dir: dir, face: dir,
       mode: 'march', speed: rk.speed,
-      cool: rand(0.2, 0.8), tele: 0, teleMax: 0, hot: false,
+      cool: rand(0.1, 0.4), tele: 0, teleMax: 0, hot: false,
       volley: 0, volleyT: 0, shots: 0, lastRed: false,
-      hp: 1, hurtT: 0, gone: false, flashT: 0,
-      stepT: rand(0, STEP_T), stepTo: off, snapT: 0, holdT: 0, walk: 1, marching: true,
-      aimA: dir > 0 ? REST : PI - REST, aimLock: false, clearT: 0, since: 9, shielded: false
+      hp: 1, gone: false, flashT: 0, downT: 0,
+      stepT: rand(0, STEP_T), stepTo: off, walk: 1, marching: true,
+      aimA: dir > 0 ? REST : PI - REST, aimV: 0, aimLock: false, lockT: 0,
+      since: 9, shielded: false,
+      burst: [P[rk.body], P.eyeWhite]
     };
   }
 
@@ -854,7 +952,7 @@ var Cupmen = (function () {
       type: 'spike', foe: true, kind: 'gun', side: 'air', slot: slot,
       x: wantX - 18, w: 36, y: GUN_Y[slot], vx: 0, face: -1,
       mode: 'rise', riseT: 0.4, leaveT: 0, tele: 0, teleMax: 0, hot: false,
-      cool: 0.85 * slot + 0.6, shots: 0, aimA: PI, aimLock: false, clearT: 0, since: 9,
+      cool: 0.85 * slot + 0.6, shots: 0, aimA: PI, aimV: 0, aimLock: false, lockT: 0, since: 9,
       flashT: 0, gone: false, fade: 1, shielded: false, cry: 'summon'
     };
   }
@@ -862,78 +960,90 @@ var Cupmen = (function () {
   /* makeFoe(mid, spacing, run): the engine asks once per bay, from
      pace >= tune.foeScore, after the bay's spike, litter and boon makers
      have had their go. In this order:
-       1. THE KING, before every cap: at pace >= kingAt, once a run, in
-          the late phase. He comes whatever the bay holds - he stands in
-          the screen frame, and the level draws any plank passing through him
-          over him.
+       1. THE KING, before every cap: at pace >= kingAt (30), once a run,
+          in the late phase. He comes whatever the bay holds - he stands in
+          the screen frame, and the level draws any plank passing through
+          him over him. HE STOPS THE BISCUITS: the ledger's holdDrops is
+          the engine's one read-only key (js/scene_play.js spawnDrops), so
+          the sky goes quiet from his summons until he falls (bopFoe) -
+          the owner's note, "have them stop coming down when the King
+          Cupman is present". The drop timer is frozen, not reset.
        2. THE BAY FLAGS: a bay holds ONE thing on its floor. The pillar
-          maker reset both, the spike and boon makers set them.
+          maker reset both, the spike and boon makers set them, so a bay
+          with the spare life on its rug never has a cupman in it.
        3. WHILE HE REIGNS: a rare Golden Order (one bay in eight) and
-          nothing else; the streak is neither read nor written. At 0.18 an
-          Order scrolling through his 76px body was a common sight, two
-          lethal paintings stacked at the floor.
-       4. THE STREAK: no two consecutive bays before 19, no three after -
-          with 190..232 spacing on a 480 screen, at most two shooters on
-          screen before the Order and three after.
-       5. THE DICE. */
+          nothing else. At 0.18 an Order scrolling through his 76px body
+          was a common sight, two lethal paintings stacked at the floor.
+       4. THE DICE: 0.9, "almost every pillar". Round 1 rolled 0.55 / 0.62
+          behind a streak cap (no two bays in a row before the late phase,
+          no three after) and the owner asked for "much more often"; the
+          cap is gone. With 190..232 spacing on a 480 screen that is two
+          cupmen on screen at once and sometimes three, which rule 9's
+          live-pellet cap (6) keeps in check. */
   function makeFoe(mid, spacing, run) {
     var L = run.ledger;
     if (!L) return null;
     if (run.score >= tune.kingAt && !L.kingSeen && run.late) {
       L.kingSeen = true;
       L.kingUp = true;
+      L.holdDrops = true;
       return makeKing(mid, run);
     }
-    if (L.baySpike || L.bayBoon) {
-      if (!L.kingUp) L.foeStreak = 0;
-      return null;
-    }
+    if (L.baySpike || L.bayBoon) return null;
     if (L.kingUp) return chance(0.12) ? makeCupman('gold', mid) : null;
-    var streak = L.foeStreak || 0;
-    if (streak >= (run.late ? 2 : 1)) { L.foeStreak = 0; return null; }
-    var kind = null;
-    if (!run.late) {
-      if (chance(0.55)) kind = chance(0.78) ? 'crimson' : 'green';
-    } else if (chance(0.62)) {
+    if (!chance(0.9)) return null;
+    var kind;
+    if (!run.late) kind = chance(0.78) ? 'crimson' : 'green';
+    else {
       var r = Math.random();
       kind = r < 0.34 ? 'crimson' : (r < 0.48 ? 'green' : (r < 0.74 ? 'silver' : 'gold'));
     }
-    if (!kind) { L.foeStreak = 0; return null; }
-    L.foeStreak = streak + 1;
     return makeCupman(kind, mid);
   }
 
   /* ===================================================== the guns go off
 
-     THE CYCLE, shared by every shooter. A telegraph starts when the
-     cooldown is spent and the gun is on its mark - WHETHER OR NOT THE
-     LINE IS CLEAR. A shooter that waited for a clear line before even
-     raising its dots almost never got to fire: in the Fort a floor
-     shooter's line to a doodad is crossed by the plank between them for
-     most of every bay, and the window in which it is not is shorter than
-     the telegraph. So the dots show the whole time he is engaged, and
-     run down behind the cardboard. LINE OF SIGHT GATES THE LOCK AND THE
-     SHOT, not the telegraph: its last LOCK seconds freeze the aim only
-     while the line is clear (a broken line unfreezes it and the aim
-     tracks again), and the gun fires on the first frame the telegraph has
-     run out AND the line has been clear and locked for LOCK seconds. A
-     telegraph that runs out behind cardboard is held at its full reach,
-     tracking, until the line opens - then it locks, shows the frozen line
-     for 0.12s, and fires. Every pellet is preceded by a locked line, and
-     no pellet is wasted into a plank. With the sky full it shows its line
-     again rather than firing a stale one later. A Sentinel's burst runs
-     on after its first shot, 0.14s apart, along the SAME locked line, and
-     is cancelled only when cardboard crosses that line (`lineOk`), not
-     when the doodad steps into a plank's corridor: the three pellets are
-     one line shown once, so a doodad off it after the first is off it for
-     all three, and the burst was being cut 0.08s in on most Sentinels -
-     the burst a Sentinel exists for almost never happened. */
-  var HELD = 0.001;         /* a run-out telegraph waiting on the line   */
+     THE CYCLE, shared by every shooter, rebuilt in round 2 because the
+     owner found the aim "weird, glitchy and choppy" and the cupmen
+     "already gone before they can shoot". Round 1 locked the aim only
+     while the line was clear and unlocked it whenever cardboard crossed
+     it, so behind every plank the dots flicked between frozen and
+     tracking; it ticked the Sentinel's aim 15 degrees at a time; it slid
+     the far dot in an 8px saw; and it held every shot whose line crossed
+     cardboard, which was most of them. Now:
+
+       TRACK   the telegraph starts when the cooldown is spent and the gun
+               is within 0.25 rad of its target. The dots grow out of the
+               muzzle and follow the aim, which is smooth (aimAt).
+       HOLD    the tracking part runs down to LOCK seconds and waits there,
+               still tracking, while the shot would be unfair: point blank
+               (rule 3) or straight down a corridor (rule 5). Nothing
+               changes on screen - the same dots go on following.
+       LOCK    the first frame the shot is fair, the aim FREEZES and the
+               dots take the colour of what is coming, for LOCK = 0.15s
+               (the frame that locks is not counted, so the frozen line is
+               on screen for at least 0.15s). This is the only transition
+               a telegraph makes: once locked it never unlocks.
+       FIRE    if the shot is still fair - not gone point blank, not down a
+               corridor, the sky not full (rule 9) - it fires along the
+               locked line, WHETHER OR NOT CARDBOARD IS IN THE WAY: a
+               blocked pellet pops on the plank. If it is not, he STANDS
+               DOWN - the dots go, a 0.3s breath, a fresh short telegraph -
+               rather than firing a line he can no longer stand behind.
+
+     A Sentinel's burst runs on after its first shot, 0.14s apart, along
+     the SAME locked line; it stops only when the shot would no longer be
+     fair (`lineOk`: point blank or down a corridor), never because of
+     cardboard. The three pellets are one line shown once. */
   function teleShort(rk) { return Math.max(TELE_MIN, rk.tele / 2); }
 
-  /* the SCREEN speed a pellet leaves at: a cupman's is the rug's speed
-     plus its muzzle speed (rule 8), a floating gun's is its own 150 */
-  function speedOf(kind, run, ob) { return ob.kind === 'gun' ? GUN_V : run.speed + SHOT[kind].M; }
+  /* the SCREEN speed a pellet leaves at: a cupman's is 0.85 of the rug's
+     speed plus its muzzle speed, never under the rug's plus M_MIN (rule 8
+     and SHOT); a floating gun's is its own 128 */
+  function speedOf(kind, run, ob) {
+    if (ob.kind === 'gun') return GUN_V;
+    return Math.max(run.speed + M_MIN, SLOW * (run.speed + SHOT[kind].M));
+  }
 
   function shoot(ob, run, kind, a, V, cry) {
     var bx = MZ[2] + Math.cos(a) * 4, by = MZ[3] + Math.sin(a) * 4;
@@ -970,13 +1080,10 @@ var Cupmen = (function () {
     return true;
   }
 
-  /* `want` is the aim the step is easing towards. A telegraph only
-     STARTS once the gun is within 0.2 rad of it: the Sentinel ticks at
-     3.7 rad/s and used to lock at 0.18s after two ticks (0.52 rad) from
-     its rest, half a radian under a doodad level with or above it - the
-     burst went into the rug. Now it ticks onto you, THEN shows its dots.
-     The eased guns (9 rad/s) are there in a frame or two. */
-  function cycle(ob, dt, obstacles, run, clear, want, lineOk) {
+  /* `fair` is this frame's verdict on the shot (rules 3 and 5, and the
+     King's gun stagger); `want` the aim being followed; `lineOk` the
+     same verdict along the locked line, for a burst in flight. */
+  function cycle(ob, dt, obstacles, run, fair, want, lineOk) {
     var rk = RANK[ob.kind];
     if (ob.volley > 0) {
       if (!lineOk) { ob.volley = 0; return; }
@@ -993,32 +1100,28 @@ var Cupmen = (function () {
       return;
     }
     if (ob.tele > 0) {
-      ob.tele = Math.max(HELD, ob.tele - dt);
-      if (ob.tele <= LOCK) {
-        /* the frame that LOCKS does not count: aimAt() moved the aim on
-           it, so the line was not yet frozen when it was drawn. Counting
-           it showed the frozen line one frame short of LOCK. */
-        if (clear) { if (ob.aimLock) ob.clearT += dt; ob.aimLock = true; }
-        else { ob.aimLock = false; ob.clearT = 0; }
+      if (!ob.aimLock) {
+        ob.tele = Math.max(LOCK, ob.tele - dt);
+        if (ob.tele <= LOCK && fair) { ob.aimLock = true; ob.aimV = 0; ob.lockT = 0; }
+        return;
       }
-      /* a clear, locked tail of at least LOCK seconds, counted in whole
-         frames - so the frozen line is never shown for less */
-      if (ob.tele <= HELD && ob.clearT >= LOCK) {
-        ob.tele = 0;
-        ob.aimLock = false;
-        ob.clearT = 0;
-        if (fire(ob, run, obstacles)) {
-          ob.hot = true;
-          ob.cool = Math.max(0.3, rk.cool - teleShort(rk));
-        } else {
-          ob.tele = ob.teleMax = teleShort(rk);
-        }
+      ob.lockT += dt;
+      ob.tele = Math.max(0, LOCK - ob.lockT);
+      if (ob.lockT < LOCK) return;
+      ob.tele = 0;
+      ob.aimLock = false;
+      ob.lockT = 0;
+      if (fair && fire(ob, run, obstacles)) {
+        ob.hot = true;
+        ob.cool = Math.max(0.3, rk.cool - teleShort(rk));
+      } else {
+        ob.cool = 0.3;                   /* he stands down, and goes again */
       }
       return;
     }
-    if (ob.cool <= 0 && Math.abs(angDiff(want, ob.aimA)) <= 0.2) {
+    if (ob.cool <= 0 && Math.abs(angDiff(want, ob.aimA)) <= 0.25) {
       ob.tele = ob.teleMax = ob.hot ? teleShort(rk) : rk.tele;
-      ob.clearT = 0;
+      ob.lockT = 0;
     }
   }
 
@@ -1036,29 +1139,38 @@ var Cupmen = (function () {
     return Math.sqrt((TX - hx) * (TX - hx) + (TY - hy) * (TY - hy));
   }
 
-  /* the eased aim, on the wrapped difference; the Sentinel ticks. A
-     burst in flight holds still: shots 2 and 3 follow the locked line
-     the telegraph showed (rule 6), never a fresh aim nobody was shown. */
-  function aimAt(ob, dt, want) {
-    if (ob.aimLock || ob.holdT > 0 || ob.volley > 0) return;
-    var d = angDiff(want, ob.aimA);
-    if (ob.kind === 'silver') {
-      ob.snapT += dt;
-      if (ob.snapT >= SNAP_T) { ob.snapT = 0; ob.aimA += clamp(d, -SNAP_A, SNAP_A); }
-    } else {
-      ob.aimA += clamp(d, -AIM_RATE * dt, AIM_RATE * dt);
+  /* THE AIM, A CRITICALLY DAMPED FOLLOW: an angular velocity aimV pulled
+     towards the wrapped difference by w^2 and braked by 2w, so the gun
+     swings to a new target without overshoot and without a corner in
+     its motion - the doodad's lead jumps whenever he flaps (rule 7 reads
+     his vertical speed), and round 1's clamped 9 rad/s chase turned each
+     flap into a visible snap. aimV is capped at AIM_VMAX; the step is
+     split in two over 20ms so a long frame (game.js caps one at 1/30s)
+     stays well damped at w 22 (w x h <= 0.37).
+     A locked aim, and a burst in flight, hold perfectly still: shots 2
+     and 3 follow the line the telegraph showed (rule 6). */
+  function aimAt(ob, dt, want, w) {
+    if (ob.aimLock || ob.volley > 0) { ob.aimV = 0; return; }
+    var n = dt > 0.02 ? 2 : 1, h = dt / n;
+    for (var i = 0; i < n; i++) {
+      var d = angDiff(want, ob.aimA);
+      ob.aimV += (w * w * d - 2 * w * ob.aimV) * h;
+      ob.aimV = clamp(ob.aimV, -AIM_VMAX, AIM_VMAX);
+      ob.aimA = angDiff(ob.aimA + ob.aimV * h, 0);
     }
-    ob.aimA = angDiff(ob.aimA, 0);
   }
 
-  /* A TURN mirrors the gun with the cup (a -> PI - a), so a cupman who
-     turns round is holding the same gun the same way on the other side
-     rather than swinging it through his own face. The Sentinel's turn is
-     an instant flip held 0.06s - robotic in the feet and the gun alike. */
+  /* A TURN IS INSTANT. The owner: "just have them change the direction
+     they are facing without any in-between frames" - round 1 squeezed the
+     cup's width through zero over 0.12s, which showed the painting as the
+     flat card it is. The gun mirrors with the cup (a -> PI - a, and its
+     swing with it), so a cupman who turns round is holding the same gun
+     the same way on the other side rather than swinging it through his
+     own face. */
   function turn(ob, f) {
     ob.face = f;
     ob.aimA = angDiff(PI - ob.aimA, 0);
-    if (ob.kind === 'silver') { ob.turnK = f; ob.holdT = 0.06; }
+    ob.aimV = -ob.aimV;
   }
 
   /* ===================================================== the steps
@@ -1095,90 +1207,117 @@ var Cupmen = (function () {
   }
 
   function stepCupman(ob, dt, obstacles, run) {
-    var c = cx(ob), px = run.px;
-    var onScreen = c > 8 && c < VW - 24;
+    /* BOPPED: he topples for DOWN_T and is gone. No boxes (foeRects), no
+       aim, no march - the engine scrolls him with the rug. */
+    if (ob.mode === 'down') {
+      ob.downT -= dt;
+      if (ob.downT <= 0) ob.gone = true;
+      return;
+    }
+    var rk = RANK[ob.kind], c = cx(ob), px = run.px;
+    /* RULE 2: he FIRES only with the whole cup inside the screen, EDGE =
+       16 being his 13.7px half-width and a little. He RAISES HIS GUN and
+       may start his telegraph a little earlier, from c <= VW + READY,
+       when the gun and the dots - both on his screen side, his left - are
+       already on it and half of him is: the lock then waits for all of
+       him (`fair`, below), so the dots are on screen for the whole of
+       their tracking part before anything can fire. That buys the 0.15s
+       his aim needs to swing up from the carry, and 30px of scroll. */
+    var onScreen = c >= EDGE && c <= VW - EDGE;
+    var inView = c >= EDGE && c <= VW + READY;
     var ahead = c - px;
-    /* RULES 1, 2, 4. Engagement asks nothing about the pellet cap. */
-    var engaged = onScreen && ahead >= ENGAGE_MIN && ahead <= RANGE && !run.under && !run.grace;
+    /* RULES 1 AND 4. RANGE is 400, past anything on the screen: he
+       engages the moment he is in view, which at the doodad's start x
+       (116) is ~380px and ~2s ahead of him. Round 1's 230 left the first
+       ~0.8s of every cupman with his gun down. Engagement asks nothing
+       about the pellet cap. */
+    var engaged = inView && ahead >= ENGAGE_MIN && ahead <= RANGE && !run.under && !run.grace;
     /* TOO CLOSE: 0..40px ahead he stops and turns to watch. A body that
        has stopped is the most readable thing a lethal body can do, and
        one that set off towards a doodad a cup's width away would be
        unreadable. PASSED by 24px or more, he goes back to his patrol: he
        cannot reach a doodad any more except one holding LEFT at the
        slowest scroll, which is that player's own choice. */
-    var passed = onScreen && ahead < -24;
-    var watching = !engaged && onScreen && ahead < ENGAGE_MIN && !passed;
-    /* BETWEEN SHOTS he marches too (M3 of the march): from the moment a
-       shot or burst is away until 0.25s before the next telegraph could
-       start, so he is standing, turned and aimed before the dots show and
-       the muzzle never moves under a line it has shown (a telegraph held
-       behind a plank keeps him standing: tele > 0). Engagement lasts
-       about 1.1..1.6s and a clear encounter has its first volley 0.42s
-       in, so this is most of the rest of it, walking right where the
-       player is looking. Measured with 150px gaps: one shot per Crimson
-       and Order, one blast per Green, a full burst of three per
-       Sentinel. */
-    var between = engaged && ob.tele <= 0 && ob.volley <= 0 && ob.cool > 0.25;
+    var passed = inView && ahead < -24;
+    var watching = !engaged && inView && ahead < ENGAGE_MIN && !passed;
+    /* BETWEEN SHOTS he marches too: from the moment a shot or burst is
+       away until 0.15s before the next telegraph could start, so he is
+       standing before the dots show and the muzzle never moves under a
+       line it has shown. He keeps FACING the doodad and keeps his aim on
+       him while he walks - a strafe, not a turn: round 1 turned him to
+       his walk and lowered the gun between every pair of shots, which at
+       a 0.7s cycle would be a flip and a swing every few frames. */
+    var between = engaged && ob.tele <= 0 && ob.volley <= 0 && ob.cool > 0.15;
     var walking = (!engaged && !watching) || between;
+    /* A PASSED CUPMAN NEVER TURNS AGAIN. He walks on the way he is facing
+       and stands still at the end of his patrol rather than reversing:
+       the reversal was a second 180 a fraction of a second after the one
+       that set him walking, 13 of ~103 bays late in a run, and it read as
+       a twitch on a cupman the doodad had already left behind. */
+    if (passed) {
+      ob.dir = ob.face;
+      if (ob.off * ob.face >= ob.reach - 0.5) walking = false;
+    }
 
     ob.cool = Math.max(0, ob.cool - dt);
     if (ob.flashT > 0) ob.flashT -= dt;
-    if (ob.holdT > 0) ob.holdT -= dt;
 
-    /* face the way he walks; turn to the player to aim or to watch */
-    var wantFace = walking ? ob.dir : (px < c ? -1 : 1);
+    /* face the doodad while engaged or watching, else the way he walks.
+       WATCHING turns him only TOWARDS a doodad still in front of him;
+       once it is over his head or behind him he holds the face he has.
+       Round 2's first cut faced the sign of px - c all through the watch
+       window, so a doodad flying over flipped him at ahead ~0 and then
+       his patrol (ob.dir, usually the other way) flipped him back at
+       ahead -24: two instant 180s about 0.14s apart, measured on 109 of
+       ~220 bays (verify-mech WARN 1), which read as a twitch. Now a
+       passed cupman turns at most once, at -24, to walk on. */
+    var wantFace = engaged ? (px < c ? -1 : 1)
+      : watching ? (px < c ? -1 : ob.face)
+      : passed ? ob.face
+      : ob.dir;
     if (wantFace !== ob.face) turn(ob, wantFace);
-    /* the visual turn: the cup's width goes through zero over 0.12s */
-    if (ob.kind !== 'silver') ob.turnK = approach(ob.turnK, ob.face, dt * 2 / 0.12);
 
     if (walking) march(ob, dt);
     else if (ob.kind === 'silver') ob.off = approach(ob.off, ob.stepTo, STEP_PX / SLIDE_T * dt);
     ob.marching = walking;
     ob.walk = approach(ob.walk, walking && ob.kind !== 'silver' ? 1 : 0, dt * 6);
-    ob.mode = walking ? 'march' : (engaged ? 'aim' : 'watch');
+    ob.mode = walking && !engaged ? 'march' : (engaged ? 'aim' : 'watch');
 
     muzzleOf(ob, MZ);
-    if (walking || !engaged) {
-      /* the gun comes down to the carry on the side he faces. Not
-         engaged at all (walking or watching), the telegraph and any
-         burst are dropped and the next engagement starts with the
-         full-length telegraph; walking BETWEEN shots keeps `hot`, so the
-         next one is the short telegraph of a cupman in a firefight. */
-      if (!engaged) { ob.tele = 0; ob.volley = 0; ob.hot = false; ob.clearT = 0; }
-      ob.aimLock = false;
-      var rest = ob.face > 0 ? REST : PI - REST;
-      var d = angDiff(rest, ob.aimA);
-      ob.aimA = angDiff(ob.aimA + clamp(d, -6 * dt, 6 * dt), 0);
+    if (!engaged) {
+      /* the gun comes down to the carry on the side he faces, on the same
+         spring as the aim; the telegraph and any burst are dropped and
+         the next engagement starts with the full-length telegraph */
+      ob.tele = 0; ob.volley = 0; ob.hot = false; ob.aimLock = false; ob.lockT = 0;
+      aimAt(ob, dt, ob.face > 0 ? REST : PI - REST, REST_W);
       return;
     }
     /* the lead is worked out on the pellet's own screen speed */
-    var V = run.speed + (ob.kind === 'gold' ? SHOT.silver.M : SHOT.yellow.M);
-    var dist = target(run, MZ[0], MZ[1], V, true);
+    var V = speedOf(ob.kind === 'gold' ? 'silver' : 'yellow', run, ob);
+    target(run, MZ[0], MZ[1], V, true);
     var want = Math.atan2(TY - MZ[1], TX - MZ[0]);
-    aimAt(ob, dt, want);
+    aimAt(ob, dt, want, rk.aimW);
     muzzleOf(ob, MZ);
-    /* RULES 3 AND 5, which gate the LOCK AND THE SHOT and never the
-       telegraph (rule 6, cycle). blocked()'s segment test is in the
-       screen frame and the pellet out-runs the planks by M cos a, so a
-       column between the muzzle and the target really is in the pellet's
-       way. `lineOk` is the cardboard alone, along the LOCKED line: a burst
-       already begun runs on along it (cycle). */
-    /* POINT BLANK IS MEASURED FROM THE MUZZLE, where the pellet is born,
-       and in TIME as well as distance. `dist` is from the hand, which is
-       19..29px behind the muzzle, and under the heat the room's speed is
-       1.55x - a verifier measured 0.236s to impact from a Green 76px out
-       in a hot run. So the shot needs FIRE_MIN px AND FIRE_T seconds at
-       the pellet's own screen speed, whichever is further. */
+    /* RULE 3, POINT BLANK, measured from the MUZZLE, where the pellet is
+       born, to the near edge of the doodad's hitbox (hr + the pellet's
+       half box, 4) - where it would actually strike - and in TIME as well
+       as distance: FIRE_MIN px AND FIRE_T s at the pellet's own screen
+       speed, whichever is further (under the heat the rug is 1.55x; 0.40s
+       of 310px/s is 124px). Measured to the centre, as round 1 did, a
+       pellet arrived 15px early: 0.35s against a 0.40 rule. RULE 5, the
+       corridor, is downCorridor; rule 2 is onScreen. Together they make
+       `fair`, which gates the LOCK and the SHOT and never the telegraph
+       (cycle). */
+    var hr = run.hr || 11;
     var dm = Math.sqrt((TX - MZ[2]) * (TX - MZ[2]) + (TY - MZ[3]) * (TY - MZ[3]));
-    var far = dm >= Math.max(FIRE_MIN, FIRE_T * V);
-    var clear = far && !blocked(obstacles, px, run.hr || 11, MZ[2], MZ[3], TX, TY);
-    /* a burst runs on along its locked line, and is cut by the same two
-       rules as its first pellet: cardboard across the line, or the doodad
-       in a plank's corridor with nowhere to go but along it - and by
-       point blank. Rule 5 holds for every pellet, not only the first. */
-    var lineOk = ob.volley <= 0 || (far && !blocked(obstacles, px, run.hr || 11, MZ[2], MZ[3],
+    var far = dm - hr - 4 >= Math.max(FIRE_MIN, FIRE_T * V);
+    var fair = onScreen && far && !downCorridor(obstacles, px, hr, MZ[2], MZ[3], TX, TY);
+    /* a burst runs on along its LOCKED line under the same two rules -
+       point blank, and a clear line down a corridor - for every pellet,
+       not only the first */
+    var lineOk = ob.volley <= 0 || (far && !downCorridor(obstacles, px, hr, MZ[2], MZ[3],
       MZ[2] + Math.cos(ob.aimA) * dm, MZ[3] + Math.sin(ob.aimA) * dm));
-    cycle(ob, dt, obstacles, run, clear, want, lineOk);
+    cycle(ob, dt, obstacles, run, fair, want, lineOk);
   }
 
   /* THE KING. Enter, reign, down. */
@@ -1224,7 +1363,7 @@ var Cupmen = (function () {
        94, well up any upper column (gapY <= 126): a bop must never
        happen with cardboard about to arrive. The plank's leading edge
        travels 0.3 * run.speed (46..53px) in that time, hence the stretch
-       to the left. At pace 25 the window is (215 - 64 - 46)/153 = 0.69s
+       to the left. At a 153px/s scroll the window is (215 - 64 - 46)/153 = 0.69s
        in every 1.41s plank period - about what it was at 66px tall.
        THE FADE is about THE KING: while cardboard crosses his drawn body
        (38px either side of his centre) he fades to 0.8. The level redraws
@@ -1310,35 +1449,37 @@ var Cupmen = (function () {
                   !run.grace && !run.under && !L.kingDown;
     muzzleOf(ob, MZ);
     if (!engaged) {
-      ob.tele = 0; ob.aimLock = false; ob.hot = false; ob.clearT = 0;
+      ob.tele = 0; ob.aimLock = false; ob.hot = false; ob.lockT = 0;
       /* THE STAGGER, PUT BACK. While he is hurt both guns are held and
          their cool would run to 0, so both would start the full 0.35s
          telegraph on the frame the hurt ends and fire together - two
          lines converging on one point. Held at 0.45 and 1.3, the first
          shots land 0.8s and 1.65s after the hurt. */
       if (L.kingHurt > 0) ob.cool = Math.max(ob.cool, 0.45 + 0.85 * ob.slot);
-      var d = angDiff(PI, ob.aimA);
-      ob.aimA = angDiff(ob.aimA + clamp(d, -4 * dt, 4 * dt), 0);
+      aimAt(ob, dt, PI, REST_W);
       return;
     }
     var dist = target(run, MZ[0], MZ[1], GUN_V, false);
     var want = Math.atan2(TY - MZ[1], TX - MZ[0]);
-    aimAt(ob, dt, want);
+    aimAt(ob, dt, want, RANK.gun.aimW);
     muzzleOf(ob, MZ);
-    /* THE STAGGER, KEPT. Both guns telegraph behind the same plank and
-       their lines open on the same frame, so without this they fired
-       together - two lines converging on one point, measured on every
-       pair of shots in a reign. A gun whose sibling fired under GUN_GAP
-       ago treats its line as shut: it unlocks, and locks again for the
-       full LOCK once the gap has passed, so the second pellet trails the
-       first by at least 0.72s. */
+    /* THE STAGGER, KEPT. Both guns telegraph together and, unchecked,
+       lock and fire together - two lines converging on one point,
+       measured on every pair of shots in a reign in round 1. A gun whose
+       sibling fired under GUN_GAP ago is not `fair`: it waits, tracking,
+       until the gap has passed and then locks for the full LOCK, so the
+       second pellet trails the first by at least 0.75s; and if both lock
+       on one frame, whichever steps second finds the other's `since` at 0
+       when its lock runs out and stands down. Like a cupman's, a floating
+       gun fires through cardboard and holds only point blank or down a
+       corridor. */
     var sib = false;
     for (var j = 0; j < obstacles.length; j++) {
       var g = obstacles[j];
       if (g !== ob && g.kind === 'gun' && g.foe && !g.gone && g.since < GUN_GAP) sib = true;
     }
-    var clear = dist >= GUN_MIN && !sib && !blocked(obstacles, px, run.hr || 11, MZ[2], MZ[3], TX, TY);
-    cycle(ob, dt, obstacles, run, clear, want, clear);
+    var fair = dist >= GUN_MIN && !sib && !downCorridor(obstacles, px, run.hr || 11, MZ[2], MZ[3], TX, TY);
+    cycle(ob, dt, obstacles, run, fair, want, fair);
   }
 
   function stepFoe(ob, dt, obstacles, run) {
@@ -1349,11 +1490,20 @@ var Cupmen = (function () {
   }
 
   /* bopFoe(ob, run): the engine has already stomped, shaken, rebounded
-     the doodad and played 'stomp'. A bounce off the crown while he is
+     the doodad and played 'stomp', in the cupman's own colours (burst).
+
+     AN ORDINARY CUPMAN goes over on the first bop - the owner: "make the
+     regular cupmen boppable if you land on their heads without getting
+     shot". No points (the stomp and the rebound are the reward; a cupman
+     on nearly every bay paying for each would turn the bay's scores into
+     a stomping count). His telegraph and any burst die with him; a
+     pellet already in the air flies on.
+
+     THE KING: a bounce off the crown while he is
      entering or still hurt is only that - a bounce, no hp. The fight's
      reward is paid PER BOP, out of his crown: one CROWN coin each, +15
      for the fight in all. Three on the fall made it +25 - about 35s of
-     play at pace 25 for a 5..15s fight - and the bay's high scores
+     play at pace 30 for a 5..15s fight - and the bay's high scores
      would have become "did you kill the King"; +15 is still the biggest
      single payout in the game, and paid only for the fight.
      A cry is left alone on a bop; on the fall the ledger asks for the
@@ -1361,7 +1511,15 @@ var Cupmen = (function () {
      drains at the end of the same bop() - so a bop that also ends the run
      in the same collide() walk still banks the badge. */
   function bopFoe(ob, run) {
-    if (ob.kind !== 'king' || ob.mode !== 'reign' || ob.hurtT > 0) return;
+    if (ob.kind === 'gun') return;
+    if (ob.kind !== 'king') {
+      if (ob.mode === 'down') return;
+      ob.mode = 'down';
+      ob.downT = DOWN_T;
+      ob.tele = 0; ob.volley = 0; ob.aimLock = false; ob.flashT = 0;
+      return;
+    }
+    if (ob.mode !== 'reign' || ob.hurtT > 0) return;
     var L = run.ledger, c = cx(ob);
     ob.hp--;
     ob.hurtT = 1.0;
@@ -1377,6 +1535,7 @@ var Cupmen = (function () {
     ob.vx = 0;
     L.kingUp = false;
     L.kingDown = true;
+    L.holdDrops = false;            /* the biscuits fall again (makeFoe) */
     L.warn = 'kingDown';
     L.cry = 'regicide';
     L.shake = 6;
@@ -1400,12 +1559,17 @@ var Cupmen = (function () {
     ob.life -= dt;
     if (ob.life <= 0) { ob.pop = true; return true; }
 
-    /* HOMING, rule 11. 2.4 rad/s for 1.1s is at most 151 degrees over
-       its life, and its turning circle at its 204..266px/s on the screen
-       is V/TURN = 85..111px of radius: from 84px out (FIRE_MIN) it
-       arrives in 0.32..0.41s having turned at most ~1 rad, while a flap
-       has moved the doodad ~37px in the first 0.15s of that. And it never
-       turns round: once it is past him it is done. */
+    /* HOMING, rule 11. Round 2 slowed the silver to 0.85 and slowed its
+       turn with it, 2.4 -> 2.0 rad/s, and stretched its homing life 1.1
+       -> 1.3s, so it flies THE SAME CURVE, only slower: at most 149
+       degrees over its life, and a turning circle at its 185..226px/s on
+       the screen (run.speed 130..178) of V/TURN = 92..113px of radius
+       (round 1: 85..111) - still a bend you see. A faster turn on a slower
+       pellet would have made it a better homer, the opposite of the ask.
+       From the nearest it may fire (rule 3: 0.40s of its own flight) it
+       turns at most 0.8 rad before it arrives, while a flap has moved the
+       doodad ~37px in its first 0.15s. And it never turns round: once it
+       is past him it is done. */
     if (ob.homeT > 0) {
       if (ob.x > run.px - 10) {
         var want = Math.atan2(run.py - ob.y, run.px - ob.x);
@@ -1446,10 +1610,18 @@ var Cupmen = (function () {
 
   /* ===================================================== the boxes */
 
-  /* AN ORDINARY CUPMAN IS LETHAL AND NOT BOP-ABLE. The owner called them
-     the harder obstacle and gave the bop to the King alone; a stompable
-     rank and file would make his three bops routine. The body box is the
-     cup, 22 wide on a 27px drawing (the brim's flare is forgiven).
+  /* AN ORDINARY CUPMAN, THE KING'S PATTERN AT HIS SIZE. First his HEAD,
+     BOP-ONLY (the 5th element): the top 6px of the cup, y 212..218, 20
+     wide - the cup's base is 20px across up there. Then his BODY,
+     LETHAL, y 218..242, 22 wide on a 27px drawing (the brim's flare is
+     forgiven). The engine's bop wants the doodad's hitbox bottom, last
+     frame, at or above the head's top + 3 and moving down: a landing ON
+     him bops him, and a doodad that meets the head strip from the side
+     at that height is already reaching 11px down into the body, which
+     kills - "if you land on their heads without getting shot". (Round 1
+     had him lethal all over and not boppable at all, the King's alone;
+     the owner asked for it.) Toppling (mode 'down') he publishes
+     nothing: a cupman going over is not there to hit or bop again.
 
      THE KING: first his CROWN, BOP-ONLY (the 5th element) - y 142..159,
      28 wide, the crown he has: a landing on his face is nothing, you bop
@@ -1475,7 +1647,9 @@ var Cupmen = (function () {
       out.push([c - 24, 210, 48, FLOOR - 210]);
       return out;
     }
-    out.push([c - 11, FLOOR - CUP_H, 22, CUP_H]);
+    if (ob.mode === 'down') return out;
+    out.push([c - 10, FLOOR - CUP_H, 20, HEAD_H, 1]);
+    out.push([c - 11, FLOOR - CUP_H + HEAD_H, 22, CUP_H - HEAD_H]);
     return out;
   }
 
@@ -1616,64 +1790,25 @@ var Cupmen = (function () {
     ctx.restore();
   }
 
-  /* A cup: its painted origin is its bottom centre. wk is the width
-     through a turn (|turnK|), sq the squash - flattened and widened, a
-     cup that was just stood on. */
-  function drawCup(ctx, key, c, baseY, s, face, wk, sq, tilt, kind, hgt) {
+  /* A cup: its painted origin is its bottom centre, mirrored on `face`
+     and never narrowed (a turn is instant - see turn). sq is the squash -
+     flattened and widened, a cup that was just stood on.
+
+     NO RIM LIGHT. Round 1 stroked a 1.5px cool line up each cup's left
+     side and round the top rim, and up the King's flank, to lift the dark
+     cups off the dark foot of the wall; the owner saw "the bent white
+     translucent line that follows them" and asked for it gone. The two
+     cups that needed it most, the Green and the Sentinel, keep their
+     warm backlight glow behind them (drawCupman), which separates them
+     from the wall without drawing on the painting. */
+  function drawCup(ctx, key, c, baseY, s, face, sq, tilt, kind, hgt) {
     var img = Assets.img(key);
     if (!imgOk(img)) { drawFallbackCup(ctx, c, baseY, kind, hgt, face); return; }
     ctx.save();
     ctx.translate(c, baseY);
     if (tilt) ctx.rotate(tilt);
-    ctx.scale((face < 0 ? -1 : 1) * Math.max(0.08, wk) * s / sq, s * sq);
+    ctx.scale((face < 0 ? -1 : 1) * s / sq, s * sq);
     ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight);
-    ctx.restore();
-  }
-
-  /* THE RIM LIGHT, the blue strip on the cup's shoulder: a 1.5px stroke
-     at 0.75 (1px at 0.55 vanished at 1x on every cup)
-     along the top-left of the silhouette - up the left side from a third
-     of the way down, round the corner, along the top rim's ellipse to its
-     crown. Measured off the trimmed PNG (334x367, origin bottom centre):
-     the left side runs (-139, -217) -> (-123, -327) and the top rim is an
-     ellipse about (0, -347) of radii 119 x 20. In screen space with the
-     tilt ignored (0.08 rad at most: a pixel), and narrowed with the turn.
-     The cup is symmetric, so the screen-left edge is the same shape in
-     either facing. This is what puts a smooth painting into a pixel room. */
-  function drawRim(ctx, c, baseY, s, wk) {
-    var sx = s * Math.max(0.08, wk);
-    ctx.save();
-    ctx.strokeStyle = P.rim;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(c - 139 * sx, baseY - 217 * s);
-    ctx.lineTo(c - 123 * sx, baseY - 327 * s);
-    ctx.ellipse(c, baseY - 347 * s, 119 * sx, 20 * s, 0, PI * 0.92, PI * 1.5);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  /* the King's, off HIS painting (334x440): no top rim to catch - the
-     crown sits on it - so the light runs up his left side, (-150, -140)
-     -> (-126, -310), and on up the crown's left edge to (-110, -425).
-     sx and sy carry the squash. `hot` is the hurt flash: the same line
-     in white, 3px, at 0.9, stroked twice - once as is and once mirrored
-     onto his right side - so the flash edges BOTH flanks (one 2px white
-     hairline on his left read as a shimmer at 1x, not a hit). */
-  function drawKingRim(ctx, c, baseY, sx, sy, tilt, hot) {
-    ctx.save();
-    ctx.translate(c, baseY);
-    if (tilt) ctx.rotate(tilt);
-    if (hot) ctx.globalAlpha *= 0.9;
-    ctx.strokeStyle = hot ? '#ffffff' : P.rim;
-    ctx.lineWidth = hot ? 3 : 1.5;
-    for (var m = -1; m <= (hot ? 1 : -1); m += 2) {
-      ctx.beginPath();
-      ctx.moveTo(150 * m * sx, -140 * sy);
-      ctx.lineTo(126 * m * sx, -310 * sy);
-      ctx.lineTo(110 * m * sx, -425 * sy);
-      ctx.stroke();
-    }
     ctx.restore();
   }
 
@@ -1692,32 +1827,31 @@ var Cupmen = (function () {
   }
 
   /* RULE 6 MADE VISIBLE, and the cupmen's signature: a DOTTED AIM LINE,
-     the toy-gun telegraph every child knows. All three dots from the
-     first frame, spread along a line that GROWS out of the muzzle - its
-     reach 10 -> 34px over the first two thirds of the telegraph - with
-     the last dot sliding 8px per third so it still runs outwards; a 1px
-     pale line joins the muzzle to the farthest dot. Once the aim has
-     locked they freeze, in the colour of what is coming (yellow; a
-     Green's sour green; the Order's quick silver), and the line takes
-     that colour at 0.35. Dark-ringed, so they read on pale cardboard as
-     well as on the dark wall. At r 1.3 / 0.55 nobody caught one in
-     thirty freezes; at r 1.9 / 0.8 with one dot for the first third, a
-     pixel scan at tele 0.29 of 0.42 found ONE ~3px dot 12px off the
-     muzzle - nothing a player notices, and the Sentinel's 0.30 telegraph
-     was over before it said anything. r 2.2 at 0.9 (1.0 locked) now. */
+     the toy-gun telegraph every child knows. Three dots from the first
+     frame, spread along a line that GROWS out of the muzzle - its reach
+     eases 10 -> 34px over the tracking part of the telegraph and then
+     stays - with a 1px pale line joining the muzzle to the farthest dot.
+     The dots sit still ON the line: round 1 slid the far one 8px outward
+     three times a telegraph, which on a line that was also turning read
+     as jitter. Once the aim has locked they freeze, in the colour of what
+     is coming (yellow; a Green's sour green; the Order's quick silver),
+     the line takes that colour at 0.35, and nothing changes again until
+     the shot. Dark-ringed, so they read on pale cardboard as well as on
+     the dark wall; r 2.2 at 0.9 (1.0 locked) - at r 1.3 nobody caught
+     one in thirty freezes. */
   function drawDots(ctx, ob, dy) {
     /* during a Sentinel's burst the line it locked stays up, locked, at
        full reach: pellets two and three go down a line still on screen */
     var vol = ob.volley > 0;
     if (!vol && (!(ob.tele > 0) || !ob.teleMax)) return;
-    var lk = ob.aimLock || vol;  
-    var k = vol ? 1 : 1 - ob.tele / ob.teleMax;
-    var reach = 10 + 24 * Math.min(1, k * 1.5);
+    var lk = ob.aimLock || vol;
+    var span = Math.max(0.01, ob.teleMax - LOCK);
+    var k = lk ? 1 : clamp((ob.teleMax - ob.tele) / span, 0, 1);
+    var reach = 10 + 24 * LivingRoom.ease(k);
     var ca = Math.cos(ob.aimA), sa = Math.sin(ob.aimA);
-    var slide = lk ? 0 : 8 * ((k * 3) % 1);
     var shot = ob.kind === 'green' ? P.pelletGreen :
                (ob.kind === 'gold' ? P.pelletSilver : P.pelletYellow);
-    var x0 = MZ[2], y0 = MZ[3] + dy, far = reach + slide;
+    var x0 = MZ[2], y0 = MZ[3] + dy;
     ctx.save();
     var ga = ctx.globalAlpha;
     /* the line under the dots, muzzle to farthest dot */
@@ -1726,14 +1860,14 @@ var Cupmen = (function () {
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x0, y0);
-    ctx.lineTo(x0 + ca * far, y0 + sa * far);
+    ctx.lineTo(x0 + ca * reach, y0 + sa * reach);
     ctx.stroke();
     ctx.globalAlpha = ga * (lk ? 1 : 0.9);
     ctx.fillStyle = lk ? shot : P.flash;
     ctx.strokeStyle = 'rgba(26,20,16,0.75)';
     ctx.lineWidth = 1;
     for (var i = 0; i < 3; i++) {
-      var d = 10 + (reach - 10) * (i / 2) + (i === 2 ? slide : 0);
+      var d = 10 + (reach - 10) * (i / 2);
       ctx.beginPath();
       ctx.arc(x0 + ca * d, y0 + sa * d, 2.2, 0, TAU);
       ctx.fill(); ctx.stroke();
@@ -1755,17 +1889,37 @@ var Cupmen = (function () {
     ctx.restore();
   }
 
+  /* A BOPPED CUPMAN goes over backwards on the back edge of his brim
+     (13px behind his centre) - a quarter turn and a bit, 1.4 rad, eased
+     over DOWN_T - flattened to 0.75 by the stomp and springing back as
+     he falls, fading through the second half. His gun drops where his
+     hand was and lies on the rug, fading with him. All draw-only: he
+     has had no boxes since the bop (foeRects). */
+  function drawToppling(ctx, ob, c) {
+    var k = LivingRoom.ease(clamp(1 - ob.downT / DOWN_T, 0, 1));
+    var th = 1.4 * k, f = ob.face < 0 ? -1 : 1;
+    var a = k < 0.5 ? 1 : Math.max(0, 1 - (k - 0.5) * 2);
+    if (a <= 0.01) return;
+    var pvx = c - f * 13;
+    var bx = pvx + f * 13 * Math.cos(th), by = FLOOR - 13 * Math.sin(th);
+    ctx.save();
+    ctx.globalAlpha *= a;
+    drawShadow(ctx, c, 28, 5, 0.28 * (1 - k));
+    var g = GUN[ob.kind];
+    drawGun(ctx, g.img, g, c + f * g.hx, FLOOR - 1, f > 0 ? 0 : PI, CUP_S, 1);
+    drawCup(ctx, 'cup_' + ob.kind, bx, by, CUP_S, f, 0.75 + 0.25 * k, -f * th, ob.kind, CUP_H);
+    ctx.restore();
+  }
+
   function drawCupman(ctx, ob) {
     var c = cx(ob);
     if (c < -40 || c > VW + 40) return;
+    if (ob.mode === 'down') { drawToppling(ctx, ob, c); return; }
     var age = ob.age || 0;
     /* THE WADDLE, draw only: a 1.5px hop and a 0.08 rad rock while he
        marches, eased out with `walk` when he stops; the Sentinel has none */
     var bob = -Math.abs(Math.sin(age * 8)) * 1.5 * ob.walk;
     var tilt = Math.sin(age * 8) * 0.08 * ob.walk;
-    /* the mirror follows turnK's sign, not face: face flips on the turn
-       frame, turnK crosses zero 0.06s later, and that crossing is the turn */
-    var wk = Math.abs(ob.turnK), fs = ob.turnK < 0 ? -1 : 1;
     if (ob.kind === 'green' || ob.kind === 'silver') {
       /* the warm backlight: the two dark cups against the dark foot of
          the wall need something behind them, not more on them */
@@ -1776,13 +1930,17 @@ var Cupmen = (function () {
     var sq = (ob.kind === 'silver' && ob.marching && ob.stepT >= SLIDE_T &&
               ob.stepT < SLIDE_T + PLANT_T) ? 0.94 : 1;
     drawShadow(ctx, c, 28, 5, 0.28);
-    drawCup(ctx, 'cup_' + ob.kind, c, FLOOR + bob, CUP_S, fs, wk, sq, tilt, ob.kind, CUP_H);
-    drawRim(ctx, c, FLOOR + bob, CUP_S, wk);
     muzzleOf(ob, MZ);
     var g = GUN[ob.kind];
-    /* mid-turn the gun is tucked away behind the cup's edge, and comes
-       out on the new side only once the body is past halfway round */
-    if (ob.turnK * ob.face > 0.35) drawGun(ctx, g.img, g, MZ[0], MZ[1] + bob, ob.aimA, MZ[4], 1);
+    /* THE GUN IS HELD LOW AND FORWARD (GUN), in front of him - and
+       BEHIND him once it is aimed steeper than `beh`, where it would
+       otherwise cross his face: the cup hides that part of it, the barrel
+       shows past his rim. The flip is on a fixed angle, so it happens
+       once as the aim climbs through it, never back and forth. */
+    var behind = -Math.sin(ob.aimA) > Math.sin(g.beh);
+    if (behind) drawGun(ctx, g.img, g, MZ[0], MZ[1] + bob, ob.aimA, MZ[4], 1);
+    drawCup(ctx, 'cup_' + ob.kind, c, FLOOR + bob, CUP_S, ob.face, sq, tilt, ob.kind, CUP_H);
+    if (!behind) drawGun(ctx, g.img, g, MZ[0], MZ[1] + bob, ob.aimA, MZ[4], 1);
     drawDots(ctx, ob, bob);
     drawFlash(ctx, ob, bob);
   }
@@ -1837,8 +1995,9 @@ var Cupmen = (function () {
        second while hurtT runs: a pink burst behind him (the baked pink
        glow at 64x64 on (c, FLOOR - 50), alpha 0.5 - the crown's own
        colour, nothing else in the bay is pink), the painting laid over
-       itself once more with 'lighter' at 0.65, and the rim stroked white
-       on both flanks - one sprite, one second, no filter. At 0.35 the
+       itself once more with 'lighter' at 0.65 - one sprite, one second,
+       no filter. (Round 1 also stroked his flanks white; that went with
+       the rim light, which the owner asked to lose.) At 0.35 the
        body only went (255,188,5) -> (255,253,7), a hue shift you saw if
        you were staring at him; at 0.65 it goes to ~(255,255,90) and the
        crown to white-pink, a hit you see from the corner of the eye. */
@@ -1849,12 +2008,12 @@ var Cupmen = (function () {
     ctx.globalAlpha *= a;
     drawShadow(ctx, c, 80 * sc, 9, 0.3);
     if (hot && T.glow) drawGlowR(ctx, T.glow.pink, c, FLOOR - 50, 32, 0.5);
-    drawCup(ctx, 'cup_king', c, FLOOR, s, ob.face, 1, ob.squash, tilt, 'king', KING_H * sc);
+    drawCup(ctx, 'cup_king', c, FLOOR, s, ob.face, ob.squash, tilt, 'king', KING_H * sc);
     if (hot) {
       ctx.save();
       ctx.globalAlpha *= 0.65;
       ctx.globalCompositeOperation = 'lighter';
-      drawCup(ctx, 'cup_king', c, FLOOR, s, ob.face, 1, ob.squash, tilt, 'king', KING_H * sc);
+      drawCup(ctx, 'cup_king', c, FLOOR, s, ob.face, ob.squash, tilt, 'king', KING_H * sc);
       ctx.restore();
     }
     /* THE RED EYE. Painted on his left eye at (+13, -244) from his foot
@@ -1872,10 +2031,6 @@ var Cupmen = (function () {
       ctx.globalAlpha = a0;
     }
     ctx.restore();
-    if (ob.mode !== 'down') {
-      drawKingRim(ctx, c, FLOOR, s / ob.squash, s * ob.squash, tilt, false);
-      if (hot) drawKingRim(ctx, c, FLOOR, s / ob.squash, s * ob.squash, tilt, true);
-    }
     ctx.restore();
   }
 

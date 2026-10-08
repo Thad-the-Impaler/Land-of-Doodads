@@ -544,20 +544,23 @@ var Levels = (function () {
          cap. Any tighter and the patrol would be standing in a plank. */
       spacingStart: 232, spacingMin: 190, spacingRamp: 0.40,
       gapDrift: 54,
-      /* RARE, because the floor belongs to the Cupmen. js/fort.js lets a
-         bay hold ONE thing on its rug - a tripod, a ribbon, a spare life or
-         a shooter - through two flags in run.ledger that each plank resets,
-         so every spike here is a Cupman that did not get that bay. 0.16
-         rising to 0.34 by 30s is half the Whiteboard's 0.40/0.76. */
-      spikeScore: 8,
-      spikeChance: 0.16, spikeChanceMax: 0.34,
-      /* the cream ribbon pull-tab, hanging off a roof panel */
-      spikeCeilMin: 16, spikeCeilMax: 26,
-      /* A tripod light stand's height. The Mantle's measurement applies
-         unchanged (a centre crossing a bay lives in y 69..197): a 56px pole
-         tips out at 186 and is lethal to a centre at 175 and below, which
-         is what it takes for a floor hazard to reach the gap band at all. */
-      spikeFloorMin: 36, spikeFloorMax: 56,
+      /* NO SPIKES, for good. Round one stood tripod light stands on the
+         rug and hung ribbon pull-tabs off the roof from 8, and the owner
+         took them out: "we already get our floor obstacles with the
+         cupmen". A Cupman on nearly every rug IS this bay's floor hazard,
+         and a tripod was only ever a Cupman that did not get that bay.
+         The engine has no "none" for spikes - a level that leaves
+         spikeScore out has them from the first pillar, the Coop's default -
+         so the gate is shut instead: spikesReady() is false while pace <
+         spikeScore, and no run reaches a billion, so they never arm,
+         art.WARN.spike never shows and the dice are never thrown. Both
+         chances are 0 as well, so lowering the gate alone turns nothing
+         back on. The spike length keys went with them: the engine defaults
+         any that are missing, and nothing here would be drawn. js/fort.js
+         keeps a harmless makeSpikes stub because the engine still names
+         art.makeSpikes. */
+      spikeScore: 1e9,
+      spikeChance: 0, spikeChanceMax: 0,
       /* THE BISCUITS: the black foam connectors working loose from the
          roof panels, from 5. RARER THAN ANY OTHER BAY'S DROPS, because the
          owner asked for exactly that - "less common than the other dropping
@@ -566,7 +569,13 @@ var Levels = (function () {
          Whiteboard's 2.1/0.98 and the Couch's 0.9/0.40: 1.6x rarer than the
          Whiteboard at the start and 1.7x at the floor, which is reached at
          57s rather than 37s. The engine's own jitter (x0.78..1.28) is
-         unchanged, so the first twenty seconds see five to seven. */
+         unchanged, so the first twenty seconds see five to seven. They
+         also STOP while the King Cupman holds the floor (the owner's round
+         two: "stop coming down when the King Cupman is present"), which is
+         no key here: js/cupmen.js raises run.ledger.holdDrops when he is
+         summoned and lowers it when he falls, and the engine's drop
+         spawner returns early while it is up. They resume, on these same
+         numbers, once he is down. */
       dropScore: 5,
       dropEvery: 3.4, dropEveryMin: 1.7, dropEveryRamp: 0.03,
       dropAheadMin: 104, dropAheadMax: 200,
@@ -578,28 +587,37 @@ var Levels = (function () {
          crowns (js/cupmen.js). These three keys drive the CEILING spawner,
          so leaving them out is how the lid is told to shed nothing but
          hazards. */
-      /* the sloth plushie off the sofa (Fort ref 4), the room's usual rate:
-         10 + 1/0.032 = 41 planks between spare lives. A sloth on the rug
-         also takes the bay from a Cupman, as a tripod does. */
+      /* THE AMMO BAG (Ammo Bag ref): a canvas tote heaped with the plain
+         Cupmen's yellow pellets, the owner's swap for round one's sloth
+         plushie. The room's usual rate: 10 + 1/0.032 = 41 planks between
+         spare lives. A bag on the rug takes that bay from a Cupman, so
+         with foes on nearly every bay it is the one rug a Cupman is sure
+         not to be standing on. */
       boonChance: 0.032, boonGap: 10,
       /* THE CUPMEN, from 12, which is the owner's number: "they appear after
-         the player reaches 12 pillars". foeScore is a NEW ENGINE KEY - the
+         the player reaches 12 pillars", and it stands: round two asked for
+         more of them ("almost every pillar"), which is js/cupmen.js's dice
+         per bay, not an earlier start. foeScore is an engine key - the
          engine rolls art.makeFoe once per bay from here and shows
-         art.WARN.foe once, exactly as spikeScore arms the spikes and shows
+         art.WARN.foe once, the way spikeScore gates a level's spikes and
          art.WARN.spike - and like every key here it is a number the engine
          reads without asking which level it is. A level without it never
          meets a foe. The Crimsons and the Greens come first. */
       foeScore: 12,
-      /* The Silver Sentinels and the Golden Order, from 19 (the owner's
-         number again), on the engine's existing late pair: art.WARN.late
-         and run.late. Nothing may get more lethal without that pair.
+      /* The Silver Sentinels and the Golden Order, from 20 - the owner's
+         round-two number ("Silver Sentinels/Golden Order to 20"), one on
+         from round one's 19 - on the engine's existing late pair:
+         art.WARN.late and run.late. Nothing may get more lethal without
+         that pair. Eight pillars of Crimsons and Greens first, then ten of
+         the full guard before the King.
 
-         The King Cupman's 25 is deliberately NOT here. A maker is never
-         handed tune, so a threshold only the art reads lives in the art,
-         the way the quarter's roll lives in js/desk.js: it is
-         Cupmen.tune.kingAt, and Cupmen.tune is left mutable so a headless
-         test can call him at 0. */
-      lateScore: 19
+         The King Cupman's 30 (round two's, up from 25) is deliberately NOT
+         here, though he waits for run.late and so can never beat this 20.
+         A maker is never handed tune, so a threshold only the art reads
+         lives in the art, the way the quarter's roll lives in js/desk.js:
+         it is Cupmen.tune.kingAt, and Cupmen.tune is left mutable so a
+         headless test can call him at 0. */
+      lateScore: 20
     }
   };
 

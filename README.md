@@ -282,31 +282,33 @@ rather than 78): overshooting upward used to bounce, and in here it ends the run
 | THE COUCH | stacks of throw pillows | heaps of popcorn, past **12** | popcorn, past **4**, which never stops bouncing | hot cheddar popcorn; a marshmallow is +5 | a coaster |
 | THE MANTLE | ledger stone | remotes, past **8**, firing beams; game controllers that wander, past **18** | dead pixels, past **6** | a lime-green volume key, which *shrinks* you; the capybara is +5 | a fresh battery |
 | THE WHITEBOARD | bars of black marker | markers drawing lines, past **7** | magnets, past **5** | every one in the game, drawn in marker - the only lid that sheds the heat *and* the sour | a drawn succulent |
-| THE FORT | stacks of corrugated panels | tripod light stands and ribbon pull-tabs, past **8**, and rare | black foam biscuits, past **5**, rarer than any other bay's drops | none off the lid - every gift is shot at you | the sloth plushie off the sofa |
+| THE FORT | stacks of corrugated panels | none - the Cupmen hold the floor | black foam biscuits, past **5**, rarer than any other bay's drops, and none while the King reigns | none off the lid - every gift is shot at you | an ammo bag full of yellow pellets |
 
 **THE FORT** is the last bay, and the only one where something shoots back. The
 room has been built over with a box fort of corrugated panels joined by black
 foam discs, and the furniture of the four bays before it shows over the
 cardboard roofline. From **12** the **Cupmen** - upside-down party cups,
-painted by hand like the doodads - march the rug between the planks, and when you
+painted by hand like the doodads - march the rug between nearly every pair of planks, and when you
 fly toward one it turns, raises its gun, shows you three aim dots and fires:
 
 | | from | gun | shoots |
 |---|---|---|---|
 | **Crimson Cupmen** | **12** | a blue pistol | yellow pellets that end the run, and now and then a **red** one that is the heat |
 | **Green Cupmen** | **12**, rarer | a white shotgun | pairs of small **green** pellets - sours |
-| **Silver Sentinels** | **19** | a SAW | bursts of three, yellow and red, three times the Crimsons' rate; they move like robots |
-| **Golden Order** | **19** | a gold pistol | quick **silver** pellets that curve after you, and spinning **gold** coins worth +5 |
-| **King Cupman** | **25**, once a run | none in hand | summons two floating guns; **bop him on the crown three times** |
+| **Silver Sentinels** | **20** | a SAW | bursts of three, yellow and red, three times the Crimsons' rate; they move like robots |
+| **Golden Order** | **20** | a gold pistol | quick **silver** pellets that curve after you, and spinning **gold** coins worth +5 |
+| **King Cupman** | **30**, once a run | none in hand | summons two floating guns; **bop him on the crown three times** |
 
 The Cupmen are fair on purpose: they only fire at a doodad still ahead of them,
-never from off screen, never at point blank, never through or into a plank, and
-the last moment of every aim is frozen so the line you were shown is the line the
-pellet takes. Touching a Cupman ends the run. The King is the one thing in the
-game you can land on: he keeps pace with the screen while the planks pass
-through him, every bop knocks a gold **crown** out of his head, and when he falls
-he drops three more, the ordinary Cupmen come back, and the badge **LONG LIVE THE
-KING** is yours. While he reigns, only the odd Golden Order cupman still turns up.
+never from off screen and never at point blank, and the last moment of every aim
+is frozen so the line you were shown is the line the pellet takes. They do shoot
+with cardboard in the way - a pellet that meets a plank pops on it harmlessly.
+Flying into a Cupman's side ends the run, but land on its head without being shot
+and it topples over and is gone. The King takes three bops: he keeps pace with
+the screen while the planks pass through him, every bop knocks a gold **crown**
+out of his head, and when he falls he drops three more, the ordinary Cupmen come
+back, and the badge **LONG LIVE THE KING** is yours. While he reigns the biscuits
+stop falling, and only the odd Golden Order cupman still turns up.
 
 ## Abilities
 
@@ -588,7 +590,7 @@ js/
   whiteboard.js       LIVING ROOM / THE WHITEBOARD: marker lines, tumbling magnets
   chalkboard.js       the Whiteboard's second art module
   cupmen.js           the Fort's Cupmen, their pellets and the King
-  fort.js             LIVING ROOM / THE FORT: the box fort, biscuits, tripods
+  fort.js             LIVING ROOM / THE FORT: the box fort, biscuits, ammo bag
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
   ui.js               boards, buttons, panels, padlocks, the on-screen pads

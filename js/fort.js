@@ -5,22 +5,28 @@
    fort, and it has swallowed the Living Room whole: every surface the
    player flies past is a corrugated kraft panel joined to the next one
    by black foam biscuits, and the furniture of the four bays before it -
-   the Desk's monitor and its book tower, the shutters and the white
-   ladder, the grey sectional with the sloth sitting on it, the coffee
-   table, the television over the stone, the whiteboard on its frame - is
-   seen OVER THE ROOFLINE of the fort and THROUGH its portholes and
-   doorways, dim, behind the cardboard. Drawn from Fort ref 1-7 in
-   Assets/Concept (ref 3 is a .PNG): ref 2 and ref 5 for the wide fort,
-   ref 1 and ref 4 for the panel close-ups and the sofa behind them, ref 6
-   for the projector, the yellow gable, the seam light and the blue
-   strip, and ref 3 and ref 7 for the box of panels, the foam block, the
-   geometric rug, the red cups on the sofa, the toy blaster and the walnut
-   table.
+   the Desk with its monitor and its shelves, the shutters over the grey
+   sectional and the coffee table, the television on the stone chimney
+   breast over the black mantel, the whiteboard on its frame - is seen
+   OVER THE ROOFLINE of the fort and THROUGH its portholes and doorways,
+   dim, behind the cardboard, every piece of it standing on the room's
+   floor. Drawn from Fort ref 1-7 in Assets/Concept (ref 3 is a .PNG):
+   ref 2 and ref 5 for the wide fort, ref 1 and ref 4 for the panel
+   close-ups and the sofa behind them, ref 6 for the projector, the
+   yellow gable, the seam light and the blue strip, and ref 3 and ref 7
+   for the box of panels, the geometric rug, the red cups on the sofa,
+   the toy blaster and the walnut table; and the spare life from the Ammo
+   Bag ref.
+
+   Round 2: the room beyond the fort stands on its own floor at y 194;
+   the far doorway is open; the floor is the geometric rug on oak; the
+   spare life is THE AMMO BAG. The ladder, the bunk, the sleeping bag,
+   the shag rug, the foam block, the tripods and the ribbons are gone,
+   each on the owner's note, and the biscuit is matte.
 
    THE FORT IS A FORT IN A ROOM AND NOT A WALL. In ref 2 and ref 5 the
-   lit shutters, the white ladder and the top bunk all rise over the roof
-   edge: the fort stands about two thirds of the room's height and the
-   room goes on above it. So the bay is FOUR layers deep where every
+   lit shutters rise over the roof edge: the fort stands about two thirds
+   of the room's height and the room goes on above it. So the bay is FOUR layers deep where every
    other bay in the house is two or three - the room at 0.12, the fort's
    far wall at 0.30, its near wall at 0.55 and the planks at 1.0 - and
    the two walls are not a band across the screen, they are a SKYLINE:
@@ -31,9 +37,9 @@
    wide and passes the four earlier bays IN THE ORDER THEY WERE EARNED -
    the Desk, the Couch, the Mantle, the Whiteboard - so a long run flies
    past the whole Living Room the way the player unlocked it, and the
-   floor strip under the fort runs the shaggy cream rug, the pale
-   boards, the grey geometric rug and the room's own oak. "Sprawling
-   throughout the entire Living Room" is drawn, not asserted.
+   floor strip under the fort runs the grey geometric rug and the room's
+   own oak. "Sprawling throughout the entire Living Room" is drawn, not
+   asserted.
 
    WHAT A PANEL IS, counted off the photographs, because the first draft
    of this plan guessed and guessed wrong. Each panel edge in ref 1, 2, 5
@@ -111,7 +117,9 @@
             light is diamonds and beads, and white dots
             appear only on the far wall, three pixels at most, with no
             halo. So a green disc is always a sour and a bright yellow
-            disc is always a pellet; the yellow gable never sits below
+            disc that MOVES is always a pellet - the one still heap of
+            them is the ammo bag's, inside a cream tote with navy
+            handles under the spare life's jade glow; the yellow gable never sits below
             y 150, out of the floor shooters' band; and nothing else in the
             bay is purple, which is why the sour wears a purple ring.
      SHAPE  THE FALLING BISCUIT IS THE ONLY FACE-ON BLACK DISC THAT MOVES.
@@ -148,7 +156,11 @@
    tumbling out of the roof like the Whiteboard's magnets. They are the
    rarest drop in the room on purpose - the Cupmen are the hard part -
    and they are ALWAYS plain: every gift in this bay, the heat, the sour
-   and the gold, is shot at you out of a toy gun.
+   and the gold, is shot at you out of a toy gun. They are MATTE black
+   foam (bakeBiscuit), and they stop falling while the King is on the
+   field: js/cupmen.js sets the run's ledger.holdDrops when he is
+   summoned and clears it when he falls, and the engine's drop spawner
+   honours it, so nothing here has to know.
 
    MEASURED, the Desk's census: the baked tiles walked pixel by pixel,
    and the backdrop composed whole - room, far wall, picture, near wall,
@@ -164,7 +176,8 @@
      the plank face                    178 (kraftPlank; the warm walk's
                                        whole column tile averaged 120 to
                                        130 at a 144 face, so ~150 now)
-     the room beyond the fort          mean 64, max 96 - the clamp holds
+     the room beyond the fort          mean ~66 (64 before round 2's
+                                       redraw), max 96 - the clamp holds
      the far wall                      ~83 at its roofline, ~76 at the
                                        floor; ~74 across the band
      the near wall, its own tile       ~54 across y 150..242 (57 and 58
@@ -187,25 +200,27 @@
                                        part it from a plank, not value
      the biscuit        body 35,       143 under the plank face. Over
                         rim 119,       the near wall's own face (~54) the
-                        edge 0         body is ~19 under and its cool rim
-                                       ~65 over; over what shows behind
+                        edge 90,       body is ~19 under and its cool rim
+                        outline 0      ~65 over; over what shows behind
                                        the wall (~66: the far wall, the
                                        doorways, the room) the rim is ~53
-                                       over and the body ~31 under. The
-                                       rim is what reads - two whole rows
-                                       of it and the row ends down the
-                                       upper half - and the hard black
-                                       edge round it is what makes it a
-                                       disc and not a blob.
+                                       over and the body ~31 under. It is
+                                       MATTE: one row of rim, the row ends
+                                       down the upper half at 90, no
+                                       catch-light - and the hard black
+                                       outline round it is what makes it
+                                       a disc and not a blob.
      the red cup        94             ~52 over the foot of the wall: the
                                        plan feared 14 against an ~80 wall;
                                        the shaded wall makes it a value
                                        read as well as a hue one
      the green cup      55             ~13 over the foot - THE LOWEST in the
                                        bay, carried by the cup's 30px
-                                       height, the rim light and the warm
+                                       height, its outline and the warm
                                        backlight js/cupmen.js lays behind
-                                       it and the silver one
+                                       it and the silver one (the rim
+                                       light it wore in round 1 is gone,
+                                       on the owner's note)
      the silver cup     144            ~102 over the foot: the bay's one
                                        neutral mid-tone
 
@@ -253,10 +268,10 @@ var Fort = (function () {
        wall did, and at a glance a plank was "another panel, nearer". The
        Couch's cream plank is WARM on a COOL grey wall; this is that turn:
        the plank lifts and warms, the wall behind it goes cool (kraftIn and
-       its family, below). At 178 the plank is still 41 under the rug's
-       cream (220) and the only wall-height surface over 110 in the bay;
-       the Gold cup (188) parts from it by saturation, as it does from the
-       rug. */
+       its family, below). At 178 the plank is the only wall-height
+       surface over 110 in the bay (the grey rug it stands on is 154, the
+       pale boards under that 206); the Gold cup (188) parts from it by
+       saturation, as it does from the boards. */
     kraftPlank:     '#d4ad74',   /* 178 - THE PLANK FACE, and nothing else */
     kraftPlankLit:  '#ead0a0',   /* 210 - its seam lip and the cap's arris  */
     kraftPlankMid:  '#c29a63',   /* 160 - its flute ridges, tooth, cap rim  */
@@ -300,16 +315,13 @@ var Fort = (function () {
                                 arc: what makes black read over a far wall
                                 and a doorway at 37 to 87, where a pure 35
                                 had nothing to stand on. The wall's
-                                connectors keep it; the falling puck
-                                takes the two below */
-    foamRimHi:  '#8d95ad',   /* 147 - THE BISCUIT's rim. At 119 the rim
-                                was the only thing on a falling puck over
-                                60 and it was 1px: over a room clamped to
-                                37..66 the biscuit was a dark smudge at 1x.
-                                The body stays black (it IS the black foam
-                                of the refs); the strip lights it harder */
-    foamGloss:  '#c2c9dc',   /* 200 - its catch-light, a hard highlight:
-                                a glossy foam disc under an LED shows one */
+                                connectors and the falling puck both wear
+                                it: one row, the strip, not a gloss */
+    foamEdge:   '#555a6b',   /*  90 - the row ends down a falling puck's
+                                upper half, one pixel inside its edge.
+                                Round 2 lit the biscuit with a 147 rim and
+                                a 200 catch-light; the owner found it "too
+                                shiny", and black foam is MATTE */
 
     /* ---- holes and the two LEDs */
     holeDark:   '#2a2219',   /*  35 - a hole with nothing lit behind it   */
@@ -328,12 +340,10 @@ var Fort = (function () {
                                  y 150..190, over the 96 ceiling          */
     panelBlue:    '#2f4f9c',  /*  78 - the box of panels in the litter    */
 
-    /* ---- the floor under the fort */
-    rugLit:     '#f3ebd8',   /* 235 */
-    rugCream:   '#e6dcc4',   /* 220 */
-    rugMid:     '#d2c6ab',   /* 199 */
-    rugShade:   '#b3a78c',   /* 168 */
-    rugDeep:    '#8f8469',   /* 132 */
+    /* ---- the floor under the fort: the grey geometric rug on the oak,
+       and the pale boards under everything */
+    rugLit:     '#f3ebd8',   /* 235 - not a rug any more: the book's pages
+                                and the cover's halo round the bird      */
     woodPale:   '#d9cdb6',   /* 206 */
     woodSeam:   '#b8ab93',   /* 172 */
     geoGrey:    '#9a9a98',   /* 154 */
@@ -345,27 +355,13 @@ var Fort = (function () {
     roomDeep:   '#2a2420',   /*  37 */
     roomWall:   '#4a4039',   /*  66 */
     roomLit:    '#5e5349',   /*  85 */
-    sleepBlue:  '#36508f',   /*  80 - the sleeping bag in the doorway. At
-                                '#3f63b8' it was the second most saturated
-                                blue in the bay, at floor level among the
-                                shooters, after the Crimson's own pistol */
-    sleepLit:   '#5e7cc0',   /* 123 */
-    sleepStar:  '#b8c8f0',   /* 200 - its print, 1px dots only            */
-    ladder:     '#d8d4cc',   /* 212 - laid at 0.42 over roomWall: ~96     */
-    ladderShade:'#9f9b94',   /* 155 */
     tablet:     '#17171a',   /*  23 */
     tabletGlass:'#2b3340',   /*  50 */
     tabletGlow: '#8fb4ff',   /* 177 */
-    tripod:     '#1c1b1d',   /*  28 */
-    tripodLit:  '#4b4a4d',   /*  75 */
-    ribbon:     '#e9dcbf',   /* 221 */
-    ribbonShade:'#bda98a',   /* 171 */
     projWhite:  '#d7d5d0',   /* 213 */
     projBeam:   '#8cc8ff',   /* 188 */
     projCable:  '#111111',   /*  17 */
     boxBrown:   '#8b6a44',   /* 112 */
-    foamOrange: '#e07a2a',   /* 143 - the orange-and-white foam block      */
-    foamWhite:  '#e8e3d8',   /* 227 */
     blaster:    '#ff7a1a',   /* 151 - the toy blaster, ref 7: scenery     */
     blasterBlue:'#2b5cc8',   /*  90 */
     bookYellow: '#d9b63a',   /* 178 */
@@ -376,11 +372,13 @@ var Fort = (function () {
        is that blue a little lifted toward the glow of a lit screen. */
     monitorGlow:'#4f7fb8',   /* 119 */
 
-    /* ---- the sloth plushie: this bay's spare life (ref 4) */
-    slothTan:   '#c9a26a',   /* 167 */
-    slothDark:  '#6b4a2a',   /*  80 */
-    slothFace:  '#efe0c4',   /* 225 */
-    slothMask:  '#3b2a1c',   /*  45 */
+    /* ---- THE AMMO BAG: this bay's spare life (Ammo Bag ref) - a canvas
+       tote in natural cream with navy handles, straps and base band */
+    bagCream:   '#ddd2bf',   /* 211 - natural canvas                       */
+    bagLit:     '#f0e8d8',   /* 233 - the rim's top row, the lit left edge */
+    bagShade:   '#b8ad98',   /* 173 - the shaded right column, the pocket  */
+    bagNavy:    '#263a66',   /*  57 - handles, straps, base band           */
+    bagNavyLit: '#3d5490',   /*  84 - the lit edge of the handles          */
 
     /* ---- shade and void */
     shade:      '#3a2c1f',   /*  47 - this bay's Tint-only shadow colour  */
@@ -403,15 +401,15 @@ var Fort = (function () {
 
   /* The room's particles. The air is the room's air; a biscuit coming
      loose sheds CARDBOARD dust from the slot it fell out of; the save
-     burst and the floor specks are rug fluff; the biscuit's own burst is
-     foam. Every pellet carries its own burst pair (`ob.burst`, which the
+     burst and the floor specks are lint off a grey rug; the biscuit's own
+     burst is foam. Every pellet carries its own burst pair (`ob.burst`, which the
      engine's splatter reads), so splat/splatHi here are the biscuit's and
      nothing else's. The heat is the Whiteboard's exactly, because a heat
      is the same heat in every bay of this room. */
   var FX = {
     motes:    LivingRoom.AIR.motes, motesHi: LivingRoom.AIR.motesHi,
     puff:     P.kraftShade,  puffHi:   P.kraftLit,
-    ground:   P.rugShade,    groundHi: P.rugLit,
+    ground:   P.geoDark,     groundHi: P.geoLight,
     splat:    P.foamDeep,    splatHi:  P.foamLit,
     hot:      '#e8452a',     hotMid:   '#f4703a',  hotHi: '#ffcf8a',
     heat:     '#e8452a',     heatEdge: '#8a1d10',
@@ -421,13 +419,14 @@ var Fort = (function () {
   /* The heads-up lines. ▼ for what falls, ▲ for what rises or stands.
      Line one is at most 24 characters and line two at most 28, which is
      the game's own measured precedent (the Mantle ships a 24-character
-     first line at UI.heading's scale 2). The engine shows drop, spike,
-     foe and late as each one arms; king and kingDown are asked for by
-     js/cupmen.js through the run's ledger, when the King reaches the
-     screen and when he falls; ceil is the first flap's. */
+     first line at UI.heading's scale 2). The engine shows drop, foe and
+     late as each one arms - there is no spike line, because the tripods
+     and ribbons are out of this bay (see makeSpikes), and the engine
+     shows none for a level without the key. king and kingDown are asked
+     for by js/cupmen.js through the run's ledger, when the King reaches
+     the screen and when he falls; ceil is the first flap's. */
   var WARN = {
     drop:     ['▼ BISCUITS ▼',         'THE FORT IS COMING APART'],
-    spike:    ['▲ TRIPODS ▲',          'AND A RIBBON OR TWO'],
     foe:      ['▲ CUPMEN ▲',           'THEY BROUGHT TOY GUNS'],
     /* the late phase belongs to the Order and the Sentinels, not to the
        spikes: run.late changes nothing in this file, and says so here */
@@ -444,19 +443,19 @@ var Fort = (function () {
   var PREVIEW = {
     back: P.kraftIn, backAlt: P.kraftDeep, seam: P.kraftShade,
     beam: P.kraftPlank, beamDark: P.kraftPlankShade, beamLight: P.kraftPlankLit,
-    ground: P.rugCream, groundDark: P.rugShade, groundHi: P.rugLit,
-    spike: P.tripod, spikeHi: P.tripodLit, air: P.ledGreen, gloom: P.void
+    ground: P.geoGrey, groundDark: P.geoDark, groundHi: P.geoLight,
+    spike: P.foam, spikeHi: P.foamLit, air: P.ledGreen, gloom: P.void
   };
 
   /* the caption PlayScene puts on an extra life picked up here */
-  var BOON_NAME = 'SLOTH';
+  var BOON_NAME = 'AMMO BAG';
 
   var T = {};             /* baked tiles and sprites */
 
   /* The level's own clock, in PIXELS OF SCROLL, cached once a frame by
      drawBackdrop - the Deck's mistScroll, cached for the Deck's reason.
      Everything that moves on its own in this bay (the chamber's breath,
-     the projector, the tablet, the sloth's glow) reads this or ob.age, so
+     the projector, the tablet, the ammo bag's glow) reads this or ob.age, so
      a paused fort is a still fort and nothing can be waited out behind the
      pause scrim. */
   var clock = 0;
@@ -1101,24 +1100,39 @@ var Fort = (function () {
   /* =========================================== the room beyond the fort
 
      LAYER 1, 960x218 at 0.12: the Living Room the fort was built in, seen
-     over the roofline and through the doorways, dim. The four bays before
-     this one pass IN THE ORDER THEY ARE EARNED, left to right, so a long
-     run flies past the room the way the player unlocked it:
+     over the roofline and through the doorways, dim. It is a ROOM and not
+     a backcloth: a back wall, a skirting board along its foot at rows
+     190..194, and a floor plane of the room's oak receding from the
+     skirting toward the fort, and every piece of furniture STANDS ON that
+     floor in front of the wall - its feet end on row 193 and a four-row
+     contact shadow lies under them - at one scale, 1px = 1.56cm. Round 1
+     pasted the furniture onto a flat wall: a sofa whose base hung 56 rows
+     over the floor, books half sunk into the plaster, a ladder and a bunk
+     rail across the window. The owner's note was that it "should at least
+     physically make sense", and it was not; this is the redraw.
 
-       x   0..240  THE DESK END: the desk's top, the monitor's screensaver
-                   glowing - the one emissive glimpse in the room, and a
-                   RECTANGLE, never a disc - the portrait screen asleep,
-                   the book tower, and the ivy off the shelf
+     The four bays before this one pass IN THE ORDER THEY ARE EARNED, left
+     to right, each centred in its own 240 columns, so a long run flies
+     past the room the way the player unlocked it:
+
+       x   0..240  THE DESK: the white desk with two banks of drawers and
+                   the knee hole, the monitor's screensaver glowing - the
+                   one emissive glimpse in the room, and a RECTANGLE, never
+                   a disc - the portrait screen asleep, a pile of hardbacks
+                   and a pot of ivy on the desk, and the two floating
+                   shelves of keepsakes over it with the pothos off the top
        x 240..480  THE COUCH: the shutters, cropped 1:1 out of the Couch's
-                   own tile and sunk under the dark; the white ladder and
-                   the bunk in front of them (ref 2, ref 5); the grey
-                   sectional with the sloth sitting on it (ref 4) and the
-                   walnut coffee table with the yellow book and a plant
-                   (ref 4, ref 7)
-       x 480..720  THE MANTLE: the dark television over a strip of the
-                   ledger stone
-       x 720..960  THE WHITEBOARD on its frame, with two blue marks and a
-                   strip of tape
+                   own tile and sunk under the dark; the grey sectional with
+                   its three four-button back panels and two throw pillows,
+                   and the walnut coffee table in front of it with the
+                   yellow book and a plant (ref 4, ref 7)
+       x 480..720  THE MANTLE: the ledger-stone chimney breast floor to
+                   ceiling, the dark television mounted on it, and the
+                   black mantel shelf under the set with the soundbar on it
+                   (Mantle ref 1 and 2)
+       x 720..960  THE WHITEBOARD on its rolling frame: two uprights on
+                   castored feet, the rail with tape on it, the pen tray,
+                   and blue and purple marks on the board
      and one dark pendant hanging OFF over the couch and one over the
      board: the pendants are the room's, and tonight they are off.
 
@@ -1131,10 +1145,10 @@ var Fort = (function () {
      THE VALUE RULE IS ENFORCED, NOT HOPED FOR. Every piece of furniture
      back here is its own pigment sunk toward roomDeep, and the last thing
      the bake does is walk the pixels and pull anything over luminance 96
-     down to 96 along its own hue. The plan's figures for the ladder and
-     the board (0.42 and 0.35 of their white over roomWall) land at 127
-     and 122, not at 96; the clamp is what makes the rule true whatever a
-     future pigment does. */
+     down to 96 along its own hue. The board (half of its white over
+     roomWall) lands at ~122 and the mantel's gloss row at ~116 before it,
+     not at 96; the clamp is what makes the rule true whatever a future
+     pigment does. */
   var ROOM_W = 960;
   var VALUE_CEIL = 96;
 
@@ -1180,23 +1194,41 @@ var Fort = (function () {
     c.fillRect(x - 1, CEIL + 14, 3, 2);
   }
 
+  /* THE FLOOR LINE of the room, and the band that stands a piece on it.
+     Every piece of furniture's last body row is ROOM_FLOOR - 1 (193); its
+     contact shadow is four rows of the dark at 0.55 laid over the floor
+     plane from two pixels outside its outermost foot to two pixels outside
+     the other, AFTER the floor and BEFORE the piece. At 0.12 and dimmed
+     under a 96 ceiling there is no other cue that says "standing on" - a
+     sofa without it hung on the wall, which is what round 1's did. */
+  var ROOM_FLOOR = 194;
+  function contact(c, x0, x1) {
+    c.fillStyle = rgba(P.roomDeep, 0.55);
+    c.fillRect(x0, ROOM_FLOOR, x1 - x0, 4);
+  }
+
   function bakeRoom() {
     var t = makeCanvas(ROOM_W, FLOOR - CEIL), c = t.ctx;
     var r = mulberry32(7301);
     var i, j, x, y, k;
     c.setTransform(1, 0, 0, 1, 0, -CEIL);
 
+    /* THE ARCHITECTURE FIRST, because it is what makes the room a room and
+       not a backcloth: a back wall, a skirting board along its foot, and a
+       floor plane running from the skirting toward the fort. */
     /* the wall: a ramp from the dark at the ceiling to roomWall by 150,
-       painted row by row so it has no edge (the room's rule) */
-    for (y = CEIL; y < 196; y++) {
+       painted row by row so it has no edge (the room's rule), down to the
+       skirting's top at 190 */
+    for (y = CEIL; y < 190; y++) {
       c.fillStyle = mix(P.roomDeep, P.roomWall, ease((y - CEIL) / (150 - CEIL)));
       c.fillRect(0, y, ROOM_W, 1);
     }
     /* tooth, a one in sixty speckle a half step either side of the wall -
        the room's plaster tooth, quieter, because this wall is far away
-       and in the dark */
+       and in the dark. On the plaster only: the skirting is painted wood
+       and the floor is oak */
     var toothHi = mix(P.roomWall, P.roomLit, 0.5), toothLo = mix(P.roomWall, P.roomDeep, 0.5);
-    for (y = CEIL; y < 196; y++) {
+    for (y = CEIL; y < 190; y++) {
       for (x = 0; x < ROOM_W; x++) {
         if (r() > 1 / 60) continue;
         c.fillStyle = r() < 0.5 ? toothHi : toothLo;
@@ -1208,65 +1240,134 @@ var Fort = (function () {
       c.fillStyle = rgba(P.ledBlueDeep, 0.22 * (1 - ease((y - CEIL) / 40)));
       c.fillRect(0, y, ROOM_W, 1);
     }
-    /* the skirting and the room's own oak, sunk: this is only ever seen
-       through a porthole that lines up with a far-wall doorway, and it is
-       the same floor the other four bays stand on */
-    c.fillStyle = P.roomDeep; c.fillRect(0, 194, ROOM_W, 2);
-    LivingRoom.paintOak(c, 0, 196, ROOM_W, FLOOR - 196, 11);
-    c.fillStyle = rgba(P.roomDeep, 0.62); c.fillRect(0, 196, ROOM_W, FLOOR - 196);
+    /* THE SKIRTING BOARD, rows 190..194: a lit top edge (~75), the board
+       (~56), and the shadow line where the floor meets it (37) */
+    c.fillStyle = mix(P.roomWall, P.roomLit, 0.5);  c.fillRect(0, 190, ROOM_W, 1);
+    c.fillStyle = mix(P.roomWall, P.roomDeep, 0.35); c.fillRect(0, 191, ROOM_W, 3);
+    c.fillStyle = P.roomDeep;                       c.fillRect(0, ROOM_FLOOR, ROOM_W, 1);
+    /* THE FLOOR PLANE, rows 195..241: the room's own oak - the floor the
+       other four bays stand on - under a wash laid ROW BY ROW from 0.66 at
+       the skirting to 0.52 at the fort, so it is darker at the back and a
+       hair lighter toward the camera: a plane receding to the wall, not a
+       second wall. Seen only through a doorway, which is enough. */
+    LivingRoom.paintOak(c, 0, ROOM_FLOOR + 1, ROOM_W, FLOOR - ROOM_FLOOR - 1, 11);
+    for (y = ROOM_FLOOR + 1; y < FLOOR; y++) {
+      c.fillStyle = rgba(P.roomDeep, 0.66 - 0.14 * (y - ROOM_FLOOR - 1) / (FLOOR - ROOM_FLOOR - 2));
+      c.fillRect(0, y, ROOM_W, 1);
+    }
 
-    /* ---------------- x 0..240, THE DESK END */
-    /* the shelf and the ivy trailing off it (Desk ref: the plant on the
-       floating shelf) - five strands, a leaf pair every three pixels */
-    c.fillStyle = dim(D.shelfMid, 0.55); c.fillRect(150, 66, 84, 3);
-    c.fillStyle = dim(D.shelfDark, 0.5); c.fillRect(150, 69, 84, 1);
+    /* ONE RULER for all four bays, so they agree with each other: 1px is
+       1.56cm, the room 24..194 is 2.65m, and a 75cm desk is 48 rows (floor
+       194, desk top 146). Each bay owns 240 columns and its furniture is
+       centred in them. The roofs of the far wall are at 96..118 (tower
+       70), so rows 24..96 show over the fort all the time and the rest
+       only through a doorway: the TOPS - shelves, shutters, the TV and its
+       stone, the board's rail - carry each bay's identity, and the lower
+       halves are right rather than rich. Flat rects, one lit row, one
+       seam colour. */
+
+    /* ---------------- x 0..240, THE DESK (js/desk.js: a white desk with
+       two banks of shaker drawers, a knee hole full of cable, a monitor
+       and a portrait screen, two floating shelves of keepsakes, the
+       pothos off the shelf and a pot of ivy) */
+    /* the two floating shelves, on the wall, x 70..170 */
+    c.fillStyle = dim(D.shelfMid, 0.55);  c.fillRect(70, 62, 100, 3); c.fillRect(70, 88, 100, 3);
+    c.fillStyle = dim(D.shelfDark, 0.5);  c.fillRect(70, 64, 100, 1); c.fillRect(70, 90, 100, 1);
+    /* the top shelf's keepsakes, standing on row 61: a jar, the grey
+       slab with its mark, a candle, a photo frame, the little skeleton
+       and the green cube */
+    c.fillStyle = mix(D.pages, P.roomWall, 0.5); c.fillRect(76, 56, 4, 6);
+    c.fillStyle = dim(D.wallDark, 0.3);          c.fillRect(88, 56, 8, 6);
+    c.fillStyle = P.roomDeep;                    c.fillRect(91, 58, 2, 1);
+    c.fillStyle = dim(D.speaker, 0.5);           c.fillRect(104, 57, 3, 5);
+    c.fillStyle = D.bezel;                       c.fillRect(116, 56, 7, 6);
+    c.fillStyle = dim(D.wallLit, 0.4);           c.fillRect(117, 57, 5, 4);
+    c.fillStyle = mix(D.speaker, P.roomWall, 0.4); c.fillRect(132, 56, 3, 6);
+    c.fillStyle = P.roomDeep;                    c.fillRect(132, 57, 1, 1); c.fillRect(134, 57, 1, 1);
+    c.fillStyle = dim(D.bookGreen, 0.4);         c.fillRect(150, 58, 4, 4);
+    /* the lower shelf, standing on row 87: six red-and-white spines, the
+       party hat and the wooden crane */
+    for (i = 0; i < 6; i++) {
+      c.fillStyle = i % 2 ? mix(mix(D.pages, '#ffffff', 0.3), P.roomWall, 0.5) : dim(D.bookRed, 0.5);
+      c.fillRect(78 + i * 4, 81, 3, 7);
+    }
+    c.fillStyle = dim(D.bookYellow, 0.5);
+    for (k = 0; k < 5; k++) c.fillRect(114 - (k >> 1), 83 + k, (k >> 1) * 2 + 1, 1);
+    pline(c, 136, 87, 146, 80, dim(C.walnutLit, 0.4));
+    c.fillStyle = dim(C.walnutLit, 0.4);         c.fillRect(135, 85, 2, 2);
+    /* the pothos, five strands off the top shelf's right end, a leaf pair
+       every three pixels */
     for (i = 0; i < 5; i++) {
-      var vx = 156 + i * 15 + Math.floor(r() * 5), vl = 18 + Math.floor(r() * 26);
+      var vx = 150 + i * 6 + Math.floor(r() * 3), vl = 10 + Math.floor(r() * 17);
       for (j = 0; j < vl; j++) {
         var sway = Math.round(Math.sin(j * 0.32 + i) * 1.4);
         c.fillStyle = dim(D.ivyDark, 0.2);
-        c.fillRect(vx + sway, 70 + j, 1, 1);
+        c.fillRect(vx + sway, 65 + j, 1, 1);
         if (j % 3 === 1) {
           c.fillStyle = dim(D.ivyMid, 0.18);
-          c.fillRect(vx + sway + (j % 6 === 1 ? 1 : -2), 70 + j, 2, 1);
+          c.fillRect(vx + sway + (j % 6 === 1 ? 1 : -2), 65 + j, 2, 1);
         }
       }
     }
-    /* the book tower: six hardbacks lying flat, in the Desk's own covers
-       HALF SUNK into the wall. At the Desk's full saturation the four
+    /* THE DESK, 150 wide at x 45..195, on the floor: its shadow, the top,
+       two banks of three drawers reaching the floor, and the knee hole
+       between them with a cable in it */
+    contact(c, 47, 193);
+    c.fillStyle = dim(D.deskTop, 0.66);    c.fillRect(45, 146, 150, 4);
+    c.fillStyle = dim(D.deskLit, 0.62);    c.fillRect(45, 146, 150, 1);
+    var face = dim(D.drawerFace, 0.7), faceLit = mix(face, D.deskLit, 0.25);
+    c.fillStyle = P.roomDeep;              c.fillRect(93, 150, 54, 44);
+    pline(c, 100, 193, 140, 160, mix(P.roomDeep, P.roomLit, 0.4));
+    var banks = [49, 147];
+    for (i = 0; i < 2; i++) {
+      x = banks[i];
+      c.fillStyle = face;                    c.fillRect(x, 150, 44, 44);
+      c.fillStyle = dim(D.drawerShade, 0.6); c.fillRect(x, 164, 44, 1); c.fillRect(x, 178, 44, 1);
+      c.fillStyle = faceLit;                 c.fillRect(x, 151, 44, 1); c.fillRect(x, 165, 44, 1); c.fillRect(x, 179, 44, 1);
+      c.fillStyle = P.roomDeep;
+      c.fillRect(x + 22, 157, 1, 1); c.fillRect(x + 22, 171, 1, 1); c.fillRect(x + 22, 185, 1, 1);
+      c.fillStyle = dim(D.drawerShade, 0.5); c.fillRect(x, 192, 44, 2);
+    }
+    /* the monitor on its stand, and the screensaver: a RECTANGLE of the
+       Desk's blue at 0.4 over the dark glass - the room's one glow, and
+       never a disc */
+    c.fillStyle = D.bezel;                  c.fillRect(76, 110, 44, 28);
+    c.fillStyle = dim(D.bezelHi, 0.2);      c.fillRect(76, 110, 44, 1);
+    c.fillStyle = P.roomWall;               c.fillRect(80, 114, 36, 20);
+    c.fillStyle = rgba(P.monitorGlow, 0.4); c.fillRect(80, 114, 36, 20);
+    c.fillStyle = rgba(D.screenLogo, 0.25); c.fillRect(94, 121, 8, 4);
+    c.fillStyle = D.stand;                  c.fillRect(96, 138, 4, 8); c.fillRect(90, 144, 16, 2);
+    /* the portrait screen beside it, asleep, on its own stand */
+    c.fillStyle = D.bezel;                  c.fillRect(128, 108, 16, 30);
+    c.fillStyle = dim(D.screenOff, 0.1);    c.fillRect(130, 110, 12, 26);
+    c.fillStyle = dim(D.screenReflect, 0.6); c.fillRect(131, 111, 1, 12);
+    c.fillStyle = D.stand;                  c.fillRect(135, 138, 2, 8);
+    /* the pile of hardbacks ON THE DESK, left of the monitor and stacked
+       up from the desk top (round 1 sank them half into the wall). In the
+       Desk's covers mixed half into the wall: at full saturation the
        spines were the only saturated non-LED thing in the bay and read as
-       a stack of pellets; the clamp holds their value, not their hue */
+       a stack of pellets; the clamp holds their value, not their hue.
+       x 46..49 rather than the brief's 50..53, so the widest pile ends on
+       the monitor's bezel and never on its glass */
     var books = [[D.bookBlue, D.bookBlueHi], [D.bookRed, D.bookRedHi], [D.bookTan, D.bookTanHi],
                  [D.bookGreen, D.bookGreenHi], [D.bookYellow, D.bookYellowHi], [D.bookBlack, D.bookBlackHi]];
     y = 146;
     for (i = 0; i < books.length; i++) {
-      var bw = 22 + Math.floor(r() * 7), bh = 4 + Math.floor(r() * 2), bx = 30 + Math.floor(r() * 5);
+      var bw = 22 + Math.floor(r() * 7), bh = 4 + Math.floor(r() * 2), bx = 46 + Math.floor(r() * 4);
       y -= bh;
       c.fillStyle = mix(books[i][0], P.roomWall, 0.5); c.fillRect(bx, y, bw, bh);
       c.fillStyle = mix(books[i][1], P.roomWall, 0.5); c.fillRect(bx, y, bw, 1);
-      c.fillStyle = dim(D.pages, 0.2);      c.fillRect(bx + bw - 2, y + 1, 2, bh - 1);
+      c.fillStyle = dim(D.pages, 0.2);                c.fillRect(bx + bw - 2, y + 1, 2, bh - 1);
     }
-    /* the desk: its top, its drawers, and the dark knee hole */
-    c.fillStyle = dim(D.deskTop, 0.66);    c.fillRect(18, 146, 204, 4);
-    c.fillStyle = dim(D.deskLit, 0.62);    c.fillRect(18, 146, 204, 1);
-    c.fillStyle = dim(D.drawerFace, 0.7);  c.fillRect(22, 150, 56, 44); c.fillRect(162, 150, 56, 44);
-    c.fillStyle = dim(D.drawerShade, 0.6); c.fillRect(22, 171, 56, 1);  c.fillRect(162, 171, 56, 1);
-    c.fillStyle = P.roomDeep;              c.fillRect(78, 150, 84, 44);
-    /* the monitor, and the screensaver: a RECTANGLE of the Desk's blue at
-       0.4 over the dark glass, the room's one glow */
-    c.fillStyle = D.bezel;                  c.fillRect(86, 104, 50, 34);
-    c.fillStyle = dim(D.bezelHi, 0.2);      c.fillRect(86, 104, 50, 1);
-    c.fillStyle = D.stand;                  c.fillRect(108, 138, 6, 8); c.fillRect(102, 144, 18, 2);
-    c.fillStyle = P.roomWall;               c.fillRect(91, 108, 40, 26);
-    c.fillStyle = rgba(P.monitorGlow, 0.4); c.fillRect(91, 108, 40, 26);
-    /* the Desk's screensaver mark, bouncing about on it - here, a smudge */
-    c.fillStyle = rgba(D.screenLogo, 0.25); c.fillRect(104, 116, 8, 4);
-    /* and the portrait screen beside it, asleep */
-    c.fillStyle = D.bezel;                  c.fillRect(144, 98, 22, 40);
-    c.fillStyle = dim(D.screenOff, 0.1);    c.fillRect(146, 100, 18, 36);
-    c.fillStyle = dim(D.screenReflect, 0.6); c.fillRect(147, 101, 1, 12);
+    /* the pot of ivy at the desk's right end */
+    c.fillStyle = dim(C.burnDeep, 0.2); c.fillRect(182, 138, 8, 8);
+    c.fillStyle = dim(D.ivyMid, 0.3);
+    c.fillRect(184, 133, 1, 5); c.fillRect(186, 131, 1, 7); c.fillRect(188, 134, 1, 4);
 
-    /* ---------------- x 240..480, THE COUCH */
+    /* ---------------- x 240..480, THE COUCH (js/couch.js: the grey
+       microfibre sectional whose back is a row of separate four-button
+       cushion panels, the cream-and-gold throw pillows, the plantation
+       shutters along the top, the walnut coffee table) */
     /* the shutters, the Couch's own tile cropped 1:1 and sunk under the
        dark. Couch.build() has run (see build), so the canvas exists; if it
        somehow has not, the wall is simply bare there. */
@@ -1274,109 +1375,145 @@ var Fort = (function () {
       c.drawImage(Couch.tiles.shutters.canvas, 0, 0, 240, 70, 240, 28, 240, 70);
       c.fillStyle = rgba(P.roomDeep, 0.55); c.fillRect(240, 28, 240, 70);
     }
-    /* the white ladder and the bunk rail in front of the window (ref 2,
-       ref 5: they rise over the fort's roof edge) */
-    var lad = mix(P.roomWall, P.ladder, 0.2), ladS = mix(P.roomWall, P.ladderShade, 0.2);
-    c.fillStyle = lad;  c.fillRect(366, 46, 114, 3);           /* the bunk's rail */
-    c.fillStyle = ladS; c.fillRect(366, 49, 114, 1);
-    c.fillStyle = lad;  c.fillRect(422, 40, 3, 156); c.fillRect(445, 40, 3, 156);
-    c.fillStyle = ladS; c.fillRect(424, 40, 1, 156); c.fillRect(447, 40, 1, 156);
-    for (i = 0; i < 5; i++) {
-      c.fillStyle = lad;  c.fillRect(425, 60 + i * 26, 20, 2);
-      c.fillStyle = ladS; c.fillRect(425, 62 + i * 26, 20, 1);
-    }
-    /* THE GREY SECTIONAL, ref 4's whole point, y 110..138. It sat at
-       120..156, under most of the near wall's roofs, and in no wide shot
-       could it be found; up here it clears the 128 and 140 roofs and shows
-       over variant 0's low panel (190) and through both doorways. Three
-       back cushions with a roomLit top edge - the one lit line that says
-       "sofa" against the dark - and two roomDeep seams between them, the
-       seat under them, the arm, and its shadow on the wall. */
-    c.fillStyle = M.reflCouch;   c.fillRect(296, 116, 104, 22);
+    /* THE SECTIONAL, 156 wide at x 282..438, standing on the floor */
+    contact(c, 280, 440);
+    var sofa = dim(C.backMid, 0.45), crest = mix(C.seatHi, P.roomDeep, 0.4);
+    /* the arms, full height to the base */
+    c.fillStyle = sofa;  c.fillRect(282, 150, 6, 40); c.fillRect(432, 150, 6, 40);
+    c.fillStyle = crest; c.fillRect(282, 150, 6, 1);  c.fillRect(432, 150, 6, 1);
+    /* three back cushion panels with a lit crest, the dark valleys between
+       them, and four buttons each in the Couch's wide rectangle */
     for (i = 0; i < 3; i++) {
-      var cx0 = 298 + i * 34;
-      c.fillStyle = M.reflCushion; c.fillRect(cx0, 111, 33, 13);
-      c.fillStyle = P.roomLit;     c.fillRect(cx0 + 1, 110, 31, 1);
+      x = 288 + i * 48;
+      c.fillStyle = sofa;      c.fillRect(x, 139, 46, 27);
+      c.fillStyle = crest;     c.fillRect(x, 139, 46, 1);
+      c.fillStyle = P.roomDeep;
+      c.fillRect(x + 11, 147, 1, 1); c.fillRect(x + 34, 147, 1, 1);
+      c.fillRect(x + 11, 157, 1, 1); c.fillRect(x + 34, 157, 1, 1);
+      /* the valley after it: between two panels, and after the last
+         one the two columns between the cushion and the right arm */
+      c.fillRect(x + 46, 139, 2, 27);
     }
-    c.fillStyle = P.roomDeep;    c.fillRect(331, 111, 1, 13); c.fillRect(365, 111, 1, 13);
-    c.fillStyle = M.reflSeam;    c.fillRect(296, 124, 104, 1); c.fillRect(296, 131, 104, 1);
-    c.fillStyle = M.reflCushion; c.fillRect(290, 114, 8, 24);    /* the arm */
-    c.fillStyle = P.roomLit;     c.fillRect(290, 114, 8, 1);
-    c.fillStyle = rgba(P.roomDeep, 0.6); c.fillRect(292, 138, 110, 2);
-    /* the sloth, sitting on the seat against the back cushion - dimmed so
-       it can never read as a second spare life: the one on the rug glows
-       jade and this one is a shape, its tan head (~90) the one warm thing
-       on the grey */
-    var sl = mix(P.slothTan, P.roomDeep, 0.35), slD = dim(P.slothDark, 0.4), slF = dim(P.slothFace, 0.62);
-    c.fillStyle = sl;  c.fillRect(346, 113, 10, 12); c.fillRect(347, 112, 8, 1);
-    c.fillStyle = slF; c.fillRect(348, 114, 6, 4);
-    c.fillStyle = slD; c.fillRect(348, 115, 2, 1); c.fillRect(352, 115, 2, 1);
-    c.fillRect(345, 118, 1, 6); c.fillRect(356, 118, 1, 6);
-    /* the walnut coffee table in front of it, the yellow book and a plant */
-    c.fillStyle = C.walnut;    c.fillRect(268, 144, 56, 6);
-    c.fillStyle = C.walnutLit; c.fillRect(268, 144, 56, 1);
-    c.fillStyle = dim(C.walnut, 0.4); c.fillRect(272, 150, 3, 44); c.fillRect(317, 150, 3, 44);
-    c.fillStyle = dim(P.bookYellow, 0.5); c.fillRect(278, 141, 16, 3);
-    c.fillStyle = dim(D.pagesHi, 0.1);    c.fillRect(278, 141, 16, 1);
-    c.fillStyle = dim(C.burnDeep, 0.2);   c.fillRect(306, 138, 6, 6);     /* the pot */
+    /* the seat with its welt and one seam, the base under it, the feet */
+    c.fillStyle = dim(C.backMid, 0.35);          c.fillRect(288, 166, 144, 12);
+    c.fillStyle = mix(C.seatHi, P.roomDeep, 0.5); c.fillRect(288, 166, 144, 1);
+    c.fillStyle = P.roomDeep;                    c.fillRect(360, 166, 1, 12);
+    c.fillStyle = dim(C.seatShade, 0.3);         c.fillRect(288, 178, 144, 12);
+    c.fillStyle = dim(C.walnut, 0.3);            c.fillRect(290, 190, 4, 4); c.fillRect(427, 190, 4, 4);
+    /* two throw pillows sitting on the seat against the back */
+    for (i = 0; i < 2; i++) {
+      x = i ? 404 : 300;
+      c.fillStyle = P.roomDeep;               c.fillRect(x - 1, 157, 16, 12);
+      c.fillStyle = dim(C.pillowCream, 0.55); c.fillRect(x, 158, 14, 10);
+      c.fillStyle = dim(C.pillowGold, 0.5);   c.fillRect(x + 5, 161, 3, 3);
+    }
+    /* THE WALNUT COFFEE TABLE in front of the sofa, its own shadow laid
+       after the sofa's, the yellow book and the pot on its top */
+    contact(c, 314, 374);
+    c.fillStyle = C.walnut;            c.fillRect(312, 176, 64, 6);
+    c.fillStyle = C.walnutLit;         c.fillRect(312, 176, 64, 1);
+    c.fillStyle = dim(C.walnut, 0.4);  c.fillRect(316, 182, 3, 12); c.fillRect(370, 182, 3, 12);
+    c.fillStyle = dim(P.bookYellow, 0.5); c.fillRect(322, 173, 16, 3);
+    c.fillStyle = dim(D.pagesHi, 0.1);    c.fillRect(322, 173, 16, 1);
+    /* the pot at x 344, not the brief's 352: the seat's seam at x 360
+       showed over the table beside a pot at 352 and read as a cane in it */
+    c.fillStyle = dim(C.burnDeep, 0.2);   c.fillRect(344, 170, 6, 6);
     c.fillStyle = dim(D.ivyMid, 0.3);
-    c.fillRect(307, 133, 1, 5); c.fillRect(309, 131, 1, 7); c.fillRect(311, 134, 1, 4);
+    c.fillRect(345, 166, 1, 4); c.fillRect(347, 164, 1, 6); c.fillRect(349, 167, 1, 3);
 
-    /* ---------------- x 480..720, THE MANTLE */
-    c.fillStyle = M.screenDeep; c.fillRect(564, 62, 70, 40);
-    c.fillStyle = dim(M.bezelHi, 0.2);
-    c.fillRect(563, 61, 72, 1); c.fillRect(563, 61, 1, 42); c.fillRect(634, 61, 1, 42); c.fillRect(563, 102, 72, 1);
-    c.fillStyle = dim(M.reflShutter, 0.5); c.fillRect(570, 66, 18, 1);     /* a reflection */
-    c.fillStyle = M.mantleTop;  c.fillRect(516, 106, 168, 5);
-    c.fillStyle = M.mantleGloss; c.fillRect(516, 106, 168, 1);
-    c.fillStyle = M.mantleFace; c.fillRect(516, 111, 168, 3);
-    /* THE LEDGER STONE under it, in the Mantle's own course: pieces 14..44
-       long (the Mantle's course() numbers), each with a 1px lit top and
-       pieces of a course 4 or 5 rows tall over a 6px pitch, so the joint
-       under a course wanders. At 9..22 long, all 5 tall and butted, three
-       visible rows of small grey-brown blocks read as BRICKS (and in one
-       pass as a bookshelf) - ledger stone is long thin slices, not a
-       wall of units. */
-    var stones = [M.stoneWhite, M.stoneCream, M.stoneGreyGreen, M.stoneGrey, M.stoneTan, M.stoneRust, M.stoneDark];
-    for (j = 0; j < 6; j++) {
-      c.fillStyle = dim(M.stoneJoint, 0.3); c.fillRect(516, 115 + j * 6, 168, 6);
-      x = 516 - Math.floor(r() * 20);
-      while (x < 684) {
-        var sw = 14 + Math.floor(r() * 31), sh = r() < 0.5 ? 4 : 5;
-        var sx0 = Math.max(516, x), sx1 = Math.min(x + sw - 1, 684);
+    /* ---------------- x 480..720, THE MANTLE (js/mantle.js, Mantle ref 1
+       and 2: a floor-to-ceiling LEDGER-STONE chimney breast, the switched-
+       off flatscreen MOUNTED on it, and under the TV the chunky black
+       painted mantel shelf with the soundbar on it; ref 2 shows the stone
+       running on below the shelf, and no firebox) */
+    /* THE CHIMNEY BREAST, x 530..690, rows 24..193, in the Mantle's own
+       course: pieces 14..44 long (its course() numbers), each with a 1px
+       lit top, 4 or 5 rows tall over a 6px pitch so the joint under a
+       course wanders. At 9..22 long, all 5 tall and butted, the stone read
+       as BRICKS - ledger stone is long thin slices, not a wall of units */
+    contact(c, 528, 692);
+    /* The piece mix is the Mantle's own STONES (js/mantle.js): white and
+       cream 3 each, grey-green and grey 2, tan 2, dark 1, and NO rust. An
+       even pick over seven colours made tan+rust+dark 3 in 7 and, at 0.62
+       dim over the cardboard, the breast read as a brown BRICK chimney;
+       Mantle ref 2 is mostly white/cream/grey-green. One r() per piece as
+       before, so the rest of the room's seeded layout does not move */
+    var stones = [M.stoneWhite, M.stoneWhite, M.stoneWhite,
+                  M.stoneCream, M.stoneCream, M.stoneCream,
+                  M.stoneGreyGreen, M.stoneGreyGreen,
+                  M.stoneGrey, M.stoneGrey,
+                  M.stoneTan, M.stoneTan,
+                  M.stoneDark];
+    for (j = 0; j < 29; j++) {
+      var cy = CEIL + j * 6, ch = Math.min(6, ROOM_FLOOR - cy);
+      c.fillStyle = dim(M.stoneJoint, 0.3); c.fillRect(530, cy, 160, ch);
+      x = 530 - Math.floor(r() * 20);
+      while (x < 690) {
+        var sw = 14 + Math.floor(r() * 31), sh = Math.min(r() < 0.5 ? 4 : 5, ch);
+        var sx0 = Math.max(530, x), sx1 = Math.min(x + sw - 1, 690);
         var sCol = stones[Math.floor(r() * stones.length)];
         if (sx1 > sx0) {
-          c.fillStyle = dim(sCol, 0.62); c.fillRect(sx0, 115 + j * 6, sx1 - sx0, sh);
-          c.fillStyle = dim(M.stoneLit, 0.55); c.fillRect(sx0, 115 + j * 6, sx1 - sx0, 1);
+          c.fillStyle = dim(sCol, 0.62);      c.fillRect(sx0, cy, sx1 - sx0, sh);
+          c.fillStyle = dim(M.stoneLit, 0.55); c.fillRect(sx0, cy, sx1 - sx0, 1);
         }
         x += sw;
       }
     }
+    /* the breast stands proud of the plaster: a dark column down each side */
+    c.fillStyle = dim(M.stoneDark, 0.4); c.fillRect(530, CEIL, 1, ROOM_FLOOR - CEIL); c.fillRect(689, CEIL, 1, ROOM_FLOOR - CEIL);
+    /* THE TELEVISION, 96x54, mounted on the stone - nothing under it but
+       stone, eight rows of it showing above the shelf (Mantle ref 1) */
+    c.fillStyle = M.bezel;              c.fillRect(562, 62, 96, 54);
+    c.fillStyle = dim(M.bezelHi, 0.2);  c.fillRect(562, 62, 96, 1); c.fillRect(562, 62, 1, 54); c.fillRect(657, 62, 1, 54);
+    c.fillStyle = M.screenDeep;         c.fillRect(564, 64, 92, 50);
+    c.fillStyle = dim(M.reflShutter, 0.5); c.fillRect(570, 68, 18, 1);     /* a reflection */
+    /* THE MANTEL SHELF, an 11-row block of black painted wood (Mantle ref
+       2): its gloss row (the clamp holds it at 96), the top, the bevel,
+       the face, and the two dark ends */
+    c.fillStyle = M.mantleGloss; c.fillRect(536, 124, 148, 1);
+    c.fillStyle = M.mantleTop;   c.fillRect(536, 125, 148, 2);
+    c.fillStyle = M.mantleBevel; c.fillRect(536, 127, 148, 1);
+    c.fillStyle = M.mantleFace;  c.fillRect(536, 128, 148, 7);
+    c.fillStyle = M.mantleDeep;  c.fillRect(536, 124, 1, 11); c.fillRect(683, 124, 1, 11);
+    /* the soundbar on it. No capybara and no remotes: a yellow blob back
+       here would be a pellet */
+    c.fillStyle = M.remoteBody;  c.fillRect(580, 120, 60, 4);
+    c.fillStyle = M.remoteLit;   c.fillRect(580, 120, 60, 1);
 
-    /* ---------------- x 720..960, THE WHITEBOARD */
+    /* ---------------- x 720..960, THE WHITEBOARD (js/whiteboard.js: a
+       board on a ROLLING ALUMINIUM FRAME - two uprights on feet, a top rail
+       with tape on it, a pen tray) */
+    contact(c, 794, 885);
     c.fillStyle = dim(W.alumDark, 0.55);
-    c.fillRect(792, 70, 3, 126); c.fillRect(869, 70, 3, 126);
-    c.fillStyle = dim(W.alumMid, 0.62); c.fillRect(796, 72, 70, 2);
+    c.fillRect(808, 78, 2, 112); c.fillRect(868, 78, 2, 112);       /* uprights */
+    c.fillRect(796, 190, 27, 4); c.fillRect(856, 190, 27, 4);       /* foot bars */
+    c.fillStyle = P.roomDeep;                                       /* casters */
+    c.fillRect(796, 192, 2, 2); c.fillRect(821, 192, 2, 2);
+    c.fillRect(856, 192, 2, 2); c.fillRect(881, 192, 2, 2);
+    c.fillStyle = dim(W.alumMid, 0.62);
+    c.fillRect(804, 80, 70, 4);                                     /* top rail */
+    c.fillRect(804, 128, 70, 3);                                    /* pen tray */
+    c.fillStyle = dim(W.tape, 0.5); c.fillRect(846, 80, 8, 2); c.fillRect(816, 80, 5, 2);
     /* the board at half of its white over the wall (the clamp then sets
-       its value at 96), its pen tray in the ladder's white under the
-       aluminium one, and two strokes of the Whiteboard's blue at 0.6 -
-       a board with writing on it, where 0.18 was a grey rectangle */
+       its value at 96) inside a 1px aluminium frame, and the marks at 0.6
+       of their inks: the blue parabola, a blue stroke and a purple game of
+       noughts and crosses - a board with writing on it, where 0.18 was a
+       grey rectangle */
     var board = mix(P.roomWall, W.board, 0.5);
-    c.fillStyle = board; c.fillRect(800, 76, 60, 36);
-    c.fillStyle = dim(W.alumMid, 0.62); c.fillRect(798, 112, 64, 2);
-    c.fillStyle = mix(P.roomWall, P.ladder, 0.5); c.fillRect(800, 114, 60, 1);
-    /* two blue marks and the tape */
+    c.fillStyle = dim(W.alumMid, 0.5); c.fillRect(806, 84, 66, 44);
+    c.fillStyle = board;               c.fillRect(807, 85, 64, 42);
     var ink = mix(board, W.inkBlue, 0.6);
     for (i = 0; i < 16; i++) {
       var u = (i - 8) / 8;
       c.fillStyle = ink;
-      c.fillRect(806 + i, 102 - Math.round((1 - u * u) * 14), 1, 1);
-      c.fillRect(806 + i, 103 - Math.round((1 - u * u) * 14), 1, 1);
+      c.fillRect(818 + i, 110 - Math.round((1 - u * u) * 14), 1, 2);
     }
-    pline2(c, 832, 98, 850, 86, ink);
-    c.fillStyle = dim(W.tape, 0.5); c.fillRect(840, 72, 10, 3);
+    pline2(c, 846, 118, 862, 104, ink);
+    c.fillStyle = mix(board, W.inkPurple, 0.6);
+    c.fillRect(852, 90, 1, 7); c.fillRect(854, 90, 1, 7);
+    c.fillRect(850, 92, 7, 1); c.fillRect(850, 94, 7, 1);
 
-    /* the two pendants, off */
+    /* the two pendants, off: one over the sofa, one over the board */
     pendant(c, 400);
     pendant(c, 880);
 
@@ -1394,9 +1531,8 @@ var Fort = (function () {
      half-height panel to y 70 with the yellow gable on it (ref 6: the
      yellow triangle with two fat connectors gripping its corner).
 
-     THE DOORWAY. Panel 2 is missing. Through the gap the blue sleeping bag
-     lies on the rug inside the fort (ref 2, ref 5: the bag with its
-     printed stars), and above it the room shows.
+     THE DOORWAY. Panel 2 is missing. Through the gap the room shows: its
+     wall, its skirting and its floor, at the room's own 0.12.
 
      THE PROJECTOR on its box sits on panel 3's roof (ref 6) and throws a
      picture back across the fort onto panel 0: a three-step wedge of
@@ -1499,20 +1635,12 @@ var Fort = (function () {
     /* a seam line down the gable where two yellow panels meet (ref 6) */
     pline(c, gMid + 6, gApex + 4, gMid + 14, gBase - 1, mix(gY, P.kraftDeep, 0.5));
 
-    /* THE DOORWAY: the rug inside the fort, and the sleeping bag on it */
-    /* the same shaggy cream rug as the floor, inside the fort and so in
-       its shade */
-    var rugIn = mix(P.rugMid, P.roomDeep, 0.6);
-    c.fillStyle = rugIn; c.fillRect(DOOR_FAR[0], 200, DOOR_FAR[1] - DOOR_FAR[0], FLOOR - 200);
-    for (y = 200; y < FLOOR; y++) {
-      for (x = DOOR_FAR[0]; x < DOOR_FAR[1]; x++) {
-        if (r() > 0.14) continue;
-        c.fillStyle = r() < 0.5 ? mix(P.rugLit, P.roomDeep, 0.58) : mix(P.rugShade, P.roomDeep, 0.66);
-        c.fillRect(x, y, 1, 1);
-      }
-    }
-    c.fillStyle = mix(P.rugDeep, P.roomDeep, 0.7); c.fillRect(DOOR_FAR[0], 200, DOOR_FAR[1] - DOOR_FAR[0], 1);
-    bakeBag(c, 216, 190);
+    /* THE DOORWAY (DOOR_FAR) is left CLEAR from the roofline to the
+       floor: nothing is baked into it, and the room tile shows through -
+       its wall, its skirting and its floor plane - which is what a missing
+       panel shows. Round 1 laid a patch of the shag rug in it with a blue
+       sleeping bag on top; the owner could not tell what the bag was, and
+       the shag rug is a different room (Fort ref 2, 5), so both went. */
 
     /* THE PROJECTOR on its box, on panel 3's roof (ref 6). The box is the
        kit's own carton - with a handle slot and no lettering, because
@@ -1594,25 +1722,6 @@ var Fort = (function () {
     return t;
   }
 
-  /* the blue sleeping bag lying in the doorway (ref 2, ref 5): a lump with
-     its folds lit, a zip, and six printed stars that are single pixels */
-  function bakeBag(c, x, y) {
-    var rows = [[6, 30], [3, 38], [1, 44], [0, 47], [0, 48], [0, 48], [0, 48], [0, 48], [0, 48],
-                [0, 48], [0, 48], [0, 48], [0, 48], [0, 48], [1, 47], [1, 47], [2, 46], [3, 44]];
-    rowsFill(c, rows, x, y, P.sleepBlue);
-    c.fillStyle = P.outline;
-    for (var i = 0; i < rows.length; i++) { c.fillRect(x + rows[i][0] - 1, y + i, 1, 1); c.fillRect(x + rows[i][0] + rows[i][1], y + i, 1, 1); }
-    c.fillRect(x + rows[0][0], y - 1, rows[0][1], 1);
-    pline(c, x + 8, y + 3, x + 20, y + 9, P.sleepLit);
-    pline(c, x + 22, y + 2, x + 34, y + 10, P.sleepLit);
-    pline(c, x + 36, y + 4, x + 44, y + 9, P.sleepLit);
-    c.fillStyle = mix(P.sleepBlue, P.void, 0.4); c.fillRect(x + 2, y + 12, 44, 1);       /* the zip */
-    c.fillRect(x + 3, y + 16, 42, 2);
-    c.fillStyle = P.sleepStar;
-    var stars = [[6, 6], [14, 11], [27, 5], [31, 13], [40, 7], [19, 15]];
-    for (i = 0; i < stars.length; i++) c.fillRect(x + stars[i][0], y + stars[i][1], 1, 1);
-  }
-
   /* ======================================= the near wall: the hero tile
 
      LAYER 3, 480x218 at 0.55, two variants picked per world column by
@@ -1637,8 +1746,11 @@ var Fort = (function () {
          strongest image - with the breathing pool laid live over it
        - the yellow GABLE on a roof edge, never below y 150
        - ONE FOLD (ref 6)
-       - a prop: the tablet lying on a roof and the tripod leaning on
-         variant 0, the ribbon pull-tab hanging off a roof on variant 1
+       - a prop: the tablet lying on a roof on variant 0. Round 1 also
+         leant a tripod on variant 0 and hung a ribbon pull-tab off a roof
+         on variant 1; the tripods and ribbons left the bay as hazards in
+         round 2, and the scenery ones went with them - the same look,
+         and nothing for it to mean any more
      Bumps every 48 along every roof edge, dashes every 48 across every
      seam, and PORTHOLES that are cut clean through.
 
@@ -1659,9 +1771,9 @@ var Fort = (function () {
         { x: 0,   w: 120, top: 128, ports: 2, big: 2, badge: true },
         { x: 120, w: 120, top: 190, ports: 1, big: 0, lit: true },
         { x: 240, w: 60,  top: 140, ports: 1, big: 1, fold: true, badge: true },
-        { x: 340, w: 140, top: 164, ports: 2, big: 2, tripod: true }
+        { x: 340, w: 140, top: 164, ports: 2, big: 2 }
       ] },
-    { door: [60, 100], ribbon: { x: 404 }, gable: { x: 150, w: 44 },
+    { door: [60, 100], gable: { x: 150, w: 44 },
       panels: [
         { x: 0,   w: 60,  top: 150, ports: 1, big: 1 },
         { x: 100, w: 140, top: 120, ports: 2, big: 2, fold: true, badge: true },
@@ -1721,41 +1833,6 @@ var Fort = (function () {
       c.fillStyle = P.tablet;      c.fillRect(L.tablet.x, L.tablet.y, 26, 4);
       c.fillStyle = P.tabletGlass; c.fillRect(L.tablet.x + 1, L.tablet.y, 24, 1);
       c.fillStyle = P.outline;     c.fillRect(L.tablet.x, L.tablet.y + 3, 26, 1);
-    }
-
-    /* THE TRIPOD, a light stand leaning on the wall (ref 2, 5, 6). It is
-       scenery and it LEANS, eighteen degrees off the vertical, which no
-       floor hazard in this bay ever does - the tripods that kill stand
-       bolt upright on the rug and move at the planks' rate */
-    for (i = 0; i < L.panels.length; i++) {
-      p = L.panels[i];
-      if (!p.tripod) continue;
-      var fx = p.x + p.w - 36, ftop = FLOOR - 60, lean = 19;
-      pline2(c, fx, FLOOR - 2, fx - lean, ftop, P.tripod);
-      pline(c, fx - 1, FLOOR - 3, fx - lean - 1, ftop + 1, P.tripodLit);
-      pline(c, fx, FLOOR - 14, fx - 7, FLOOR - 1, P.tripod);
-      pline(c, fx, FLOOR - 14, fx + 6, FLOOR - 1, P.tripod);
-      pline(c, fx, FLOOR - 14, fx + 1, FLOOR - 1, P.tripod);
-      c.fillStyle = P.tripodLit; c.fillRect(fx - lean - 2, ftop - 1, 4, 2);
-    }
-
-    /* THE RIBBON PULL-TAB off a roof edge (ref 2, ref 5): a 2px loop. It
-       is sunk well under the hazard ribbon's cream - this one is part of
-       the wall in shadow, the one that kills hangs off the roof panel and
-       is lit by the strip */
-    if (L.ribbon) {
-      for (i = 0; i < L.panels.length; i++) {
-        p = L.panels[i];
-        if (L.ribbon.x < p.x || L.ribbon.x > p.x + p.w) continue;
-        var rb = mix(P.ribbon, P.kraftIn, 0.55), rbS = mix(P.ribbonShade, P.kraftIn, 0.6);
-        x = L.ribbon.x; y = p.top + 1;
-        for (k = 0; k < 14; k++) {
-          var bow = Math.round(Math.sin((k / 13) * Math.PI) * 2);
-          c.fillStyle = rb;  c.fillRect(x - 2 - bow, y + k, 2, 1); c.fillRect(x + 2 + bow, y + k, 2, 1);
-          c.fillStyle = rbS; c.fillRect(x - bow, y + k, 1, 1);    c.fillRect(x + 2 + bow - 1, y + k, 1, 1);
-        }
-        c.fillStyle = rb; c.fillRect(x - 1, y + 14, 4, 2);
-      }
     }
 
     /* THE WASH: the inside of the fort in shadow. A smoothstep of the void
@@ -1969,67 +2046,26 @@ var Fort = (function () {
 
   /* ========================================= the floor under the fort
 
-     480x28 at 1.0, FOUR SURFACES, because the fort sprawls over the whole
-     room's floor and the run passes all of it:
-       x   0..180  THE SHAGGY CREAM RUG (ref 2, ref 5): a seeded NAP of
-                   single ticks in three tones, 1x3 TUFTS standing upright
-                   in it and rugDeep pile shadow between them on rows 3..7,
-                   so the pile reads VERTICAL - with 2px squares and no
-                   shadow it read as sand - and a darker run of five rows
-                   at the bottom where the pile turns under
-       x 180..260  THE PALE BOARDS the rug lies on (ref 2, ref 5)
-       x 260..380  THE GREY GEOMETRIC RUG (ref 3, ref 7): a soft LOZENGE
-                   weave, 1px diamond outlines on a 16px pitch in a grey
-                   only 28 under the ground, lit on each top vertex. It was
-                   full-contrast X's on a 12px pitch, which is a chain-link
-                   fence
-       x 380..480  THE ROOM'S OWN OAK, painted by LivingRoom.paintOak with
+     480x28 at 1.0, TWO SURFACES: the floor this fort stands on is the
+     grey geometric rug lying on the room's oak (Fort ref 3, ref 7).
+       x   0..300  THE GREY GEOMETRIC RUG: a soft LOZENGE weave, 1px
+                   diamond outlines on a 16px pitch in a grey only 28 under
+                   the ground, lit on each top vertex. It was full-contrast
+                   X's on a 12px pitch, which is a chain-link fence
+       x 300..480  THE ROOM'S OWN OAK, painted by LivingRoom.paintOak with
                    seed 7 - the same boards as the other four bays, because
                    it is the same room
-     Each change of surface is a 6px seam of seeded pixels from both sides,
-     baked, so it moves with the floor and cannot boil. Row 0 is the death
-     line's lip in each surface's own lit colour; rows 22..27 are the pale
-     boards everything lies on, under a 1px shadow. The seat of the game
-     is the rug, which is why the litter and the sloth read as rug things. */
+     Round 1 also ran a shaggy cream rug and a span of pale boards here,
+     from ref 2 and ref 5; the owner pointed out that those photographs
+     were taken in a different room, so they are gone. Each change of
+     surface is a 6px seam of seeded pixels from both sides, baked, so it
+     moves with the floor and cannot boil. Row 0 is the death line's lip in
+     each surface's own lit colour; rows 22..27 are the pale boards
+     everything lies on, under a 1px shadow of the rug's edge. The litter
+     reads as floor things - a rug and a floor are what they lie on. */
   var FLOOR_W = 480;
-  var FLOOR_EDGES = [0, 180, 260, 380, 480];
+  var FLOOR_EDGES = [0, 300, 480];
 
-  function paintRug(c, w, r) {
-    var x, y;
-    c.fillStyle = P.rugCream; c.fillRect(0, 0, w, 22);
-    for (y = 1; y < 22; y++) {
-      for (x = 0; x < w; x++) {
-        var q = r();
-        if (q < 1 / 9) { c.fillStyle = P.rugLit; c.fillRect(x, y, 1, 1); }
-        else if (q < 1 / 9 + 1 / 7) { c.fillStyle = P.rugMid; c.fillRect(x, y, 1, 1); }
-        else if (q < 1 / 9 + 1 / 7 + 1 / 14) { c.fillStyle = P.rugShade; c.fillRect(x, y, 1, 1); }
-      }
-    }
-    /* the pile's shadow: a 1px rugDeep tick in one column of six on the
-       rows the tufts stand in */
-    for (y = 3; y < 8; y++) {
-      for (x = 0; x < w; x++) if (r() < 1 / 6 / 3) { c.fillStyle = P.rugDeep; c.fillRect(x, y, 1, 2); }
-    }
-    /* the tufts, 1x3, upright, a lit one beside a mid one */
-    for (x = 3; x < w; x += 9 + Math.floor(r() * 5)) {
-      c.fillStyle = P.rugMid;  c.fillRect(x, 3 + Math.floor(r() * 2), 1, 3);
-      c.fillStyle = P.rugLit;  c.fillRect(x + 1, 2 + Math.floor(r() * 2), 1, 3);
-    }
-    c.fillStyle = P.rugShade; c.fillRect(0, 17, w, 5);
-    for (x = 0; x < w; x++) if (r() < 0.3) { c.fillStyle = P.rugMid; c.fillRect(x, 17 + Math.floor(r() * 5), 1, 1); }
-    c.fillStyle = P.rugLit; c.fillRect(0, 0, w, 1);
-  }
-  function paintBoards(c, w, r) {
-    c.fillStyle = P.woodPale; c.fillRect(0, 0, w, 22);
-    c.fillStyle = P.woodSeam;
-    c.fillRect(0, 0, w, 1);
-    c.fillRect(0, 8, w, 1); c.fillRect(0, 15, w, 1);
-    for (var x = 13; x < w; x += 48) { c.fillRect(x, 1, 1, 7); c.fillRect(wrap(x + 22, w), 9, 1, 6); c.fillRect(wrap(x + 37, w), 16, 1, 6); }
-    for (var i = 0; i < w / 4; i++) {
-      c.fillStyle = r() < 0.5 ? P.woodSeam : mix(P.woodPale, '#ffffff', 0.25);
-      c.fillRect(Math.floor(r() * w), 1 + Math.floor(r() * 21), 2 + Math.floor(r() * 4), 1);
-    }
-  }
   /* two staggered rows of 11x7 lozenges, the second row half a pitch
      over, so they read as a weave and no line runs the full height of the
      band. Plotted with pline so a 5:3 slope is a continuous 1px outline.
@@ -2055,24 +2091,20 @@ var Fort = (function () {
     var t = makeCanvas(FLOOR_W, VH - FLOOR), c = t.ctx;
     var r = mulberry32(4242);
     var surf = [], i, x, y;
-    for (i = 0; i < 4; i++) {
-      var s = makeCanvas(FLOOR_W, 22);
-      if (i === 0) paintRug(s.ctx, FLOOR_W, r);
-      else if (i === 1) paintBoards(s.ctx, FLOOR_W, r);
-      else if (i === 2) paintGeo(s.ctx, FLOOR_W, r);
-      else {
-        LivingRoom.paintOak(s.ctx, 0, 1, FLOOR_W, 21, 7);
-        s.ctx.fillStyle = R.oakLip; s.ctx.fillRect(0, 0, FLOOR_W, 1);
-      }
-      surf.push(s);
-    }
-    /* each surface in its own span, then the seams pixel by pixel */
-    for (i = 0; i < 4; i++) {
+    /* the rug, then the oak with its lip */
+    surf.push(makeCanvas(FLOOR_W, 22));
+    paintGeo(surf[0].ctx, FLOOR_W, r);
+    surf.push(makeCanvas(FLOOR_W, 22));
+    LivingRoom.paintOak(surf[1].ctx, 0, 1, FLOOR_W, 21, 7);
+    surf[1].ctx.fillStyle = R.oakLip; surf[1].ctx.fillRect(0, 0, FLOOR_W, 1);
+    /* each surface in its own span, then the seams pixel by pixel - at 300
+       and at the tile's own edge, where the oak meets the next tile's rug */
+    for (i = 0; i < 2; i++) {
       c.drawImage(surf[i].canvas, FLOOR_EDGES[i], 0, FLOOR_EDGES[i + 1] - FLOOR_EDGES[i], 22,
                   FLOOR_EDGES[i], 0, FLOOR_EDGES[i + 1] - FLOOR_EDGES[i], 22);
     }
-    for (i = 0; i < 4; i++) {
-      var b = FLOOR_EDGES[i + 1] % FLOOR_W, left = surf[i], right = surf[(i + 1) % 4];
+    for (i = 0; i < 2; i++) {
+      var b = FLOOR_EDGES[i + 1] % FLOOR_W, left = surf[i], right = surf[(i + 1) % 2];
       for (x = -3; x < 3; x++) {
         var col = wrap(b + x, FLOOR_W), pRight = (x + 3.5) / 6;
         for (y = 0; y < 22; y++) {
@@ -2081,9 +2113,10 @@ var Fort = (function () {
         }
       }
     }
-    /* the boards under everything, and the shadow the rugs throw on them */
+    /* the boards under everything, and the shadow the rug's edge throws
+       on them */
     c.fillStyle = P.woodPale; c.fillRect(0, 22, FLOOR_W, VH - FLOOR - 22);
-    c.fillStyle = P.rugDeep;  c.fillRect(0, 22, FLOOR_W, 1);
+    c.fillStyle = P.geoDark;  c.fillRect(0, 22, FLOOR_W, 1);
     c.fillStyle = P.woodSeam;
     for (x = 7; x < FLOOR_W; x += 48) c.fillRect(x, 23, 1, VH - FLOOR - 23);
     return t;
@@ -2091,19 +2124,24 @@ var Fort = (function () {
 
   /* THE FOREGROUND, 480x16 at 1.35 from y 254 - the Couch's coffee-table
      trick, the one layer in the bay nearer the camera than the planks.
-     Three things from ref 3 and ref 7, spaced across the 480:
+     Two things from ref 3 and ref 7, spaced across the 480 - the Couch's
+     density:
        x  20..170  THE BOX OF PANELS (ref 7): big TRIANGULAR yellow and
-                   blue offcuts leaning out over its rim at angles, a kraft
-                   panel corner with its bites, and a cream ribbon hanging
-                   over the front. It was eighteen upright 5px tabs on a 7px
-                   pitch, which read as jars on a shelf
+                   blue offcuts leaning out over its rim at angles and a
+                   kraft panel corner with its bites. It was eighteen
+                   upright 5px tabs on a 7px pitch, which read as jars on a
+                   shelf
        x 240..330  THE WALNUT TABLE'S CORNER with the yellow book on it -
                    the Couch's own table, in the Couch's own walnut, which
                    is the explicit link between that bay and this one
-       x 380..420  THE ORANGE-AND-WHITE FOAM BLOCK
-     Never above y 254, so it cannot hide a pellet, a puck, a cup's shadow
-     or the sloth, all of which live above the floor line. NEVER THE RED
-     CUPS: a red cup at the edge of vision would be read as a Cupman. */
+     Round 1 had a third, an orange-and-white foam block at x 380, and a
+     cream ribbon loop over the box's front. Nobody could say what the
+     block was, and the ribbons left the bay as hazards, so a cream loop in
+     the foreground meant nothing any more; both are gone, and nothing
+     replaces them. Never above y 254, so it cannot hide a pellet, a puck,
+     a cup's shadow or the ammo bag, all of which live above the floor
+     line. NEVER THE RED CUPS: a red cup at the edge of vision would be
+     read as a Cupman. */
   function bakeFore() {
     var t = makeCanvas(FLOOR_W, 16), c = t.ctx;
     var x;
@@ -2140,14 +2178,6 @@ var Fort = (function () {
     c.fillStyle = P.outline; c.fillRect(19, 6, 1, 10); c.fillRect(170, 6, 1, 10);
     c.fillStyle = mix(P.boxBrown, P.void, 0.2);
     for (x = 34; x < 168; x += 22) c.fillRect(x, 10, 1, 6);         /* the flute */
-    /* the ribbon, a 2px loop hanging over the box's front */
-    for (j = 0; j < 8; j++) {
-      var bow = Math.round(Math.sin((j / 7) * Math.PI) * 1.5);
-      c.fillStyle = P.ribbon;      c.fillRect(150 - bow, 5 + j, 2, 1); c.fillRect(155 + bow, 5 + j, 2, 1);
-      c.fillStyle = P.ribbonShade; c.fillRect(151 - bow, 5 + j, 1, 1); c.fillRect(155 + bow, 5 + j, 1, 1);
-    }
-    c.fillStyle = P.ribbon; c.fillRect(151, 13, 5, 2);
-    c.fillStyle = P.ribbonShade; c.fillRect(151, 14, 5, 1);
     /* the walnut table's corner, and the book */
     c.fillStyle = C.walnut;    c.fillRect(240, 4, 90, 12);
     c.fillStyle = C.walnutLit; c.fillRect(240, 4, 90, 1);
@@ -2158,11 +2188,6 @@ var Fort = (function () {
     c.fillStyle = mix(P.bookYellow, '#ffffff', 0.35); c.fillRect(262, 0, 30, 1);
     c.fillStyle = P.rugLit;     c.fillRect(290, 1, 2, 3);                 /* the pages */
     c.fillStyle = P.outline;    c.fillRect(261, 0, 1, 4); c.fillRect(292, 0, 1, 4);
-    /* the foam block */
-    c.fillStyle = P.foamOrange; c.fillRect(380, 4, 40, 10);
-    c.fillStyle = P.foamWhite;  c.fillRect(380, 7, 40, 2); c.fillRect(380, 11, 40, 2);
-    c.fillStyle = mix(P.foamOrange, '#ffffff', 0.3); c.fillRect(380, 4, 40, 1);
-    c.fillStyle = P.outline;    c.fillRect(379, 4, 1, 10); c.fillRect(420, 4, 1, 10); c.fillRect(380, 14, 40, 1);
     return t;
   }
 
@@ -2298,16 +2323,21 @@ var Fort = (function () {
      what says this is a flat disc turning over and not a ball.
 
      Black on a dark wall is the problem this sprite has to solve, and the
-     answer is the strip: a COOL RIM of foamRimHi (147), the top TWO rows of
-     the arc of every face-on frame and the row ends down the upper half,
-     the blue LED catching it. Over the near wall the black body carries
-     it (35 against the wall's foot); over the far wall and the doorway,
-     at 37 to 87, the rim does. Round all of it a HARD BLACK EDGE, the
-     outline on the first and last pixel of every row and along the
-     bottom - with a 19 foamDeep edge the puck at 1x was a soft grey-blue
-     blob, and a hard black edge is what says "foam disc". The
-     catch-light, four pixels of foamGloss (200), up at the top left, and
-     a 1px cool halo outside the edge round the lower half. */
+     answer is the strip - but MATTE: black foam under an LED shows one
+     cool row and no highlight. Round 1 lit it with a 147 rim two rows
+     deep and a four-pixel catch-light at 200, and the owner's note was
+     that the biscuits looked too shiny; foam is not glossy. So: ONE row of
+     foamRim (119, the same light the wall's connectors wear - the strip,
+     not a gloss) along the top of the arc, and the row ends one pixel
+     inside the edge down the upper half in foamEdge (90), just enough to
+     part a falling puck from the dark wall behind it. Over the near wall
+     the black body carries it (35 against the wall's foot); over the far
+     wall and the doorway, at 37 to 87, the rim does. Round all of it a
+     HARD BLACK EDGE, the outline on the first and last pixel of every row
+     and along the bottom - with a 19 foamDeep edge the puck at 1x was a
+     soft grey-blue blob, and a hard black edge is what says "foam disc".
+     And a 1px cool halo outside the edge round the lower half. Motion,
+     rate and hitbox are untouched by any of this. */
   var BIS_H = [11, 10, 8, 5, 8, 10, 11, 10, 8, 5, 8, 10];
   var BIS_FRAMES = 12;
 
@@ -2333,12 +2363,12 @@ var Fort = (function () {
     c.translate(1, 0);
     if (fh <= 5) {
       /* edge on: the side wall, lit along its top by the strip, its
-         corners rounded off, the gloss a 3px tick on the lit row's foot */
+         corners rounded off, and a 4px foamLit (73) tick on the lit row's
+         foot - matte, a sheen and not a gloss */
       c.fillStyle = P.foam;      c.fillRect(0, top + 1, 11, fh - 2);
-      c.fillStyle = P.foamRimHi; c.fillRect(1, top, 9, 1);
+      c.fillStyle = P.foamRim;   c.fillRect(1, top, 9, 1);
       c.fillStyle = P.foamDeep;  c.fillRect(1, top + fh - 1, 9, 1);
       c.fillStyle = P.foamLit;   c.fillRect(2, top + 1, 4, 1);
-      c.fillStyle = P.foamGloss; c.fillRect(2, top + 1, 2, 1);
       c.fillStyle = P.outline;   c.fillRect(0, top + 1, 1, fh - 2); c.fillRect(10, top + 1, 1, fh - 2);
       return t;
     }
@@ -2362,21 +2392,17 @@ var Fort = (function () {
       c.fillRect(rows[i][0] + rows[i][1] - 1, top + i, 1, 1);
     }
     c.fillRect(rows[fh - 1][0], top + fh - 1, rows[fh - 1][1], 1);
-    /* the cool top arc: the top two rows whole, then the row ends one
-       pixel inside the black edge down the rest of the upper half. It
-       was one row and a third of an arc, and over the inside of the fort
-       - 57, against a body of 35 - the puck was a blot; the census is in
-       the header */
-    c.fillStyle = P.foamRimHi;
+    /* the cool top arc, MATTE: the top row whole in foamRim (119), then
+       the row ends one pixel inside the black edge from row 1 down the
+       rest of the upper half in foamEdge (90). No second whole row and no
+       catch-light; the census is in the header */
+    c.fillStyle = P.foamRim;
     c.fillRect(rows[0][0], top, rows[0][1], 1);
-    c.fillRect(rows[1][0] + 1, top + 1, rows[1][1] - 2, 1);
-    for (i = 2; i < Math.ceil(fh / 2); i++) {
+    c.fillStyle = P.foamEdge;
+    for (i = 1; i < Math.ceil(fh / 2); i++) {
       c.fillRect(rows[i][0] + 1, top + i, 1, 1);
       c.fillRect(rows[i][0] + rows[i][1] - 2, top + i, 1, 1);
     }
-    /* the catch-light: 3px of foamGloss (200) on row 2 and one over it
-       on row 1 - four pixels of foamLit (73) caught nothing at 1x */
-    c.fillStyle = P.foamGloss; c.fillRect(2, top + 2, 3, 1); c.fillRect(3, top + 1, 1, 1);
     if (slot) {
       var mid = top + Math.floor(fh / 2);
       c.fillStyle = P.foamSlot; c.fillRect(rows[mid - top][0] + 1, mid, rows[mid - top][1] - 2, 1);
@@ -2388,91 +2414,83 @@ var Fort = (function () {
     return t;
   }
 
-  /* ========================================== tripods and ribbons */
+  /* ================================================== THE AMMO BAG
 
-  /* the tripod's foot: three legs off a collar 14 rows up, the middle one
-     coming straight at the camera. Its feet stop on FLOOR-1, the Deck's
-     buried-pixel lesson: the floor is drawn after the spikes, and a leg
-     whose last pixel sits on FLOOR is a leg whose foot is under the rug. */
-  function bakeTripod() {
-    var t = makeCanvas(13, 14), c = t.ctx;
-    pline(c, 6, 1, 0, 13, P.tripod);
-    pline(c, 6, 1, 12, 13, P.tripod);
-    pline(c, 6, 1, 6, 13, P.tripod);
-    pline(c, 5, 2, 1, 10, P.tripodLit);
-    c.fillStyle = P.tripod;    c.fillRect(4, 0, 5, 2);
-    c.fillStyle = P.tripodLit; c.fillRect(4, 0, 2, 1);
-    c.fillStyle = P.foamDeep;  c.fillRect(0, 13, 2, 1); c.fillRect(11, 13, 2, 1); c.fillRect(5, 13, 3, 1);
-    return t;
-  }
+     The spare life is THE AMMO BAG (Ammo Bag ref, Assets/Concept/Ammo Bag
+     ref.png): a canvas tote in natural cream, two navy straps running
+     down its front from the handles into a navy base band, a front pocket
+     whose folded top edge sits mid-height between the straps, and a round
+     red stamp on the pocket - here a plain red ring with one illegible
+     mark in it, because the ref's stamp is a logo and this file prints no
+     letters. It is FULL of the Cupmen's own yellow pellets, heaped over
+     the rim, in the yellow pellet's own three pigments (CP.pelletYellow,
+     its hi and its dark ring): the ammo they shoot at you, bagged.
 
-  /* THE RIBBON PULL-TAB, a 2px cream loop hanging off the roof panel: two
-     strands from x 4 and x 10 that bow out and meet at the bottom, with
-     the shade on their inner edges. Frame 1 is the same loop with its
-     lower half one pixel to the right - the sway is a PAIR OF FRAMES, and
-     nothing rotates. Cached by length on first use: the engine hands over
-     16 to 26, which is eleven loops at most, two frames each. */
-  function ribbonFrame(len, f) {
-    var map = T.ribbon[f];
-    if (map[len]) return map[len];
-    var t = makeCanvas(15, len + 2), c = t.ctx, k;
-    for (k = 0; k <= len; k++) {
-      var q = k / len;
-      var bow = Math.round(Math.sin(q * Math.PI) * 1.5);
-      var lx = Math.round(lerp(4, 6, q * q)) - bow, rx = Math.round(lerp(10, 8, q * q)) + bow;
-      var sh = f && q > 0.5 ? 1 : 0;
-      c.fillStyle = P.ribbon;      c.fillRect(lx + sh, k, 2, 1); c.fillRect(rx - 1 + sh, k, 2, 1);
-      c.fillStyle = P.ribbonShade; c.fillRect(lx + 1 + sh, k, 1, 1); c.fillRect(rx - 1 + sh, k, 1, 1);
+     Why a bag of pellets does not read as pellets: the heap is the only
+     yellow-with-a-dark-ring thing in the bay that is STILL and ON THE
+     FLOOR, it sits inside a cream silhouette with navy handles under a
+     jade glow, and the lethal pellets are moving discs on the smooth
+     layer. The sloth it replaces was round 1's; the owner swapped it.
+
+     22x24, drawn in canvas space. Body, pocket, stamp, then the heap, then
+     the handles in front of the heap, so the straps run up through it. */
+  function bakeBag() {
+    var t = makeCanvas(22, 24), c = t.ctx, i;
+    var yel = CP.pelletYellow || '#ffc21a', yelHi = CP.pelletYellowHi || '#fff3b0', ring = CP.ring || '#1a1410';
+    /* THE BODY, rows 9..22, a rounded bottom row, outlined one pixel
+       outside it all round */
+    var body = [];
+    for (i = 0; i < 13; i++) body.push([2, 18]);
+    body.push([3, 16]);
+    LivingRoom.rowsOutline(c, body, 0, 9, P.outline);
+    rowsFill(c, body, 0, 9, P.bagCream);
+    /* the opening's dark edge, the rim's lit top, the lit left side and
+       the shaded right */
+    c.fillStyle = P.outline;  c.fillRect(2, 9, 18, 1);
+    c.fillStyle = P.bagLit;   c.fillRect(3, 10, 16, 1); c.fillRect(2, 11, 1, 11);
+    c.fillStyle = P.bagShade; c.fillRect(19, 11, 1, 11);
+    /* the straps, down the front into the base band */
+    c.fillStyle = P.bagNavy;  c.fillRect(6, 10, 2, 10); c.fillRect(14, 10, 2, 10);
+    /* THE BASE BAND, rows 20..22, one catch of light on its top row's
+       left - a strip in the light, not a gloss */
+    c.fillStyle = P.bagNavy;  c.fillRect(2, 20, 18, 2); c.fillRect(3, 22, 16, 1);
+    c.fillStyle = P.bagNavyLit; c.fillRect(3, 20, 6, 1);
+    /* the pocket: its seam shadow and its folded top edge */
+    c.fillStyle = P.bagShade; c.fillRect(8, 13, 6, 1);
+    c.fillStyle = P.bagLit;   c.fillRect(8, 14, 6, 1);
+    /* the stamp: a plain red ring and one mark */
+    pcircle(c, 11, 17, 2, P.badgeMark);
+    c.fillStyle = P.badgeMark; c.fillRect(11, 17, 1, 1);
+    /* the handles' dark sides go down BEFORE the heap, so a pellet that
+       rolls against a handle covers its outline rather than losing its
+       own middle under it */
+    c.fillStyle = P.outline;    c.fillRect(5, 2, 1, 8); c.fillRect(16, 2, 1, 8);
+    /* THE HEAP, seven pellets in the cover's 3x3: a dark ring, a yellow
+       cross over it and one hi pixel at the top. Four on the rim and
+       three over them, every one placed CLEAR of the handles' feet
+       (x 6..7 and 14..15): at x 5, 13 and 17 - the brief's first spacing
+       - the straps drawn in front ate the middle of three of the seven */
+    var heap = [[3, 9], [9, 9], [12, 9], [18, 9], [4, 6], [11, 6], [17, 6]];
+    /* all the rings, then all the yellows, then the hi pixels: pellets
+       that touch share their dark, so the heap is a heap of discs and not
+       seven dark boxes with crosses in them */
+    c.fillStyle = ring;
+    for (i = 0; i < heap.length; i++) c.fillRect(heap[i][0] - 1, heap[i][1] - 1, 3, 3);
+    c.fillStyle = yel;
+    for (i = 0; i < heap.length; i++) {
+      c.fillRect(heap[i][0] - 1, heap[i][1], 3, 1); c.fillRect(heap[i][0], heap[i][1] - 1, 1, 3);
     }
-    /* the fold at the bottom of the loop */
-    c.fillStyle = P.ribbon;      c.fillRect(5 + (f ? 1 : 0), len, 5, 2);
-    c.fillStyle = P.ribbonShade; c.fillRect(5 + (f ? 1 : 0), len + 1, 5, 1);
-    map[len] = t;
-    return t;
-  }
-
-  /* ===================================================== the sloth
-
-     The spare life is the sloth plushie from the sofa in ref 4, dropped on
-     the rug: a tan body, a cream face with the two dark stripes through
-     the eyes that make it a sloth and not a bear, long arms hanging all
-     the way to the floor with dark claws on the end. 16x26: the top 18
-     rows are the body the box covers, the rest are the arms and feet. */
-  function bakeSloth() {
-    var t = makeCanvas(16, 26), c = t.ctx, i;
-    var body = [[5, 6], [3, 10], [2, 12], [1, 14], [1, 14], [1, 14], [1, 14], [2, 12], [2, 12],
-                [2, 12], [2, 12], [2, 12], [2, 12], [2, 12], [3, 10], [3, 10], [3, 10], [4, 8], [4, 8], [5, 6]];
-    LivingRoom.rowsOutline(c, body, 0, 1, P.outline);
-    rowsFill(c, body, 0, 1, P.slothTan);
-    /* the shaggy back: darker ticks down the sides */
-    c.fillStyle = mix(P.slothTan, P.slothDark, 0.45);
-    for (i = 4; i < 20; i += 2) { c.fillRect(body[i][0], 1 + i, 1, 1); c.fillRect(body[i][0] + body[i][1] - 1, 2 + i, 1, 1); }
-    /* the face disc, 9x8 */
-    var face = [[2, 5], [1, 7], [0, 9], [0, 9], [0, 9], [0, 9], [1, 7], [2, 5]];
-    rowsFill(c, face, 3, 2, P.slothFace);
-    /* the brown cap of fur over the face, which is what frames a sloth's
-       face and stops it reading as an owl's disc */
-    c.fillStyle = P.slothDark;
-    c.fillRect(5, 1, 6, 1); c.fillRect(4, 2, 2, 1); c.fillRect(10, 2, 2, 1); c.fillRect(7, 2, 2, 1);
-    /* the mask: a dark stripe from each eye running DOWN and OUT toward
-       the cheek - the sloth's tear line - with the eye at its top */
-    c.fillStyle = P.slothMask;
-    c.fillRect(4, 4, 3, 1); c.fillRect(3, 5, 3, 1); c.fillRect(3, 6, 2, 1);
-    c.fillRect(9, 4, 3, 1); c.fillRect(10, 5, 3, 1); c.fillRect(11, 6, 2, 1);
-    c.fillStyle = P.slothFace; c.fillRect(5, 4, 1, 1); c.fillRect(10, 4, 1, 1);
-    c.fillStyle = P.outline;   c.fillRect(5, 5, 1, 1); c.fillRect(10, 5, 1, 1);
-    /* the nose and the smile every sloth wears */
-    c.fillStyle = P.slothMask; c.fillRect(7, 6, 2, 2);
-    c.fillStyle = P.slothDark; c.fillRect(6, 8, 1, 1); c.fillRect(7, 9, 2, 1); c.fillRect(9, 8, 1, 1);
-    /* the long arms, down to the floor, and the claws */
-    c.fillStyle = P.slothTan;
-    c.fillRect(0, 10, 2, 13); c.fillRect(14, 10, 2, 13);
-    c.fillStyle = P.slothDark;
-    c.fillRect(0, 10, 1, 13); c.fillRect(15, 10, 1, 13);
-    c.fillRect(0, 23, 1, 2); c.fillRect(1, 24, 1, 2); c.fillRect(14, 24, 1, 2); c.fillRect(15, 23, 1, 2);
-    /* the feet tucked under */
-    c.fillStyle = P.slothTan;  c.fillRect(4, 21, 3, 3); c.fillRect(9, 21, 3, 3);
-    c.fillStyle = P.slothDark; c.fillRect(4, 24, 3, 1); c.fillRect(9, 24, 3, 1);
+    c.fillStyle = yelHi;
+    for (i = 0; i < heap.length; i++) c.fillRect(heap[i][0], heap[i][1] - 1, 1, 1);
+    /* THE HANDLES, one navy arch from strap to strap (the tote's own
+       shape), in front of the heap: the feet continue the straps up
+       through it, a 2px crown over the top, left unoutlined on top so the
+       crown stays 2px - over the room's 42..54 foot a 57 navy with dark
+       sides reads */
+    c.fillStyle = P.bagNavy;
+    c.fillRect(6, 2, 2, 8); c.fillRect(14, 2, 2, 8);
+    c.fillRect(7, 1, 8, 1); c.fillRect(8, 0, 6, 1);
+    c.fillStyle = P.bagNavyLit; c.fillRect(6, 2, 1, 7); c.fillRect(8, 0, 6, 1);
     return t;
   }
 
@@ -2545,13 +2563,14 @@ var Fort = (function () {
      touches no PNG (the sprites load after this runs; js/cupmen.js reads
      them at draw time).
 
-     FORTY-FIVE canvases kept, about 575k pixels: the room tile is the big
+     FORTY-FOUR canvases kept, about 575k pixels: the room tile is the big
      one at 209k, the two near walls are 209k between them, the far wall
      84k, the floor, its shade and the fore 27k, the band and its two
      strips 23k, the two planks 10k, the pool and the four pictures 11k,
-     and the twenty-six small sprites under 4k together. Four 480x22
-     scratch canvases are made and dropped inside bakeFloor. Plus up to
-     twenty-two ribbon loops, baked on first use at 15 by 18 to 28 each. */
+     and the twenty-five small sprites under 4k together. Two 480x22
+     scratch canvases are made and dropped inside bakeFloor. (Round 1 kept
+     a tripod's foot and baked ribbon loops on first use; the tripods and
+     ribbons are out of the bay, and so are their sprites.) */
   function build() {
     LivingRoom.build();
     if (!Couch.tiles.shutters) Couch.build();
@@ -2586,9 +2605,7 @@ var Fort = (function () {
 
     T.biscuit = [];
     for (var f = 0; f < BIS_FRAMES; f++) T.biscuit.push(bakeBiscuit(f));
-    T.tripod  = bakeTripod();
-    T.ribbon  = [{}, {}];
-    T.sloth   = bakeSloth();
+    T.bag     = bakeBag();
     T.litter  = [bakeLitter(0), bakeLitter(1), bakeLitter(2), bakeLitter(3), bakeLitter(4)];
 
     if (typeof Cupmen !== 'undefined' && Cupmen.build) Cupmen.build();
@@ -2708,35 +2725,6 @@ var Fort = (function () {
     if (botH > 0) ctx.drawImage(T.capUp.canvas, x - 4, botY);
   }
 
-  /* ------------------------------------------------- tripods, ribbons */
-
-  function drawSpike(ctx, ob) {
-    var x = Math.round(ob.x), i;
-    if (ob.side === 'ceil') {
-      ctx.drawImage(ribbonFrame(ob.len, Math.floor((ob.age || 0) * 2.2) % 2 ? 1 : 0).canvas, x, CEIL);
-      return;
-    }
-    /* the contact shadow goes ABOVE the floor line, the Deck's lesson: a
-       shadow on FLOOR is under the rug the moment drawFloor runs */
-    Tint.rect(ctx, x, FLOOR - 2, ob.w, 2, P.shade, 8);
-    for (i = 0; i < ob.stands; i++) {
-      var sx = x + i * 24, top = FLOOR - ob.len;
-      /* the pole: 2px, a lit side and a dark one, so a lethal thing is not
-         a 1px line of 27 on a wall of 60 */
-      ctx.fillStyle = P.tripodLit; ctx.fillRect(sx + 5, top, 1, ob.len - 13);
-      ctx.fillStyle = P.tripod;    ctx.fillRect(sx + 6, top, 1, ob.len - 13);
-      /* a collar every 16 */
-      for (var cy = top + 16; cy < FLOOR - 16; cy += 16) {
-        ctx.fillStyle = P.tripod;    ctx.fillRect(sx + 4, cy, 4, 2);
-        ctx.fillStyle = P.tripodLit; ctx.fillRect(sx + 4, cy, 1, 1);
-      }
-      /* the clamp at the top, and the knuckle under it */
-      ctx.fillStyle = P.tripodLit; ctx.fillRect(sx + 4, top, 3, 2);
-      ctx.fillStyle = P.tripod;    ctx.fillRect(sx + 4, top + 2, 3, 1);
-      ctx.drawImage(T.tripod.canvas, sx, FLOOR - 14);
-    }
-  }
-
   /* ----------------------------------------------------------- litter */
 
   function drawLitter(ctx, ob) {
@@ -2746,29 +2734,37 @@ var Fort = (function () {
     ctx.drawImage(T.litter[k].canvas, x, y);
   }
 
-  /* ------------------------------------------------------------- sloth */
+  /* ------------------------------------------------------ the ammo bag */
 
   function drawBoon(ctx, ob) {
     if (ob.taken) return;
     var rx = Math.round(ob.x + ob.dx), ry = Math.round(ob.y + ob.dy);
-    /* the jade every spare life glows, the Mantle's call exactly, keyed to
-       the bay's clock so it stops when the run does */
-    var pulse = 0.5 + 0.5 * Math.sin(ob.phase + clock * 0.05);
-    LivingRoom.glow(ctx, rx, ry - 4, 15 + pulse * 4,
+    /* the jade every spare life glows, keyed to the bay's clock so it stops
+       when the run does - centred on the bag's body, not on its handles.
+       Floor 0.7 like the Mantle's (0.7 + 0.3*sin, js/mantle.js): a spare
+       life never goes dark. Round 2 had 0.5 + 0.5*sin at 0.05/px, which
+       hit alpha 0 once every 126px (~1.1s at speedStart 116) and strobed.
+       0.022/px is a 286px period, ~2.5s at 116 and ~1.6s at 178 */
+    var pulse = 0.7 + 0.3 * Math.sin(ob.phase + clock * 0.022);
+    LivingRoom.glow(ctx, rx, ry + 6, 16 + pulse * 4,
                     'rgba(147,216,189,' + (0.34 * pulse).toFixed(3) + ')',
                     'rgba(95,174,154,' + (0.14 * pulse).toFixed(3) + ')',
                     'rgba(47,107,98,0)');
-    /* his shadow on the rug, while he is still sitting on it */
-    if (ob.dy > -2) Tint.rect(ctx, rx - 7, FLOOR - 1, 14, 1, P.shade, 6);
-    ctx.drawImage(T.sloth.canvas, rx - 8, ry - 9);
+    /* its shadow on the rug, while it is still standing on it */
+    if (ob.dy > -2) Tint.rect(ctx, rx - 9, FLOOR - 1, 18, 1, P.shade, 6);
+    /* rows FLOOR-24 .. FLOOR-1 at rest: the outline's last row sits on
+       FLOOR-1, so the bag stands on the rug and not in it */
+    ctx.drawImage(T.bag.canvas, rx - 11, ry - 7);
   }
 
   function drawObstacle(ctx, ob) {
     if (ob.gone) return;
     if (ob.type === 'pillar') drawPillar(ctx, ob);
     /* a Cupman is a 'spike' the engine collides with, and it is drawn on
-       the smooth layer by drawActors - nothing of it goes on this one */
-    else if (ob.type === 'spike') { if (!ob.foe) drawSpike(ctx, ob); }
+       the smooth layer by drawActors - nothing of it goes on this one. A
+       spike that is not a Cupman never exists here (see makeSpikes), so
+       there is nothing else to draw for the type */
+    else if (ob.type === 'spike') { /* drawActors */ }
     else if (ob.type === 'litter') drawLitter(ctx, ob);
     else if (ob.type === 'boon') drawBoon(ctx, ob);
     else if (ob.type === 'drop') { if (ob.broken > 0) drawDropSplat(ctx, ob); else drawDrop(ctx, ob); }
@@ -2804,23 +2800,24 @@ var Fort = (function () {
   }
 
   /* where it is going to land, tightening and darkening as it falls. A
-     Tint blur alone (8 + k*9) was lost in the speckle of the 220 rug -
-     two rounds of captures, no marker found even 10x under a falling
-     puck - so it is a DRAWN RING: a 1px rugDeep (132) outline of a w x 3
-     rounded rect, its corners left open, with the Tint inside at
-     10 + k*8. An outline survives speckle; a blur does not. */
+     Tint blur alone (8 + k*9) was lost in the speckle of round 1's 220
+     shag rug - two rounds of captures, no marker found even 10x under a
+     falling puck - so it is a DRAWN RING: a 1px geoDark (92, the grey
+     rug's own dark, 62 under its 154 ground) outline of a w x 3 rounded
+     rect, its corners left open, with the Tint inside at 10 + k*8. An
+     outline survives speckle; a blur does not. */
   function drawDropSpot(ctx, ob) {
     if (ob.gone || ob.shot || ob.broken > 0) return;
     var k = clamp((ob.y - CEIL) / (FLOOR - CEIL), 0, 1);
     var w = Math.round(13 - k * 6), x = Math.round(ob.x - w / 2), y = FLOOR + 1;
     Tint.rect(ctx, x + 1, y + 1, w - 2, 1, P.shade, 10 + k * 8);
-    ctx.fillStyle = P.rugDeep;
+    ctx.fillStyle = P.geoDark;
     ctx.fillRect(x + 1, y, w - 2, 1); ctx.fillRect(x + 1, y + 2, w - 2, 1);
     ctx.fillRect(x, y + 1, 1, 1);     ctx.fillRect(x + w - 1, y + 1, 1, 1);
   }
 
   /* a puck lying flat on the rug, 11x3, with the strip's cool light on
-     its top edge */
+     its top edge - foamRim, the falling puck's own matte row */
   function drawDropSplat(ctx, ob) {
     if (ob.gone) return;
     if (ob.shot) { Cupmen.drawShotSplat(ctx, ob); return; }
@@ -2829,7 +2826,7 @@ var Fort = (function () {
     var a = ctx.globalAlpha;
     ctx.globalAlpha = a * Math.min(1, k * 2.2);
     ctx.fillStyle = P.foam;    ctx.fillRect(x - 5, FLOOR + 1, 11, 3);
-    ctx.fillStyle = P.foamRimHi; ctx.fillRect(x - 4, FLOOR + 1, 9, 1);
+    ctx.fillStyle = P.foamRim; ctx.fillRect(x - 4, FLOOR + 1, 9, 1);
     ctx.fillStyle = P.outline; ctx.fillRect(x - 5, FLOOR + 1, 1, 3); ctx.fillRect(x + 5, FLOOR + 1, 1, 3);
     ctx.globalAlpha = a;
   }
@@ -2854,7 +2851,9 @@ var Fort = (function () {
     var i, k, px, py;
 
     /* 1. the dim room, the strip, and the room over the fort: a shutter's
-       slats and the white ladder rising over the skyline (ref 2, ref 5) */
+       slats, and the Mantle's chimney breast with the dark television on
+       it rising over the skyline - the room's own furniture, as the room
+       tile has it (round 1 had a white ladder here; it left the bay) */
     ctx.fillStyle = P.roomDeep; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = P.roomWall; ctx.fillRect(x, roofY, w, floorY - roofY);
     var stripY = y + Math.round(h * 0.04);
@@ -2868,10 +2867,20 @@ var Fort = (function () {
     for (py = shY0; py < shY1; py += 3) ctx.fillRect(shX, py, shW, 1);
     ctx.fillStyle = dim(C.shutterShade, 0.5);
     ctx.fillRect(shX + Math.round(shW / 2), shY0, 1, shY1 - shY0);
-    var ladX = x + Math.round(w * 0.66), lad = mix(P.roomWall, P.ladder, 0.3);
-    ctx.fillStyle = lad;
-    ctx.fillRect(ladX, shY0 - 2, 2, Math.round(h * 0.3)); ctx.fillRect(ladX + 9, shY0 - 2, 2, Math.round(h * 0.3));
-    for (py = shY0 + 2; py < shY0 + Math.round(h * 0.28); py += 6) ctx.fillRect(ladX + 2, py, 7, 1);
+    /* the breast runs from the roofline to the floor in 1px courses of
+       two stones, and the near wall's lit panel covers its lower part;
+       the set hangs on it at the shutters' height */
+    var tvX = x + Math.round(w * 0.66), tvW = big ? 16 : 12, tvH = big ? 7 : 5;
+    var stX = tvX - 1, stW = tvW + 2;
+    for (py = roofY + 1; py < floorY; py++) {
+      ctx.fillStyle = (py & 1) ? dim(M.stoneCream, 0.62) : dim(M.stoneGrey, 0.62);
+      ctx.fillRect(stX, py, stW, 1);
+      /* one joint per course, wandering, so the stripes are stone */
+      ctx.fillStyle = dim(M.stoneJoint, 0.3);
+      ctx.fillRect(stX + (py * 7) % stW, py, 1, 1);
+    }
+    ctx.fillStyle = M.screenDeep;        ctx.fillRect(tvX, shY0, tvW, tvH);
+    ctx.fillStyle = dim(M.bezelHi, 0.2); ctx.fillRect(tvX, shY0, tvW, 1);
 
     /* 2. the near wall, the inside of the fort, in shadow: two printed
        panels with scalloped tops at two heights, and a doorway */
@@ -2943,15 +2952,19 @@ var Fort = (function () {
     ctx.fillStyle = P.foam;
     ctx.fillRect(x + Math.round(w * 0.25), roofY + 1, 4, 2); ctx.fillRect(x + Math.round(w * 0.75), roofY + 1, 4, 2);
 
-    /* 7. the floor - laid before the things that stand on it: the cream
-       rug, the pale boards under it with their seams crawling, and the
-       box of panels in the foreground crawling faster */
+    /* 7. the floor - laid before the things that stand on it: the grey
+       geometric rug with a hint of its lozenges, the pale boards under it
+       with their seams crawling, and the box of panels in the foreground
+       crawling faster */
     var rugH = Math.round((y + h - floorY) * 0.55);
-    ctx.fillStyle = P.rugCream; ctx.fillRect(x, floorY, w, rugH);
-    ctx.fillStyle = P.rugLit;   ctx.fillRect(x, floorY, w, 1);
-    for (i = 0; i < w; i += 3) {
-      ctx.fillStyle = (hash(i + 7) % 3) ? P.rugMid : P.rugShade;
-      ctx.fillRect(x + i, floorY + 1 + (hash(i) % Math.max(1, rugH - 1)), 1, 1);
+    ctx.fillStyle = P.geoGrey;  ctx.fillRect(x, floorY, w, rugH);
+    ctx.fillStyle = P.geoLight; ctx.fillRect(x, floorY, w, 1);
+    for (i = 0; i < w; i += 8) {
+      ctx.fillStyle = P.geoDark;
+      if (floorY + 2 < floorY + rugH) ctx.fillRect(x + i, floorY + 2, 1, 1);
+      if (floorY + 4 < floorY + rugH) ctx.fillRect(x + i + 4, floorY + 4, 1, 1);
+      ctx.fillStyle = P.geoLight;
+      if (floorY + 3 < floorY + rugH) ctx.fillRect(x + i + 2, floorY + 3, 1, 1);
     }
     ctx.fillStyle = P.woodPale; ctx.fillRect(x, floorY + rugH, w, y + h - floorY - rugH);
     ctx.fillStyle = P.woodSeam;
@@ -2961,6 +2974,24 @@ var Fort = (function () {
     ctx.fillStyle = P.panelBlue;   ctx.fillRect(boxX + 10, y + h - 6, 4, 3);
     ctx.fillStyle = P.boxBrown;    ctx.fillRect(boxX, y + h - 3, 30, 3);
     ctx.fillStyle = P.kraftLit;    ctx.fillRect(boxX, y + h - 3, 30, 1);
+
+    /* 7b. THE AMMO BAG on the rug, left of the bird's lane, before the
+       planks so a plank sliding by passes in front of it: the navy base
+       band, the cream body in its outline, the two straps running up into
+       a 1px handle arch, and the heap on the rim - two pellet yellows with
+       a pellet's dark ring between them. No glow on the card. Two straps
+       where the brief allowed one: one strap was a bucket, two are a
+       tote */
+    var gbx = x + Math.round(w * 0.12), gbw = big ? 9 : 7, gbh = big ? 6 : 5;
+    var gtop = floorY - 1 - gbh, gs0 = gbx + (big ? 2 : 1), gs1 = gbx + gbw - (big ? 3 : 2), gmid = gbx + (gbw >> 1);
+    ctx.fillStyle = P.outline;  ctx.fillRect(gbx - 1, gtop - 1, gbw + 2, gbh + 2);
+    ctx.fillStyle = P.bagCream; ctx.fillRect(gbx, gtop, gbw, gbh);
+    ctx.fillStyle = P.bagNavy;
+    ctx.fillRect(gbx, floorY - 2, gbw, 1);
+    ctx.fillRect(gs0, gtop - 2, 1, gbh + 1); ctx.fillRect(gs1, gtop - 2, 1, gbh + 1);
+    ctx.fillRect(gs0, gtop - 3, gs1 - gs0 + 1, 1);
+    ctx.fillStyle = CP.pelletYellow || '#ffc21a'; ctx.fillRect(gmid - 1, gtop - 1, 1, 1); ctx.fillRect(gmid + 1, gtop - 1, 1, 1);
+    ctx.fillStyle = CP.ring || '#1a1410';         ctx.fillRect(gmid, gtop - 1, 1, 1);
 
     /* 4. two planks sliding past, caps on their mouths */
     var period = big ? 46 : 38;
@@ -2987,20 +3018,24 @@ var Fort = (function () {
     ctx.fillStyle = P.shade;   ctx.fillRect(bx + 2, by + 2, 7, bh);
     ctx.fillStyle = P.foam;    ctx.fillRect(bx, by, 7, bh);
     ctx.fillStyle = P.outline; ctx.fillRect(bx, by, 1, bh); ctx.fillRect(bx + 6, by, 1, bh);
-    ctx.fillStyle = P.foamRimHi; ctx.fillRect(bx + 1, by, 5, 1);
+    ctx.fillStyle = P.foamRim; ctx.fillRect(bx + 1, by, 5, 1);
 
-    /* 8. the doodad flying it: a cookie, bobbing. Its halo is PALE - the
-       plan asked for the Whiteboard's dark one, but that card is a white
-       board and this one is a dark room, and a dark halo on a dark wall
-       drew a picture frame round the cookie */
+    /* 8. the doodad flying it: THE HOUSE BIRD, the same one every cover
+       draws (js/desk.js, js/mantle.js) - the body, the eye, the beak, and
+       the bob of h*0.15 on a 3.1 sine. Round 1 drew it here with no beak
+       and a 2px bob, and the owner noticed. Its halo is PALE - the plan
+       asked for the Whiteboard's dark one, but that card is a white board
+       and this one is a dark room, and a dark halo on a dark wall drew a
+       picture frame round the bird */
     var dxp = Math.round(x + w * 0.3);
-    var dyp = Math.round(y + h * 0.5 + Math.sin(t * 3.1) * 2);
+    var dyp = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
     var sz = big ? 8 : 6;
     Tint.rect(ctx, dxp - sz / 2 - 2, dyp - sz / 2 - 2, sz + 4, sz + 4, P.rugLit, 3);
     ctx.fillStyle = P.outline;  ctx.fillRect(dxp - sz / 2 - 1, dyp - sz / 2 - 1, sz + 2, sz + 2);
     ctx.fillStyle = '#c9873c';  ctx.fillRect(dxp - sz / 2, dyp - sz / 2, sz, sz);
     ctx.fillStyle = '#eab873';  ctx.fillRect(dxp - sz / 2, dyp - sz / 2, sz - 2, 1);
     ctx.fillStyle = P.outline;  ctx.fillRect(dxp + sz / 2 - 2, dyp - 1, 1, 1);
+    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dxp + sz / 2, dyp, 2, 1);
 
     /* 5. THE SIGNATURE, on a three-second loop: he faces the doodad from
        0 to 1.0, three aim dots run out of the muzzle from 1.0 to 1.5, a
@@ -3009,7 +3044,10 @@ var Fort = (function () {
     var phase = t % 3;
     var cx = x + Math.round(w * 0.62), baseY = floorY;
     var face = phase < 2.4 ? -1 : 1;
-    var hx = cx + face * (big ? 4 : 3), hy = baseY - (big ? 5 : 4);
+    /* the gun is held LOW and FORWARD, out past his side at the lower
+       third of the cup, as js/cupmen.js now holds it in the game: at
+       (4, 5) up it sat on the edge of his face at eye height */
+    var hx = cx + face * (big ? 5 : 4), hy = baseY - (big ? 3 : 2);
     var mx = hx + face * (big ? 7 : 5);
     Tint.rect(ctx, cx - (big ? 5 : 4), baseY - 1, big ? 10 : 8, 1, P.shade, 8);
     if (typeof Cupmen !== 'undefined' && Cupmen.drawPixelCup && Cupmen.drawPixelGun) {
@@ -3066,10 +3104,12 @@ var Fort = (function () {
   /* ====================================================== generation */
 
   /* A stack of panels. It also turns over the page in the run's notebook:
-     a bay holds ONE thing on its floor - a tripod or a ribbon, a sloth, or
-     a Cupman - and makePillar is the first maker the engine calls for a
-     bay, so it is where the two bay flags go back to false. The spike and
-     boon makers set them, and js/cupmen.js's makeFoe reads them last. */
+     a bay holds ONE thing on its floor - the ammo bag or a Cupman - and
+     makePillar is the first maker the engine calls for a bay, so it is
+     where the two bay flags go back to false. makeBoon sets bayBoon and
+     js/cupmen.js's makeFoe reads both last. baySpike is still reset here
+     because js/cupmen.js still reads it, but since round 2 nothing sets it
+     true: the tripods and ribbons are out of the bay (see makeSpikes). */
   function makePillar(x, gapY, gapH, run) {
     if (run && run.ledger) { run.ledger.baySpike = false; run.ledger.bayBoon = false; }
     var roll = Math.random();
@@ -3077,22 +3117,18 @@ var Fort = (function () {
              variant: roll < 0.58 ? 0 : 1, scored: false };
   }
 
-  /* A TRIPOD LIGHT STAND on the floor or a RIBBON PULL-TAB off the roof
-     (ref 2, 5, 6). Both are THIN, and that is the point: this bay's floor
-     belongs to the Cupmen, and a spike that is a wall would stack into
-     one with a shooter - which is also why a bay that grows one sets
-     baySpike and never grows a Cupman. `count` buys a second stand 24px
-     on when it is 5 or more, the Mantle's fifty-fifty. run.late changes
-     nothing here: the late phase is the Order's. */
+  /* NO SPIKES IN THIS BAY. Round 1 grew a tripod light stand on the
+     floor or a ribbon pull-tab off the roof; the owner took them out -
+     "we already get our floor obstacles with the cupmen". js/levels.js
+     sets spikeScore so high that the engine's spikesReady() is never true
+     here, so this is never called in a run. It stays because the engine's
+     call site is level-agnostic and names art.makeSpikes for every bay; if
+     it ever were called, what comes back is already gone - drawObstacle
+     and rectsFor both return on ob.gone, so it draws nothing and kills
+     nothing - and it never touches the ledger, so it cannot cost a bay
+     its Cupman. */
   function makeSpikes(x, side, count, maxLen, run) {
-    if (run && run.ledger) run.ledger.baySpike = true;
-    x = Math.round(x);
-    if (side === 'ceil') {
-      return { type: 'spike', x: x, side: 'ceil', len: Math.round(clamp(maxLen, 16, 26)), w: 15 };
-    }
-    var stands = count >= 5 ? 2 : 1;
-    return { type: 'spike', x: x, side: 'floor', len: Math.round(clamp(maxLen, 36, 56)),
-             stands: stands, w: 24 * (stands - 1) + 13 };
+    return { type: 'spike', x: Math.round(x), side: side, len: 0, w: 0, gone: true };
   }
 
   /* THE BISCUIT, always plain. `spicy` is ignored, and the tune carries no
@@ -3112,9 +3148,9 @@ var Fort = (function () {
     return { type: 'litter', x: x, w: 16, kind: randInt(0, 4) };
   }
 
-  /* the sloth, sitting on the rug. ob.x is his MIDDLE - the box and the
-     grab point are both centred on it - and the engine's cull and save
-     look 46px either side of [x, x + w], which covers the eight pixels he
+  /* THE AMMO BAG, standing on the rug. ob.x is its MIDDLE - the box and
+     the grab point are both centred on it - and the engine's cull and save
+     look 46px either side of [x, x + w], which covers the ten pixels it
      reaches left of it. No `burst`: a spare life comes apart in the HUD's
      jade in every bay. */
   function makeBoon(x, run) {
@@ -3139,8 +3175,8 @@ var Fort = (function () {
   /* ---------------------------------------------- collision rectangles
 
      Every lethal pixel has a box and nothing harmless has one: the walls,
-     the room, the connectors in the walls, the litter, the fore layer and
-     a tripod's legs are all safe to touch. */
+     the room, the connectors in the walls, the litter and the fore layer
+     are all safe to touch. */
   function rectsFor(ob, out) {
     if (ob.gone) return out;
     if (ob.type === 'pillar') {
@@ -3156,17 +3192,8 @@ var Fort = (function () {
       if (botH > 0) out.push([ob.x, botY + 9, ob.w, botH]);
 
     } else if (ob.type === 'spike') {
+      /* a Cupman; a spike that is not one never exists here (makeSpikes) */
       if (ob.foe) return Cupmen.foeRects(ob, out);
-      if (ob.side === 'ceil') {
-        /* the loop, swaying or not: the box does not follow a 1px sway,
-           because a box that jitters a pixel is a box that lies, and the
-           sway is the drawing */
-        out.push([ob.x + 3, CEIL, 9, ob.len]);
-      } else {
-        /* the POLE of each stand and nothing else: the legs are a thread,
-           and a leg box would be a rectangle somebody guessed */
-        for (var i = 0; i < ob.stands; i++) out.push([ob.x + 24 * i + 5, FLOOR - ob.len, 3, ob.len]);
-      }
 
     } else if (ob.type === 'drop') {
       if (ob.broken > 0) return out;
@@ -3178,8 +3205,9 @@ var Fort = (function () {
       out.push([ob.x - 4, ob.y - (fh / 2 - 1), 9, fh - 2]);
 
     } else if (ob.type === 'boon') {
-      /* the sloth's body, travelling with him when Gerald reels him in */
-      if (!ob.taken) out.push([ob.x + ob.dx - 8, FLOOR - 17 + ob.dy - 9, 16, 18]);
+      /* the bag, handles included - you can grab it by the handle - and
+         travelling with it when Gerald reels it in */
+      if (!ob.taken) out.push([ob.x + ob.dx - 9, FLOOR - 24 + ob.dy, 18, 23]);
     }
     return out;
   }
@@ -3209,9 +3237,9 @@ var Fort = (function () {
      x + 38] overlaps his drawn half-width is drawn again OVER him: its
      LOWER column and its up-cap, the same crops drawPillar makes, at
      integer coordinates with smoothing off so the redraw lands on the
-     pixel layer's own pixels; and a floor tripod the same. He then
-     stands behind the plank with his crown over it - ref 4's sloth
-     behind the panel - and the edge that kills is never hidden. The
+     pixel layer's own pixels. He then stands behind the plank with his
+     crown over it - ref 4's sofa behind the panel - and the edge that
+     kills is never hidden. The
      upper column needs nothing: it ends at gapY <= 126, over the top of
      his crown (FLOOR - 100 = 142).
 
@@ -3239,9 +3267,6 @@ var Fort = (function () {
           LivingRoom.drawColumn(ctx, T.column[o.variant || 0].canvas, x - COL_PAD, botY,
                                 COL_W + COL_PAD * 2, botH);
           ctx.drawImage(T.capUp.canvas, x - 4, botY);
-        } else if (o.type === 'spike' && !o.foe && o.side === 'floor') {
-          if (o.x + (o.w || 0) < kc - half || o.x > kc + half) continue;
-          drawSpike(ctx, o);
         }
       }
       ctx.restore();
@@ -3250,8 +3275,8 @@ var Fort = (function () {
 
   /* WHAT IS ABSENT, and why it is absent rather than stubbed: makeMeet
      (nobody hides in this bay - the roster offers no meet here), makeWarp
-     (the hole in the floor is the Whiteboard's) and stepBoon (the sloth
-     sits still; the engine only moves a boon a level steps). Three keys
+     (the hole in the floor is the Whiteboard's) and stepBoon (the bag
+     stands still; the engine only moves a boon a level steps). Three keys
      absent is three places nobody can put code that never runs. */
   return {
     P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,

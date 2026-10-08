@@ -287,7 +287,10 @@ var PlayScene = (function () {
              drainLedger(): warn (a key into art.WARN), cry (an Audio3 role),
              shake (an amplitude), deed (an achievement event string). A
              level that never writes them never meets drainLedger doing
-             anything at all.
+             anything at all. And ONE the engine only reads: holdDrops,
+             which spawnDrops() honours for as long as it is true - a level
+             whose sky should go quiet while something else has the room
+             says so here, and the drop timer waits where it was.
      born    obstacles a step asked for this frame. A step walks inside
              moveObstacles' backwards loop, where a push would be stepped
              again by nobody and a splice would double-step a neighbour, so
@@ -656,6 +659,9 @@ var PlayScene = (function () {
        of a gift. `dropTimer` is simply frozen by this return and resumes
        where it was, which is right - the magnets never left. */
     if (warp || warpIn > 0 || dropHold > 0) return;
+    /* and nothing falls while the art has asked for a quiet sky - see the
+       ledger's note at the head of this file. A frozen timer, as above. */
+    if (ledger.holdDrops) return;
     if (tune.dropScore === undefined) return;
 
     if (!dropArmed) {

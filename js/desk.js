@@ -2305,14 +2305,14 @@ var Desk = (function () {
        not vanish into a beige wall the way a tan bird against a tan wall
        would */
     var dx = Math.round(x + w * 0.28);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.15));
+    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
     var sz = big ? 8 : 6;
     Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.shade, 5);
     ctx.fillStyle = P.outline; ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
     ctx.fillStyle = '#c9873c'; ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
     ctx.fillStyle = '#eab873'; ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
     ctx.fillStyle = P.outline; ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = P.lampCore; ctx.fillRect(dx + sz / 2, dy, 2, 1);
+    ctx.fillStyle = '#f3cc84'; ctx.fillRect(dx + sz / 2, dy, 2, 1);
 
     /* 11. and one lamp over the whole room */
     Tint.rect(ctx, x, y, w, h, P.lampWarm, 1);

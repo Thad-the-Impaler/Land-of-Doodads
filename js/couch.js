@@ -3029,14 +3029,14 @@ var Couch = (function () {
     /* 6. the doodad flying it, with a halo so a pale bird never goes
        missing against a pale shutter */
     var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(y + h * 0.42 + Math.sin(t * 3.1) * (h * 0.14));
+    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
     var sz = big ? 8 : 6;
     Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.void, 5);
     ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
     ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
     ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
     ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = P.pillowHi; ctx.fillRect(dx + sz / 2, dy, 2, 1);
+    ctx.fillStyle = '#f3cc84'; ctx.fillRect(dx + sz / 2, dy, 2, 1);
 
     /* 7. THE ROOM'S OWN LIGHT, in miniature. LivingRoom.drawLight is
        half of what the Couch looks like - night creeping up off the
