@@ -1234,9 +1234,28 @@ var Chalkboard = (function () {
                                already sprinting right at the cut can take
                                it, and has earned it                      */
   var HELLO_T = 0.5;
-  var LOOK_AT = 72;
-  var LOOK_T = 0.55;
-  var LOOK_V = 110;
+  /* THE LOOK IS THE CATCH WINDOW, and it used to be one nobody could use.
+     A catch needs the doodad's centre within 37px of the shark's (the 52px
+     body box plus an 11px hitbox), and the look parked the shark 72px
+     ahead: a 35px dash to the right, started the instant it turned, inside
+     a 0.55s look that its 110px/s swim back used almost all of just to
+     arrive. And from x 232 on the target was past REACH_X, the furthest a
+     doodad can be (X_MAX 304, plus the 37) - a player who had drifted right
+     chasing it, which is what anybody does, was offered a look that could
+     not be caught at all, and the stay ended with the shark parked at the
+     right edge. Now it comes in to 64 (a 27px dash), swims back at 150 so
+     it is there with ~0.2s of the 0.65s look to spare, and its target is
+     never past REACH_X - 6, so a doodad hard against the right edge can
+     still take it - but only lined up to the pixel, from the most
+     dangerous place on the board to fly. A first cut at 56 / 0.8s / 170
+     with a REACH_X - 16 clamp on the hello as well was caught on the
+     first or second turn and the owner found it too easy: this is meant
+     to be a chase. The hello keeps its old target (it is an introduction,
+     not a window) and the cruise keeps its lead and its cap untouched. */
+  var LOOK_AT = 64;
+  var LOOK_T = 0.65;
+  var LOOK_V = 150;
+  var REACH_X = 304 + 37;   /* PlayScene's X_MAX plus the catch reach      */
   var DART_V = 170;         /* the flick of the tail out of a look        */
   var DIVE_T = 1.1;
   var Y_LO = CEIL + 30;     /*  54 */
@@ -1368,7 +1387,7 @@ var Chalkboard = (function () {
       if (pick === 'look') {
         ob.mode = 'look';
         ob.face = -1;
-        ob.lookX = run.px + LOOK_AT;
+        ob.lookX = Math.min(run.px + LOOK_AT, REACH_X - 6);
         ob.lookT = LOOK_T;
         ob.looks++;
         ob.lastTaunt = ob.age;
