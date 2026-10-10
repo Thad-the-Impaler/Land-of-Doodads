@@ -125,13 +125,21 @@
         guarantee.
     11. HOMING IS DODGED BY MOVING. 2.0 rad/s for 1.3s, and never once
         the pellet is past you.
-    12. THE KING'S BOP NEVER THROWS YOU INTO CARDBOARD. His crown is bop
-        only, and it is withdrawn while a plank overlaps the doodad or
-        will within 0.3s - the rebound's rise (25px, apex at 0.21s) plus
-        a margin - so a bop only ever happens between planks. A cupman's
-        head needs no such shield: his patrol keeps him 36px clear of
-        the next plank, and a doodad down on the rug to bop him is under
-        that plank's gap whether he bops or not.
+    12. A LANDING ON THE KING ALWAYS COUNTS. His crown box is there
+        whenever he is standing, every plank phase. Round 2 withdrew it
+        while a plank overlapped the doodad or would within 0.3s, so the
+        rebound (25px, apex at 0.21s) off a crown at 142 could never lift
+        the hitbox top to 94, up inside an upper column (gapY <= 126).
+        That was about half of every plank period with nothing on screen
+        saying so, and a landing then fell through his head onto the
+        lethal base: the owner's "the bops don't always register". The
+        bop is a thing the player chooses to land, with the plank in
+        plain view, and its rebound is the engine's ordinary one - the
+        same 25px any bop in the game gives. A cupman's head never had a
+        shield: his patrol keeps him 36px clear of the next plank, and a
+        doodad down on the rug to bop him is under that plank's gap
+        whether he bops or not. And ONLY a landing: below the top 16px
+        of his crown the King is solid, face and all (foeRects).
 
    WHY THEY LIVE ON THE SMOOTH LAYER. The sprites are the owner's
    paintings, in the same style as the doodads, and the doodads are drawn
@@ -150,8 +158,9 @@
    the lower column and cap of any plank within 38px of his centre ON
    TOP of him after drawActors (fort.js) - he stands BEHIND the
    cardboard, crown over the plank, and the lethal edge is never hidden.
-   His fade while a plank crosses him is only 0.8, a hint that the crown
-   is not there to land on (below).
+   He is drawn at full opacity always: round 2 faded him to 0.8 while a
+   plank crossed him, a hint that the crown was withdrawn (rule 12), and
+   with the crown always there the hint had nothing left to say.
 
    THE PELLETS ARE DROPS. Type 'drop' with `shot: true`, so every gift
    path the engine already has - grabSpicy, takeGold, grabSour, Gerald's
@@ -265,15 +274,19 @@ var Cupmen = (function () {
      holds (the trimmer cut both at one shared 0.25 for exactly this).
      THE KING IS A GIANT: 100 tall, s = 100/440 = 0.2273, width 334 * s =
      76, the painting's crown its top 73 rows = the top 17px, y 142..159.
-     At 66 he was 2.2 cupmen and read as "a bigger cup". Everything drawn
-     of him above y 210 is NOT lethal - see foeRects. His floating guns
+     The crown is as wide as the cup's mouth: 222px of painting across
+     its points (row 12), 229 across its band (row 50) and 236 at its
+     foot on the rim (row 88) - 50, 52 and 54px on screen - so the bop
+     box is 52 wide (CROWN_W). At 66 he was 2.2 cupmen and read as "a
+     bigger cup". Only the top 16px of his crown is safe to touch, and
+     only from above - see foeRects. His floating guns
      are 0.125 (40px wide) - magic, bigger than anything a cup can hold,
      and in proportion to him. */
   var CUP_H = 30, CUP_S = CUP_H / 367;
   var KING_H = 100, KING_S = KING_H / 440, KING_W = 76;
-  var KING_HALF = 38;       /* drawn half-width: the fade test, and fort.js's
-                               plank-over-the-King redraw uses the same 38 */
-  var CROWN_H = 17;         /* the painting's crown, on screen */
+  var CROWN_W = 52;         /* the crown's band, on screen (measured above) */
+  var KING_BASE = 210;      /* where his skirt's box starts: see foeRects  */
+  var CROWN_TOP = 16;       /* the bop strip: the crown's top 16px, 142..158 */
   var HEAD_H = 6;           /* a cupman's bop strip, the top of his cup */
   var GUN_S_KING = 0.125;
 
@@ -412,12 +425,23 @@ var Cupmen = (function () {
      kx 238..258 puts them at 302..370 (<= VW-24 with 20px of gun either
      side), clear of his silhouette (cx + 38 and a 20px gun half: 64 > 58)
      and of his crown (y 70 and 144 against a crown at 142, but 64+ px to
-     the side). From a doodad bopping him at cx +- 27 they are 17..159px
+     the side). From a doodad bopping him at cx +- 37 (the 52px crown
+     box and the doodad's 11px reach either side) they are 7..169px
      ahead, so the guns cover the fight itself. At -40/+30 they were
      silent for anyone standing next to him: parking by the King made the
      level easier than the one without him. */
   var GUN_DX = [64, 112], GUN_Y = [CEIL + 46, FLOOR - 98];
-  var LOOK = 0.3;           /* rule 12: the bop shield's look-ahead (s)  */
+  /* THE KING'S HIT. HURT_T is how long the guns hold after a bop. It is
+     shorter than the quickest rebound there is, so it can never be a
+     window a landing falls into: off a bop the doodad leaves at
+     FLAP * BOP_LIFT = -338 * 0.72 = -243px/s under GRAVITY 1180 and is
+     back down on the crown's top 2 * 243 / 1180 = 0.41s later (Billy,
+     light: -199 under 850, 0.47s). The engine's bopCool (0.3s) is what
+     makes one landing one bop; HURT_T no longer gates anything about the
+     bop itself (bopFoe). HIT_T is the draw's reaction: the white flash
+     for its first 0.12s, the hop and the wobble over all of it. LOST_T is
+     the life pip popping. */
+  var HURT_T = 0.4, HIT_T = 0.3, FLASH_T = 0.12, LOST_T = 0.35;
 
   /* THE ONE SCRATCH ARRAY. muzzleOf writes into it; every step and every
      draw that needs a hand or a muzzle reads it straight back. */
@@ -919,7 +943,7 @@ var Cupmen = (function () {
       hp: 1, gone: false, flashT: 0, downT: 0,
       stepT: rand(0, STEP_T), stepTo: off, walk: 1, marching: true,
       aimA: dir > 0 ? REST : PI - REST, aimV: 0, aimLock: false, lockT: 0,
-      since: 9, shielded: false,
+      since: 9,
       burst: [P[rk.body], P.eyeWhite]
     };
   }
@@ -937,7 +961,7 @@ var Cupmen = (function () {
       type: 'spike', foe: true, kind: 'king', side: 'floor', keep: true, bop: true,
       x: mid - KING_W / 2, w: KING_W, y: FLOOR, vx: -120, mode: 'enter', face: -1,
       hp: tune.kingHp, hurtT: 0, squash: 1, tilt: 0, summonT: 0, downT: 0,
-      shielded: false, fade: 1, warned: false,
+      hitT: 0, lostT: 0, warned: false,
       burst: [P.cupGold, P.crown], gone: false
     };
   }
@@ -1324,6 +1348,8 @@ var Cupmen = (function () {
   function stepKing(ob, dt, obstacles, run) {
     var L = run.ledger, c = cx(ob), i, o;
     if (ob.hurtT > 0) ob.hurtT -= dt;
+    if (ob.hitT > 0) ob.hitT -= dt;
+    if (ob.lostT > 0) ob.lostT -= dt;
     ob.squash = approach(ob.squash, 1, dt);          /* 0.7 -> 1 in 0.3s */
 
     if (ob.mode === 'enter') {
@@ -1342,7 +1368,7 @@ var Cupmen = (function () {
          sway is THE ONLY DEVIATION from "moving forward at the same rate
          as the screen": a giant standing perfectly still reads as a
          painting stuck to the glass. cx stays in 238..258, so the crown
-         box (cx-14..cx+14 = 224..272) is always inside the player's
+         box (cx-26..cx+26 = 212..284) is always inside the player's
          reach of X_MAX 304. */
       var want = KING_X + Math.sin(ob.age * 0.8) * 10;
       ob.vx = approach(ob.vx, clamp((want - c) * 3, -60, 60), 300 * dt);
@@ -1353,37 +1379,6 @@ var Cupmen = (function () {
       if (ob.downT <= 0) { ob.gone = true; return; }
     }
     c = cx(ob);
-
-    /* THE SHIELD AND THE FADE, two tests about two different things.
-       THE SHIELD (rule 12) is about THE PLAYER: the crown box is
-       withdrawn while any plank overlaps the doodad's hitbox now or will
-       within LOOK = 0.3s, and while a floor stand overlaps it now. The
-       bop's rebound lifts the doodad 25px with its apex at 0.21s, so
-       from a crown at 142 the hitbox top reaches 142 - 2*11 - 1 - 25 =
-       94, well up any upper column (gapY <= 126): a bop must never
-       happen with cardboard about to arrive. The plank's leading edge
-       travels 0.3 * run.speed (46..53px) in that time, hence the stretch
-       to the left. At a 153px/s scroll the window is (215 - 64 - 46)/153 = 0.69s
-       in every 1.41s plank period - about what it was at 66px tall.
-       THE FADE is about THE KING: while cardboard crosses his drawn body
-       (38px either side of his centre) he fades to 0.8. The level redraws
-       those planks over him, so he already stands behind them; the fade
-       is only a hint that the crown is not there to land on. */
-    var sh = false, fade = false, pl = run.px - run.hr, pr = run.px + run.hr;
-    var ahead = LOOK * run.speed, w;
-    for (i = 0; i < obstacles.length; i++) {
-      o = obstacles[i];
-      if (o.type === 'pillar') {
-        fade = fade || (o.x + 38 >= c - KING_HALF && o.x - 4 <= c + KING_HALF);
-        sh = sh || (o.x + 38 >= pl && o.x - 4 - ahead <= pr);
-      } else if (o.type === 'spike' && !o.foe) {
-        w = o.w || 0;
-        fade = fade || (o.x + w >= c - KING_HALF && o.x <= c + KING_HALF);
-        sh = sh || (o.x + w >= pl && o.x <= pr);
-      }
-    }
-    ob.shielded = sh;
-    ob.fade = approach(ob.fade, fade ? 0.8 : 1, dt * 0.2 / 0.15);
 
     if (ob.mode === 'down') return;
     L.kx = c;
@@ -1494,14 +1489,23 @@ var Cupmen = (function () {
 
      AN ORDINARY CUPMAN goes over on the first bop - the owner: "make the
      regular cupmen boppable if you land on their heads without getting
-     shot". No points (the stomp and the rebound are the reward; a cupman
-     on nearly every bay paying for each would turn the bay's scores into
-     a stomping count). His telegraph and any burst die with him; a
-     pellet already in the air flies on.
+     shot" - and PAYS ONE POINT, the owner again: "have it add an extra
+     point for bopping a regular cupman". Paid through ledger.pay, which
+     the engine drains at the end of the same bop() into score and pace
+     together, as the can's +5 is; the "+1" over him is drawn here
+     (drawToppling). One, not the can's five: a cupman stands on nearly
+     every bay, and at five the bay's scores would become a stomping
+     count. His telegraph and any burst die with him; a pellet already in
+     the air flies on.
 
-     THE KING: a bounce off the crown while he is
-     entering or still hurt is only that - a bounce, no hp. The fight's
-     reward is paid PER BOP, out of his crown: one CROWN coin each, +15
+     THE KING: EVERY LANDING COUNTS, entering or reigning, hurt or not.
+     Round 2 ignored a bop while he was entering or for 1.0s after the
+     last one, and the doodad simply bounced - a silent bop. bopCool
+     (0.3s, the engine's) already makes one landing one bop, and the
+     quickest second landing is a rebound 0.41s later (HURT_T), so every
+     bop that reaches here is a separate landing the player meant. He
+     pays NO ledger point: the fight's reward is paid PER BOP, out of his
+     crown: one CROWN coin each, +15
      for the fight in all. Three on the fall made it +25 - about 35s of
      play at pace 30 for a 5..15s fight - and the bay's high scores
      would have become "did you kill the King"; +15 is still the biggest
@@ -1517,15 +1521,18 @@ var Cupmen = (function () {
       ob.mode = 'down';
       ob.downT = DOWN_T;
       ob.tele = 0; ob.volley = 0; ob.aimLock = false; ob.flashT = 0;
+      run.ledger.pay = (run.ledger.pay || 0) + 1;
       return;
     }
-    if (ob.mode !== 'reign' || ob.hurtT > 0) return;
+    if (ob.mode === 'down' || ob.hp <= 0) return;
     var L = run.ledger, c = cx(ob);
     ob.hp--;
-    ob.hurtT = 1.0;
+    ob.hurtT = HURT_T;
+    ob.hitT = HIT_T;
+    ob.lostT = LOST_T;
     ob.squash = 0.7;
     ob.tilt += 0.06;                /* he leans further with every bop */
-    L.kingHurt = 1.0;
+    L.kingHurt = HURT_T;
     if (ob.hp > 0) {
       run.born.push(makeCrown(c, rand(-60, 60)));
       return;
@@ -1623,17 +1630,27 @@ var Cupmen = (function () {
      the owner asked for it.) Toppling (mode 'down') he publishes
      nothing: a cupman going over is not there to hit or bop again.
 
-     THE KING: first his CROWN, BOP-ONLY (the 5th element) - y 142..159,
-     28 wide, the crown he has: a landing on his face is nothing, you bop
-     a king on the crown. Absent while the shield is up (rule 12) and
-     once he is down; from above a bop, from the side nothing. It stays
-     bop-only at any height: his face spans the gap band (142..210 against
-     gaps 58..208), and a lethal box there would block gaps. Then his
-     base, LETHAL, from y 210, 48 wide on a 76px foot (the brim's flare
-     forgiven, as a cupman's is): 2px below the lowest gap bottom any
-     plank can have (208), so he never blocks a gap. Those are the
-     numbers, not his drawn silhouette - everything drawn of him between
-     the crown and y 210 is scenery.
+     THE KING: first his CROWN, BOP-ONLY (the 5th element) - the top
+     CROWN_TOP = 16px, y 142..158, CROWN_W = 52 wide, the crown's whole
+     band (measured on the painting, see the sizes), so any landing on him
+     from above is a bop wherever on the crown it comes down. The engine
+     bops only a doodad whose hitbox bottom was at or above the top + 3
+     (145) last frame and is falling. Then HE IS SOLID: three LETHAL boxes
+     that follow the cup's flare, measured off the painting row by row -
+     52px across at 156, 59 at 180, 65 at 200, 68 at 210 - drawn a few px
+     inside it: 56 wide over 158..184, 62 over 184..210, 60 from 210 to
+     the floor (the brim's last flare forgiven, as a cupman's is). A
+     doodad that meets the crown strip from the side is already reaching
+     11px down into the face box, which kills, so the only way onto him is
+     down onto the top. For a while his face was bop-only - "a pass from
+     the side through his face is nothing" - and the owner asked that you
+     not be able to fly through his face. The old worry, that a lethal
+     face spans the gap band (142..210 against gaps 58..208) and would
+     block gaps, does not hold: the planks pass through HIM, at x 214..286,
+     and the doodad threads them at his own x 32..304 and is only ever at
+     the King's x because he flew there to fight. Round 2's crown box was
+     the middle 28px, 142..159, and withdrawn about half of every plank
+     period (rule 12); now it is there whenever he is not down.
 
      A FLOATING GUN PUBLISHES NOTHING. It is a shooter, not a wall, and a
      lethal float in the gap band under scrolling planks would be unfair. */
@@ -1643,8 +1660,10 @@ var Cupmen = (function () {
     var c = cx(ob);
     if (ob.kind === 'king') {
       if (ob.mode === 'down') return out;
-      if (!ob.shielded) out.push([c - 14, FLOOR - KING_H, 28, CROWN_H, 1]);
-      out.push([c - 24, 210, 48, FLOOR - 210]);
+      out.push([c - CROWN_W / 2, FLOOR - KING_H, CROWN_W, CROWN_TOP, 1]);
+      out.push([c - 28, FLOOR - KING_H + CROWN_TOP, 56, 184 - (FLOOR - KING_H + CROWN_TOP)]);
+      out.push([c - 31, 184, 62, KING_BASE - 184]);
+      out.push([c - 30, KING_BASE, 60, FLOOR - KING_BASE]);
       return out;
     }
     if (ob.mode === 'down') return out;
@@ -1801,15 +1820,35 @@ var Cupmen = (function () {
      cups that needed it most, the Green and the Sentinel, keep their
      warm backlight glow behind them (drawCupman), which separates them
      from the wall without drawing on the painting. */
-  function drawCup(ctx, key, c, baseY, s, face, sq, tilt, kind, hgt) {
+  function drawCup(ctx, key, c, baseY, s, face, sq, tilt, kind, hgt, src) {
     var img = Assets.img(key);
-    if (!imgOk(img)) { drawFallbackCup(ctx, c, baseY, kind, hgt, face); return; }
+    if (!imgOk(img)) { if (!src) drawFallbackCup(ctx, c, baseY, kind, hgt, face); return; }
+    if (src) img = src;
     ctx.save();
     ctx.translate(c, baseY);
     if (tilt) ctx.rotate(tilt);
     ctx.scale((face < 0 ? -1 : 1) * s / sq, s * sq);
-    ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight);
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    ctx.drawImage(img, -iw / 2, -ih);
     ctx.restore();
+  }
+
+  /* THE KING'S WHITE: his painting as a flat white silhouette, baked the
+     first time it is wanted with the painting loaded (334x440, once a
+     session - a canvas, the painting drawn on it, white laid over with
+     source-in). drawCup draws it with the painting's own transform, so
+     the flash is exactly his shape. */
+  function kingWhite() {
+    if (T.kingWhite) return T.kingWhite;
+    var img = Assets.img('cup_king');
+    if (!imgOk(img)) return null;
+    var t = makeCanvas(img.naturalWidth, img.naturalHeight), c = t.ctx;
+    c.drawImage(img, 0, 0);
+    c.globalCompositeOperation = 'source-in';
+    c.fillStyle = '#ffffff';
+    c.fillRect(0, 0, img.naturalWidth, img.naturalHeight);
+    T.kingWhite = t.canvas;
+    return T.kingWhite;
   }
 
   /* a held or floating gun, pivoted where muzzleOf says */
@@ -1894,7 +1933,28 @@ var Cupmen = (function () {
      over DOWN_T - flattened to 0.75 by the stomp and springing back as
      he falls, fading through the second half. His gun drops where his
      hand was and lies on the rug, fading with him. All draw-only: he
-     has had no boxes since the bop (foeRects). */
+     has had no boxes since the bop (foeRects).
+
+     THE +1 he paid (bopFoe) rises 12px out of the top of his cup over
+     the same DOWN_T, solid for the first half and fading through the
+     second - the curve and the gold of the engine's own 'GOLD +5', in
+     the game's pixel Font, at scale 1 so it is a small thing. Font
+     blits baked glyphs, and this layer smooths, so the blit is made
+     with smoothing off at whole virtual pixels: crisp, the way the
+     level's plank redraw over the King is made (fort.js). */
+  var POP_GOLD = '#f3cc84', POP_SHADOW = '#160e07';   /* UI.C.gold, UI.C.shadow */
+  function drawPlusOne(ctx, c, k) {
+    if (typeof Font === 'undefined') return;
+    var a = k < 0.5 ? 1 : Math.max(0, 1 - (k - 0.5) * 2);
+    if (a <= 0.01) return;
+    ctx.save();
+    ctx.globalAlpha *= a;
+    ctx.imageSmoothingEnabled = false;
+    Font.draw(ctx, '+1', Math.round(c), Math.round(FLOOR - CUP_H - 10 - 12 * LivingRoom.ease(k)),
+              { align: 'center', colour: POP_GOLD, shadow: POP_SHADOW });
+    ctx.restore();
+  }
+
   function drawToppling(ctx, ob, c) {
     var k = LivingRoom.ease(clamp(1 - ob.downT / DOWN_T, 0, 1));
     var th = 1.4 * k, f = ob.face < 0 ? -1 : 1;
@@ -1909,6 +1969,7 @@ var Cupmen = (function () {
     drawGun(ctx, g.img, g, c + f * g.hx, FLOOR - 1, f > 0 ? 0 : PI, CUP_S, 1);
     drawCup(ctx, 'cup_' + ob.kind, bx, by, CUP_S, f, 0.75 + 0.25 * k, -f * th, ob.kind, CUP_H);
     ctx.restore();
+    drawPlusOne(ctx, c, clamp(1 - ob.downT / DOWN_T, 0, 1));
   }
 
   function drawCupman(ctx, ob) {
@@ -1981,46 +2042,49 @@ var Cupmen = (function () {
   function drawKing(ctx, ob) {
     var c = cx(ob), age = ob.age || 0;
     if (c < -60 || c > VW + 60) return;
-    var tilt = ob.tilt, sc = 1, a = ob.fade;
+    var tilt = ob.tilt, sc = 1, a = 1, dy = 0;
     if (ob.mode === 'down') {
       /* over 0.9s he goes over backwards onto his side, shrinks to 0.6
          and is gone */
       var k = LivingRoom.ease(1 - ob.downT / 0.9);
       tilt = ob.tilt + (1.3 - ob.tilt) * k;
       sc = 1 - 0.4 * k;
-      a *= 1 - k;
+      a = 1 - k;
+    } else if (ob.hitT > 0) {
+      /* THE HIT, ONE CRISP REACTION and never a blink. Round 2 flashed him
+         on the odd twelfths of a second for the whole 1.0s hurt with a
+         pink burst behind him, and faded him to 0.8 under a plank, so
+         "you hit him", "he is hurt" and "a plank is in him" were three
+         flickers of one sprite. Now, over HIT_T = 0.3s: his white
+         silhouette over the painting for the first FLASH_T = 0.12s (solid
+         0.08s, gone by 0.12), a 4px hop on a half sine with the stomp's
+         squash (0.7 -> 1 over the same 0.3s) under it, and a wobble of
+         +-0.12 rad that dies away twice round - the crown is the top of
+         the painting, so it is the crown that jolts. */
+      var h = 1 - ob.hitT / HIT_T;
+      dy = -4 * Math.sin(PI * h);
+      tilt += 0.12 * Math.sin(h * PI * 4) * (1 - h);
     }
-    /* HURT IS A FLASH, NOT A FADE: see-through used to mean both "you
-       hit him" and "a plank is inside him". On the odd twelfths of a
-       second while hurtT runs: a pink burst behind him (the baked pink
-       glow at 64x64 on (c, FLOOR - 50), alpha 0.5 - the crown's own
-       colour, nothing else in the bay is pink), the painting laid over
-       itself once more with 'lighter' at 0.65 - one sprite, one second,
-       no filter. (Round 1 also stroked his flanks white; that went with
-       the rim light, which the owner asked to lose.) At 0.35 the
-       body only went (255,188,5) -> (255,253,7), a hue shift you saw if
-       you were staring at him; at 0.65 it goes to ~(255,255,90) and the
-       crown to white-pink, a hit you see from the corner of the eye. */
-    var hot = ob.hurtT > 0 && ob.mode !== 'down' && Math.floor(age * 12) % 2 === 1;
     if (a <= 0.01) return;
     var s = KING_S * sc;
     ctx.save();
     ctx.globalAlpha *= a;
     drawShadow(ctx, c, 80 * sc, 9, 0.3);
-    if (hot && T.glow) drawGlowR(ctx, T.glow.pink, c, FLOOR - 50, 32, 0.5);
-    drawCup(ctx, 'cup_king', c, FLOOR, s, ob.face, ob.squash, tilt, 'king', KING_H * sc);
-    if (hot) {
+    drawCup(ctx, 'cup_king', c, FLOOR + dy, s, ob.face, ob.squash, tilt, 'king', KING_H * sc);
+    var fl = ob.mode !== 'down' && ob.hitT > HIT_T - FLASH_T
+      ? clamp((ob.hitT - (HIT_T - FLASH_T)) / 0.04, 0, 1) : 0;
+    var wh = fl > 0 ? kingWhite() : null;
+    if (wh) {
       ctx.save();
-      ctx.globalAlpha *= 0.65;
-      ctx.globalCompositeOperation = 'lighter';
-      drawCup(ctx, 'cup_king', c, FLOOR, s, ob.face, ob.squash, tilt, 'king', KING_H * sc);
+      ctx.globalAlpha *= 0.9 * fl;
+      drawCup(ctx, 'cup_king', c, FLOOR + dy, s, ob.face, ob.squash, tilt, 'king', KING_H * sc, wh);
       ctx.restore();
     }
     /* THE RED EYE. Painted on his left eye at (+13, -244) from his foot
        (measured off the PNG), and it smoulders: a soft red glow breathing
        over it, inside his own tilt so it stays in his head */
     ctx.save();
-    ctx.translate(c, FLOOR);
+    ctx.translate(c, FLOOR + dy);
     if (tilt) ctx.rotate(tilt);
     var ex = (ob.face < 0 ? -13 : 13) * s / ob.squash, ey = -244 * s * ob.squash;
     if (T.glow) {
@@ -2031,6 +2095,46 @@ var Cupmen = (function () {
       ctx.globalAlpha = a0;
     }
     ctx.restore();
+    ctx.restore();
+    if (ob.mode !== 'down') drawLives(ctx, ob, c);
+  }
+
+  /* HIS LIVES, three little crowns over his crown: the 9x7 crownMini the
+     level card uses, at scale 1 with smoothing off, 3px apart (33px in
+     all, inside his 52px crown), their tops at FLOOR - KING_H - 13 = 129
+     - 6px over the crown's highest point and steady, not hopping or
+     tilting with him, because a count that moves is harder to read. A
+     life he still has is the crown at full colour; one lost is the same
+     crown at 0.25, a ghost; and the one just lost POPS - it swells to 2x
+     and fades over LOST_T = 0.35s from where it stood before going to
+     ghost. Drawn after him and before fort.js's plank redraw, which
+     redraws only the LOWER column, from the gap's bottom: the highest gap
+     (58) plus the Fort's gapMin (82) puts that at 140 or lower, under the
+     crowns' 129..136, so a plank never covers his count. An upper column
+     is on the pixel layer, under them. */
+  function drawLives(ctx, ob, c) {
+    var cm = T.crownMini;
+    if (!cm) return;
+    var n = tune.kingHp, y = FLOOR - KING_H - 13, x0 = Math.round(c - (n * 9 + (n - 1) * 3) / 2);
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    var ga = ctx.globalAlpha;
+    for (var i = 0; i < n; i++) {
+      var x = x0 + i * 12;
+      if (i < ob.hp) {
+        ctx.globalAlpha = ga;
+        ctx.drawImage(cm.canvas, x, y);
+      } else if (i === ob.hp && ob.lostT > 0) {
+        var k = 1 - ob.lostT / LOST_T, z = 1 + k;
+        ctx.globalAlpha = ga * (1 - k);
+        ctx.drawImage(cm.canvas, x + 4.5 - 4.5 * z, y + 3.5 - 3.5 * z - 4 * k, 9 * z, 7 * z);
+        ctx.globalAlpha = ga * 0.25 * k;
+        ctx.drawImage(cm.canvas, x, y);
+      } else {
+        ctx.globalAlpha = ga * 0.25;
+        ctx.drawImage(cm.canvas, x, y);
+      }
+    }
     ctx.restore();
   }
 

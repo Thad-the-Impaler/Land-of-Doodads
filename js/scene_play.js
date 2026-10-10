@@ -100,8 +100,8 @@ var PlayScene = (function () {
   /* What the run would have scored with nobody's flat rate on it, and the
      number the LEVEL paces itself against. spikesReady(), spawnDrops(), the
      late phase and run.score read THIS and never `score`. It is fed by the
-     same four writes as score - zeroed in start(), BOON_BONUS, GOLD_BONUS and
-     the plank - with the plank's `pay` left off. So for the eleven doodads
+     same five writes as score - zeroed in start(), BOON_BONUS, GOLD_BONUS,
+     the art's ledger.pay and the plank - with the plank's `pay` left off. So for the eleven doodads
      without `pay` the two variables receive identical writes in identical
      order, and are equal at every point either of them can be read - the
      two lines of a pair sit together with no call between them, so no
@@ -118,9 +118,10 @@ var PlayScene = (function () {
 
      The proof that the eleven are untouched, and it is a proof rather than a
      hope: grepping this file for assignments to `score` finds the zeroing in
-     start(), the full pot's 3, the can's 5 and the plank, and nothing else -
-     four writes, plus this declaration, which the one below mirrors. Each of
-     the four now has a `pace` write on the next line taking the same
+     start(), the full pot's 3, the can's 5, the ledger's pay (drainLedger)
+     and the plank, and nothing else - five writes, plus this declaration,
+     which the one below mirrors. Each of the five has a `pace` write on the
+     next line taking the same
      operand, the plank excepted, where the operands are `worth * pay` and
      `worth` and `pay` is 1 for every doodad without the field. Same values,
      same order, and nothing runs between a pair, so after each pair the two
@@ -287,7 +288,12 @@ var PlayScene = (function () {
              drainLedger(): warn (a key into art.WARN), cry (an Audio3 role),
              shake (an amplitude), deed (an achievement event string). A
              level that never writes them never meets drainLedger doing
-             anything at all. And ONE the engine only reads: holdDrops,
+             anything at all. A fifth it reads and clears there too:
+             pay, a whole number of points the art is handing over for
+             something done in its world (a foe bopped), paid exactly the
+             way the can's GOLD_BONUS is - score and pace together, and
+             the passed and unlock checks after. And ONE the engine only
+             reads: holdDrops,
              which spawnDrops() honours for as long as it is true - a level
              whose sky should go quiet while something else has the room
              says so here, and the drop timer waits where it was.
@@ -1736,12 +1742,13 @@ var PlayScene = (function () {
      23px), so off that 176 the apex hitbox top is 176 - 1 - 11 - 25 - 11 =
      128, past the deepest gapY of 126: the bounce alone can no longer lift
      him into a column, and it only ever moves him away from a lower one.
-     A surface set HIGHER than 175 gives that guarantee up, and then keeping
-     the rebound out of the planks is the level's job - it withdraws the
-     surface (drops the flagged rect) while a plank is near him, which it
-     can see in the list and the engine cannot judge for it. It still reads
-     as a bounce, and inside the level's own hurt window he pogoes on the
-     thing harmlessly.
+     A surface set HIGHER than 175 gives that guarantee up. A level may buy
+     it back by dropping the flagged rect while a plank is near, which it
+     can see in the list and the engine cannot judge for it - or, as the
+     tallest surface in the game now does, leave it there and let the
+     rebound into a column be the player's risk: a bop is a landing the
+     player chooses, and a surface that vanished half the time read as a
+     bop that did not register. Either way it is the level's call.
 
      bopCool is the 0.3s in which the surface is not there, so one landing
      is one bop however many frames the hitbox spends overlapping it on the
@@ -2005,7 +2012,7 @@ var PlayScene = (function () {
      last thing a run does. A deed written there and read next frame is a
      deed lost to the 'dying' state and the ledger reset on retry.
 
-     Four keys and only four. `deed` is an achievement event, noted against
+     Four keys, and then a fifth. `deed` is an achievement event, noted against
      THIS level object exactly as the pickups note theirs, so the roster
      sees both the event and the event-on-this-level and the engine names
      neither. `warn` is a key into art.WARN and it OVERWRITES the heads-up
@@ -2015,7 +2022,9 @@ var PlayScene = (function () {
      'warn' unless the same frame named a `cry` of its own, in which case
      the cry is the tone - one noise per piece of news. `shake` is an
      amplitude for 0.4s. Each is cleared as it is read, so a level that
-     writes one once hears it once. */
+     writes one once hears it once. And a fifth, `pay`, added after the
+     four: points for something done in the art's world, paid as the can
+     pays its five - see the pace declaration's list of writes. */
   function drainLedger() {
     if (ledger.deed) { bank(Achievements.note(ledger.deed, level)); ledger.deed = null; }
     var cry = null;
@@ -2027,6 +2036,15 @@ var PlayScene = (function () {
     }
     if (cry) Audio3.play(cry);
     if (ledger.shake) { Screen.shake(ledger.shake, 0.4); ledger.shake = 0; }
+    if (ledger.pay) {
+      var n = ledger.pay;
+      ledger.pay = 0;
+      score += n;
+      pace += n;
+      scorePop = 0.32;
+      checkPassed();
+      checkUnlocks();
+    }
   }
 
   function spawnAhead() {
