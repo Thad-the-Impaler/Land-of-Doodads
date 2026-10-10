@@ -292,8 +292,9 @@ var PlayScene = (function () {
              pay, a whole number of points the art is handing over for
              something done in its world (a foe bopped), paid exactly the
              way the can's GOLD_BONUS is - score and pace together, and
-             the passed and unlock checks after. And ONE the engine only
-             reads: holdDrops,
+             the passed and unlock checks after. A sixth, knock: true
+             throws the doodad home to X_START in one arc (drainLedger
+             says how). And ONE the engine only reads: holdDrops,
              which spawnDrops() honours for as long as it is true - a level
              whose sky should go quiet while something else has the room
              says so here, and the drop timer waits where it was.
@@ -312,6 +313,9 @@ var PlayScene = (function () {
   var ledger = {};
   var born = [];
   var bopCool = 0;
+  /* THE TOSS HOME, the art's ledger.knock: seconds left of it, its length,
+     and the x it set out from. See drainLedger and updatePlayer. */
+  var knockT = 0, knockDur = 0, knockFrom = 0;
   var prevY = 0;
   var cryAt = -1;
   /* ob.stun: a hazard that punishes without killing.
@@ -558,6 +562,7 @@ var PlayScene = (function () {
        last answer), `.length = 0` for the queue for the same reason the
        obstacle list is never replaced. */
     ledger = {}; born.length = 0; bopCool = 0; prevY = (CEIL + FLOOR) / 2;
+    knockT = 0;
     cryAt = -1; foeArmed = false; pendingWarn = null;
     run = { score: 0, time: 0, late: false, scroll: 0,
             speed: tune.speedStart, px: X_START, py: (CEIL + FLOOR) / 2,
@@ -2036,6 +2041,31 @@ var PlayScene = (function () {
     }
     if (cry) Audio3.play(cry);
     if (ledger.shake) { Screen.shake(ledger.shake, 0.4); ledger.shake = 0; }
+    /* THE TOSS HOME. ledger.knock asks for the doodad to be thrown back to
+       where every run starts, X_START, on a bop that should not be followed
+       straight away by another. It is ONE ARC, which is what makes it read
+       as being thrown and not as being teleported: a full flap's lift,
+       flapV() and not the bop's 0.72 of it, and a toss exactly as long as
+       that lift takes to come back to the height it left -
+       2 * |flapV| / |grav|, 0.57s for most doodads (338 against 1180) and
+       0.47 for Billy's lighter fall - so he comes down on the start spot at
+       the height he bopped from as the toss ends, and flies on. The flap
+       stays his throughout; only LEFT and RIGHT are taken while it lasts.
+       And he is untouchable for it and a beat after (the grace's blink),
+       because a doodad thrown backwards at 460px/s across a room full of
+       planks would otherwise be thrown INTO one, and a death the player
+       did not steer is a broken game, not a hard one. The grace also tells
+       anything aiming at him to wait (run.grace), which is the breather the
+       throw is for. */
+    if (ledger.knock) {
+      ledger.knock = false;
+      knockDur = clamp(2 * Math.abs(flapV()) / Math.abs(grav()), 0.4, 0.8);
+      knockT = knockDur;
+      knockFrom = player.x;
+      player.vy = flapV();
+      player.vx = 0;
+      invuln = Math.max(invuln, knockDur + 0.15);
+    }
     if (ledger.pay) {
       var n = ledger.pay;
       ledger.pay = 0;
@@ -2504,9 +2534,26 @@ var PlayScene = (function () {
        per doodad for one round (BOUNCY, x1.5 on both) and the owner sent it
        back: a faster nudge was true to its word and could not be felt, and
        an ability nobody can see is not one. The lane is nobody's axis. */
-    player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
-    player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
-    if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
+    if (knockT > 0) {
+      /* the toss home (drainLedger): an ease-out across the screen - fast
+         off the thing that threw him, 2d/T, about 460px/s from the middle of
+         the room, and settling onto X_START with no speed left, so control
+         comes back to a doodad at rest and not to one still sliding */
+      knockT -= dt;
+      var kk = 1 - Math.max(0, knockT) / knockDur;
+      player.x = clamp(lerp(knockFrom, X_START, 1 - (1 - kk) * (1 - kk)), X_MIN, X_MAX);
+      player.vx = 0;
+      if (kk < 0.7 && chance(0.5)) {
+        particles.push({ x: player.x + rand(4, 10), y: player.y + rand(-5, 5),
+                         vx: rand(20, 60), vy: rand(-20, 20),
+                         life: rand(0.15, 0.3), g: 0,
+                         col: chance(0.5) ? FX.puffHi : FX.puff });
+      }
+    } else {
+      player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
+      player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
+      if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
+    }
 
     /* hoisted above the dive branch, which needs it and returns before the
        old declaration point further down. One call either way, and `var` is
@@ -4854,7 +4901,7 @@ var PlayScene = (function () {
                                                                spicy: !!o.spicy, gold: !!o.gold, sour: !!o.sour,
                                                                homeT: o.homeT, name: o.name };
                                                     }),
-                                    born: born.length, bopCool: bopCool, prevY: prevY,
+                                    born: born.length, bopCool: bopCool, prevY: prevY, knockT: knockT,
                                     difficulty: tune ? difficulty() : null }; }
   };
 })();

@@ -1535,6 +1535,14 @@ var Cupmen = (function () {
     L.kingHurt = HURT_T;
     if (ob.hp > 0) {
       run.born.push(makeCrown(c, rand(-60, 60)));
+      /* AND HE THROWS YOU OFF. Once every landing counted, three pogoes
+         in 0.42s apiece ended the fight in a second and a quarter; the
+         owner asked that each bop send the doodad back to where it
+         started, so every one of the three is its own approach under the
+         guns. The engine does the throw (ledger.knock): one arc home to
+         X_START, untouchable while it lasts. Not on the third bop - he is
+         falling, and the doodad gets to watch it from where it is. */
+      run.ledger.knock = true;
       return;
     }
     ob.mode = 'down';
