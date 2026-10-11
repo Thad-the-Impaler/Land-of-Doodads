@@ -436,10 +436,10 @@ var Achievements = (function () {
   /* POULTRY CATCHER. The doodads that cost something and have been paid
      for: Doodads.priced() is what says a doodad has a price at all (the
      three free ones answer false), and Doodads.meets() is isUnlocked()
-     without the passkey line. NINE of the twelve carry a price today - two
-     scores, nine succulents, three limes, two that are found or done, and
-     two that are a count of one bay's +5 - and a tenth would count here the
-     day it is written, without this function naming any of them.
+     without the passkey line. TEN of the thirteen carry a price today -
+     three scores, nine succulents, three limes, four that are found, done or
+     caught, and one count of a bay's +5 - and an eleventh would count here
+     the day it is written, without this function naming any of them.
 
      priced(), not requirement(), which is what this asked first: the
      question is "does this one cost anything", and requirement() answers it

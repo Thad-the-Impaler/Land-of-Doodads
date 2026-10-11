@@ -101,12 +101,13 @@ var PlayScene = (function () {
      number the LEVEL paces itself against. spikesReady(), spawnDrops(), the
      late phase and run.score read THIS and never `score`. It is fed by the
      same five writes as score - zeroed in start(), BOON_BONUS, GOLD_BONUS,
-     the art's ledger.pay and the plank - with the plank's `pay` left off. So for the eleven doodads
-     without `pay` the two variables receive identical writes in identical
+     the art's ledger.pay and the plank - with the plank's `pay` left off. So for every doodad on
+     the roster today (none carries `pay`; Donkey Joe did, and the field is
+     kept for a later one) the two variables receive identical writes in identical
      order, and are equal at every point either of them can be read - the
      two lines of a pair sit together with no call between them, so no
-     reader ever sees them apart; for Donkey Joe `pace` is the score the
-     same run would have had under anyone else. The heat's x2 and Cookie's
+     reader ever sees them apart; for a doodad with `pay`, `pace` is the
+     score the same run would have had under anyone else. The heat's x2 and Cookie's
      tight pass DO go in, because they always did: a hot run has always met
      its spikes sooner, and that is not being changed. Only a permanent flat
      rate is kept out, because a level that armed its hazards off a doubled
@@ -116,7 +117,7 @@ var PlayScene = (function () {
      Levels.noteScore, Doodads.noteScore and the achievements all read
      `score`, on purpose: his points are real.
 
-     The proof that the eleven are untouched, and it is a proof rather than a
+     The proof that the roster is untouched, and it is a proof rather than a
      hope: grepping this file for assignments to `score` finds the zeroing in
      start(), the full pot's 3, the can's 5, the ledger's pay (drainLedger)
      and the plank, and nothing else - five writes, plus this declaration,
@@ -129,20 +130,15 @@ var PlayScene = (function () {
      apart.
 
      What the doubled score DOES reach, said out loud so it reads as a
-     decision: the score gates in the game are two doodads' unlockAt of 15
-     and 25, every room's and bay's `unlock.score` of 20, and the two plates
+     decision: the score gates in the game are three doodads' unlockAt of
+     15, 25 and 35, every room's and bay's `unlock.score` of 20, and the two plates
      the badge check below calls THE SCORE-GATED BADGES - HATCHLING and
      PULLET in js/achievements.js, which probe the same
      Doodads.bestReached() the stalls price themselves against and finish at
-     Scores.houseTop() + 1, 13 off today's seed, and at 26. Joe is himself
-     unlocked by the hot-and-sour deed, which two bays grant, both behind
-     the same chain of 20s - they are the only two that shed both a heat and
-     a sour, and they stand at the far end of the house behind every 20 in it -
-     so anyone holding him has cleared every 20, the 15 and the 13 already,
-     and the two his rate can bring early are the 25 and PULLET's 26, which
-     is that same 25 one plank further on. Both arrive early for the same
-     reason and with the same blessing: that is the reward working, not a
-     leak.
+     Scores.houseTop() + 1, 13 off today's seed, and at 26. No doodad carries
+     `pay` today, so no gate arrives early; if one is given it again, the
+     two a doubled score could bring early are whichever gates sit above
+     the price that bought him.
 
      AND THE ONE DELIBERATE BREAK IN THE PROOF ABOVE, which gets its own
      paragraph because it is the only place the two totals are written apart.
@@ -156,7 +152,7 @@ var PlayScene = (function () {
      he did not thread it. But the level must not get EASIER for the one
      doodad who can go round a plank - the spikes, the magnets and the late
      phase have to arrive on the plank they arrive on for everybody, and all
-     three read `pace`. So for the twelve without the field nothing whatever
+     three read `pace`. So for the roster without the field nothing whatever
      changes and the four-writes proof above holds to the integer; for the
      one with it, `pace` runs AHEAD of `score` by exactly the number of
      planks he swam under. A headless test reads that difference as the count
@@ -192,6 +188,7 @@ var PlayScene = (function () {
      something recomputed off the other one every frame - see grabSpicy. */
   var spicySlot = 80, sourSlot = 80;
   var streaks = [];            /* speed lines, only drawn while hot */
+  var squallWarned = false;    /* the SQUALL heads-up, once per run (start() resets) */
   var unlocked = [];           /* doodads this run has earned */
   var unlockBanner = 0;
   var wonLevels = [];          /* levels this run has opened up */
@@ -517,6 +514,7 @@ var PlayScene = (function () {
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
     sour = 0; shrivel = 0; sourFlash = 0; sourBanner = 0;
     spicySlot = 80; sourSlot = 80;
+    squallWarned = false;
     unlocked.length = 0; unlockBanner = 0; wonLevels.length = 0;
     runAchv.length = 0; stuns = 0;
     /* Lives never carry between runs: start() is what RETRY calls, so a
@@ -596,12 +594,19 @@ var PlayScene = (function () {
     }
 
     streaks.length = 0;
-    for (var k = 0; k < 14; k++) streaks.push(freshStreak(rand(0, VW)));
+    /* 14 for the heat; a squall keeps its own count, 36 - a gale, not a
+       shimmer. 36 fillRects a frame against 14, nothing beside the particle
+       list, and at 208-356 px/s of room a streak crosses in 0.4-1.15 s. */
+    for (var k = 0; k < (doodad.squall ? doodad.squall.streaks : 14); k++) streaks.push(freshStreak(rand(0, VW)));
   }
 
+  /* The wind's lines are longer and quicker than the heat's shimmer; for
+     everyone without `squall` the draws are the same five, same ranges. */
   function freshStreak(x) {
-    return { x: x, y: rand(CEIL + 4, FLOOR - 4), len: randInt(7, 26),
-             spd: rand(1.4, 2.6), bright: chance(0.3) };
+    var sq = doodad.squall;
+    return { x: x, y: rand(CEIL + 4, FLOOR - 4),
+             len: sq ? randInt(18, 56) : randInt(7, 26),
+             spd: sq ? rand(2.0, 3.4) : rand(1.4, 2.6), bright: chance(0.3) };
   }
 
   /* Spikes - nails in the Coop, mint in the Garden. A level that leaves
@@ -1609,9 +1614,9 @@ var PlayScene = (function () {
        thumb that just put him there is already flapping again, flap() SETS
        vy rather than adding to it, and a flap from rest covers 48px toward
        that edge: 50 is one flap plus two, and from there the reflex leaves
-       1.6px of hitbox clear. For eleven doodads the floor is the first
-       edge and the lid the second; for a helium doodad it is the lid and
-       the floor. Same four numbers either way - down() says which edge
+       1.6px of hitbox clear. For the roster today the floor is the first
+       edge and the lid the second; for a `helium` doodad (none today) it is
+       the lid and the floor. Same four numbers either way - down() says which edge
        gets which pair. Full-size HIT_R on purpose: this is a lift clear of
        trouble and not a collision test, so a shrivelled doodad has no
        reason to be given the smaller, meaner one. The column has just
@@ -1794,6 +1799,7 @@ var PlayScene = (function () {
     /* a second one part way through tops the heat up rather than
        restarting it, so a lucky pair is worth chasing */
     var wasHot = spicy > 0;
+    var sq = doodad.squall;
     /* spicyTime() and not SPICY_TIME, and the local is so that the FULL
        duration and the top-up cap built off it can never disagree: a doodad
        who makes what he picks up last longer has to carry the x1.6 ceiling
@@ -1803,6 +1809,15 @@ var PlayScene = (function () {
     spicy = spicy > 0 ? Math.min(full * 1.6, spicy + full * 0.6) : full;
     spicyFlash = 0.14;
     spicyBanner = 1.1;
+    /* THE SQUALL HEADS-UP, once per run, at the instant it first matters - not on the
+       first flap (abilityWarn's slot), because the hold starts mid-run and a sentence
+       about not falling means nothing to a doodad still falling. 3.5 and not 2.4: the
+       shout owns the slot for its 1.1 s (drawHazardWarning yields to spicyBanner), so
+       this leaves the usual 2.4 s of warning after it. It overwrites whatever hazard
+       sentence is up, the drop's precedent: stopping falling is the bigger news. */
+    if (sq && !wasHot && !squallWarned) {
+      squallWarned = true; warnLines = sq.warn; hazardWarn = 3.5;
+    }
     /* the banner slot has one tenant - see stun() */
     sourBanner = 0; stunBanner = 0;
     /* A GAUGE TAKES ITS ROW WHEN IT IS CAUGHT AND KEEPS IT UNTIL IT DIES.
@@ -1838,8 +1853,11 @@ var PlayScene = (function () {
       var a = rand(0, TAU), sp = rand(30, 150);
       particles.push({ x: ob.x, y: ob.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30,
                        life: rand(0.35, 0.95), g: -70,
-                       col: chance(0.4) ? FX.hotHi
-                          : (chance(0.5) ? FX.hotMid : FX.hot) });
+                       /* blue off his own field for a squall; the same two
+                          draws either way, so nobody else's dice move */
+                       col: sq ? (chance(0.4) ? sq.hi : (chance(0.5) ? sq.mid : sq.low))
+                          : (chance(0.4) ? FX.hotHi
+                          : (chance(0.5) ? FX.hotMid : FX.hot)) });
     }
     /* The heat is the one pickup that banks nothing else - no score, no spare
        life, no doodad - so this is the whole of its bookkeeping, and it goes
@@ -1855,11 +1873,13 @@ var PlayScene = (function () {
   /* the wake of embers the doodad leaves while it is lit up */
   function emberTrail(dt) {
     if (spicy <= 0 || !chance(dt * 46)) return;
+    var sq = doodad.squall;
     particles.push({ x: player.x - 7 + rand(-3, 3), y: player.y + rand(-6, 6),
                      vx: rand(-30, -8) - speed * 0.35, vy: rand(-26, -4),
                      life: rand(0.25, 0.6), g: -40,
-                     col: chance(0.45) ? FX.hotHi
-                        : (chance(0.5) ? FX.hotMid : FX.hot) });
+                     col: sq ? (chance(0.45) ? sq.hi : (chance(0.5) ? sq.mid : sq.low))
+                        : (chance(0.45) ? FX.hotHi
+                        : (chance(0.5) ? FX.hotMid : FX.hot)) });
   }
 
   /* --------------------------------------------------------- the lime */
@@ -2062,7 +2082,10 @@ var PlayScene = (function () {
       knockDur = clamp(2 * Math.abs(flapV()) / Math.abs(grav()), 0.4, 0.8);
       knockT = knockDur;
       knockFrom = player.x;
-      player.vy = flapV();
+      /* under the hold the wind has him: the toss is sideways only, or a
+         -338 kick would carry him 52 px up before approach() caught it,
+         into whatever is above */
+      player.vy = squalling() ? 0 : flapV();
       player.vx = 0;
       invuln = Math.max(invuln, knockDur + 0.15);
     }
@@ -2219,12 +2242,13 @@ var PlayScene = (function () {
      spring's normaliser in flap(), the tilt) and the other two bound with
      it - the integrator both ways, the dying branch downward only, since
      a popped balloon only ever falls. The FLIGHT MODEL is Billy's
-     axis - the three scales - and the SIGN is Donkey Joe's; they compose
+     axis - the three scales - and the SIGN is `helium`'s; they compose
      and neither knows the other's name. */
 
-  /* WHICH WAY IS DOWN for this doodad, right now: +1 for the eleven the
-     room pulls toward the floor, -1 for one full of helium while the run
-     is live. It is the sign and nothing else; `helium` is the multiplier
+  /* WHICH WAY IS DOWN for this doodad, right now: +1 for everyone on the
+     roster today, -1 for a doodad with `helium` while the run is live
+     (Donkey Joe carried it until 2026-10-10; the field stays for a later
+     one). It is the sign and nothing else; `helium` is the multiplier
      on the reversed gravity, 1 for an exact mirror, and it is applied in
      grav() alone so that every other reader of down() gets a clean +-1.
 
@@ -2261,7 +2285,8 @@ var PlayScene = (function () {
      a flap taken from a hover or a rise, it is exactly 0.
 
      It reads vy in the room's frame; nobody carries both `bounce` and
-     `helium`, and if one ever does it wants player.vy * down() here and the
+     `helium` (nor `squall` and either), and if one ever does it wants
+     player.vy * down() here and the
      spring added with the same sign in flap(). Not done now - code nobody
      can exercise is code nobody can test. */
   function springV() {
@@ -2282,6 +2307,16 @@ var PlayScene = (function () {
      see a bar that lies about how much is left for the first third of the
      ability they are paying for. */
   function spicyTime() { return SPICY_TIME * (doodad.carry || 1); }
+
+  /* THE HOLD. True while a doodad with `squall` is hot and the run is live: gravity
+     is off and UP/DOWN steer him (updatePlayer). Not in 'paused' (nothing integrates)
+     and not in 'dying' (die() zeroes spicy, so a dead squall falls like anyone). */
+  function squalling() { return !!(doodad && doodad.squall) && spicy > 0 && state === 'play'; }
+  /* the ▲▼ pads exist only while the hold does, and Input.setTouchMode drops the
+     target list - harmless here, a run publishes none. It writes only on a change,
+     and for a doodad without `squall` the wanted mode is 'play' on every frame it
+     is asked, which is what start() and resume already set - so it never writes. */
+  function syncTouch() { var m = squalling() ? 'squall' : 'play'; if (Input.touchMode() !== m) Input.setTouchMode(m); }
   function sourTime()  { return SOUR_TIME * (doodad.carry || 1); }
 
   /* And the size the doodad is right now, for the same reason: a lime makes
@@ -2319,8 +2354,8 @@ var PlayScene = (function () {
     player.angle = -0.36 * dn;
     Audio3.play('flap');
     /* and the puff is the air the flap PUSHED, so it leaves him on the side
-       opposite the shove: under the eleven who go up, over the one who goes
-       down. g stays 60 either way, because the puff is room air and not
+       opposite the shove: under a doodad who goes up, over one with `helium`
+       who goes down. g stays 60 either way, because the puff is room air and not
        helium - over its 0.18-0.4s it slows and stalls, which is what a puff
        of air does, and a balloon's own gas is the one thing in this scene
        that never leaves him. The count and the spring scaling are the same
@@ -2636,7 +2671,8 @@ var PlayScene = (function () {
     }
 
     /* gravity, integrated so a flap always reaches the same height. The
-       clamp bounds him toward HIS OWN down. For the eleven it is the old
+       clamp bounds him toward HIS OWN down. For everyone without `helium`
+       it is the old
        Math.min(vy + g * dt, maxFall()) to the float, because nothing they do
        reaches the lower bound: the fastest anyone rises is Koa off a flap
        taken at the 545 cap, -338 - (545 - 420) * 0.8 = -438, against a floor
@@ -2670,6 +2706,30 @@ var PlayScene = (function () {
                          vx: -hc * 30, vy: -hs * 30,
                          life: 0.2, g: 0, col: FX.motesHi });
       }
+    } else if (squalling()) {
+      /* THE HOLD: no gravity. Wanted vy is -rise, 0 or +rise off the held UP/DOWN
+         (both held = 0, as LEFT+RIGHT is), reached by approach() at `accel` - the
+         sideways nudge's shape, so a steer starts and stops the way the thumb
+         already knows. 150 px/s and 1100 px/s^2: planks come every 0.51 s at
+         speedMax 178 x 2.0 and the gap centre moves at most gapDrift 60 between
+         them, so 76 px of reach clears the worst case by 16; full speed in 0.14 s
+         and 10 px to stop, inside the 28 px a 78 px gap leaves a 22 px hitbox.
+         Tested AFTER warpHold, so a hot doodad set down by a warp still gets
+         the half-second ring first.
+         What it does NOT change, on purpose: the floor and a killing lid still
+         kill (collide() reads y, not gravity - he is steered into them, not
+         pulled, so it is his death); the Backyard's rafters still clamp him,
+         and their -0.18 bounce is eaten by approach() inside 0.03 s; a ground
+         save's -250 runs down to the hold in 0.23 s, a 28 px rise; a bop's
+         -243 in 0.22 s, and he can only bop by holding DOWN onto a head,
+         which is the ability working. */
+      var sq = doodad.squall, lift = 0;
+      if (Input.down('up')) lift -= 1;
+      if (Input.down('down')) lift += 1;
+      player.vy = approach(player.vy, lift * sq.rise, sq.accel * dt);
+      player.y += player.vy * dt;
+      /* wings up while he climbs, so the hold reads as flying and not as hanging */
+      if (lift < 0) player.flapTimer = Math.max(player.flapTimer, 0.05);
     } else {
       player.y += player.vy * dt + 0.5 * g * dt * dt;
       player.vy = clamp(player.vy + g * dt, -maxFall(), maxFall());
@@ -2774,6 +2834,9 @@ var PlayScene = (function () {
     var dn = down(), v = player.vy * dn;
     var target = (v < 0 ? -0.36 : clamp(v / maxFall() * 1.25, -0.36, 1.05)) * dn;
     if (trotting > 0) target = 0.06;
+    /* leaning into the wind: nose into the room at -0.2 and a touch more as he
+       climbs or dives, in his own frame; the hold is a flight, not a hang */
+    if (squalling()) target = -0.2 + clamp(player.vy / doodad.squall.rise, -1, 1) * 0.3;
     player.angle = damp(player.angle, target, 0.0008, dt);
   }
 
@@ -2781,6 +2844,11 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    /* and a squall's ▲▼ pads go with the heat. syncTouch() only runs in the
+       play branch, so a Joe killed mid-hold kept them drawn through the whole
+       tumble; now he tumbles under the same ◀ ▶ as everyone else. For a doodad
+       that was not squalling the mode is already 'play' and nothing writes. */
+    syncTouch();
     /* and he is never under the floor on the way out. This is unreachable
        while diving - collide() returns on its first line, and the ground
        test is in there - but it is cleared anyway, because the dying branch
@@ -3050,7 +3118,7 @@ var PlayScene = (function () {
            FROM ABOVE, IN THE ROOM'S FRAME: last frame's hitbox bottom was at
            or above the struck rect's top and he is moving down the screen.
            The room's frame and not his own on purpose: the thing is standing
-           on the floor, and a helium doodad reaches its top the only way he
+           on the floor, and a `helium` doodad would reach its top the only way he
            can, by flapping down onto it. bopCool is the no-double-bop
            window; inside it the surface is simply not there. It is read
            ahead of the ring and of hurt() because it is neither: a bop is
@@ -3286,7 +3354,9 @@ var PlayScene = (function () {
       }
       if (Input.hit('pause') || Input.hit('confirm')) {
         state = prePause;
-        Input.setTouchMode('play');
+        /* 'play', or the hold's pads if he was paused mid-squall: state is
+           already back, so squalling() answers for the run being resumed */
+        syncTouch();
         Audio3.play('pause');
       }
       if (Input.hit('back')) { Audio3.play('back'); Game.go(LevelSelectScene, { focus: 'level' }); }
@@ -3354,18 +3424,19 @@ var PlayScene = (function () {
              before the first plank arrives, which is about 3.8s at
              speedStart.
 
-             AND A DOODAD WHOSE ABILITY TURNS THE THUMB AROUND TAKES THE
-             SLOT OFF THE ROOM. The slot shows one fact, so it shows the
-             bigger one: the lid line reminds the player of a rule they have
-             met on every Living Room run, where his says the input they
-             have had since the first run now works the other way - and for
-             him "keep him down" IS the lid's warning read from the other
-             side, so the room loses nothing by standing behind him. The
-             sentence lives on the DOODAD and not in art.WARN, so no level
-             has to know the ability exists, and it fires on the first flap
-             of every run for the lid line's reason: it is the rule that
-             ends runs, and it is needed at the instant he goes the wrong
-             way, which is this instant. */
+             AND A DOODAD WITH AN abilityWarn TAKES THE SLOT OFF THE ROOM.
+             The slot shows one fact, so it shows the bigger one: the lid
+             line reminds the player of a rule they have met on every Living
+             Room run, where HELIUM's said the input they had had since the
+             first run now worked the other way - and "keep him down" WAS the
+             lid's warning read from the other side, so the room lost nothing
+             by standing behind him. HELIUM used it, for the input working
+             the other way; nobody carries one today. The sentence lives on
+             the DOODAD and not in art.WARN, so no level has to know the
+             ability exists, and it fires on the first flap of every run for
+             the lid line's reason: it is the rule that ends runs. SQUALL
+             does not want it - its sentence is spoken at the catch, where
+             the rule starts (grabSpicy). */
           var w = doodad.abilityWarn || (CEIL_KILLS && art.WARN && art.WARN.ceil);
           if (w && hazardWarn <= 0) { warnLines = w; hazardWarn = 2.4; }
         }
@@ -3395,19 +3466,38 @@ var PlayScene = (function () {
            button, and the move is passive without it. Inside the pull it is
            NOTHING AT ALL: this line sits above where the warp block does its
            own return, and a wingbeat out of a doodad already spiralling down
-           a hole reads as the game having lost track of him. */
-        if (Input.hit('up') && warpIn <= 0) { if (diving > 0) breach(); else flap(); }
+           a hole reads as the game having lost track of him.
+           AND UNDER THE HOLD IT IS SWALLOWED: a tap is a held UP for one
+           frame, which the integrator reads; the flap's -338 would punch him
+           up 48 px, which is exactly what the hold promises not to do. The
+           tap still ends a warp's arrival ring, as flap() would have - the
+           thumb taking over is the moment the ring has done its job. */
+        if (Input.hit('up') && warpIn <= 0) {
+          if (diving > 0) breach();
+          else if (!squalling()) flap();
+          else warpHold = 0;
+        }
       }
       runTime += dt;
       var d = difficulty();
       if (spicy > 0) {
         spicy -= dt;
-        if (spicy <= 0) { spicy = 0; Audio3.play('cooldown'); }
+        if (spicy <= 0) {
+          spicy = 0; Audio3.play('cooldown');
+          /* the hold lets go from REST or from a climb, never from a descent: a vy of
+             +150 handed straight to gravity hits the floor 0.2 s sooner than a fall from
+             nothing, and the player was told the wind would drop, not that it would
+             throw him down */
+          if (doodad.squall) player.vy = Math.min(player.vy, 0);
+        }
       }
       if (sour > 0) {
         sour -= dt;
         if (sour <= 0) { sour = 0; Audio3.play('cooldown'); }
       }
+      /* the ▲▼ pads follow the hold, here and not below the pull's return, so
+         they come and go with the heat even while a hole is taking him */
+      syncTouch();
       /* The buzz, as a train of short pulses rather than one long shake.
          Screen.shake's amplitude decays as amount * shakeTime / 0.35, so a
          single 1.1-second call STARTS at three times its own amount and
@@ -3440,8 +3530,14 @@ var PlayScene = (function () {
          all of it would make every hot drop a free double. Half is the number
          at which a hot run is still a faster run. Nothing else about the heat
          moves - the streaks, the wash and the glow all read off `heat`, so it
-         still looks exactly as hot as it is; it just does not run as hard. */
-      speed = d.speed * (spicy > 0 ? 1 + (SPICY_SPEED - 1) * (1 - (doodad.calm || 0)) : 1);
+         still looks exactly as hot as it is; it just does not run as hard.
+         `squall.speed` stands in for SPICY_SPEED for the one doodad whose
+         heat is a hold: 2.0, because the hurry is the whole of what the heat
+         costs him. For the twelve without the field `hurry` IS the constant and
+         the expression is unchanged. (Not named `hot`: that is this scene's
+         target list, and a `var` here would hide it for all of update().) */
+      var hurry = doodad.squall ? doodad.squall.speed : SPICY_SPEED;
+      speed = d.speed * (spicy > 0 ? 1 + (hurry - 1) * (1 - (doodad.calm || 0)) : 1);
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
@@ -3753,14 +3849,15 @@ var PlayScene = (function () {
           var tight = doodad.nerve && ob.skim !== undefined &&
                       ob.skim >= 0 && ob.skim <= doodad.nerve;
           var worth = tight ? base * 2 : base;
-          /* `pay` is Donkey Joe's flat rate: a plank is worth that many of
+          /* `pay` is a flat rate on the plank - HELIUM's hazard pay, no
+             owner today: a plank is worth that many of
              itself to him, on top of the heat and on top of a tight pass -
              one more factor on the expression everyone's planks go through,
              not a different expression. It is THE PLANK AND ONLY THE PLANK.
              BOON_BONUS and GOLD_BONUS are not his to double: those are
              handed to him, a plank is threaded, and the plank is the thing
-             the helium makes hard - the owner's words were "for each
-             pillar". Do not "fix" this. For the eleven without the field
+             the helium made hard - the owner's words were "for each
+             pillar". Do not "fix" this. For a doodad without the field
              the rate is 1 and worth * 1 is worth, to the integer. `pace`
              takes the undoubled worth; its declaration says why the level
              must never learn his rate. */
@@ -3922,24 +4019,35 @@ var PlayScene = (function () {
   function drawHeat(ctx) {
     var pulse = 0.75 + 0.25 * Math.sin(t * 9);
     var a = ctx.globalAlpha;
+    /* Blue for the one doodad whose heat is a wind, off his own field; the
+       room's FX for everyone, read live. And THE END MADE READABLE: over the
+       last second of a squall the wind thins to nothing while the gauge
+       blinks, so the player sees the thing holding him up going before it
+       goes. `fade` is 1 for everyone else, and their streaks keep their
+       0.7 / 0.4 to the bit. */
+    var sq = doodad.squall;
+    var fade = sq ? clamp(spicy / 1.0, 0, 1) : 1;
     for (var i = 0; i < streaks.length; i++) {
       var s = streaks[i];
-      ctx.globalAlpha = a * heat * (s.bright ? 0.7 : 0.4);
-      ctx.fillStyle = s.bright ? FX.hotHi : FX.hotMid;
+      ctx.globalAlpha = sq ? a * heat * fade * (s.bright ? 0.85 : 0.5)
+                           : a * heat * (s.bright ? 0.7 : 0.4);
+      ctx.fillStyle = sq ? (s.bright ? sq.hi : sq.mid) : (s.bright ? FX.hotHi : FX.hotMid);
       ctx.fillRect(Math.round(s.x), Math.round(s.y), s.len, 1);
     }
     ctx.globalAlpha = a;
 
-    Tint.rect(ctx, 0, CEIL, VW, FLOOR - CEIL, FX.heat, heat * 2.4);
-    Tint.rect(ctx, 0, CEIL, 54, FLOOR - CEIL, FX.heatEdge, heat * 3 * pulse);
-    Tint.rect(ctx, VW - 54, CEIL, 54, FLOOR - CEIL, FX.heatEdge, heat * 3 * pulse);
+    var edge = sq ? sq.edge : FX.heatEdge;
+    Tint.rect(ctx, 0, CEIL, VW, FLOOR - CEIL, sq ? sq.wash : FX.heat, heat * 2.4);
+    Tint.rect(ctx, 0, CEIL, 54, FLOOR - CEIL, edge, heat * 3 * pulse);
+    Tint.rect(ctx, VW - 54, CEIL, 54, FLOOR - CEIL, edge, heat * 3 * pulse);
 
     if (state === 'play') {
       var r = 34 + pulse * 6;
+      var core = sq ? sq.glow : FX.glowCore, rim = sq ? sq.glowEdge : FX.glowEdge;
       var g = ctx.createRadialGradient(player.x, player.y, 2, player.x, player.y, r);
-      g.addColorStop(0, 'rgba(' + FX.glowCore + ',' + (0.30 * heat).toFixed(3) + ')');
-      g.addColorStop(0.5, 'rgba(' + FX.glowEdge + ',' + (0.16 * heat).toFixed(3) + ')');
-      g.addColorStop(1, 'rgba(' + FX.glowEdge + ',0)');
+      g.addColorStop(0, 'rgba(' + core + ',' + (0.30 * heat).toFixed(3) + ')');
+      g.addColorStop(0.5, 'rgba(' + rim + ',' + (0.16 * heat).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(' + rim + ',0)');
       ctx.fillStyle = g;
       ctx.fillRect(player.x - r, player.y - r, r * 2, r * 2);
     }
@@ -4069,7 +4177,7 @@ var PlayScene = (function () {
     if (spicyFlash > 0) {
       var fa = ctx.globalAlpha;
       ctx.globalAlpha = fa * clamp(spicyFlash / 0.14, 0, 1);
-      ctx.fillStyle = '#ffd08a';
+      ctx.fillStyle = doodad.squall ? doodad.squall.flash : '#ffd08a';
       ctx.fillRect(0, 0, VW, VH);
       ctx.globalAlpha = fa;
     }
@@ -4095,11 +4203,13 @@ var PlayScene = (function () {
       /* `spiced`, not `hot`: `hot` is this scene's target list and `var` is
          function-scoped, so a local of that name in here would hide it */
       var spiced = spicy > 0;
+      /* and a squall's hot score in his blues, off the field */
+      var sqs = doodad.squall;
       var s = scorePop > 0 ? 4 : 3;
       UI.heading(ctx, String(score), VW / 2, 34 - (scorePop > 0 ? 3 : 0), s, {
-        colour: spiced ? (scorePop > 0 ? '#ffe9bd' : '#ffb45c')
+        colour: spiced ? (scorePop > 0 ? (sqs ? sqs.inkPop : '#ffe9bd') : (sqs ? sqs.ink : '#ffb45c'))
                        : (scorePop > 0 ? '#fff3d0' : UI.C.ink),
-        outline: spiced ? '#5c1a08' : UI.C.shadow,
+        outline: spiced ? (sqs ? sqs.outline : '#5c1a08') : UI.C.shadow,
         wave: spiced ? t * 9 : undefined, waveAmp: 1
       });
       /* THE CHASE LINE'S SLOT, WHICH A STAY BORROWS. There is no table to
@@ -4228,6 +4338,9 @@ var PlayScene = (function () {
   /* the heat gauge under the score, and the shout when one is caught */
   function drawSpicy(ctx) {
     if (state === 'entry') return;
+    /* a squall names itself and wears its own colours, all off the field;
+       for everyone else every literal below is the one it always was */
+    var sq = doodad.squall;
     if (spicyBanner > 0) {
       var a = ctx.globalAlpha;
       /* it rises as it fades, but never far enough to reach the gauge.
@@ -4235,15 +4348,18 @@ var PlayScene = (function () {
          coop speeds up, and a solid caption would hide the next plank */
       var lift = (1.1 - spicyBanner) * 11;
       ctx.globalAlpha = a * clamp(spicyBanner / 0.6, 0, 1);
-      UI.heading(ctx, 'SPICY!', VW / 2, 112 - lift, 3,
-                 { colour: '#ffb45c', outline: '#5c1a08', wave: t * 11, waveAmp: 1.4 });
-      UI.text(ctx, 'DOUBLE POINTS', VW / 2, 138 - lift,
-              { align: 'center', colour: '#ff8a3c', shadow: UI.C.shadow });
+      UI.heading(ctx, sq ? sq.shout : 'SPICY!', VW / 2, 112 - lift, 3,
+                 { colour: sq ? sq.ink : '#ffb45c', outline: sq ? sq.outline : '#5c1a08',
+                   wave: t * 11, waveAmp: 1.4 });
+      UI.text(ctx, sq ? sq.sub : 'DOUBLE POINTS', VW / 2, 138 - lift,
+              { align: 'center', colour: sq ? sq.mid : '#ff8a3c', shadow: UI.C.shadow });
       ctx.globalAlpha = a;
     }
 
     if (heat < 0.02) return;
-    /* the last stretch blinks, so running out is never a surprise */
+    /* the last stretch blinks, so running out is never a surprise - and for
+       a squall that is the warning gravity is coming back, with the wind
+       thinning out under it in drawHeat over the final second */
     if (spicy > 0 && spicy < 1.8 && Math.floor(t * 8) % 2 === 0) return;
     /* The lime may be up too, and it no longer changes a word of this: the
        caption stands beside its own bar now, so each power-up names itself
@@ -4251,8 +4367,8 @@ var PlayScene = (function () {
     /* spicyTime(), not SPICY_TIME: the bar has to be a fraction of what THIS
        doodad's heat actually lasts, or a doodad who carries it longer watches
        a full bar sit still for the extra seconds and then drain */
-    drawGauge(ctx, clamp(spicy / spicyTime(), 0, 1), heat, SPICY_GAUGE,
-              'SPICY  X' + SPICY_MULT, spicySlot);
+    drawGauge(ctx, clamp(spicy / spicyTime(), 0, 1), heat, sq ? sq.gauge : SPICY_GAUGE,
+              (sq ? sq.label : 'SPICY') + '  X' + SPICY_MULT, spicySlot);
   }
 
   /* The gauge body, shared by the heat and the lime: panel, three fill rows,
@@ -4880,6 +4996,18 @@ var PlayScene = (function () {
                                        it from vy: -1 for a live balloon, +1
                                        for everyone and for a popped one */
                                     down: doodad ? down() : 1,
+                                    /* SQUALL off the run: the hold, its
+                                       speed, the room's hot multiplier, the
+                                       touch pads, the wind's line count and
+                                       the heads-up on screen, so a headless
+                                       test reads the hold, the pads and the
+                                       warning without inferring any of it */
+                                    squall: squalling(),
+                                    squallRise: doodad && doodad.squall ? doodad.squall.rise : 0,
+                                    hotSpeed: doodad && doodad.squall ? doodad.squall.speed : SPICY_SPEED,
+                                    touchMode: Input.touchMode(),
+                                    streaks: streaks.length,
+                                    warn: hazardWarn > 0 ? warnLines : null,
                                     /* and how much his last flap sprang */
                                     spring: player.spring,
                                     /* the level's per-run notebook, live,

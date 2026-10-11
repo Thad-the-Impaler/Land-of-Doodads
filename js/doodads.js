@@ -15,7 +15,7 @@
      unlockLimes  limes caught, which only the Canopy grows
      unlockGold   { name, need, where } - that many of a level's +5 pickup,
                   counted on the PICKUP'S NAME rather than on the level, so
-                  a second bay that one day shed quarters would count
+                  a second bay that one day shed capybaras would count
                   toward the same three. `where` is only for the price line.
      unlockMeet   the id of the level he is HIDING in. Not bought: found.
      unlockDeed   the id of a deed the engine reports by name - something
@@ -26,6 +26,10 @@
    they are the same shape of answer: one event that either happened or did
    not, with nothing to total up and nothing to half-finish. A found doodad,
    a deed doodad and a chased one are one list for that reason and no other.
+   The same list is also where a stall that has been opened stays opened: an
+   id in it is a price PAID, whatever the roster asks for that doodad today,
+   which is what let two prices move on 2026-10-10 without anybody losing a
+   doodad - see metIds().
    title says how the doodad behaves in the coop on the title screen.
 
    Every doodad has an ability, and every one of them is PASSIVE: it needs
@@ -33,19 +37,30 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm`, `pay`, `dive` - so a new one is a new field rather than a new
-   branch on an id, and each sits on its own axis: points, sight, pickups,
-   survival, handling, room, spring, duration, direction, tempo, route.
-   Donkey Joe is the one doodad with two fields: `pay` is his second, on
-   Cookie's points axis, and it is there as the price of his first - his
-   entry says why.
+   `calm`, `pay`, `dive`, `squall` - so a new one is a new field rather than
+   a new branch on an id, and each sits on its own axis: points, sight,
+   pickups, survival, handling, room, spring, duration, direction, tempo,
+   route, hold. `squall` is the HOLD - while the heat runs, gravity is
+   suspended and UP/DOWN steer him vertically, at the price of a faster room.
+   Nobody carries two fields today. Donkey Joe did (`helium` + `pay`,
+   HELIUM's hazard pay); both stay supported by the engine as data for a
+   later doodad and nobody on the roster sets them.
+
+   SQUALL is the one ability that reads an input - DOWN while the heat runs.
+   The owner asked for it by name on 2026-10-10 ('can be moved up or down
+   ... the first time down has been an input'), after refusing the dash for
+   a gesture mid-flight. The difference he drew: the dash wanted a
+   double-tap on the flapping hand; this wants the hand's OTHER thumb on a
+   key it already has, for the few seconds the room has stopped pulling. It
+   is still no gesture: a held direction, read the way LEFT and RIGHT are.
 
    The five newest axes, because their words are less obvious than the rest:
    `bounce` is the SPRING - a flap taken from a fast fall gets part of the
    fall back as lift, which is a rule about the flap and not a weight.
    `carry` is DURATION - how long a power-up lasts, which nothing had ever
    scaled. `calm` is TEMPO - how much of the heat's hurry a doodad declines,
-   where the points it pays out are untouched. `helium` is the DIRECTION -
+   where the points it pays out are untouched. (Unowned today - kept for a
+   later doodad:) `helium` is the DIRECTION -
    the sign of the pull: the room draws him toward the lid and the flap
    pushes him down, with the three flight numbers the same 1180, 545 and
    338 under the turned sign, so the integrator still never learns a name -
@@ -404,7 +419,7 @@ var Doodads = (function () {
       name: 'ROLLER',
       tagline: 'NEVER CHECKED, NEVER CLAIMED',
       about: ['A CARRY-ON WITH ONE GOOD WHEEL.', 'KNOWS EVERY CAROUSEL BY NAME.'],
-      lockedAbout: ['SOMETHING ON WHEELS IS PARKED HERE.', 'IT TAKES QUARTERS.'],
+      lockedAbout: ['SOMETHING ON WHEELS IS PARKED HERE.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
       /* The DURATION axis: nobody had ever scaled how LONG a power-up
          lasts. `carry` multiplies both timers - the heat's 6.5s becomes 8.8
          and the lime's 7.0 becomes 9.45 - and because PlayScene reads those
@@ -425,12 +440,16 @@ var Doodads = (function () {
       abilityLive: true,
       abilityAbout: ['WHAT HE PICKS UP, HE PACKS.', 'THE HEAT AND THE LIME LAST LONGER.'],
       carry: 1.35,
-      /* Three quarters, and the Desk is where quarters are shed. The count
-         is keyed on the PICKUP'S name and not on the level, so a second bay
-         that one day sheds quarters counts toward the same three - which is
-         what "collect three quarters" says, and what a player would expect
-         of it. `where` is for the price line only; it buys nothing else. */
-      unlockGold: { name: 'QUARTER', need: 3, where: 'desk' },
+      /* Neither collected nor scored: DONE. The engine reports the deed by
+         this name and knows nothing whatever about what it opens, so the
+         roster keeps the only copy of that fact - and the save remembers
+         the DOODAD, in the same list the found ones use, because holding
+         both at once either happened or it did not. It suits a carry-on
+         more than it suited the donkey: the deed is holding two power-ups
+         at once, and holding on to things is his whole ability.
+         His until 2026-10-10 was three QUARTERs off the Desk; a save that
+         paid them keeps him - metIds() says how. */
+      unlockDeed: 'hot-and-sour',
       /* The HANDLE, and the quarter. His art is 83% one near-black,
          #2c2c2c, and 96% near-black all told, so a near-black accent is a
          hole in the coop's dim brown and an invisible light shaft behind
@@ -439,8 +458,8 @@ var Doodads = (function () {
          which is the one test an accent has to pass: it reads at a glance
          or it is not working. So this one is motivated by what is actually
          on him. The only thing on the sprite that is not black is the
-         telescoping handle, #dad9d3, and the one thing he is bought with is
-         three quarters; both are silver.
+         telescoping handle, #dad9d3, and the quarter he used to cost - the
+         Desk still sheds them; both are silver.
 
          Billy's note turns the other way here. His near-white was refused
          because a white shaft behind a white sprite is no shaft at all;
@@ -473,92 +492,82 @@ var Doodads = (function () {
       name: 'DONKEY JOE',
       tagline: 'LOUD IN BOTH DIRECTIONS',
       about: ['AN INFLATABLE DONKEY WITH A LOT OF TEETH.', 'HAS NEVER ONCE BEEN WRONG.'],
-      lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS IT HOT AND IT WANTS IT SOUR.'],
-      /* HELIUM, which is what an inflatable donkey is full of if the owner
-         is taken at his word. `helium` is the SIGN of the pull: the room
-         draws him toward the lid instead of the floor, with the same 1180
-         behind it, the same 545 cap and the same 338 off a flap - and the
-         flap pushes him DOWN, which is the whole of the input. 1 is an
-         exact mirror; the number multiplies the reversed gravity and
-         nothing else. He is drawn the same way up as everyone. The room is
-         turned over for him, not the donkey.
+      lockedAbout: ['SOMETHING IN HERE IS GRINNING.', 'IT WANTS A SCORE WORTH GRINNING AT.'],
+      /* SQUALL. An inflatable donkey in a strong wind does not fall: he is
+         carried. `squall` is the HOLD - while the heat runs (spicy > 0)
+         gravity does not apply to him at all, he keeps the height he was
+         caught at, and UP and DOWN steer him: held UP climbs, held DOWN
+         sinks, both or neither holds. LEFT and RIGHT nudge as they always
+         do. A tap of flap is not a flap under the hold - its 338 off a tap
+         would punch him 48px up, which is the one thing the hold promises
+         not to do. When the heat runs out the wind drops and the fall comes
+         back, from rest or a climb and never from a descent.
 
-         It is the one axis nobody can borrow. Every other ability here is a
-         number on something the game already does - lift, size, duration,
-         tempo - and at twelve doodads every such number has an owner. HOT
-         AIR was Billy's three numbers with a timer wound onto them, and the
-         owner said so. FLAT OUT found the one lever nobody had pulled, the
-         SHAPE, and the owner refused it on sight: a hitbox that changes
-         with speed is read in a comment, not felt in a run. The DIRECTION
-         of the pull is not a number on anything. It is the fact a flapping
-         game is built on, and turning it over changes what the thumb is
-         for. It needed no new rule either: every line that moves him asks
-         down(), and the integrator, the tilt, the puff and the save come
-         out mirrored by arithmetic.
+         It is on the HEAT because the heat is the one timed event every
+         bay sheds, so the ability is level-agnostic, and the gauge already
+         counts it down - the end of the hold is a thing the player can see
+         coming, which a rule that takes gravity away has to be. The heat is
+         otherwise the heat: it still doubles the plank and still smashes a
+         plain drop, and its length is the same 6.5s everyone's is.
 
-         The HOT AIR card refused this exact idea on two counts, and both
-         are answered. That the Backyard's rafters would rest him between
-         planks and delete the fall death by geometry: they stop him, but
-         spawnAhead() never puts a gap's top above CEIL + 34, so a donkey
-         sat on the rafters is inside the first plank before he has done
-         anything, and in the Living Room the lid ends the run, which is
-         everyone else's floor to the pixel. Do nothing and you drift into a
-         wall, in both rooms. That it asks the thumb to unlearn the one
-         thing it knows: yes. That is the ability - the only one on the
-         roster that is a skill rather than a stat - and his card and his
-         first flap both say so.
+         The numbers, which PlayScene reads off this field and nowhere else.
+         `rise` 150px/s: at speedMax 178 x 2.0 = 356px/s planks come every
+         0.51s, and between two of them the gap's centre moves at most
+         gapDrift 60, so 76px of reach clears the worst case by 16. `accel`
+         1100px/s^2 is the sideways nudge's shape - full speed in 0.14s and
+         10px to stop - inside the 28px a 78px gap leaves around a 22px
+         hitbox, so a steer starts and stops where the thumb meant it to.
+         `speed` 2.0 stands in for SPICY_SPEED 1.55 for him alone: the
+         room's hurry is the WHOLE price of a heat that no longer threatens
+         to drop him, so it has to be felt - and not 2.1, because 72px of
+         reach against a 60px drift is too thin to call fair.
 
-         Nothing is removed. Same hitbox, same arc, same first flap: 48px
-         off mid-room, 49.6px clear of the floor for him and of the lid for
-         everyone else, because 133 is the midpoint of 24 and 242. A popped
-         balloon falls - down() is +1 outside play, so a dead Joe drops to
-         land() and the results screen comes. The one asymmetry left is the
-         Backyard's, where the lid bumps and the floor kills: his idle
-         failure costs him the next plank instead of the frame, and his
-         eager one costs him the run, where everyone else has those the
-         other way round.
+         Nothing is made safe. The floor still kills, and a killing lid
+         still kills: he is steered into them now rather than pulled, so
+         the death is his. A dead Joe falls like anyone - die() puts the
+         heat out, and the hold goes with it.
 
-         THE PAY. The mirror is not harder than the game - the loop is the
-         same loop, drift into a wall if you do nothing - but it is harder
-         than the roster, because the thumb has to unlearn the one thing it
-         knows, and that is a cost in SKILL where every other cost here is
-         a stat. The owner wanted it balanced and wanted the balance in the
-         score, so `pay` is a flat 2 on every plank: the heat still doubles
-         it and a tight pass would too, so it is one more factor on the
-         expression everyone's planks go through and not a different one,
-         and it is only the plank - the full pot's 3 and the can's 5 are
-         handed to him, not threaded, and the plank is the thing the helium
-         makes hard. That puts a second doodad on Cookie's axis, which this
-         roster has been careful never to do - the header and Capybara's
-         note both say "the points are untouched" - so the difference has
-         to be said plainly rather than wished away. Her nerve is EARNED,
-         plank by plank, by taking a line within seven pixels of an edge,
-         and a run that does not shave planks sees none of it. His is a
-         RATE, paid for the room being upside down, and he collects it on
-         the plank he threads straight down the middle. One is a bonus for
-         a risky line; the other is hazard pay. The card says PAYS where
-         hers says SCORES for that reason. And the level never learns his
-         rate: spikesReady, spawnDrops, the late phase and run.score pace
-         themselves off `pace` in js/scene_play.js, the same run scored at
-         everybody else's rate, so his drops, his spikes and the Mantle's
-         controllers come on the plank they come on for anyone - armed off
-         his doubled score they would come at half the distance, which is a
-         punishment, and this is a reward. The tables, Levels.noteScore,
-         the stalls' unlockAt and the achievements all see the doubled
-         score, on purpose: it is his score. */
-      ability: 'HELIUM',
+         Blue, because it is a wind and the owner said so: every colour the
+         heat paints - the wash, its edges, the glow, the streaks, the
+         embers, the catch's flash, the hot score, the shout and the gauge -
+         is a key on this field, his accent and its two tints, so PlayScene
+         swaps them in with `sq ? sq.x : FX.y` and never learns whose they
+         are. More streaks (36 against 14), longer and faster, is the STRONG
+         in strong wind. The warn is spoken at the catch, not at the first
+         flap (abilityWarn's slot): the hold starts mid-run, and a sentence
+         about not falling means nothing to a doodad still falling.
+
+         It reads an input, the one ability that does - the header says why
+         the owner allowed it where he cut the dash.
+
+         HELIUM WAS HIS UNTIL 2026-10-10 - the pull turned over, the flap
+         pushing down, and `pay` 2 on every plank as hazard pay for a thumb
+         that had to unlearn itself. The owner took it off him. Both fields
+         live on in the engine as data for a later doodad, and the reasons
+         they were built are still written beside them in js/scene_play.js. */
+      ability: 'SQUALL',
       abilityLive: true,
-      abilityAbout: ['HE FLOATS UP. HE CANNOT HELP IT.', 'EVERY PLANK PAYS HIM DOUBLE.'],
-      abilityWarn: ['\u25B2 HELIUM \u25B2', 'HE FLOATS. YOU KEEP HIM DOWN.'],
-      helium: 1,
-      /* the flat rate on a plank - THE PAY, above */
-      pay: 2,
-      /* Neither collected nor scored: DONE. The engine reports the deed by
-         this name and knows nothing whatever about what it opens, so the
-         roster keeps the only copy of that fact - and the save remembers
-         the DOODAD, in the same list the found ones use, because holding
-         both at once either happened or it did not. */
-      unlockDeed: 'hot-and-sour',
+      abilityAbout: ['WHEN IT GETS HOT HE STOPS FALLING.', 'UP, DOWN, AND THE ROOM FLIES BY.'],
+      squall: {
+        speed: 2.0,            /* room multiplier while hot, in SPICY_SPEED's place */
+        rise:  150,            /* px/s, the vertical hold's full speed            */
+        accel: 1100,           /* px/s^2, approach() step toward the wanted vy    */
+        streaks: 36,           /* wind lines kept alive, against the heat's 14    */
+        hi:   '#dcd8ff', mid: '#a39cf0', low: '#5b4de0',   /* streaks, embers, burst */
+        wash: '#2c2380', edge: '#5b4de0',                   /* the room wash and its two edges */
+        glow: '163,156,240', glowEdge: '91,77,224',         /* r,g,b for the radial gradient */
+        flash: '#dcd8ff',                                   /* the catch's one-frame wash */
+        ink: '#a39cf0', inkPop: '#dcd8ff', outline: '#1a1450',  /* the hot score */
+        gauge: { panel: '#120f3a', edge: '#2c2380', base: '#5b4de0',
+                 mid: '#8f85f2', top: '#dcd8ff', label: '#a39cf0' },
+        label: 'SQUALL',                                    /* gauge caption: 'SQUALL  X2' */
+        shout: 'SQUALL!', sub: 'DOUBLE POINTS. NO FALLING.',
+        warn: ['\u25B2\u25BC SQUALL \u25B2\u25BC', 'NO FALLING. UP AND DOWN.']
+      },
+      /* A score, and the highest on the roster: 35 against Billy's 25 and
+         Maximus's 15. He used to cost the hot-and-sour deed (Roller's now);
+         a save that did the deed keeps him - metIds() says how. */
+      unlockAt: 35,
       /* His own blue, pushed to indigo. The art is 78% #2d00fe, and taken
          straight it sits on the rail beside Billy's #4f8fd0 as a second
          blue with nothing to tell them apart. Darker, and a step toward
@@ -716,7 +725,7 @@ var Doodads = (function () {
   var boons = null;
   var limes = null;
   var golds = null;                   /* { QUARTER: 3 } - the +5s, by name */
-  var met = null;                     /* ids of the found AND the deed ones */
+  var met = null;                     /* ids whose stall is open for good: found, deed, chased, or grandfathered */
   var passkey = null;
 
   /* The master passkey opens every doodad at once. It is its own flag
@@ -807,8 +816,10 @@ var Doodads = (function () {
      exists for 'succulents' against 'boon' and 'limes' against 'sour'.
 
      Keyed on the NAME and not on the level because the price says "collect
-     three quarters": a second bay that one day shed quarters would count
+     three capybaras": a second bay that one day shed capybaras would count
      toward the same three, which is what the player was actually asked for.
+     (Roller's three quarters were the first such price, until 2026-10-10;
+     the QUARTERs the Desk still sheds are counted here all the same.)
 
      Nothing in the stored value is trusted - it is a JSON blob out of
      localStorage that a curious player can edit by hand. Only a plain
@@ -849,7 +860,7 @@ var Doodads = (function () {
 
   /* one +5 caught, by name. returns the doodads it just opened up, exactly
      as noteBoon and noteLime do - usually none, and at most the one whose
-     third quarter this was. */
+     third capybara this was. */
   function noteGold(name) {
     var before = goldTaken(name);     /* which also primes the cache */
     golds[name] = before + 1;
@@ -871,7 +882,33 @@ var Doodads = (function () {
   function metIds() {
     if (met !== null) return met;
     var stored = Save.get('met', []);
-    met = Array.isArray(stored) ? stored.filter(function (id) { return BY_ID.hasOwnProperty(id); }) : [];
+    var list = Array.isArray(stored) ? stored.filter(function (id) { return BY_ID.hasOwnProperty(id); }) : [];
+    /* GRANDFATHERING, 2026-10-10. Two prices moved: Roller (three QUARTERs ->
+       the hot-and-sour deed) and Donkey Joe (the deed -> a score of 35).
+       NOBODY LOSES AN EARNED DOODAD, so a save that had paid the OLD price is
+       written into this list, which meets() honours ahead of any price (see
+       there):
+         - three quarters in the gold tally bought Roller, so Roller is theirs;
+         - 'donkey' here means the deed was DONE, and the deed is Roller's
+           now, so Roller is theirs too; 'donkey' itself stays and keeps Joe
+           open under 35.
+       It runs ONCE PER SAVE, behind its own flag ('repriced'), and the flag is
+       the point: the Desk still sheds quarters, so without it a player who
+       started after the change and caught a third quarter would be handed
+       Roller on the next boot - the old price, paid in the new world. The
+       first boot on this code marks every save, fresh ones included, so only
+       quarters caught BEFORE it count. Adds only, never removes; a second
+       boot finds the flag and writes nothing. Names two ids and one pickup
+       on purpose - a migration names the save it migrates, and this is the
+       one place in the file allowed to. */
+    if (Save.get('repriced', false) !== true) {
+      if (list.indexOf('roller') < 0 && (goldTaken('QUARTER') >= 3 || list.indexOf('donkey') >= 0)) {
+        list.push('roller');
+        Save.set('met', list);
+      }
+      Save.set('repriced', true);
+    }
+    met = list;
     return met;
   }
 
@@ -985,7 +1022,9 @@ var Doodads = (function () {
     reached = score;
     Save.set('reached', score);
     return LIST.filter(function (d) {
-      return d.unlockAt && d.unlockAt > before && d.unlockAt <= score;
+      /* and not one already open for good, or a grandfathered Joe would be
+         announced a second time at 35 */
+      return d.unlockAt && d.unlockAt > before && d.unlockAt <= score && metIds().indexOf(d.id) < 0;
     });
   }
 
@@ -1000,6 +1039,11 @@ var Doodads = (function () {
   function meets(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
+    /* AN ID IN 'met' IS A PRICE PAID, whatever the price is today - this is
+       the line that makes a price safe to move (metIds() names the two that
+       moved). The passkey is not in this list and never gets in:
+       setMasterKey writes 'passkey', not 'met'. */
+    if (metIds().indexOf(d.id) >= 0) return true;
     if (d.unlockAt && (best === undefined ? bestReached() : best) < d.unlockAt) return false;
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
@@ -1145,8 +1189,8 @@ var Doodads = (function () {
                have: Math.min(limesTaken(), d.unlockLimes), need: d.unlockLimes };
     }
     /* The price names the level for the same reason the limes' does: a
-       player who has not worked out where quarters come from cannot go and
-       get three of them. The pickup's name is stored SINGULAR, because that
+       player who has not worked out where the capybaras come from cannot go
+       and get three of them. The pickup's name is stored SINGULAR, because that
        is how the art shouts it when the +5 lands ('QUARTER +5'), so the
        price is the one place that adds the S - a pickup that did not
        pluralise with an S would want a field of its own, and none of them

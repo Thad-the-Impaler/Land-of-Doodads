@@ -1,7 +1,9 @@
 /* ------------------------------------------------------------------
    Land of Doodads - keyboard input
    Actions are edge-triggered: FLY only fires on a fresh key press, so
-   holding UP does nothing (same rule as Flappy Bird).
+   holding UP does nothing (same rule as Flappy Bird) - except under one
+   doodad's SQUALL, which reads a HELD up or down through down(), the way
+   the nudge reads left and right.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -214,7 +216,8 @@ var Input = (function () {
     /* A, latched: the mode is read once, at the press */
     aNow = !!(now && now.__a);
     if (aNow && !padAWasDown) {
-      padA = (touchMode === 'play') ? 'up' : 'confirm';
+      /* 'squall' is the run with two more pads, so A is still FLAP (a held UP) */
+      padA = (touchMode === 'play' || touchMode === 'squall') ? 'up' : 'confirm';
       padPress(padA);
     } else if (!aNow && padAWasDown && padA) {
       padRelease(padA);
@@ -278,6 +281,24 @@ var Input = (function () {
     play: [
       { a: 'left',  x: EDGE,           y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
       { a: 'right', x: EDGE + PAD + 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      PAUSE_PAD,
+      { a: 'up',    rest: true }
+    ],
+    /* THE HOLD'S PADS. While a doodad with `squall` is hot, PlayScene switches to this
+       mode (and back): the run's two nudge pads and the pause button exactly as in
+       'play', plus UP and DOWN pads bottom-right mirroring LEFT and RIGHT bottom-
+       left - EDGE in from the right edge, the same PAD and PAD_Y, so a thumb finds
+       them where the other thumb found its pair. The rest zone stays 'up': a finger already down anywhere goes on
+       meaning UP, and a HELD finger means a held UP, because points[] holds the zone's
+       action for as long as the touch lasts (rebuildTouchHeld) and Input.down('up')
+       reads touchHeld - the hold is read with down(), never hit(), so the rest zone's
+       "a tap, not a hold" rule in movePoint is not in the way. The only new thing a
+       player has to find is the down pad. */
+    squall: [
+      { a: 'left',  x: EDGE,                    y: PAD_Y, w: PAD, h: PAD, icon: '\u25C0' },
+      { a: 'right', x: EDGE + PAD + 6,          y: PAD_Y, w: PAD, h: PAD, icon: '\u25B6' },
+      { a: 'up',    x: VW - EDGE - PAD * 2 - 6, y: PAD_Y, w: PAD, h: PAD, icon: '\u25B2' },   /* x 378 */
+      { a: 'down',  x: VW - EDGE - PAD,         y: PAD_Y, w: PAD, h: PAD, icon: '\u25BC' },   /* x 428 */
       PAUSE_PAD,
       { a: 'up',    rest: true }
     ],
