@@ -50,6 +50,15 @@
   <script src="js/chalkboard.js"></script>
   <script src="js/cupmen.js"></script>
   <script src="js/fort.js"></script>
+  <!-- the Dining Room: the room itself, then its four bays, in the same
+       dependency order. diningroom.js reads LivingRoom.P at load (it is
+       the same house - the same ceiling, the same oak), so it sits after
+       livingroom.js; every bay reads DiningRoom at load. -->
+  <script src="js/diningroom.js"></script>
+  <script src="js/table.js"></script>
+  <script src="js/floor.js"></script>
+  <script src="js/bar.js"></script>
+  <script src="js/ceiling.js"></script>
   <script src="js/levels.js"></script>
   <script src="js/scores.js"></script>
   <script src="js/ui.js"></script>

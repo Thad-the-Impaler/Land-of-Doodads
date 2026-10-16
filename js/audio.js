@@ -272,7 +272,40 @@ var Audio3 = (function () {
                            tone({ from: 830, dur: 0.12, type: 'square', vol: 0.10, delay: 0.12 });
                            tone({ from: 523, dur: 0.12, type: 'square', vol: 0.10, delay: 0.24 });
                            tone({ from: 659, dur: 0.12, type: 'square', vol: 0.10, delay: 0.24 });
-                           tone({ from: 196, dur: 0.5, type: 'triangle', vol: 0.10, delay: 0.36 }); }
+                           tone({ from: 196, dur: 0.5, type: 'triangle', vol: 0.10, delay: 0.36 }); },
+
+    /* ---- the Dining Room ---- */
+    /* SPIN caught: three rising sweeps a fifth of a second long, each
+       starting where the last one got to, so it climbs like something
+       being wound up - the heat is a burst and the lime a fizz, and this
+       has to be heard as the third, different thing */
+    spin:    function () { tone({ from: 330, to: 660, dur: 0.09, type: 'triangle', vol: 0.12 });
+                           tone({ from: 494, to: 988, dur: 0.09, type: 'triangle', vol: 0.12, delay: 0.08 });
+                           tone({ from: 659, to: 1318, dur: 0.16, type: 'triangle', vol: 0.12, delay: 0.16 });
+                           noise({ freq: 2600, dur: 0.3, vol: 0.05, q: 0.7, delay: 0.1 }); },
+    /* a spinning doodad coming off a pillar: a short bright ping with a
+       scrape under it. Rate limited by the engine (clankAt), so a doodad
+       shoved along a column's face is a few of these, not a buzz */
+    clank:   function () { tone({ from: 1760, to: 1320, dur: 0.06, type: 'square', vol: 0.07 });
+                           noise({ freq: 4200, dur: 0.06, vol: 0.07, q: 2.2 }); },
+    /* a squeeze bottle letting go: a wet rasp that falls, then a splutter */
+    squirt:  function () { noise({ freq: 1200, dur: 0.16, vol: 0.09, q: 0.9 });
+                           tone({ from: 260, to: 120, dur: 0.12, type: 'sawtooth', vol: 0.05 });
+                           noise({ freq: 700, dur: 0.06, vol: 0.06, q: 1.6, delay: 0.14 }); },
+    /* the humidifier: a long breath of high noise, rising then falling */
+    hiss:    function () { noise({ freq: 5200, dur: 0.9, vol: 0.06, q: 0.4 });
+                           noise({ freq: 2600, dur: 0.6, vol: 0.04, q: 0.6, delay: 0.15 }); },
+    /* a hollow knock - a cork on wood, the pole's hook on plaster */
+    tock:    function () { tone({ from: 620, to: 480, dur: 0.05, type: 'triangle', vol: 0.12 });
+                           noise({ freq: 1400, dur: 0.03, vol: 0.05, q: 2 }); },
+    /* silverware on a table: two high partials, slightly apart */
+    clink:   function () { tone({ from: 2350, dur: 0.07, type: 'triangle', vol: 0.06 });
+                           tone({ from: 3150, dur: 0.05, type: 'triangle', vol: 0.04, delay: 0.015 }); },
+    /* a motor spinning up - the mop rolling in */
+    whirr:   function () { tone({ from: 70, to: 210, dur: 0.7, type: 'sawtooth', vol: 0.07 });
+                           noise({ freq: 600, dur: 0.8, vol: 0.06, q: 0.7 }); },
+    /* a soft landing - lint, a feather: barely there */
+    pat:     function () { noise({ freq: 900, dur: 0.05, vol: 0.04, q: 0.8 }); }
   };
 
   /* ---------------------------------------------------------- samples

@@ -310,6 +310,74 @@ out of his head, and when he falls he drops three more, the ordinary Cupmen come
 back, and the badge **LONG LIVE THE KING** is yours. While he reigns the biscuits
 stop falling, and only the odd Golden Order cupman still turns up.
 
+## The Dining Room
+
+The third room, the same house one wall over, and a secret until **20** in the
+Fort opens it and its first bay together. It has four bays, not five, and it
+runs from afternoon to evening across them, because that is how the
+photographs were taken: the Table and the Floor in daylight, the Bar and the
+Ceiling with the pendants on.
+
+**The lid is not one rule in here.** Each bay's lid is a different object, so
+each bay says for itself whether it kills: the Table's ceiling, the Bar's ledge
+and the Ceiling's plaster do, and the Floor's lid - the underside of the table -
+only stops you, Backyard-style.
+
+| | | opens on | |
+|---|---|---|---|
+| **THE TABLE** | 3-1 | **20** in the Fort | the walnut dining table with the kitchen behind it, and the ketchup is not on your side |
+| **THE FLOOR** | 3-2 | **20** in the Table | board level under the chairs; crumbs everywhere, and something coming for them |
+| **THE BAR** | 3-3 | **20** in the Floor | the charcoal bar cabinet against the half wall, after dark, with the humidifier on |
+| **THE CEILING** | 3-4 | **20** in the Bar | up against the plaster, with the room folded in half beneath you |
+
+| | pillars | the bay's own hazard | falling | the power-ups | the spare life |
+|---|---|---|---|---|---|
+| THE TABLE | stacks of white plates, bowls and mugs | squeeze bottles, past **8**, that lean, pop their caps and squirt a ribbon of ketchup across the bay | silverware, past **5**, tumbling | a spicy brownie; a folded paper crane is +5 | a yogurt volcano |
+| THE FLOOR | white chair legs from above, black stool legs from below | the mop, past **10** | crumbs, past **4**, which bounce like the Couch's popcorn | hot sauce and lime juice, falling as drops | a fallen leaf |
+| THE BAR | stacks of wooden spirit boxes and white footed planters | the humidifier's mist, past **10** | wine corks, past **5**: one hop, then they lie still | a vinyl record, which is the **spin** | a pinecone |
+| THE CEILING | angled drywall soffits and skylight wells | the pole, past **14** | lint and dust, past **5** | a spicy feather and a spin feather | noodles, stuck to the ceiling |
+
+**THE SQUEEZE BOTTLES** are clear plastic with the ketchup showing through, and
+every one is squeezed on a clock keyed to where it is on the screen, the way
+the Mantle's remotes fire - so the same bottle always squirts at the same place,
+and the lean, the cap and the bead at the nozzle come well before the stream.
+The ribbon arcs away from you, toward the next plank, and only the ribbon kills.
+
+**THE MOP** rolls in at the left edge of the Floor and parks there. It is a
+wall, never a hazard: you bump against its head and it does nothing to you
+but pull - very slowly and very weakly, 12 pixels a second against your 116,
+so that a doodad left to drift ends up against it and has to keep moving
+forward. It pulls far harder on everything else: crumbs, the two droplets and
+the leaves are dragged back toward it, past you, and whatever reaches the
+roller is swallowed, which is what fills its tank.
+
+**THE HUMIDIFIER** stands on the bar against the wall, always somewhere on the
+screen. From **10** it starts misting, and it says so first: its ring lights,
+it chuffs three times and it hisses, a second and a half before anything
+happens. Then a plume comes out of it and the room fogs up - about half
+white on average and nearer three quarters at the thickest, for six seconds -
+and clears. The fog never covers the two edges of the room, the doodad, or the
+spot on the bar where each cork is going to land.
+
+**THE POLE** comes up through the Ceiling's mirrored floor now and then, hook
+first, prods the ceiling three times as if it is looking for something, and
+goes back down. It is a wall across the whole screen while it is up - but it
+is only ever up in the right half, and it sinks as it comes toward you, so
+hanging back to the left always gets you past it. The spin bounces off it.
+
+### The spin
+
+The room's new power-up, and the first that changes what a pillar *is*. A
+record off the Bar's ledge or a purple feather off the Ceiling, and while it
+lasts - six seconds - the doodad spins clockwise in a purple glow, and **a
+pillar no longer kills it: it bounces off with a shower of sparks.** A column's
+face throws it back the way it came at the room's own speed, the top of a
+lower column is a trampoline and the underside of an upper one knocks it down,
+so a spinning doodad is shoved along a pillar until it finds the gap. The
+Ceiling's pole counts as a pillar for this. Nothing else changes: the spin is
+only a picture, so flying feels exactly the same, and the floor, a killing lid
+and everything that falls still end the run.
+
 ## Abilities
 
 Every doodad has one, and **every one of them is passive**. An earlier version
@@ -591,6 +659,11 @@ js/
   chalkboard.js       the Whiteboard's second art module
   cupmen.js           the Fort's Cupmen, their pellets and the King
   fort.js             LIVING ROOM / THE FORT: the box fort, biscuits, ammo bag
+  diningroom.js       DINING ROOM: the house's shared pigments and the playfield
+  table.js            DINING ROOM / THE TABLE: dish stacks, silverware, squeeze bottles
+  floor.js            DINING ROOM / THE FLOOR: chair and stool legs, crumbs, the mop
+  bar.js              DINING ROOM / THE BAR: spirit boxes, planters, corks, the humidifier
+  ceiling.js          DINING ROOM / THE CEILING: soffits, lint, feathers, the pole
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
   ui.js               boards, buttons, panels, padlocks, the on-screen pads
@@ -626,7 +699,7 @@ so they stay smooth against the pixelated world.
 
 * **A new level** - write an art module implementing the level contract, add its
   script tag to `index.html` (**after** the core, screen and doodad files and
-  **before** `js/levels.js`, where the ten existing levels sit) and drop a level
+  **before** `js/levels.js`, where the fourteen existing levels sit) and drop a level
   object into a room's `levels` array. There are five worked examples; `js/coop.js`
   is the smallest and `js/garden.js` the one to read second, and between them they
   cover every member. The contract is:
@@ -645,6 +718,20 @@ so they stay smooth against the pixelated world.
   `litter` or `boon`, and the art module decides what it looks like and what boxes
   it has. Misters and buzzsaws are spikes; beams, apples and gold cans are all
   drops.
+  Beyond the contract there are optional hooks, and a level that leaves them out
+  never meets them: `stepDrop` / `stepBoon` / `stepFoe` move one thing of the
+  level's own each frame; `makeFoe` (from `tune.foeScore`) stands something in
+  a bay that acts; `stepWorld(dt, obstacles, run)` runs once a frame for what
+  belongs to the room rather than to one thing in it (the Bar's humidifier
+  clock); `drawOverlay(ctx, obstacles, run)` is the last thing on the room layer,
+  in front of everything that falls but behind the doodad (the Bar's fog, the
+  Floor's mop). A level keeps its per-run state in `run.ledger`, which is new
+  every run, and talks back to the engine through a few of its keys: `warn`,
+  `cry`, `shake`, `deed`, `pay`, `knock`, `holdDrops`, and `drift` and `wall`, which
+  pull the doodad left and stand a harmless wall at the edge of the room (the
+  mop). A pillar is something the spin bounces off; any other obstacle can ask
+  to be by carrying `deflect` (the pole). A drop can land in its own voice with
+  `landCry` (a fork clinks, lint lands without a sound).
   Give the level `unlock: { room, level, score }` to gate it behind a score on
   another level; leave it out and it is open from the start. Gating it on a level
   that is itself gated is fine - the BACKYARD is a chain of five - and the locked

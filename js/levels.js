@@ -1,16 +1,17 @@
 /* ------------------------------------------------------------------
    Land of Doodads - rooms and levels
 
-   Ten built bays in two rooms, run in the order they are earned in,
-   each one gated on the one before it: the BACKYARD's five, and then
-   the LIVING ROOM's five.
+   Fourteen built bays in three rooms, run in the order they are earned
+   in, each one gated on the one before it: the BACKYARD's five, the
+   LIVING ROOM's five, and the DINING ROOM's four.
 
    ONE locked placeholder is left, and it stands to the RIGHT of the
    last real room. The one that used to sit to the LEFT of the Backyard
    has retired: it was there to say "there will be more of these", which
-   two rooms now say for themselves, and nothing can stand to the left of
-   1-1 once the row is a sequence rather than a shelf. The right-hand
-   placeholder stays as the promise of the Bar and the Table, and because
+   three rooms now say for themselves, and nothing can stand to the left
+   of 1-1 once the row is a sequence rather than a shelf. The right-hand
+   placeholder was the promise of the Bar and the Table, which are built
+   now; it stays as the promise of whatever comes after them, and because
    the carousel wants a stop past the last thing you can play.
 
    A ROOM can now be gated on a score, exactly the way a level is and
@@ -621,6 +622,216 @@ var Levels = (function () {
     }
   };
 
+  /* ================================================== THE DINING ROOM
+
+     The house again, one wall over, and the first room with FOUR bays
+     rather than five - the owner's number. It runs from afternoon to
+     evening across them, because that is how the photographs were taken
+     (js/diningroom.js says more): THE TABLE and THE FLOOR in daylight,
+     THE BAR and THE CEILING with the pendants on.
+
+     THE LID IS NOT ONE RULE HERE, which is the first thing this room
+     changes. In the Living Room the ceiling kills in every bay and that
+     was a single field on the room module; here each bay's art says so
+     for itself, because each bay's lid is a different object. The Table,
+     the Bar and the Ceiling kill at both edges; THE FLOOR's lid is the
+     underside of the table and it only stops you, Backyard-style, which
+     is why it alone goes back to the Backyard's tight gaps. The other
+     three pay the Living Room's entry fee (80 to 82) for the same reason
+     the Living Room did.
+
+     THE FOUR NEW HAZARDS, and where the engine meets each:
+       the bottles  - the Table's spikes: squeezed on a clock keyed to
+                      where they are on the screen, the Mantle's grammar
+       the mop      - the Floor's FOE (foeScore): one machine at the left
+                      edge, a wall and a weak pull (ledger.drift / wall)
+       the mist     - the Bar's LATE phase: the humidifier, run by the
+                      art's own stepWorld and drawn in its drawOverlay
+       the pole     - the Ceiling's spikes, rare, keyed to screen x, and
+                      `deflect` so the spin bounces off it
+     and THE SPIN, the room's new power-up, is a tune key like the other
+     three (whirlChance) and the engine's alone to run. */
+
+  var TABLE = {
+    id: 'table',
+    name: 'THE TABLE',
+    code: '3-1',
+    /* no `unlock` of its own: the room's gate is this bay's price, the
+       Desk's argument exactly */
+    blurb: ['DINNER IS NOT OVER.', 'THE KETCHUP DISAGREES.'],
+    art: Table,
+    tune: {
+      /* the Couch's pace exactly: a touch over the Desk, never past 2-2.
+         The room's first bay teaches the new lid rules and the bottles;
+         it does not need to be faster as well */
+      speedStart: 112, speedMax: 174, speedRamp: 0.84,
+      gapStart: 106, gapMin: 82, gapRamp: 0.30,
+      spacingStart: 228, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 52,
+      /* THE SQUEEZE BOTTLES, from 8. They are spikes because a spike is a
+         thing standing at an edge of the room between two planks, and the
+         engine's 42% ceiling rolls are bottles on the table all the same
+         (js/table.js stands every one of them up). The length is the
+         jet's apex, so both ranges are the same 40..60: the art takes 0.8
+         to 1.0 of it, a 32..60px arc, and the table's own comment does the
+         arithmetic for why that is always escapable. */
+      spikeScore: 8,
+      spikeChance: 0.26, spikeChanceMax: 0.56,
+      spikeCeilMin: 40, spikeCeilMax: 60,
+      spikeFloorMin: 40, spikeFloorMax: 60,
+      /* silverware off the lid from 5; one in thirteen or so is a spicy
+         brownie, and the paper crane is the art's own roll (js/table.js)
+         because a crane glides and a fork does not */
+      dropScore: 5,
+      dropEvery: 2.3, dropEveryMin: 1.05, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      spicyChance: 0.075,
+      /* no sour: the owner's "no sour drops for this level" */
+      boonChance: 0.032, boonGap: 10
+    }
+  };
+
+  var FLOOR_BAY = {
+    id: 'floor',
+    name: 'THE FLOOR',
+    code: '3-2',
+    unlock: { room: 'diningroom', level: 'table', score: 20 },
+    blurb: ['NOBODY SWEPT UNDER THE TABLE.', 'SOMEBODY IS ABOUT TO.'],
+    art: Floor,
+    tune: {
+      /* the Mantle's pace, one notch over the Couch's */
+      speedStart: 114, speedMax: 176, speedRamp: 0.84,
+      /* 82 although the lid does not kill: the crumbs' apex is the
+         Couch's, and it is solved against exactly this gap - a crumb's box
+         tops out at FLOOR-60, under the FLOOR-64 hitbox bottom of a doodad
+         flying the lowest gap's centre line. Narrow the gap and that deal
+         is gone. */
+      gapStart: 106, gapMin: 82, gapRamp: 0.31,
+      spacingStart: 226, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 52,
+      /* NO SPIKES, the Fort's shut gate - see FORT */
+      spikeScore: 1e9,
+      spikeChance: 0, spikeChanceMax: 0,
+      /* THE CRUMBS, from 4 - the Couch's start: the signature has to be
+         the level - and a touch slower than the Couch's 0.9/0.40, because
+         the mop eats the carpet from the left.
+
+         THE SPAWN WINDOW IS NOT THE COUCH'S, AND THE MOP IS WHY. At the
+         Couch's 12..112 every crumb landed 80..200px in front of a doodad
+         the drift had parked on the mop's face at x 57, so the wall became
+         the safest place in the bay - the opposite of the owner's "forcing
+         them to repeatedly move forward". Measured over 16 seeds x 40s
+         with an autopilot and spare lives: 0.19 hits a run against the
+         Couch's 2.06. At 50..200 the crumbs come down over the wall too,
+         and the mop's draft carries the droplets in to whoever is parked
+         there: 2.69 hits a run, 1.31x the Couch, which is the brief's
+         target band for a bay with a second hazard in it. */
+      dropScore: 4,
+      dropEvery: 1.0, dropEveryMin: 0.46, dropEveryRamp: 0.04,
+      dropAheadMin: 50, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 24,
+      /* the hot sauce and the lime juice, each about every 11 seconds */
+      spicyChance: 0.06,
+      sourChance: 0.06,
+      /* LEAVES ARE COMMONER THAN COASTERS because the mop eats them: 10 +
+         1/0.06 = 27 planks between leaves against the Couch's 32 */
+      boonChance: 0.06, boonGap: 10,
+      /* THE MOP, from 10: once the crumbs have been learned, before most
+         runs end. It is a foe because it is the one thing in this bay that
+         stands at an edge of the room and acts - the engine asks the art
+         once a bay from here and the art builds it on the first ask. Its
+         pull never grows: the owner asked for "a very slow and weak pull",
+         so there is no late phase. */
+      foeScore: 10
+    }
+  };
+
+  var BAR_BAY = {
+    id: 'bar',
+    name: 'THE BAR',
+    code: '3-3',
+    unlock: { room: 'diningroom', level: 'floor', score: 20 },
+    blurb: ['THE GOOD STUFF IS IN THE BOX.', 'THE HUMIDIFIER IS ON.'],
+    art: Bar,
+    tune: {
+      speedStart: 114, speedMax: 176, speedRamp: 0.85,
+      gapStart: 104, gapMin: 82, gapRamp: 0.31,
+      spacingStart: 226, spacingMin: 182, spacingRamp: 0.45,
+      gapDrift: 54,
+      /* NO SPIKES - the corks and the mist are this bay */
+      spikeScore: 1e9,
+      spikeChance: 0, spikeChanceMax: 0,
+      /* The corks, from 5, and they must CROSS THE LANE where the doodad
+         is. The first tune spawned them far right (20..124 in) so the
+         tock, the hop and the lie-still all happened on screen - and in
+         four autopiloted minutes not one cork came within 22px of the
+         doodad: every one landed ahead of him and lay down, which made
+         the bay's hazard scenery. At 80..230, with js/bar.js's DROP_GRAV
+         150, a cork is born at x 250..400, crosses the doodad's column in
+         the air and still lands on screen (x 71..221 at speedStart):
+         7-15 near passes a minute against the Coop's 16, the Mantle's 14
+         and the Desk's 10, and 4-7 contacts - the Living Room's range.
+         dropFallMax 28: a cork rolling off a ledge has a little pace and
+         no more. */
+      dropScore: 5,
+      dropEvery: 2.2, dropEveryMin: 1.0, dropEveryRamp: 0.03,
+      dropAheadMin: 80, dropAheadMax: 230,
+      dropFallMin: 4, dropFallMax: 28,
+      /* NO spicyChance, sourChance or goldChance, and that is the
+         decision: the only thing worth catching from the sky here is the
+         record. */
+      /* the spin, as a falling record - one drop in twelve, about every
+         20-27s: six seconds of bouncing off pillars is a lot of licence */
+      whirlChance: 0.08,
+      boonChance: 0.032, boonGap: 10,
+      /* the humidifier starts misting */
+      lateScore: 10
+    }
+  };
+
+  var CEILING_BAY = {
+    id: 'ceiling',
+    name: 'THE CEILING',
+    code: '3-4',
+    unlock: { room: 'diningroom', level: 'bar', score: 20 },
+    blurb: ['CEILING ABOVE, CEILING BELOW.', 'AND A POLE THAT WANTS A LOOK.'],
+    art: Ceiling,
+    tune: {
+      /* THE HARDEST OF THE FOUR, BY READABLE MEANS ONLY: 118/180 is two
+         px/s over the Whiteboard and the Fort, the fastest start and the
+         fastest ceiling in the game, and spacing 180 / gap 80 are the
+         Living Room's hardest pair. Nothing in here is harder because it
+         is hidden. */
+      speedStart: 118, speedMax: 180, speedRamp: 0.86,
+      gapStart: 102, gapMin: 80, gapRamp: 0.32,
+      spacingStart: 224, spacingMin: 180, spacingRamp: 0.46,
+      gapDrift: 56,
+      /* THE POLE, in the spike slot: "starts appearing later on", and
+         "occasionally" - one bay in seven at 14, one in three by the end.
+         The lengths are published for the record; a pole has one size and
+         js/ceiling.js keys everything it does to its own screen x. */
+      spikeScore: 14,
+      spikeChance: 0.14, spikeChanceMax: 0.30,
+      spikeCeilMin: 16, spikeCeilMax: 24,
+      spikeFloorMin: 16, spikeFloorMax: 24,
+      /* LINT AND DUST, slow, from 5, at the Whiteboard's density. They are
+         let go of rather than thrown (dropFallMax 18) and they drift, so
+         they are born further right (330..460) to reach the lower lane
+         before they sweep past: the usual 104..200 would carry every tuft
+         past the doodad above the lane at speedMax. */
+      dropScore: 5,
+      dropEvery: 2.0, dropEveryMin: 0.95, dropEveryRamp: 0.03,
+      dropAheadMin: 20, dropAheadMax: 150,
+      dropFallMin: 4, dropFallMax: 18,
+      /* the two feathers, one drop in seven between them, half and half;
+         no sour and no gold, which is the owner's list */
+      spicyChance: 0.07,
+      whirlChance: 0.07,
+      boonChance: 0.034, boonGap: 10
+    }
+  };
+
   var LOCKED_LEVEL = { id: 'locked', name: '? ? ?', code: '', locked: true,
                        blurb: ['SOMETHING IS BEING BUILT', 'OUT HERE. NOT YET.'] };
 
@@ -652,9 +863,19 @@ var Levels = (function () {
     startLevel: 0
   };
 
+  var DININGROOM = {
+    id: 'diningroom', name: 'DINING ROOM',
+    /* the Living Room's last bay is its key, as the Construction Zone is
+       the Living Room's, and the room and THE TABLE open on one plank */
+    unlock: { room: 'livingroom', level: 'fort', score: 20 },
+    levels: [TABLE, FLOOR_BAY, BAR_BAY, CEILING_BAY],
+    startLevel: 0
+  };
+
   var ROOMS = [
     BACKYARD,
     LIVINGROOM,
+    DININGROOM,
     { id: 'locked-b', name: '? ? ?', locked: true, levels: LOCKED_THREE }
   ];
 
@@ -908,6 +1129,11 @@ var Levels = (function () {
     mantle: MANTLE,
     whiteboard: WHITEBOARD,
     fort: FORT,
+    diningroom: DININGROOM,
+    table: TABLE,
+    floor: FLOOR_BAY,
+    bar: BAR_BAY,
+    ceiling: CEILING_BAY,
     reachedOn: reachedOn, noteScore: noteScore,
     roomOpen: roomOpen, gateMet: gateMet, roomById: roomById,
     levelsOf: levelsOf, keyFor: keyFor,

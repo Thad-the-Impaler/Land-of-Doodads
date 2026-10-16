@@ -91,6 +91,41 @@ var PlayScene = (function () {
      in a draw loop. */
   var SOUR_GLOW = '214,255,122', SOUR_GLOW_EDGE = '143,212,74';
 
+  /* SPIN, the third timed power-up, and the first that changes what a
+     pillar IS rather than how big the doodad is or how fast the room
+     runs. The owner's words: it "causes the player to rapidly spin
+     clockwise in the air; this does not affect flight dynamics, but
+     causes the player to bounce off of pillars, creating sparks off
+     them". So the whole of it is two things. A DRAW - the sprite turns
+     at WHIRL_RATE, which is an angle added in drawChars and never seen
+     by gravity, the flap, the hitbox or anything that measures the
+     doodad. And a RULE in collide(): while it runs, a pillar - or any
+     obstacle that carries `ob.deflect` - shoves him off instead of
+     ending the run (deflect(), below). Everything else that kills still
+     kills: "drops, lethal ground/ceiling, etc will still end the
+     player", so the floor, a killing lid and every falling thing are
+     untouched by it.
+
+     6.0 seconds, against the heat's 6.5 and the lime's 7: a power-up
+     that turns the most common way to die into a bounce is the
+     strongest of the three, so it is the shortest. 2.6 turns a second
+     reads as SPINNING rather than as tumbling - the death tumble is
+     0.5 to 0.86 of a turn a second - and stays under the rate where a
+     30fps phone draws the sprite in the same three poses every turn.
+
+     Its colours live here for the reason the lime's do: purple reads
+     the same on any level that ever sheds one, and the owner named the
+     colour ("has purple effects"). */
+  var WHIRL_TIME = 6.0;
+  var WHIRL_RATE = TAU * 2.6;
+  var WHIRL_HI = '#e6b3ff', WHIRL_MID = '#b061f0', WHIRL_DARK = '#5a2a8c';
+  var WHIRL_GLOW = '214,160,255', WHIRL_GLOW_EDGE = '150,80,220';
+  /* what comes off a pillar when he bounces: hot white and amber, the
+     colours of a spark, with the purple of the spin thrown in a third of
+     the time so the eye ties the sparks to the power-up and not to a
+     hit. */
+  var SPARK_HI = '#fff6dc', SPARK_MID = '#ffd27a';
+
   var state = 'ready';         /* ready | play | dying | dead | entry | paused */
   var t = 0, runTime = 0;
   var scroll = 0, speed = 0;
@@ -174,7 +209,7 @@ var PlayScene = (function () {
   var menuIndex = 0;
   var dropArmed = false;        /* the rafters have started shedding */
   var warnLines = null;        /* whose heads-up is on screen, from art.WARN */
-  var dropTimer = 0, hazardWarn = 0, spicyGap = 0, goldGap = 0, sourGap = 0;
+  var dropTimer = 0, hazardWarn = 0, spicyGap = 0, goldGap = 0, sourGap = 0, whirlGap = 0;
   var spicy = 0;               /* seconds of heat left */
   var heat = 0;                /* the same thing eased, for the visuals */
   var spicyFlash = 0, spicyBanner = 0;
@@ -182,11 +217,24 @@ var PlayScene = (function () {
   var shrivel = 0;             /* the same thing eased - and the ONE number
                                   both the hitbox and the drawn body read */
   var sourFlash = 0, sourBanner = 0;
-  /* Which row each gauge is standing in, 80 or 92. There are two rows
-     because the Whiteboard is the first bay that sheds both drops, and
+  var whirl = 0;               /* seconds of spin left */
+  var twirl = 0;               /* the same thing eased, for the aura */
+  /* Where the spin has got to, in radians, 0..TAU. It is a DRAW and
+     nothing else - added to player.angle in drawChars - and it is kept
+     apart from player.angle so the tilt that follows the arc goes on
+     doing its job underneath it. When the spin runs out it does not stop
+     dead: it finishes the turn it is on (see update), so the doodad
+     always comes out of it the right way up rather than snapping there. */
+  var whirlAngle = 0;
+  var whirlFlash = 0, whirlBanner = 0;
+  /* the last bounce noise, so a doodad ground along a pillar's face for
+     a quarter of a second is a few clanks and not fifteen */
+  var clankAt = -1;
+  /* Which row each gauge is standing in, 80, 92 or 104. There are rows
+     because the Whiteboard is the first bay that sheds two drops, and
      the row is a FIXED PROPERTY of a running power-up rather than
-     something recomputed off the other one every frame - see grabSpicy. */
-  var spicySlot = 80, sourSlot = 80;
+     something recomputed off the others every frame - see freeSlot. */
+  var spicySlot = 80, sourSlot = 80, whirlSlot = 80;
   var streaks = [];            /* speed lines, only drawn while hot */
   var squallWarned = false;    /* the SQUALL heads-up, once per run (start() resets) */
   var unlocked = [];           /* doodads this run has earned */
@@ -510,10 +558,12 @@ var PlayScene = (function () {
     board = Scores.table(roomRef, level).slice();
     rank = -1; entryPending = false; savedRow = -1; pbNew = false;
     dropArmed = false; dropTimer = 0; hazardWarn = 0; warnLines = null;
-    spicyGap = 0; goldGap = 0; sourGap = 0;
+    spicyGap = 0; goldGap = 0; sourGap = 0; whirlGap = 0;
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
     sour = 0; shrivel = 0; sourFlash = 0; sourBanner = 0;
-    spicySlot = 80; sourSlot = 80;
+    whirl = 0; twirl = 0; whirlAngle = 0; whirlFlash = 0; whirlBanner = 0;
+    clankAt = -1;
+    spicySlot = 80; sourSlot = 80; whirlSlot = 80;
     squallWarned = false;
     unlocked.length = 0; unlockBanner = 0; wonLevels.length = 0;
     runAchv.length = 0; stuns = 0;
@@ -714,12 +764,21 @@ var PlayScene = (function () {
     if (sourGap > 0) sourGap--;
     var lime = !spicy && !gold && sourGap <= 0 && chance(tune.sourChance || 0);
     if (lime) sourGap = 4;
+    /* and the spin, last in the queue and spaced the same way. Last on
+       purpose: it is the newest of the four, so every level that sheds the
+       other three keeps exactly the odds it was tuned around, and a level
+       without tune.whirlChance never rolls a die it did not roll before -
+       the `> 0` short-circuits before chance() is asked for a number. */
+    if (whirlGap > 0) whirlGap--;
+    var spun = !spicy && !gold && !lime && whirlGap <= 0 &&
+               tune.whirlChance > 0 && chance(tune.whirlChance);
+    if (spun) whirlGap = 4;
 
     var x = VW - rand(tune.dropAheadMin, tune.dropAheadMax);
     var fall = rand(tune.dropFallMin, tune.dropFallMax);
     /* anything that is there to be CAUGHT drifts down slower, so it has a
        chance of being taken rather than merely dodged */
-    var ob = art.makeDrop(x, spicy, (spicy || gold || lime) ? fall * 0.78 : fall, run);
+    var ob = art.makeDrop(x, spicy, (spicy || gold || lime || spun) ? fall * 0.78 : fall, run);
     /* Set after the maker returns, the way a plank's `meet` is: makeDrop
        keeps the signature it has, and a level that grows neither of these
        never learns they exist. `spicy` still goes IN because the art sizes
@@ -731,6 +790,10 @@ var PlayScene = (function () {
        first, so the lime would be swallowed with no banner, no gauge and
        no shrink, and the player would be owed an effect they never got. */
     if (lime && !ob.gold) ob.sour = true;
+    /* the same guard for the spin, and for the same reason: collide()
+       takes gold and the heat before it, so a gold record would be caught
+       as five points and the spin it was painted as would never come */
+    if (spun && !ob.gold && !ob.spicy) ob.whirl = true;
     admit(ob);
 
     for (var i = 0; i < 4; i++) {
@@ -760,8 +823,16 @@ var PlayScene = (function () {
       return;
     }
     ob.y = FLOOR;
-    splatter(ob.x, FLOOR - 1, ob.spicy, 9);
-    Audio3.play(ob.spicy ? 'fizzle' : 'splat');
+    /* in its own colours if it carries a pair, as the popped branch above
+       always did - a fork landing on walnut throws steel, not egg */
+    splatter(ob.x, FLOOR - 1, ob.spicy, 9, ob.burst);
+    /* AND IN ITS OWN VOICE, if the level gave it one. ob.landCry is the
+       Audio3 role the thing lands with - a fork CLINKS, a cork TOCKS - and
+       an empty string is a thing that lands without a sound at all, which
+       is what a tuft of lint is. Undefined is everything that was here
+       before it, and hears the splat it always heard. */
+    var cry = ob.landCry !== undefined ? ob.landCry : (ob.spicy ? 'fizzle' : 'splat');
+    if (cry) Audio3.play(cry);
   }
 
   /* an ordinary egg flown straight through while the run is hot */
@@ -833,7 +904,7 @@ var PlayScene = (function () {
        would also write ob.dx/ob.dy on it, which belong to the module drawing
        the swirl. The tail reads this backwards and so leaves it alone too. */
     if (ob.type === 'boon') return !ob.taken && !ob.meet && !ob.warp;
-    return ob.type === 'drop' && (ob.spicy || ob.gold || ob.sour) && !ob.broken;
+    return ob.type === 'drop' && (ob.spicy || ob.gold || ob.sour || ob.whirl) && !ob.broken;
   }
 
   function updateHunger(dt) {
@@ -1302,7 +1373,7 @@ var PlayScene = (function () {
          thing to catch from a thing to dodge before it is close enough to
          make out */
       ctx.fillStyle = ob.spicy ? FX.hotHi
-                    : (ob.gold ? UI.C.gold : (ob.sour ? SOUR_HI : WATCH_HI));
+                    : (ob.gold ? UI.C.gold : (ob.sour ? SOUR_HI : (ob.whirl ? WHIRL_HI : WATCH_HI)));
       ctx.fillRect(x - 3, FLOOR - 2, 7, 1);
       ctx.fillRect(x - 3, FLOOR - 4, 1, 2);
       ctx.fillRect(x + 3, FLOOR - 4, 1, 2);
@@ -1697,7 +1768,7 @@ var PlayScene = (function () {
        one second mean the player wants the later one - the gauges go on
        showing that both power-ups are still running, which is the part
        that is a state rather than an announcement. */
-    spicyBanner = 0; sourBanner = 0;
+    spicyBanner = 0; sourBanner = 0; whirlBanner = 0;
     stunSay = ob.stun.say || 'OOF!';
     stunSub = ob.stun.sub || '';
     stunFlash = 0.08;
@@ -1819,7 +1890,7 @@ var PlayScene = (function () {
       squallWarned = true; warnLines = sq.warn; hazardWarn = 3.5;
     }
     /* the banner slot has one tenant - see stun() */
-    sourBanner = 0; stunBanner = 0;
+    sourBanner = 0; stunBanner = 0; whirlBanner = 0;
     /* A GAUGE TAKES ITS ROW WHEN IT IS CAUGHT AND KEEPS IT UNTIL IT DIES.
        Both gauges used to work out their y every frame from whether the
        OTHER one was live, so on the Whiteboard the lime and its caption
@@ -1833,7 +1904,7 @@ var PlayScene = (function () {
        what the drawing side reads: shrivel is a frame behind, and two
        drops taken in the SAME frame would otherwise both claim 80 and
        stay there for the whole seven seconds. */
-    if (!wasHot) spicySlot = (sour > 0 && sourSlot === 80) ? 92 : 80;
+    if (!wasHot) spicySlot = freeSlot('spicy');
     /* THE DEED: both timers running at the same instant. This is the cheapest
        place in the whole file that cannot miss the moment - it is the exact
        line where the heat starts, so there is no frame in which both are up
@@ -1893,9 +1964,9 @@ var PlayScene = (function () {
     sourFlash = 0.14;
     sourBanner = 1.1;
     /* the banner slot has one tenant - see stun() */
-    spicyBanner = 0; stunBanner = 0;
+    spicyBanner = 0; stunBanner = 0; whirlBanner = 0;
     /* grabSpicy's mirror image, off the heat instead of off the lime */
-    if (!wasSmall) sourSlot = (spicy > 0 && spicySlot === 80) ? 92 : 80;
+    if (!wasSmall) sourSlot = freeSlot('sour');
     /* and the deed's other half - see grabSpicy. Both halves have to exist
        because the two drops can be caught in either order, and whichever
        lands second is the one that makes the pair. Reported the same way,
@@ -1972,7 +2043,7 @@ var PlayScene = (function () {
     var won = Doodads.noteDeed(name);
     if (!won.length || Doodads.masterKey()) return;
     for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
-    spicyBanner = 0; sourBanner = 0;
+    spicyBanner = 0; sourBanner = 0; whirlBanner = 0;
     Audio3.play('unlock');
     Screen.shake(2.5, 0.3);
     for (var k = 0; k < 30; k++) {
@@ -1993,6 +2064,190 @@ var PlayScene = (function () {
                      life: rand(0.25, 0.6), g: -30,
                      col: chance(0.45) ? SOUR_HI
                         : (chance(0.5) ? SOUR_MID : SOUR_DARK) });
+  }
+
+  /* ---------------------------------------------------------- the spin */
+
+  /* WHICH GAUGE ROW A POWER-UP TAKES WHEN IT IS CAUGHT: the first of 80,
+     92 and 104 that no OTHER running power-up is standing in. It replaced
+     two hand-written mirror images - `(sour > 0 && sourSlot === 80) ? 92 :
+     80` and its twin - which were right for a game with two timers and
+     would have needed a third and a fourth copy, each naming the other
+     two, the day there were three. For the heat and the lime this returns
+     exactly what those two lines returned on every input: with no spin
+     running, the only row ever taken is the other one's, and the answer
+     is 80 unless that is 80. The test is the timers and not the eased
+     visuals, for grabSpicy's reason - two drops caught on the same frame
+     must not both claim 80. */
+  function freeSlot(self) {
+    var rows = [80, 92, 104], i;
+    for (i = 0; i < rows.length; i++) {
+      var y = rows[i];
+      if (self !== 'spicy' && spicy > 0 && spicySlot === y) continue;
+      if (self !== 'sour' && sour > 0 && sourSlot === y) continue;
+      if (self !== 'whirl' && whirl > 0 && whirlSlot === y) continue;
+      return y;
+    }
+    return rows[rows.length - 1];
+  }
+
+  /* through whirlTime(), and the local for the reason grabSpicy gives */
+  function whirlTime() { return WHIRL_TIME * (doodad.carry || 1); }
+
+  function grabWhirl(ob) {
+    /* a pair tops it up rather than restarting it, as the other two do */
+    var wasSpun = whirl > 0;
+    var full = whirlTime();
+    whirl = whirl > 0 ? Math.min(full * 1.6, whirl + full * 0.6) : full;
+    whirlFlash = 0.14;
+    whirlBanner = 1.1;
+    /* the banner slot has one tenant - see stun() */
+    spicyBanner = 0; sourBanner = 0; stunBanner = 0;
+    if (!wasSpun) whirlSlot = freeSlot('whirl');
+    Screen.shake(3, 0.45);
+    Audio3.play('spin');
+    /* a ring thrown off SIDEWAYS, clockwise - tangential velocity rather
+       than the radial burst the other pickups throw, because the one thing
+       this power-up does that the player can see is turn */
+    for (var i = 0; i < 28; i++) {
+      var a = rand(0, TAU), sp = rand(50, 150);
+      particles.push({ x: ob.x + Math.cos(a) * 6, y: ob.y + Math.sin(a) * 6,
+                       vx: -Math.sin(a) * sp, vy: Math.cos(a) * sp - 20,
+                       life: rand(0.35, 0.9), g: -40,
+                       col: chance(0.4) ? WHIRL_HI : (chance(0.5) ? WHIRL_MID : WHIRL_DARK) });
+    }
+    /* No achievement reads 'whirl' today; it is wired for the reason
+       grabSour's note gives - the pickups are a set */
+    bank(Achievements.note('whirl', level));
+  }
+
+  /* The spin's wake: motes flung off the rim of the turning doodad along
+     the tangent, clockwise, so the trail itself curls. The heat trails
+     backwards and the lime fizzes upward; this one is thrown round, and
+     at a glance the three are never the same thing. */
+  function whirlTrail(dt) {
+    if (whirl <= 0 || !chance(dt * 40)) return;
+    var a = whirlAngle + rand(-0.4, 0.4), r = bodyR();
+    var sp = rand(50, 90);
+    particles.push({ x: player.x + Math.cos(a) * r, y: player.y + Math.sin(a) * r,
+                     vx: -Math.sin(a) * sp - speed * 0.25, vy: Math.cos(a) * sp,
+                     life: rand(0.2, 0.45), g: 0,
+                     col: chance(0.45) ? WHIRL_HI : (chance(0.5) ? WHIRL_MID : WHIRL_DARK) });
+  }
+
+  /* THE BOUNCE. A pillar - or anything carrying ob.deflect - that the
+     spinning doodad touches shoves him back out the way he came in, with
+     sparks, instead of ending the run. `rects` is what collide() just
+     asked the art for, so the face he comes off is exactly the face that
+     would have killed him.
+
+     WHICH WAY OUT. The deepest box he is in, and the shortest way out of
+     it: the nearest point on the box gives a normal from the box to his
+     centre, and he is put back on the surface along it. A centre that has
+     got all the way inside a box (a 1/30s frame at speedMax is 18px, a
+     column is 34) has no nearest point, so it leaves by the nearest face.
+
+     WHAT THE BOUNCE IS, by face:
+       the FACE of a column, coming at him - he is thrown back LEFT at the
+       room's own speed plus 160. Anything less and the column, which is
+       still coming at `speed`, catches him again inside a frame or two and
+       the bounce reads as being dragged. At speedStart 114 that is -274:
+       held RIGHT he is back to +116 in 0.45s having gone 48px left while
+       the column came 51 - so he meets it again, softly, unless he has
+       climbed or dived into the gap meanwhile, which is the point. A
+       spinning doodad is SHOVED ALONG by a column until he finds its gap.
+       the TOP of a lower column or cap - up, at least 250 (a 26px hop):
+       a trampoline, the opposite of a death.
+       the UNDERSIDE of an upper column - down, at least 170.
+     The vertical ones keep 70% / 50% of what he arrived with if that is
+     more, so a fast dive comes off a cap faster than a slow one.
+
+     PINNED. A doodad already against the left edge of the room (X_MIN, or
+     a level's ledger.wall) cannot be thrown left, and a column crossing
+     him there would otherwise push him out of the room on one frame and
+     have the clamp put him back inside it on the next. So he is moved
+     along the face instead - DOWN out of a box that hangs off the lid,
+     UP out of one that stands on the floor, otherwise whichever is nearer
+     - which for a pillar is always toward its gap. It is a squeeze, and
+     what it costs him is where he comes out.
+
+     NOT A HURT, so no life is spent, nothing is spliced, and the grace
+     after a save is not needed for it - collide() only calls this while
+     the grace is off, because a doodad the grace is carrying THROUGH a
+     plank must not be bounced around inside it. And a plank he has come
+     off is not a plank he has threaded close, so Cookie's nerve forgets
+     it. */
+  function deflect(ob, rects) {
+    var hr = hitR(), best = -1, pen = 0, nx = 0, ny = 0, i;
+    for (i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      if (r[4]) continue;                    /* a bop surface is not a wall */
+      var cx = clamp(player.x, r[0], r[0] + r[2]), cy = clamp(player.y, r[1], r[1] + r[3]);
+      var dx = player.x - cx, dy = player.y - cy, d2 = dx * dx + dy * dy;
+      if (d2 >= hr * hr) continue;
+      var p, ux, uy;
+      if (d2 > 0.0001) {
+        var d = Math.sqrt(d2);
+        ux = dx / d; uy = dy / d; p = hr - d;
+      } else {
+        var l = player.x - r[0], rr = r[0] + r[2] - player.x;
+        var tp = player.y - r[1], bt = r[1] + r[3] - player.y;
+        /* NEVER OUT THROUGH A FACE THAT IS THE EDGE OF THE ROOM. A column
+           standing on the floor has its bottom face ON the floor, and a
+           centre that got deep enough into one that the floor was its
+           nearest face was being pushed out into the floor that kills -
+           a bounce that ended the run. Found by the Bar's builder holding
+           a spinning doodad at y >= 226. The same for a column hanging off
+           the lid, whose top face is the lid. */
+        if (r[1] + r[3] >= FLOOR - 1) bt = Infinity;
+        if (r[1] <= CEIL + 1) tp = Infinity;
+        var m = Math.min(l, rr, tp, bt);
+        if (m === l) { ux = -1; uy = 0; } else if (m === rr) { ux = 1; uy = 0; }
+        else if (m === tp) { ux = 0; uy = -1; } else { ux = 0; uy = 1; }
+        p = m + hr;
+      }
+      if (best < 0 || p > pen) { best = i; pen = p; nx = ux; ny = uy; }
+    }
+    if (best < 0) return;
+    var b = rects[best];
+
+    var leftEdge = Math.max(X_MIN, ledger.wall ? ledger.wall + hr : X_MIN);
+    if (Math.abs(nx) >= Math.abs(ny) && nx < 0 && player.x + nx * pen < leftEdge) {
+      /* pinned: along the face instead - see above */
+      var up = (player.y + hr) - b[1], down = (b[1] + b[3]) - (player.y - hr);
+      if (b[1] <= CEIL + 1) { nx = 0; ny = 1; pen = down; }
+      else if (b[1] + b[3] >= FLOOR - 1) { nx = 0; ny = -1; pen = up; }
+      else if (up < down) { nx = 0; ny = -1; pen = up; }
+      else { nx = 0; ny = 1; pen = down; }
+    }
+    player.x += nx * pen;
+    player.y += ny * pen;
+    /* and never out of the room. The pinned test above catches a square
+       hit on a face; a CORNER, where the normal is diagonal, can still
+       carry him left of the edge, and the clamp in updatePlayer would put
+       him back inside the column next frame. Measured: held in a column's
+       path by a test, he reached x 20.8 against an X_MIN of 32. */
+    if (player.x < leftEdge) player.x = leftEdge;
+    if (Math.abs(nx) >= Math.abs(ny)) {
+      player.vx = nx < 0 ? -(speed + 160) : Math.max(player.vx, 120);
+    } else if (ny < 0) {
+      player.vy = -Math.max(250, Math.abs(player.vy) * 0.7);
+    } else {
+      player.vy = Math.max(170, Math.abs(player.vy) * 0.5);
+    }
+    if (ob.type === 'pillar') ob.skim = NO_NERVE;
+
+    /* sparks off the point of contact - which is on HIS surface, one
+       radius back along the normal - thrown out along the normal and
+       spread, so they come off the pillar's face and not out of him */
+    var px = player.x - nx * hr, py = player.y - ny * hr;
+    for (var k = 0; k < 12; k++) {
+      var sa = Math.atan2(ny, nx) + rand(-1.1, 1.1), ss = rand(60, 210);
+      particles.push({ x: px, y: py, vx: Math.cos(sa) * ss - speed * 0.2, vy: Math.sin(sa) * ss - 30,
+                       life: rand(0.14, 0.42), g: 340,
+                       col: k % 3 === 2 ? WHIRL_HI : (chance(0.5) ? SPARK_HI : SPARK_MID) });
+    }
+    if (t - clankAt > 0.09) { clankAt = t; Audio3.play('clank'); Screen.shake(1.6, 0.12); }
   }
 
   function updateStreaks(dt) {
@@ -2560,6 +2815,53 @@ var PlayScene = (function () {
     }
   }
 
+  /* THE ROOM'S PULL, AND ITS WALL - two ledger keys a level may keep
+     current for as long as something in its world is dragging at the
+     doodad, and the first time the engine has let a level move HIM.
+
+       ledger.drift  px/s the room pulls him LEFT, on top of his own
+                     steering. He is not slowed: his steering is the same
+                     approach() to the same 116 px/s, and the pull is
+                     simply taken off where that leaves him - so holding
+                     RIGHT against a drift of 9 nets 107 px/s, and letting
+                     go drifts him back at 9. It is the owner's "very slow
+                     and weak pull backwards" held in one number, and the
+                     level says which.
+       ledger.wall   a screen x his HITBOX may not pass on the left: a
+                     thing standing at the edge of the room that he bumps
+                     against and is not hurt by. He is put back on its
+                     face, and if he came at it faster than 40 px/s he is
+                     bounced off it gently, with a tick and two puffs of
+                     the bay's own ground - the same two words the engine
+                     says when a kernel comes off the cushion.
+
+     Neither is cleared on reading, unlike every other key in the ledger:
+     they describe a STATE (the mop is there and it is running), not an
+     event, and the level writes whatever is true each frame - zero or
+     undefined when nothing is pulling. The ledger is new every run, so a
+     RETRY starts with neither. Not during the toss home, which owns his x
+     outright and is followed by the grace anyway. */
+  function pullAndWall(dt) {
+    var pull = ledger.drift > 0 ? ledger.drift : 0;
+    if (pull > 0) player.x = Math.max(X_MIN, player.x - pull * dt);
+    if (!(ledger.wall > 0)) return;
+    var face = Math.min(X_MAX, ledger.wall + hitR());
+    if (player.x >= face) return;
+    var into = pull - player.vx;           /* how fast he was going in */
+    player.x = face;
+    if (player.vx < 0) player.vx = 0;
+    if (into > 40) {
+      player.vx = 60;
+      for (var i = 0; i < 2; i++) {
+        particles.push({ x: face - hitR() + 1, y: player.y + rand(-6, 6),
+                         vx: rand(-10, 30), vy: rand(-40, 10),
+                         life: rand(0.15, 0.3), g: 200,
+                         col: chance(0.5) ? FX.ground : FX.groundHi });
+      }
+      if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
+    }
+  }
+
   function updatePlayer(dt) {
     /* horizontal nudging */
     var want = 0;
@@ -2588,6 +2890,7 @@ var PlayScene = (function () {
       player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
       player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
       if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
+      pullAndWall(dt);
     }
 
     /* hoisted above the dive branch, which needs it and returns before the
@@ -2844,6 +3147,9 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    /* and the spin lets go: the tumble is player.spin's, and whirlAngle
+       only finishes the turn it is on (see update) */
+    whirl = 0;
     /* and a squall's ▲▼ pads go with the heat. syncTouch() only runs in the
        play branch, so a Joe killed mid-hold kept them drawn through the whole
        tumble; now he tumbles under the same ◀ ▶ as everyone else. For a doodad
@@ -3138,6 +3444,17 @@ var PlayScene = (function () {
           if (!lethal) continue;
           r = lethal;
         }
+        /* THE SPIN'S RULE. A pillar, or anything the level has marked
+           ob.deflect, is a wall to bounce off while the spin runs rather
+           than a thing to die on - see deflect(). Read after the bop,
+           which is its own kind of landing, and before the ring and the
+           hurt, because it replaces the hurt. Not during the grace: the
+           grace carries a doodad THROUGH a plank, and bouncing him about
+           inside it would be the one way a gift could fight a save. */
+        if (whirl > 0 && invuln <= 0 && (ob.type === 'pillar' || ob.deflect)) {
+          deflect(ob, rects);
+          continue;
+        }
         /* an unflagged rect of a bop object, or any rect of anything else, is
            ordinary from here down: a ring or a hurt */
         /* A hazard that only RINGS. It is read before hurt(), so a level
@@ -3161,6 +3478,7 @@ var PlayScene = (function () {
       if (ob.spicy) { grabSpicy(ob); obstacles.splice(i, 1); continue; }
       if (ob.gold)  { takeGold(ob);  obstacles.splice(i, 1); continue; }
       if (ob.sour)  { grabSour(ob);  obstacles.splice(i, 1); continue; }
+      if (ob.whirl) { grabWhirl(ob); obstacles.splice(i, 1); continue; }
       /* ANYTHING STILL HERE IS A PLAIN ONE, and a plain one touching you
          scares off whoever is hiding in the carpet it came out of. This line
          is the whole of "without being hit by the popcorn", and where it sits
@@ -3368,6 +3686,8 @@ var PlayScene = (function () {
     if (spicyBanner > 0) spicyBanner -= dt;
     if (sourFlash > 0) sourFlash -= dt;
     if (sourBanner > 0) sourBanner -= dt;
+    if (whirlFlash > 0) whirlFlash -= dt;
+    if (whirlBanner > 0) whirlBanner -= dt;
     if (stunFlash > 0) stunFlash -= dt;
     if (stunBanner > 0) stunBanner -= dt;
     if (hazardWarn > 0) hazardWarn -= dt;
@@ -3401,6 +3721,21 @@ var PlayScene = (function () {
     /* and so does the shrivel - which is also the hitbox, so this has to
        happen before collide() and before anything is drawn */
     shrivel = damp(shrivel, sour > 0 ? 1 : 0, 0.0004, dt);
+    /* the spin's aura eases the same way. The turn itself does not: while
+       it runs it goes round at WHIRL_RATE, and when it stops it FINISHES
+       THE TURN IT IS ON, quickly at first and slowing into upright, so
+       the doodad never snaps from forty degrees to none. The closing speed
+       is five times what is left of the turn with a floor of 0.9 of a turn
+       a second, which lands it inside about a third of a second from
+       anywhere. Out here with the other eases so a pause freezes it and a
+       death lets it come round under the tumble. */
+    twirl = damp(twirl, whirl > 0 ? 1 : 0, 0.0004, dt);
+    if (whirl > 0) {
+      whirlAngle = (whirlAngle + WHIRL_RATE * dt) % TAU;
+    } else if (whirlAngle > 0) {
+      whirlAngle += Math.max(TAU * 0.9, (TAU - whirlAngle) * 5) * dt;
+      if (whirlAngle >= TAU) whirlAngle = 0;
+    }
     updateParticles(dt);
     updateDust(dt);
     updateStreaks(dt);
@@ -3495,6 +3830,10 @@ var PlayScene = (function () {
         sour -= dt;
         if (sour <= 0) { sour = 0; Audio3.play('cooldown'); }
       }
+      if (whirl > 0) {
+        whirl -= dt;
+        if (whirl <= 0) { whirl = 0; Audio3.play('cooldown'); }
+      }
       /* the ▲▼ pads follow the hold, here and not below the pull's return, so
          they come and go with the heat even while a hole is taking him */
       syncTouch();
@@ -3541,6 +3880,18 @@ var PlayScene = (function () {
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
+      /* THE ROOM'S OWN STEP, for what belongs to a level's world rather
+         than to any one thing in it: a humidifier's clock, a cry the
+         bottles owe, a mop's pull. Once a frame, after everything has
+         moved and before the ledger is read, so whatever it writes there
+         - a warn, a cry, a shake, the drift - is drained on this frame and
+         not the next. It may READ the list and nothing more, the stepDrop
+         contract; per-run state goes in run.ledger, which is the only
+         object that is new every run. `run` here is the one built last
+         frame, so run.late and run.score are a frame stale, which is the
+         staleness every step already accepts. A level without the hook
+         costs one property read. */
+      if (art.stepWorld) art.stepWorld(dt, obstacles, run);
       /* What the steps asked for while they walked: the born queue let in
          and the ledger read. HERE, straight after the walk and BEFORE the
          pull's return below, so a thing born on the frame the hole takes
@@ -3638,6 +3989,7 @@ var PlayScene = (function () {
       collide();
       emberTrail(dt);
       sourTrail(dt);
+      whirlTrail(dt);
       if (scorePop > 0) scorePop -= dt;
       if (passedTimer > 0) passedTimer -= dt;
       return;
@@ -3948,11 +4300,54 @@ var PlayScene = (function () {
       ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1);
     }
 
-    /* only while she is flying: the sight lines go out with her */
+    /* THE LEVEL'S OVERLAY: the last thing the room layer gets from the
+       art, over everything that falls, hops and sparks and under the
+       doodad, who is on another canvas. A fog that rolls across the room,
+       a machine at the edge of the screen that the crumbs disappear into.
+       `run` is the live object, so the overlay reads the same ledger the
+       level's steps write. Called on every frame the scene draws - GET
+       READY, the run, pause, the tumble and the results - so what it
+       shows must hold still when nothing is stepping it. */
+    if (art.drawOverlay) art.drawOverlay(ctx, obstacles, run);
+
+    /* only while she is flying: the sight lines go out with her. AFTER the
+       overlay on purpose - she sees what is coming, and a fog that hid
+       where the sky is going to land would be taking her ability away
+       in exactly the bay where it is worth most. */
     if (doodad.watch && state === 'play') drawWatch(ctx);
 
     if (heat > 0.02) drawHeat(ctx);
     if (shrivel > 0.02) drawSourAura(ctx);
+    if (twirl > 0.02) drawWhirlAura(ctx);
+  }
+
+  /* The spin, in the room: a purple light round the doodad and three
+     bright motes riding a ring about him at the angle he has turned to,
+     so the turn is legible even on a doodad whose silhouette is nearly
+     round - Cookie spinning is otherwise Cookie wobbling. Behind the
+     sprite for the lime's reason: light in the room, not a filter. */
+  function drawWhirlAura(ctx) {
+    if (state !== 'play' && state !== 'dying') return;
+    var pulse = 0.75 + 0.25 * Math.sin(t * 10);
+    var r = 26 + pulse * 5;
+    var g = ctx.createRadialGradient(player.x, player.y, 1, player.x, player.y, r);
+    g.addColorStop(0, 'rgba(' + WHIRL_GLOW + ',' + (0.28 * twirl).toFixed(3) + ')');
+    g.addColorStop(0.55, 'rgba(' + WHIRL_GLOW_EDGE + ',' + (0.15 * twirl).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(' + WHIRL_GLOW_EDGE + ',0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(player.x - r, player.y - r, r * 2, r * 2);
+    var ga = ctx.globalAlpha, ring = bodyR() + 5;
+    ctx.globalAlpha = ga * twirl;
+    for (var i = 0; i < 3; i++) {
+      var a = whirlAngle + i * TAU / 3;
+      var mx = Math.round(player.x + Math.cos(a) * ring), my = Math.round(player.y + Math.sin(a) * ring);
+      ctx.fillStyle = WHIRL_HI; ctx.fillRect(mx, my, 2, 2);
+      /* and the smear it leaves a few degrees behind it */
+      var b = a - 0.35;
+      ctx.fillStyle = WHIRL_MID;
+      ctx.fillRect(Math.round(player.x + Math.cos(b) * ring), Math.round(player.y + Math.sin(b) * ring), 1, 1);
+    }
+    ctx.globalAlpha = ga;
   }
 
   /* SHOWING THE RULE. An ability the player cannot see is not one, so the
@@ -4133,8 +4528,12 @@ var PlayScene = (function () {
       else o = { squashX: 1 / sp, squashY: sp };
     }
     /* the drawn size IS the current size - the sprite sits on the smooth
-       layer, so any radius costs the same */
-    Doodads.draw(ctx, doodad.id, player.x, player.y, bodyR(), player.angle, frame, o);
+       layer, so any radius costs the same. And the spin is added HERE and
+       nowhere else: it is a picture of the power-up, not a fact about the
+       doodad, so nothing that integrates or collides him ever sees it.
+       Positive is clockwise on a canvas whose y runs down, which is the
+       way the owner asked for. */
+    Doodads.draw(ctx, doodad.id, player.x, player.y, bodyR(), player.angle + whirlAngle, frame, o);
   }
 
   function drawFg(ctx) {
@@ -4188,6 +4587,13 @@ var PlayScene = (function () {
       ctx.fillRect(0, 0, VW, VH);
       ctx.globalAlpha = qa;
     }
+    if (whirlFlash > 0) {
+      var wfa = ctx.globalAlpha;
+      ctx.globalAlpha = wfa * clamp(whirlFlash / 0.14, 0, 1) * 0.8;
+      ctx.fillStyle = WHIRL_HI;
+      ctx.fillRect(0, 0, VW, VH);
+      ctx.globalAlpha = wfa;
+    }
     if (stunFlash > 0) {
       /* shorter and paler than the other three: this is a jolt, not an
          event, and the run is carrying straight on underneath it */
@@ -4223,6 +4629,7 @@ var PlayScene = (function () {
       drawLives(ctx);
       drawSpicy(ctx);
       drawSour(ctx);
+      drawWhirl(ctx);
       if (stunBanner > 0) drawStun(ctx);
       if (nervePop > 0) drawNerve(ctx);
       if (goldPop > 0) drawGold(ctx);
@@ -4375,11 +4782,12 @@ var PlayScene = (function () {
      a bright tip and a label beside it. `y` defaults to 80, which is the
      slot both used to share - and the old comment here said that a level
      wanting the pair at once should give the second one y 92 rather than
-     stand it down. THE WHITEBOARD grows both, so there are two rows now
-     and each caller passes its own: spicySlot and sourSlot, claimed at
-     the moment of the catch and held until the power-up dies. A row
-     worked out per frame from what else was live meant a bar that moved
-     while it was counting down. */
+     stand it down. THE WHITEBOARD grows both, so there are rows now and
+     each caller passes its own: spicySlot, sourSlot and - since THE
+     CEILING sheds the heat and the spin together - whirlSlot, each
+     claimed at the moment of the catch by freeSlot() and held until the
+     power-up dies. A row worked out per frame from what else was live
+     meant a bar that moved while it was counting down. */
   var SPICY_GAUGE = { panel: '#2a1008', edge: '#6b2a12', base: '#c8452a',
                       mid: '#f0722c', top: '#ffd08a', label: '#ff8a3c' };
   var SOUR_GAUGE  = { panel: '#10240a', edge: '#2d5c1c', base: '#3f7a2a',
@@ -4449,6 +4857,31 @@ var PlayScene = (function () {
     /* sourTime(), for the reason drawSpicy's gauge gives */
     drawGauge(ctx, clamp(sour / sourTime(), 0, 1), shrivel, SOUR_GAUGE,
               'SOUR  SMALL', sourSlot);
+  }
+
+  /* the spin's gauge and shout. SPIN! and what it buys in the slot SPICY!
+     and SOUR! use, and the bar in whichever row was free when it was
+     caught (freeSlot), labelled with the two words the player needs: what
+     it is and what it does. */
+  var WHIRL_GAUGE = { panel: '#1c0f2a', edge: '#4a2a6e', base: '#6a35a8',
+                      mid: '#9a58e0', top: WHIRL_HI, label: '#b98cf0' };
+
+  function drawWhirl(ctx) {
+    if (state === 'entry') return;
+    if (whirlBanner > 0) {
+      var a = ctx.globalAlpha;
+      var lift = (1.1 - whirlBanner) * 11;
+      ctx.globalAlpha = a * clamp(whirlBanner / 0.6, 0, 1);
+      UI.heading(ctx, 'SPIN!', VW / 2, 112 - lift, 3,
+                 { colour: WHIRL_HI, outline: '#2a1240', wave: t * 13, waveAmp: 1.4 });
+      UI.text(ctx, 'BOUNCE OFF PILLARS', VW / 2, 138 - lift,
+              { align: 'center', colour: '#c99af2', shadow: UI.C.shadow });
+      ctx.globalAlpha = a;
+    }
+    if (twirl < 0.02) return;
+    if (whirl > 0 && whirl < 1.8 && Math.floor(t * 8) % 2 === 0) return;
+    drawGauge(ctx, clamp(whirl / whirlTime(), 0, 1), twirl, WHIRL_GAUGE,
+              'SPIN  BOUNCE', whirlSlot);
   }
 
   /* The shout when something rings: the SPICY slot, with the same lift and
@@ -4588,7 +5021,7 @@ var PlayScene = (function () {
        land together by accident inside a second and a half - where the four
        above land together by construction. A badge is never worth standing
        on top of the news that you nearly died. */
-    spicyBanner = 0; sourBanner = 0; stunBanner = 0; boonBanner = 0;
+    spicyBanner = 0; sourBanner = 0; stunBanner = 0; boonBanner = 0; whirlBanner = 0;
     for (var i = 0; i < won.length; i++) { runAchv.push(won[i]); announce('achievement', won[i]); }
     /* everything above happens however many times this is reached; only the
        noise and the confetti are once a frame */
@@ -4644,7 +5077,8 @@ var PlayScene = (function () {
 
   /* the one-off heads up when the rafters start letting go */
   function drawHazardWarning(ctx) {
-    if (state === 'entry' || spicyBanner > 0 || sourBanner > 0 || stunBanner > 0) return;
+    if (state === 'entry' || spicyBanner > 0 || sourBanner > 0 || stunBanner > 0 ||
+        whirlBanner > 0) return;
     if (Math.floor(hazardWarn * 6) % 2) return;
     var w = warnLines;
     if (!w) return;
@@ -4945,6 +5379,12 @@ var PlayScene = (function () {
                                     ceilKills: CEIL_KILLS, ringing: ringing,
                                     late: late,
                                     sour: sour, shrivel: shrivel, hitR: hitR(),
+                                    /* the spin, off the run: how long is
+                                       left, the eased aura, how far the
+                                       sprite has turned and which gauge row
+                                       it took */
+                                    whirl: whirl, twirl: twirl, whirlAngle: whirlAngle,
+                                    whirlSlot: whirlSlot, spicySlot: spicySlot, sourSlot: sourSlot,
                                     bodyR: bodyR(),
                                     unlocked: unlocked.map(function (d) { return d.id; }),
                                     wonLevels: wonLevels.map(function (l) { return l.id; }),
