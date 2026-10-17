@@ -32875,7 +32875,27 @@ var Table = (function () {
     }
     Tint.rect(ctx, fkx - 3, tableY + 1, 7, 1, P.shadeCool, 4);
 
-    /* 7. the kill line, two rows of the house outline across the ceiling */
+    /* 7. THE LID, the house's ceiling band in miniature - the level's
+       LivingRoom band since the owner called the bare kill line lazy, so
+       the card says the same thing the bay does: plaster down to the
+       crown, two crackle-glass pendants sliding with the lid at the
+       planks' own pace with their pools of light spilling under the
+       crown, then crown, crown shade and the outline on the kill line */
+    rect(ctx, x, y, w, killY - 2 - y, H.plasterMid);
+    var pp = Math.round(w * 0.55);
+    for (k = -1; k < 3; k++) {
+      var px0 = x + Math.round(wrap(w * 0.3 - s, pp)) + k * pp;
+      if (px0 < x - 12 || px0 > x + w + 12) continue;
+      Tint.rect(ctx, px0 - 9, y, 19, killY - 2 - y, H.plasterLit, 7);
+      Tint.rect(ctx, px0 - 9, lidY, 19, 4, H.lampGlow, 3);
+      Tint.rect(ctx, px0 - 5, lidY, 11, 3, H.lampGlow, 4);
+      rect(ctx, px0, y, 1, 3, H.lampRod);
+      rect(ctx, px0 - 1, y + 3, 3, 3, H.outline);
+      rect(ctx, px0 - 1, y + 3, 3, 2, H.lampGlass);
+      dot(ctx, px0, y + 4, H.lampCore);
+    }
+    rect(ctx, x, killY - 2, w, 1, H.crown);
+    rect(ctx, x, killY - 1, w, 1, H.crownShade);
     rect(ctx, x, killY, w, 2, H.outline);
 
     /* 8. the doodad flying it, the Couch's block */
