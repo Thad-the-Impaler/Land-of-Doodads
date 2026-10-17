@@ -32,7 +32,9 @@ SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve",
                "pepperselect.mp3": "voicePepper",
                "maximusselect.mp3": "voiceMaximus",
                "billyselect.mp3": "voiceBilly",
-               "saddamselect.mp3": "voiceSaddam"}
+               "saddamselect.mp3": "voiceSaddam",
+               "geraldselect.mp3": "voiceGerald",
+               "inariselect.mp3": "voiceInari"}
 
 
 def read(path):

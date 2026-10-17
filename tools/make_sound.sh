@@ -10,11 +10,15 @@
 # because loudnorm gates and pumps on clips this short - it turned a sequence
 # of sharp knocks into one spike and a lot of nothing.
 #
-# The five voices in Assets/sounds were made with:
+# The seven voices in Assets/sounds were made with:
 #
 #   tools/make_sound.sh "Extra Sounds/Maximus Select.wav" Assets/sounds/maximusselect.mp3 0.09 1.22
 #   tools/make_sound.sh "Extra Sounds/Billy Select.m4a"   Assets/sounds/billyselect.mp3  0.19 1.95
 #   tools/make_sound.sh "Extra Sounds/Saddam Select.m4a"  Assets/sounds/saddamselect.mp3 0.19 2.27
+#   tools/make_sound.sh "Extra Sounds/Gerald Select.m4a"  Assets/sounds/geraldselect.mp3 0.0 2.68 \
+#       "highpass=f=30"
+#   tools/make_sound.sh "Extra Sounds/Inari Select.m4a"   Assets/sounds/inariselect.mp3  0.18 1.06 \
+#       "highpass=f=450,highpass=f=450,highpass=f=450,lowpass=f=7000,afftdn=nr=18:nf=-60"
 #   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/cookieselect.mp3 291.29 291.70 \
 #       "highpass=f=320,afftdn=nr=12:nf=-38"
 #   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/pepperselect.mp3 327.29 329.34 \

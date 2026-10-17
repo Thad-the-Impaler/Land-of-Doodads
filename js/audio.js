@@ -359,7 +359,8 @@ var Audio3 = (function () {
        they belong under everything else rather than over it.
 
        Billy, Saddam and Maximus are their own recordings, clean enough to
-       want nothing but a trim and the gain. Cookie and Pepper are cut
+       want nothing but a trim and the gain; Gerald and Inari are their own
+       too, and each has its own note below. Cookie and Pepper are cut
        out of one long yard recording, where the calls sit 26 and 32 dB down
        with the room floor right underneath, so both carry a 320 Hz high
        pass and FFT noise reduction before the gain goes on: the room drops
@@ -374,6 +375,27 @@ var Audio3 = (function () {
     voiceBilly:  { src: 'Assets/sounds/billyselect.mp3',  vol: 0.40,
                    channel: 'voice', fallback: 'move' },
     voiceSaddam: { src: 'Assets/sounds/saddamselect.mp3', vol: 0.40,
+                   channel: 'voice', fallback: 'move' },
+    /* GERALD'S IS NEARLY ALL LOW END. His recording is a pulsing grumble
+       under about 220 Hz for its whole 2.7 seconds, with a few clicks over
+       the top, so it is kept whole with only the sub-bass cut (30 Hz) -
+       a high pass at the others' 90 Hz would take half of him away. Peak
+       normalised like the rest it still measures -26 LUFS against the
+       -15 to -16 of Cookie, Pepper, Billy and Maximus (Saddam, the other
+       low one, is -30), so he gets a little more of the channel: 0.52.
+       It is the honest ceiling - laptop and phone speakers barely carry
+       what is under 150 Hz, and more volume there would mostly be felt
+       on headphones rather than heard on a speaker. */
+    voiceGerald: { src: 'Assets/sounds/geraldselect.mp3', vol: 0.52,
+                   channel: 'voice', fallback: 'move' },
+    /* INARI'S MEOW sat 30 dB under a room rumble in the recording, so it is
+       cut out of the middle (0.18-1.06 s) behind a steep 450 Hz high pass,
+       three poles' worth, under her lowest harmonic at about 550 Hz, with a
+       7 kHz low pass and FFT noise reduction: the rumble ends up about 50
+       dB below the call. It measures -12 LUFS, nearly 4 dB hotter than the
+       other four, so 0.28 here is the 0.40 they play at, matched on
+       measured loudness rather than on peak. */
+    voiceInari:  { src: 'Assets/sounds/inariselect.mp3',  vol: 0.28,
                    channel: 'voice', fallback: 'move' }
   };
 

@@ -166,6 +166,7 @@ var Doodads = (function () {
       pull: 110,
       accent: '#a3803f', accentDark: '#5d4720', accentLight: '#d8b878',
       sprite: { w: 384, h: 365, pivotX: 178.2, pivotY: 161.7, bodyR: 161.7, footOffset: 1.00 },
+      voice: 'voiceGerald',
       title: { role: 'walk', r: 21, homeX: 118 }
     },
     {
@@ -236,6 +237,7 @@ var Doodads = (function () {
          desaturated, and Billy already owns the saturated blue. */
       accent: '#8d95a6', accentDark: '#4a5263', accentLight: '#cdd6e6',
       sprite: { w: 384, h: 358, pivotX: 195.4, pivotY: 179.0, bodyR: 179.0, footOffset: 1.00 },
+      voice: 'voiceInari',
       title: { role: 'perch', r: 20 }
     },
     {
