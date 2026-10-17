@@ -32277,7 +32277,9 @@ var Table = (function () {
   /* ========================================================== BUILD */
 
   function build() {
-    LivingRoom.build();               /* the menu gloom lives there */
+    LivingRoom.build();               /* the menu gloom and the lid's pools live there */
+    /* the lid: the house's ceiling band, the Desk's call exactly */
+    T.ceiling = LivingRoom.bakeCeiling(null);
     T.wall = bakeWall();
     T.fixtures = bakeFixtures();
     T.island = bakeIsland();
@@ -32332,21 +32334,21 @@ var Table = (function () {
     ctx.drawImage(T.light.canvas, 0, 0);
   }
 
-  /* THE LID IS A LINE. From five centimetres over the walnut the ceiling
-     in frame is the FAR ceiling - the top row of the screen is plaster
-     3.3 m away over the island, row 23 is plaster 3.7 m away - and
-     nothing solid hangs over the lane: the pendants over this table are
-     straight up, out of a 31-degree frame by more than a metre. So the
-     lid is not an object here. The ceiling plane is the wall layer's,
-     the cans drift across it, the hood's chimney rises through it, and
-     the boundary is the level's one promise and nothing else: two rows
-     of the house outline at 22..23, laid over whatever is behind them.
-     The Living Room's crown is not over this table in any photograph,
-     so there is no crown, no pool and no crown-shade strip under it. */
-  function drawCeiling(ctx, scroll) {
-    ctx.fillStyle = H.outline;
-    ctx.fillRect(0, CEIL - 2, VW, 2);
-  }
+  /* THE LID IS THE HOUSE'S CEILING BAND, the Desk's and the Couch's own:
+     LivingRoom.bakeCeiling's plaster, crackle-glass pendant and register
+     over the four hard crown rows, with each pendant's pool of light and
+     the crown's shade strip laid into the room under it by
+     LivingRoom.drawCeiling. It was two outline rows at 22..23 over the far
+     ceiling plane - true to the lens, and the owner's word for it was
+     "lazy": the kill line that ends a run is the one thing in the bay
+     that has to read as a solid object at a glance, and the Living Room
+     settled what that object looks like in this house. Table ref 1 has
+     those same amber pendants hanging over this very table.
+     The far ceiling plane with its cans goes on behind it from row 24
+     down, so the room still recedes under the band. T.ceiling is baked
+     once in build(), after LivingRoom.build(), which bakes the pools and
+     the shade strip drawCeiling uses. */
+  function drawCeiling(ctx, scroll) { LivingRoom.drawCeiling(ctx, scroll, T.ceiling); }
 
   /* The band: the near walnut under the kill row, cut from the same
      painting as the rows above it. No foreground lip - the lens is on the
@@ -33348,10 +33350,8 @@ var Floor = (function () {
     /* the boards themselves, top-down, before the light: honey oak, a
        warmer board now and then, the grain, the satin lip at each seam */
     oakFloor:     '#d6bf99',
-    oakFloorWarm: '#c8ab80',
-    oakFloorGrain: '#7d6246',
+    oakFloorGrain: '#6a523b',
     oakFloorLip:  '#ecdcbc',
-    oakFloorSeam: '#7a624a',
     /* the far walls, the greige of Table ref 4, and the haze the gap's
        six metres lay over everything in it */
     farWall:      '#b8ae9a',
@@ -34360,194 +34360,248 @@ var Floor = (function () {
 
   /* ========================================================== THE FLOOR
 
-     ONE FLOOR, ITS BOARDS RUNNING INTO THE ROOM (Floor ref 6). The lens
-     looks along the boards, so their seams are lines that fan out from the
-     vanishing point toward you - narrow and crowded by the island, a
-     third of the screen wide at your feet - and the grain runs with them.
-     Two cuts got this wrong in opposite directions: boards seen side-on in
-     strips that stepped back like layers, then a smooth plane with no
-     wood in it at all. This is the photograph: one continuous oak floor,
-     in perspective, from the toe-kicks to the bottom of the screen.
+     ONE FLAT OAK FLOOR, ITS GRAIN RUNNING ACROSS THE PICTURE - which is
+     what every floor photograph has in it (Floor ref 1, Floor 2, Floor
+     ref 5, Floor ref 6): long, gently waving grain lines and the nested
+     arches of cathedral figure, crushed into thin streaks toward the far
+     end and opening up toward the lens, with the window's sheen lying
+     across it. Three cuts got it wrong first: boards seen side-on in
+     strips that stepped back like layers, a smooth plane with no wood in
+     it, and boards turned to run into the room with their seams fanning
+     from the vanishing point. The photographs are none of those.
 
-     HOW IT IS DRAWN. A top-down oak floor is baked once as a texture -
-     boards 14 cm wide running along the depth, each with its cathedral
-     grain, an end joint somewhere along it, the odd knot - and every
-     screen row from 154 down samples it at that row's depth: the row's
-     width in centimetres is 480 * D / FOC, centred on the vanishing point
-     at x 240. One drawImage per row. The texture is baked at four
-     densities (2, 4, 8 and 16 texels a centimetre) and each row reads the
-     one that puts one to two screen pixels on a texel, so nothing is ever
-     minified into noise and nothing magnified into blocks: the far rows
-     are soft and quiet (their grain is baked faint), the near rows carry
-     the grain at full strength.
+     WHAT IS PAINTED. A top-down floor, worked out per point: boards 14 cm
+     wide running LEFT-RIGHT, along the flight, the near one filling the
+     band and the floor up to row 196; each a log's growth rings cut flat
+     (THE WOOD, below) - the nested arches of cathedral figure where the
+     log swells, long wandering streaks between, rings broken into the
+     dashes of oak's open pores, a pale latewood line here and there, and
+     a knot on the near board with the rings swirling round it (Floor ref
+     1). There is no line and NO change of tone between one board and the
+     next - a run of boards of different value is exactly the "layers of
+     the same material going backward" the owner sent back.
 
-     HOW IT MOVES, AND WHY NOT BY THE PARALLAX LAW. A fan of seams stays a
-     fan only if every row slides by the SAME distance in centimetres -
-     the lens moving sideways over the floor - which on screen is T * FOC
-     / D pixels: fast near, slow far, and zero at the horizon. Any other
-     per-row speed shears the fan, and the shear grows with the run: slide
-     each row at the law's own p(D) and by a minute in the seams near the
-     island have wound round into hatching, and the rows nearer than 45 cm
-     (the law's p is 1 for all of them) swing their vanishing point off the
-     side of the screen. So the boards move in true perspective, tied to
-     the play plane: the lens moves T = scroll * D_PLAY / FOC cm, where
-     D_PLAY is the kill row's depth (10.9 cm), so row 242 slides at exactly
-     the pillars' speed and every row above it proportionally slower -
-     row 200 at 0.56, row 170 at 0.25. Each row's shift is rounded to whole
-     pixels, so a row only ever translates and never re-samples: nothing
-     boils.
+     HOW IT IS DRAWN: AS ROWS, EACH ONE ALREADY AT ITS OWN SCALE. Every
+     screen row from 150 down is a slice of the floor at one depth, D =
+     FOC * EYE / (row - Y_H). At build each row's slice is rendered once,
+     at exactly that row's scale (FOC / D pixels a centimetre, rounded so
+     a 224 cm period is a whole number of pixels), and AVERAGED over the
+     depth the row covers - 50 cm of floor in one row by the island, a
+     millimetre at your feet - with every ring line box-filtered to the
+     share of the pixel it covers, which is what turns the far grain into
+     the photographs' soft streaks and keeps a near line thinner than a
+     row from breaking into stair-steps - about 0.1 s at build. Then each
+     frame a row is one 1:1 copy of 480 pixels out of its own strip at a
+     whole-pixel offset: no scaling, no resampling, so nothing can shimmer
+     or boil; a row only ever slides.
 
-     WHERE THE FURNITURE STANDS. The island, its stools and the far chair
-     keep the room model's parallax (0.30, 0.48), and their feet stand on
-     rows 150..156, which is the far floor in the window's sheen: there
-     the static light below washes the boards out completely (by 1.5 m a
-     board is seven pixels and the photograph shows it as a bright haze),
-     so a foot never visibly skates over a seam. The boards come up out of
-     the sheen from row 158 and are full strength by 176.
+     HOW IT MOVES: AS A FLOOR, IN TRUE PERSPECTIVE. Every row slides by
+     the same distance across the floor - the lens moving T = scroll *
+     D_PLAY / FOC cm, where D_PLAY is the kill row's depth (10.9 cm) - so
+     row 242 slides at exactly the pillars' speed and every row above it
+     proportionally slower (row 200 at 0.56, row 170 at 0.25, the horizon
+     not at all), and an arch or a knot spanning many rows moves as one
+     thing lying on one floor. The island, its stools and the far chair
+     keep the room model's parallax (0.30, 0.48); their feet stand on rows
+     150..156, where the grain is a long horizontal haze in the window's
+     sheen, so nothing visibly skates.
 
-     THE LIGHT is a static sheet over the boards, because light belongs to
-     the room and not to the wood: the sheen by the toe-kicks easing into
-     the table's shade toward you. THE ACTUAL GROUND - the band, 242..269,
-     the same boards on the same mapping, wider still - lies under a
-     lighter shade than the floor just beyond it, and between them at 242
-     a hard dark seam with the board's lit arris under it: the one
-     horizontal line in the floor, and the kill line. */
+     THE LIGHT is a static sheet over the wood, because light belongs to
+     the room: the sheen by the toe-kicks easing into the table's shade
+     toward you. THE ACTUAL GROUND - the band, 242..269, the same grain on
+     the same mapping, widest of all - lies under a lighter shade than the
+     floor just beyond it, and between them at 242 a hard dark seam with
+     the board's lit arris under it: the one hard horizontal line in the
+     floor, and the kill line. */
   function hexRGB(h) { var n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
   function mixRGB(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; }
-  function css(c3) { return 'rgb(' + Math.round(c3[0]) + ',' + Math.round(c3[1]) + ',' + Math.round(c3[2]) + ')'; }
 
   var VPX = 240;                                  /* the vanishing point's column */
   var D_PLAY = FOC * EYE / (FLOOR - Y_H);         /* 10.9 cm: the kill row's depth */
-  var BOARD_CM = 14, PERIOD_CM = 112;             /* eight boards, then it repeats */
-  var OAK_R0 = 154;                               /* the first row with boards in it */
-  function depthAt(r) { return FOC * EYE / (r + 0.5 - Y_H); }
+  var BOARD_CM = 14, PERIOD_CM = 224;             /* the floor repeats every 224 cm across */
+  var OAK_R0 = 150;                               /* the first row with wood in it */
 
-  /* the four densities and the rows that read each: one to two screen
-     pixels a texel. `g` is how strong the grain is baked at that density
-     (quiet far off), `ss` the supersampling a coarse level needs so a 2mm
-     seam averages into its texel instead of flickering in and out */
-  var LODS = [
-    { k: 2,  r0: OAK_R0, r1: 162, g: 0.18, s: 0.55, ss: 3 },
-    { k: 4,  r0: 162, r1: 178, g: 0.40, s: 0.85, ss: 2 },
-    { k: 8,  r0: 178, r1: 210, g: 0.80, s: 1.00, ss: 1 },
-    { k: 16, r0: 210, r1: VH,  g: 1.00, s: 1.00, ss: 1 }
-  ];
-
-  /* The oak at a point of the floor, x across the room and z away from
-     the lens, in cm: [r, g, b]. */
-  var OAK_A = null, OAK_B, OAK_GR, OAK_SM, OAK_LIP, OAK_KN, OAK_KR;
-  function oakAt(x, z, L) {
-    x = wrap(x, PERIOD_CM);
-    var b = Math.floor(x / BOARD_CM), u = x - b * BOARD_CM;
-    var hb = hash(b * 7919 + 13);
-    /* one end joint per board somewhere in view, staggered */
-    var zj = 16 + (hb % 101), seg = z < zj ? 0 : 1;
-    var hs = hash(b * 131 + seg * 977 + 5);
-    var col = mixRGB(OAK_A, OAK_B, ((hs >>> 3) % 100) / 160);
-    /* the cathedral: contour lines of the distance from the board's
-       heart, pushed out round a flame somewhere along it, wobbling gently */
-    var uc = 4.5 + ((hs >>> 9) % 50) / 10;
-    var zf = 10 + ((hs >>> 15) % 140), zl = 18 + ((hs >>> 21) % 30);
-    var F = Math.abs(u - uc) - 3.2 * Math.exp(-((z - zf) / zl) * ((z - zf) / zl)) + 0.35 * Math.sin(z * 0.06 + b * 1.7);
-    /* lines 1.3 cm apart, each its own strength and some missing, so it
-       is grain and not corrugation */
-    var gn = Math.floor(F / 1.3), fr = F / 1.3 - gn;
-    var gs = (hash(gn * 31 + b * 977 + seg * 7) % 100) / 100;
-    if (gs > 0.3 && fr < 0.17) col = mixRGB(col, OAK_GR, L.g * gs * (1 - fr / 0.17));
-    /* the odd knot (Floor ref 1), one board in three */
-    if (hs % 3 === 0) {
-      var kx = (u - (3 + (hs >>> 5) % 8)) / 0.9, kz = (z - (12 + (hs >>> 11) % 110)) / 1.6;
-      var kd = Math.sqrt(kx * kx + kz * kz);
-      if (kd < 1) col = mixRGB(col, OAK_KN, L.g);
-      else if (kd < 1.5) col = mixRGB(col, OAK_KR, L.g * 0.7);
+  /* THE WOOD. A board is a log's growth rings cut by a flat saw: a ring
+     of radius R shows on the face where sqrt(h*h + dw*dw) = R - G(u), dw
+     being the distance across the board from its heart, h how far above
+     the pith the saw ran, and G the log's taper along the board (u). Where
+     G climbs, ring after ring runs out against the heart and the lines
+     close into the nested arches of cathedral figure (Floor 2, Floor ref
+     1); where it is level they run on as long streaks, wandering a little;
+     a knot pulls the rings round itself. Every ring has its own strength -
+     some missing, some faint, most dark - and the dark ones are broken
+     into the dashes of oak's open pores. No line runs between one board
+     and the next and no board is darker than another: a board only ends
+     where its figure stops and the next one's begins. And no board ENDS
+     are drawn: across the floor they would be lines running into the
+     room, converging on the vanishing point - the seams the owner sent
+     back - so every board runs the whole 224 cm and its figure wraps. */
+  var GRAIN = 0.45;                 /* cm from one ring to the next */
+  var Z0 = 7;                       /* a board edge 7 cm out: the near board fills the band and the floor up to row 196 */
+  var OAK_A = null, OAK_GR, OAK_LT, OAK_KN, OAK_KR, OAK_PC = {}, OAK_LV = 0;
+  var PORE = [1, 1, 0.9, 0.8, 1, 0.6, 0.45, 0.95], PORE_M = 0.8375;
+  function oakPiece(b) {
+    if (OAK_PC[b]) return OAK_PC[b];
+    var hb = hash(b * 7919 + 1013), hk = hash(b * 31 + 7), k, o = {
+      b: b,
+      wc: 4.5 + (hb % 50) / 10,                     /* the heart, from the board's near edge */
+      h: 0.4 + ((hb >>> 6) % 10) / 10,              /* the saw above the pith */
+      dir: (hb >>> 28) & 1,                         /* which way the arches open */
+      p1: ((hk >>> 3) % 628) / 100, p2: ((hk >>> 11) % 628) / 100,
+      bumps: [], knot: b === 0 || hk % 4 === 0, uk: 0, wk: 0
+    };
+    /* three swells of the log along the 224 cm, each a quick climb and a
+       long fall: the climbs are the tight cathedrals, the falls the long
+       ones, and between them the grain runs straight */
+    var u0 = (hb >>> 9) % 224;
+    for (k = 0; k < 3; k++) {
+      var hq = hash(b * 131 + k * 17 + 3);
+      o.bumps.push({ u: wrap(u0 + k * 75 + (hq % 20), PERIOD_CM), r: 6 + ((hq >>> 5) % 11),
+                     f: 18 + ((hq >>> 9) % 30), A: 2 + ((hq >>> 14) % 26) / 10 });
     }
-    /* the end joint, across the board. (The long seams between boards
-       are NOT in the texture: drawn row by row from a texture a line that
-       runs steeply across the rows breaks into dashes, so drawSeams lays
-       them as lines - see there.) */
-    if (Math.abs(z - zj) < 0.18 && u > 0.3 && u < BOARD_CM - 0.3) col = mixRGB(col, OAK_SM, L.s * 0.8);
-    if (Math.abs(z - zj - 0.3) < 0.12 && u > 0.3 && u < BOARD_CM - 0.3) col = mixRGB(col, OAK_LIP, L.s * 0.5);
-    return col;
+    /* the knot sits in the first climb, on the heart, and the rings swirl
+       round it (Floor ref 1) - the near board always has one */
+    o.uk = wrap(o.bumps[0].u + (o.dir ? -1 : 1) * o.bumps[0].r * 0.7, PERIOD_CM);
+    o.wk = o.wc + (((hk >>> 24) % 16) - 8) / 10;
+    return (OAK_PC[b] = o);
+  }
+  /* the ring value at u along the board, w across it */
+  function oakF(o, u, w) {
+    var dw = w - o.wc + 0.5 * Math.sin(TAU * u * 6 / PERIOD_CM + o.p1) + 0.2 * Math.sin(TAU * u * 24 / PERIOD_CM + o.p2);
+    var F = Math.sqrt(o.h * o.h + dw * dw), k;
+    for (k = 0; k < 3; k++) {
+      var B = o.bumps[k], sb = o.dir ? wrap(B.u - u, PERIOD_CM) : wrap(u - B.u, PERIOD_CM);
+      if (sb < B.r) F += B.A * ease(sb / B.r);
+      else if (sb < B.r + B.f) F += B.A * (1 - ease((sb - B.r) / B.f));
+    }
+    if (o.knot) {
+      var ku = (wrap(u - o.uk + 112, PERIOD_CM) - 112) / 3.2, kw = (w - o.wk) / 1.4;
+      F -= 1.3 * Math.exp(-ku * ku - kw * kw);
+    }
+    return F;
+  }
+  /* how dark the rings make the stretch F0..F1 of ring value, box-
+     filtered, so a line thinner than a row neither vanishes nor
+     flickers into dashes: what share of it is covered by ring lines, each
+     at its strength and its pores (whose dashes average out once a pixel
+     is wider than a dash). The pale latewood lines go in OAK_LV. */
+  function oakRings(o, F0, F1, u, cx) {
+    var n = Math.floor(F0 / GRAIN) - 1, n1 = Math.floor(F1 / GRAIN), sd = 0, sl = 0, span = F1 - F0;
+    var pk = cx < 0.2 ? 0 : (cx > 0.9 ? 1 : (cx - 0.2) / 0.7);
+    for (; n <= n1; n++) {
+      var hr = hash(n * 7331 + o.b * 977 + 5), v = hr % 100;
+      var p = (n + ((hr >>> 8) % 40) / 100) * GRAIN;
+      if (v >= 12) {
+        var q = p + GRAIN * (0.2 + ((hr >>> 16) % 17) / 100);
+        var ov = Math.min(F1, q) - Math.max(F0, p);
+        if (ov > 0) {
+          var pr = PORE[hash(Math.floor(u / 0.45 + n * 0.37) * 131 + n * 7 + o.b * 13) & 7];
+          sd += ov * (v < 50 ? 0.45 + (v - 12) / 190 : 0.75 + (v - 50) / 200) * (pr + (PORE_M - pr) * pk);
+        }
+      }
+      if ((hr >>> 24) % 6 === 0) {
+        var l0 = p + GRAIN * 0.5, ov2 = Math.min(F1, l0 + GRAIN * 0.12) - Math.max(F0, l0);
+        if (ov2 > 0) sl += ov2 * 0.5;
+      }
+    }
+    OAK_LV = sl / span;
+    return sd / span;
   }
 
-  function bakeOakLevel(L) {
-    var dmax = depthAt(L.r0), dmin = depthAt(L.r1 - 1);
-    var win = Math.ceil(VW * dmax / FOC * L.k) + 2;
-    var W = PERIOD_CM * L.k + win, Hh = Math.ceil((dmax - dmin) * L.k) + 2;
-    var t = makeCanvas(W, Hh), img = t.ctx.createImageData(W, Hh), d = img.data;
-    var i, j, a, b2, n = L.ss * L.ss;
-    for (j = 0; j < Hh; j++) {
-      for (i = 0; i < W; i++) {
-        var sr = 0, sg = 0, sb = 0;
-        for (a = 0; a < L.ss; a++) {
-          for (b2 = 0; b2 < L.ss; b2++) {
-            var c3 = oakAt((i + (a + 0.5) / L.ss) / L.k, dmin + (j + (b2 + 0.5) / L.ss) / L.k, L);
-            sr += c3[0]; sg += c3[1]; sb += c3[2];
-          }
+  /* bake strips of floor, one a row: rows[k] = { P0: pixels to the 224
+     cm, zNear, zFar: the depths it covers }. Each pixel is the average of
+     sub-samples across that depth, each box-filtered over its own
+     footprint in ring value; the strip runs on pad pixels past its period
+     so any whole-pixel offset can be copied out in one piece */
+  function bakeOakRows(rows, pad) {
+    OAK_A = hexRGB(P.oakFloor); OAK_GR = hexRGB(P.oakFloorGrain); OAK_LT = hexRGB(P.oakFloorLip);
+    OAK_KN = hexRGB(P.oakKnot); OAK_KR = hexRGB(P.oakKnotRing);
+    var per = [], wmax = 0, r, i, j;
+    for (r = 0; r < rows.length; r++) { per.push(rows[r].P0); if (rows[r].P0 > wmax) wmax = rows[r].P0; }
+    var W = wmax + pad, t = makeCanvas(W, rows.length), img = t.ctx.createImageData(W, rows.length), d = img.data;
+    var A = OAK_A, G = OAK_GR, Lt = OAK_LT, Kn = OAK_KN, Kr = OAK_KR;
+    for (r = 0; r < rows.length; r++) {
+      var P0 = per[r], cx = PERIOD_CM / P0;
+      var zNear = rows[r].zNear, dz = rows[r].zFar - zNear;
+      var nzs = clamp(Math.ceil(dz / 0.35), 2, 40), sz = dz / nzs;
+      var aR = new Float32Array(P0), aG = new Float32Array(P0), aB = new Float32Array(P0);
+      var Fa = new Float64Array(P0), Ua = new Float64Array(P0);
+      for (j = 0; j < nzs; j++) {
+        var zz = zNear + (j + 0.5) * sz - Z0, b = Math.floor(zz / BOARD_CM), w = zz - b * BOARD_CM;
+        var o = oakPiece(b);
+        for (i = 0; i < P0; i++) {
+          Ua[i] = (i + 0.5) * cx;
+          Fa[i] = oakF(o, Ua[i], w);
         }
-        var o = (j * W + i) * 4;
-        d[o] = sr / n; d[o + 1] = sg / n; d[o + 2] = sb / n; d[o + 3] = 255;
+        /* the board edge this sub-sample may hold: a hairline, faint */
+        var ed = Math.max(0, Math.min(w + sz / 2, 0.06) - Math.max(w - sz / 2, 0)) / sz * 0.3;
+        for (i = 0; i < P0; i++) {
+          var u = Ua[i];
+          var gx = Math.min(GRAIN * 1.5, Math.abs(Fa[(i + 1) % P0] - Fa[(i + P0 - 1) % P0]) * 0.5);
+          var fw = Math.max(0.01, sz + gx);
+          var dk = oakRings(o, Fa[i] - fw / 2, Fa[i] + fw / 2, u, cx), lv = OAK_LV;
+          var dd = Math.min(1, dk + ed);
+          var cr = A[0] + (G[0] - A[0]) * dd, cg = A[1] + (G[1] - A[1]) * dd, cb = A[2] + (G[2] - A[2]) * dd;
+          if (lv > 0) { cr += (Lt[0] - cr) * lv; cg += (Lt[1] - cg) * lv; cb += (Lt[2] - cb) * lv; }
+          if (o.knot) {
+            var ku = (wrap(u - o.uk + 112, PERIOD_CM) - 112) / 0.55, kw = (w - o.wk) / 0.42, kd = Math.sqrt(ku * ku + kw * kw);
+            var kc = kd < 1 ? Kn : (kd < 1.6 ? Kr : null), ka = kd < 1 ? 0.78 : 0.45 * (1.6 - kd) / 0.6 + 0.15;
+            if (kc) { cr += (kc[0] - cr) * ka; cg += (kc[1] - cg) * ka; cb += (kc[2] - cb) * ka; }
+          }
+          aR[i] += cr; aG[i] += cg; aB[i] += cb;
+        }
+      }
+      var ofs = r * W * 4;
+      for (i = 0; i < P0 + pad; i++) {
+        var ii = i % P0, qq = ofs + i * 4;
+        d[qq] = aR[ii] / nzs; d[qq + 1] = aG[ii] / nzs; d[qq + 2] = aB[ii] / nzs; d[qq + 3] = 255;
       }
     }
     t.ctx.putImageData(img, 0, 0);
-    return { t: t, k: L.k, r0: L.r0, r1: L.r1, dmin: dmin };
+    return { t: t, per: per };
   }
-
+  /* the level's floor: rows 150..269 at their own scale and depth */
   function bakeOak() {
-    OAK_A = hexRGB(P.oakFloor); OAK_B = hexRGB(P.oakFloorWarm); OAK_GR = hexRGB(P.oakFloorGrain);
-    OAK_SM = hexRGB(P.oakSeam); OAK_LIP = hexRGB(P.oakFloorLip);
-    OAK_KN = hexRGB(P.oakKnot); OAK_KR = hexRGB(P.oakKnotRing);
-    return LODS.map(bakeOakLevel);
-  }
-
-  /* the boards, rows r0..r1-1, for this scroll: one drawImage a row, each
-     row's shift rounded to whole pixels so it only ever translates */
-  function drawOak(ctx, scroll, r0, r1) {
-    var tcm = scroll * D_PLAY / FOC, li = 0, L, r;
-    for (r = r0; r < r1; r++) {
-      while (li < T.oak.length - 1 && r >= T.oak[li].r1) li++;
-      L = T.oak[li];
-      var D = depthAt(r), cmPx = D / FOC;
-      var shift = Math.round(tcm / cmPx);
-      var u0 = wrap(((shift - VPX) * cmPx) * L.k, PERIOD_CM * L.k);
-      var v = Math.max(0, Math.floor((D - L.dmin) * L.k));
-      ctx.drawImage(L.t.canvas, u0, v, VW * cmPx * L.k, 1, 0, r, VW, 1);
+    var rows = [], r;
+    for (r = OAK_R0; r < VH; r++) {
+      rows.push({ P0: Math.round(PERIOD_CM * (r + 0.5 - Y_H) / EYE),
+                  zNear: FOC * EYE / (r + 1 - Y_H), zFar: FOC * EYE / (r - Y_H) });
     }
+    return bakeOakRows(rows, VW);
+  }
+  /* the card's floor (drawPreview): the same floor seen by a card w wide,
+     its rows standing for the level's - the toe-kick to the seam for rows
+     150..241, the seam to the bottom for the band - each at w / 480 of the
+     level's scale. Baked the first time a card of that size is drawn. */
+  var OAK_CARD = {};
+  function oakCard(w, h, fy, sy) {
+    var key = w + 'x' + h + 'x' + fy + 'x' + sy;
+    if (OAK_CARD[key]) return OAK_CARD[key];
+    var rows = [], j, k0 = w / VW;
+    for (j = 0; j < h - fy; j++) {
+      var g0, g1;
+      if (j < sy - fy) { g0 = OAK_R0 + j / (sy - fy) * (FLOOR - OAK_R0); g1 = OAK_R0 + (j + 1) / (sy - fy) * (FLOOR - OAK_R0); }
+      else { g0 = FLOOR + (j - (sy - fy)) / (h - sy) * (VH - FLOOR); g1 = FLOOR + (j + 1 - (sy - fy)) / (h - sy) * (VH - FLOOR); }
+      rows.push({ P0: Math.max(8, Math.round(PERIOD_CM * k0 * ((g0 + g1) / 2 - Y_H) / EYE)),
+                  zNear: FOC * EYE / (g1 - Y_H), zFar: FOC * EYE / (g0 - Y_H) });
+    }
+    return (OAK_CARD[key] = bakeOakRows(rows, w));
   }
 
-  /* THE SEAMS between the boards, as lines: for each board edge in view,
-     row by row, the run from where it crosses this row to where it
-     crosses the next, so a seam is one unbroken staircase however steeply
-     it runs - and on exactly the whole-pixel shift drawOak gave the row,
-     so it sits on its boards. Its width is the seam's 2.5 mm at the row's
-     scale (a pixel far off, six at your feet), with the satin lip of the
-     next board on its right where the window catches it. */
-  var SEAM_CM = 0.25;
-  function drawSeams(ctx, scroll, r0, r1) {
-    var tcm = scroll * D_PLAY / FOC, r, k;
-    function shiftAt(rr) { return Math.round(tcm * (rr + 0.5 - Y_H) / EYE); }
-    for (r = r0; r < r1; r++) {
-      var pc = (r + 0.5 - Y_H) / EYE, pc2 = (r + 1.5 - Y_H) / EYE;
-      var sh = shiftAt(r);
-      var w = Math.min(2, Math.max(1, Math.round(SEAM_CM * pc)));
-      var k0 = Math.floor((sh - VPX - 8) / pc / BOARD_CM), k1 = Math.ceil((sh + VW - VPX + 8) / pc / BOARD_CM);
-      for (k = k0; k <= k1; k++) {
-        var xa = VPX - sh + k * BOARD_CM * pc;
-        var xb = r + 1 < r1 ? xa + (k * BOARD_CM - tcm) * (pc2 - pc) : xa;
-        var lo = Math.round(Math.min(xa, xb)), hi = Math.round(Math.max(xa, xb));
-        if (hi + w < 0 || lo > VW) continue;
-        ctx.fillStyle = P.oakFloorSeam;
-        ctx.fillRect(lo, r, hi - lo + w, 1);
-        ctx.fillStyle = P.oakFloorLip;
-        ctx.fillRect(hi + w, r, 1, 1);
-      }
+  /* the floor's rows r0..r1-1 for this scroll: one 1:1 copy a row, at the
+     row's own whole-pixel offset, centred on the vanishing point */
+  function drawOak(ctx, scroll, r0, r1) {
+    var tcm = scroll * D_PLAY / FOC, r;
+    for (r = Math.max(r0, OAK_R0); r < r1; r++) {
+      var P0 = T.oak.per[r - OAK_R0];
+      var off = wrap(Math.round(tcm * P0 / PERIOD_CM) - VPX, P0);
+      ctx.drawImage(T.oak.t.canvas, off, r - OAK_R0, VW, 1, 0, r, VW, 1);
     }
   }
 
   /* THE LIGHT ON THE FLOOR, static, rows 148..241: the window's sheen by
-     the toe-kicks - opaque to row 157, so the furniture's feet stand on
-     the bright haze the far boards become - lifting off by 176, and the
-     table's shade gathering toward the lens */
+     the toe-kicks, a bright haze over the crushed far grain that lifts
+     off by row 178, and the table's shade gathering toward the lens */
   var FL_Y = 148;
   function bakeFloorLight() {
     var Hh = FLOOR - FL_Y, t = makeCanvas(VW, Hh), c = t.ctx, y;
@@ -34555,7 +34609,7 @@ var Floor = (function () {
     for (y = 0; y < Hh; y++) {
       var sy = y + FL_Y;
       var sc = mixRGB(S0, S1, ease((sy - FL_Y) / 28));
-      var sa = sy <= 157 ? 1 : 1 - ease((sy - 157) / 19);
+      var sa = sy < OAK_R0 ? 1 : 0.78 * (1 - ease((sy - OAK_R0) / 28));
       if (sa > 0) { c.fillStyle = 'rgba(' + Math.round(sc[0]) + ',' + Math.round(sc[1]) + ',' + Math.round(sc[2]) + ',' + sa.toFixed(3) + ')'; c.fillRect(0, y, VW, 1); }
       var sh = 0.34 * ease((sy - 168) / (FLOOR - 1 - 168));
       if (sh > 0) { c.fillStyle = rgba(H.walnutDeep, sh); c.fillRect(0, y, VW, 1); }
@@ -35242,7 +35296,6 @@ var Floor = (function () {
     ctx.fillRect(0, 0, VW, VH);
     tileX(ctx, T.far.canvas, scroll * FAR_P, FAR_Y);
     drawOak(ctx, scroll, OAK_R0, FLOOR);
-    drawSeams(ctx, scroll, OAK_R0, FLOOR);
     ctx.drawImage(T.floorLight.canvas, 0, FL_Y);
     tileX(ctx, T.island.canvas, scroll * ISL_P, ISL_Y);
     tileX(ctx, T.chair.canvas, scroll * CHR_P, CHR_Y);
@@ -35264,7 +35317,6 @@ var Floor = (function () {
      chairs' feet ARE the pillars. */
   function drawFloor(ctx, scroll) {
     drawOak(ctx, scroll, FLOOR, VH);
-    drawSeams(ctx, scroll, FLOOR, VH);
     drawBandLight(ctx);
   }
 
@@ -35546,8 +35598,8 @@ var Floor = (function () {
      honey overhang high up at 0.14, its shaded white doors, the dark
      toe-kick at 0.56 with a stool standing on the floor in front of it
      and the fridge showing in the gap where the island ends, the oak
-     floor with its boards fanning out toward you from the window's sheen
-     into the table's shade, and the near board under its seam - then,
+     floor with its grain running across, out of the window's sheen into
+     the table's shade, and the band under its seam - then,
      sliding past, white chair legs from the lid and black stool legs from the near seam, crumbs hopping on it, a
      hot sauce droplet bending back toward THE MOP at the left edge. */
   function drawPreview(ctx, x, y, w, h, t, big) {
@@ -35619,23 +35671,17 @@ var Floor = (function () {
     R(H.iron, sx, Y(0.29), 1, Y(0.38) - Y(0.29));
     R(H.ironLit, sx - 5, Y(0.465), 11, 1);
 
-    /* the floor: ONE oak floor, its boards running into the room and
-       their seams fanning out from the vanishing point, sliding as the
-       level's do (fast near, slow far); the window's sheen by the
-       toe-kick, the table's shade toward you; and the near board, the
-       ground, a shade lighter under its dark seam and lit arris */
-    var hY = Y(0.54), cx2 = x + Math.round(w / 2), bw = w * 0.5;
-    var off = wrap(s * 0.5, bw), bot = y + h;
-    R(P.oakFloor, x, floorY, w, bot - floorY);
+    /* the floor: the level's ONE oak floor, its grain running across the
+       card - the same boards, rings and knot, baked for this card's size
+       - each row sliding at its depth's speed, the seam row at the legs'
+       (fast near, slow far); the window's sheen by the toe-kick, the
+       table's shade toward you; and the band, the ground, a shade lighter
+       under its dark seam and lit arris */
+    var bot = y + h, CV = oakCard(w, h, floorY - y, seamY - y);
+    var tcmP = s / ((w / VW) * (FLOOR + 0.5 - Y_H) / EYE);
     for (yy = floorY; yy < bot; yy++) {
-      var sc = (yy + 0.5 - hY) / (bot - hY), sc2 = (yy + 1.5 - hY) / (bot - hY);
-      for (k = -6; k <= 6; k++) {
-        var xa = cx2 + (k * bw - off) * sc, xb = cx2 + (k * bw - off) * sc2;
-        var lo = Math.round(Math.min(xa, xb)), hi = Math.round(Math.max(xa, xb));
-        if (hi < x - 2 || lo > x + w + 2) continue;
-        R(P.oakFloorSeam, lo, yy, hi - lo + 1, 1);
-        R(P.oakFloorLip, hi + 1, yy, 1, 1);
-      }
+      var P0c = CV.per[yy - floorY];
+      ctx.drawImage(CV.t.canvas, wrap(Math.round(tcmP * P0c / PERIOD_CM) - Math.round(w / 2), P0c), yy - floorY, w, 1, x, yy, w, 1);
     }
     var SHN = hexRGB(P.floorSheen);
     for (yy = floorY; yy < seamY; yy++) {

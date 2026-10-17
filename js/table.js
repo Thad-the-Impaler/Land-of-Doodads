@@ -1667,7 +1667,9 @@ var Table = (function () {
   /* ========================================================== BUILD */
 
   function build() {
-    LivingRoom.build();               /* the menu gloom lives there */
+    LivingRoom.build();               /* the menu gloom and the lid's pools live there */
+    /* the lid: the house's ceiling band, the Desk's call exactly */
+    T.ceiling = LivingRoom.bakeCeiling(null);
     T.wall = bakeWall();
     T.fixtures = bakeFixtures();
     T.island = bakeIsland();
@@ -1722,21 +1724,21 @@ var Table = (function () {
     ctx.drawImage(T.light.canvas, 0, 0);
   }
 
-  /* THE LID IS A LINE. From five centimetres over the walnut the ceiling
-     in frame is the FAR ceiling - the top row of the screen is plaster
-     3.3 m away over the island, row 23 is plaster 3.7 m away - and
-     nothing solid hangs over the lane: the pendants over this table are
-     straight up, out of a 31-degree frame by more than a metre. So the
-     lid is not an object here. The ceiling plane is the wall layer's,
-     the cans drift across it, the hood's chimney rises through it, and
-     the boundary is the level's one promise and nothing else: two rows
-     of the house outline at 22..23, laid over whatever is behind them.
-     The Living Room's crown is not over this table in any photograph,
-     so there is no crown, no pool and no crown-shade strip under it. */
-  function drawCeiling(ctx, scroll) {
-    ctx.fillStyle = H.outline;
-    ctx.fillRect(0, CEIL - 2, VW, 2);
-  }
+  /* THE LID IS THE HOUSE'S CEILING BAND, the Desk's and the Couch's own:
+     LivingRoom.bakeCeiling's plaster, crackle-glass pendant and register
+     over the four hard crown rows, with each pendant's pool of light and
+     the crown's shade strip laid into the room under it by
+     LivingRoom.drawCeiling. It was two outline rows at 22..23 over the far
+     ceiling plane - true to the lens, and the owner's word for it was
+     "lazy": the kill line that ends a run is the one thing in the bay
+     that has to read as a solid object at a glance, and the Living Room
+     settled what that object looks like in this house. Table ref 1 has
+     those same amber pendants hanging over this very table.
+     The far ceiling plane with its cans goes on behind it from row 24
+     down, so the room still recedes under the band. T.ceiling is baked
+     once in build(), after LivingRoom.build(), which bakes the pools and
+     the shade strip drawCeiling uses. */
+  function drawCeiling(ctx, scroll) { LivingRoom.drawCeiling(ctx, scroll, T.ceiling); }
 
   /* The band: the near walnut under the kill row, cut from the same
      painting as the rows above it. No foreground lip - the lens is on the
