@@ -1,41 +1,56 @@
 /* ------------------------------------------------------------------
    Land of Doodads - THE DINING ROOM / THE FLOOR (3-2)
 
-   Afternoon, and you are a hand's breadth off the white-oak boards,
-   flying along UNDER THE DINING TABLE toward the kitchen. Drawn from
-   Floor ref 1-5 and the Floor mop ref in Assets/Concept: ref 1 is the
-   board-level view itself (the stools, their foot rings, the chrome
-   glide, the knot in the near board, the fridge and the sneakers), ref 2
-   the big cathedral grain and the far wall (glass uppers, the pothos, the
-   coffee maker), ref 3 the pedestal's splayed foot and the seat
-   undersides with their brackets and screws, ref 4 the white tapered
-   chair leg with its dark glide, the apron and the shuttered window, and
-   ref 5 the X-back chair, the fridge with its photographs and the island
-   overhang.
+   Afternoon, and you are four centimetres off the white-oak boards,
+   under the dining table, looking out across to the island - FLOOR REF
+   6, the owner's own photograph of exactly this view. Its details come
+   from the older references: Floor ref 1 (the stools, their foot rings
+   and chrome glide, the knot in the near board, the sneakers), Floor 2
+   (the cathedral grain, the far wall's glass uppers and the pothos),
+   Floor ref 3 (the pedestal's splayed foot, the seat undersides with
+   their brackets), Floor ref 4 (the white tapered chair leg and its
+   glide, the apron, the shuttered window), Floor ref 5 (the X-back chair,
+   the fridge's photographs) and the Floor mop ref.
 
-   THE LAYERS, back to front, each at its own parallax:
-     the far kitchen wall   0.18  uppers (two of them glass), the hood,
-                                  the shuttered window, the tile splash,
-                                  the far counter with the plant and the
-                                  coffee maker, the far base cabinets
-     the island             0.42  its overhang over shadowed shaker doors
-                                  and drawer stacks, two whole stools, the
-                                  fridge with its magnets, then a gap of
-                                  wall with a pair of kicked-off sneakers
-     three far boards       0.55 / 0.72 / 0.86 - sunlit kitchen floor
-                                  running into the table's shade
-     the near board         1.00  the floor band: the kill line, the lit
-                                  arris, the cathedral grain and the knot
-     the foreground         1.35  the pedestal's foot and a chair foot
-   and over the lot one baked daylight sheet: the table's shade overhead
-   and on the boards, the window's warmth on the right, a dim corner on
-   the left for the mop to park in. Light comes from the LEFT - the
-   dining-room windows - so every lit face here is a left face and every
-   cast shadow falls right, the Couch's "over the doodad's left shoulder".
+   THE BACKGROUND WAS REBUILT FROM ONE ROOM MODEL that THE TABLE is cut
+   from too (see THE CAMERA): the first cut of both bays was painted from
+   a lens half a metre up, and the owner's verdict was that they were the
+   same picture with a different skirting - "the Table feels like the
+   floor of the room, but then there's the actual floor". With the lens on
+   the boards the floor fills the bottom 45% of the screen, everything
+   standing more than half a metre off is compressed toward the horizon
+   at row 146, and each thing stands on the floor at its own depth:
 
-   THE LID IS THE TABLE'S UNDERSIDE AND IT DOES NOT KILL. The walnut ply,
-   the pedestal's top block, two zinc brackets and the white apron with
-   its screw heads; one outline row and then a dark soft row, which is the
+     the far wall + fridge   0.15  a sliver of bright ceiling, the crown,
+                                   the tops of the uppers and the hood
+                                   over the island; the whole back wall
+                                   and the fridge only in the island's gap
+     the island              0.30  quartz nose and honey ply high up at
+                                   37..60, the shaded shaker base, the dark
+                                   toe-kick at 140..150, two stools tucked
+                                   under it, its two end panels, and the
+                                   gap past them with the sneakers
+     a far chair             0.48  one white X-back chair per 720, pushed
+                                   in at the far side: its seat from below,
+                                   four tapered legs, the X over the seat
+     the floor               true  ONE OAK FLOOR from the toe-kicks to the
+                             persp.  bottom of the screen, its boards running
+                                   into the room and fanning out from the
+                                   vanishing point, under a static light:
+                                   the window's sheen far off, the table's
+                                   shade near (see THE FLOOR)
+     the near board          1.00  the band, the actual ground: the same
+                                   boards, a shade lighter, under the kill
+                                   line's dark seam and lit arris
+   and over the lot one baked daylight sheet: the table's shade overhead,
+   the window's warmth on the right, a dim corner on the left for the mop
+   to park in. Light comes from the LEFT and from the sunlit far floor, so
+   lit faces are left faces and cast shadows fall right.
+
+   THE LID IS THE TABLE'S UNDERSIDE AND IT DOES NOT KILL: the last of its
+   walnut-stained ply, then the far apron's white face with its screw
+   heads and a zinc bracket at each leaf joint, at the far chair's
+   parallax; one outline row and then a dark soft row, which is the
    deliberate difference between a lid that bounces and a lid that kills.
 
    THE PILLARS ARE THE CHAIRS AND THE STOOLS (the owner's call). White
@@ -71,38 +86,35 @@
    and never steers sideways, 40 spare lives so a run never ends, a hit
    counted every time one is spent, 16 seeds a line.
 
-     CONTRAST (mean luminance, the Couch's method). The flight lane, no
-     furniture in it: 159..162. Behind the chair legs (rows 24..125)
-     154..158, against a white leg body of 211 - fifty-five clear, with the
-     outline and the 4px cast shadow on top. Behind the stools (140..241)
-     162..165, against a black leg of 44 - a hundred and twenty clear.
-     Every crumb fifty-four or more over the board it lands on (see P).
+     CONTRAST, on the rebuilt room (mean luminance, the menu backdrop at
+     six scrolls). Behind the chair legs (rows 24..125) 141..148 against a
+     white leg body of 211 - sixty clear, with the outline and the 4px
+     cast shadow on top; the ceiling sliver 154..160, the honey overhang
+     133..139, the shaded island 142..152. Behind the stools (140..241)
+     162..164 against a black leg of 44; the toe-kick, the one dark stripe
+     a stool leg crosses, 119..146. The floor runs from 185..191 in the
+     window's sheen to 140..143 where the crumbs land, which puts every
+     crumb fifty and more over it; the near board, the actual ground, is
+     156..159, a step brighter, under a dark seam and a lit arris. The
+     leaves read by hue (green and russet on honey) and by their ring,
+     glow and twinkle. In motion every floor row is its last frame's self
+     moved a whole number of pixels (99.5% of row-frames exactly; the rest
+     are seams turning as they slide out from the vanishing point).
 
-     THE REAL TUNE, 40 s a run. The Couch: 2.06 hits a run, every one a
-     falling kernel. THE FLOOR as tuned: 0.19 - a tenth of it. Crumbs
-     55 a run, 43 of them eaten by the mop (8 left off the edge before it
-     came); droplets 5.7 a run (2.3 splat on the boards, 1.6 burst on a
-     seat, 1.3 into the mop, the autopilot caught 0.1 - it never goes for
-     them); leaves 1.25 a run, 0.75 eaten by the mop; the doodad on the
-     wall 19% of the run (34% with the mop armed from the start); the idle
-     lurch 4-5 times in 38 s.
-
-     WHY THE FLOOR CAME OUT EASIER, AND IT IS THE SPAWN WINDOW. The brief's
-     forecast (1.2-1.4x the Couch) assumed a doodad at X_START. The drift
-     does what it says - it parks a doodad that does not fight it on the
-     wall at x 57 - and the Couch's window (dropAhead 12..112) puts every
-     crumb down 80-200px in front of that. Without the mop at all the bay
-     measured 0.38 against the Couch's 1.56 (the slower drop rate), and
-     with it the wall was the safest place in the room: the opposite of
-     the owner's "forcing them to repeatedly move forward". The airborne
-     pull (AIR_A, below) is the owner's own sentence and bends the rain
-     back toward the wall; on its own it moved the number from no hits in
-     8 runs to 0.44 (armed from 1, 38 s), because a fall is only so long.
-     The window is the lever: dropAhead 45..190 measured 1.75 on the real
-     tune (0.85x) and 50..200 measured 2.69 (1.31x) - the brief's band -
-     with the autopilot now catching one to three droplets in ten that the
-     draft brings to it. That is the lead's tune to set; the art is built
-     for either.
+     THE TUNE. The bay first measured a tenth of the Couch's hits (0.19 a
+     40 s run against 2.06): the drift parks a doodad that does not fight
+     it on the wall at x 57, and the Couch's spawn window (dropAhead
+     12..112) put every crumb down 80-200px in front of that - the wall
+     was the safest place in the room, the opposite of the owner's
+     "forcing them to repeatedly move forward". The airborne pull (AIR_A,
+     below) bends the rain back toward the wall; the window is the lever,
+     and levels.js now spawns at 50..200 (2.69 against the Couch's 2.06 on
+     the harness, 1.31x; the lead's own run, 2.3 against 2.5). Per 40 s run:
+     crumbs about 55, most eaten by the mop; droplets 5.7 (they splat on
+     the boards, burst on a seat, go into the mop, or are caught); leaves
+     1.25, three in five eaten by the mop if nobody dives for them; the
+     idle lurch 4-5 times in 38 s. None of it moved when the background
+     was rebuilt: every make, step and box is untouched.
 
    Same discipline as every bay: everything is generated and baked once,
    any shade over something that moves is a flat Tint or a baked alpha
@@ -144,34 +156,71 @@ var Floor = (function () {
        dark side of a round tube */
     ironDeep:     '#121010',
 
-    /* THE ISLAND'S DOORS, IN THE OVERHANG'S SHADOW. Floor ref 1 shows them
-       a full grey-cream under the countertop, and they are what a white
-       chair leg is read against for half the screen's height. The brief's
-       #b9b09c field in the house's cabinet frames measured a lane of 177
-       behind a leg of 211 - thirty-four apart, a third of what the Couch's
-       cushions have - so the whole island is a step down: the frames in
-       shade (doorFrame), their lit arrises the house's cabinet white
-       (doorLit), and the recessed field a value under that. */
+    /* THE ISLAND, SEEN FROM THE FLOOR (Floor ref 6). Its white shaker base
+       is what a white chair leg is read against for most of the leg's
+       length, and it stands in the shade of its own overhang, so it is
+       painted a step under the photograph's cream: the recessed field
+       (isleField, 150), the frames (isleFrame, 174), their lit arrises
+       (isleLit, 202), the dark joints (isleDeep). The toe-kick is the one
+       dark stripe a black stool leg crosses (toeKick, 100). The old
+       doorShade/doorFrame/doorLit trio is kept for the cover's island. */
+    isleField:    '#9e9582',
+    isleFrame:    '#b8af9a',
+    isleLit:      '#d2cab7',
+    isleDeep:     '#7d7563',
+    toeKick:      '#6b645a',
     doorShade:    '#a9a08b',
     doorFrame:    '#cdc5b1',
     doorLit:      '#e4ddcc',
 
-    /* THE ISLAND'S OVERHANG IS PLYWOOD, NOT WALNUT. The brief wrote it
-       walnut; Floor ref 1 and ref 5 both show the underside of the island
-       top as pale honey-coloured ply under a white stone lip, lit by the
-       window, and the walnut is the TABLE's (it is the lid). Two walnuts
-       a hundred pixels apart would have been one table read twice. */
-    plyLit:       '#d2ad7e',
-    ply:          '#b98f5f',
-    plyShade:     '#906b44',
+    /* THE ISLAND'S OVERHANG IS HONEY PLY UNDER A WHITE QUARTZ NOSE - from
+       below that is all Floor ref 6 shows of the counter: the nose, the
+       ply's edge, and its underside foreshortened over the 40 cm overhang,
+       a half-step darker (plyUnder) and darker still where it meets the
+       cabinet face. The walnut is the TABLE's, and it is the lid. */
+    plyLit:       '#dcb983',
+    ply:          '#c9a46a',
+    plyShade:     '#a07e4c',
+    plyUnder:     '#ad8a58',
+
+    /* THE FAR KITCHEN, in the island's gap and over its overhang: the
+       ceiling sliver (the house plaster under the afternoon, capped well
+       under a white leg: ceilDay 211, its bounce row by the crown 222),
+       the subway grout, the hood's glass canopy */
+    /* the far chair's white paint in the table's shade - a full step
+       under the house paint's shade, so the whole chair (seat, rails, four
+       thin legs) sits back behind the pillars' lit white */
+    chairBody:    '#b9b19d',
+    /* THE LIGHT ON THE FLOOR (see THE FLOOR): the window's sheen by the
+       toe-kicks and the open floor it eases into - Floor ref 6's honey, a
+       value or so lighter (floorNear and bandFace colour the cover) */
+    floorSheen:   '#dcc5a1',
+    floorMid:     '#c3aa86',
+    floorNear:    '#8e7b64',
+    bandFace:     '#dcc7a2',
+    /* the boards themselves, top-down, before the light: honey oak, a
+       warmer board now and then, the grain, the satin lip at each seam */
+    oakFloor:     '#d6bf99',
+    oakFloorWarm: '#c8ab80',
+    oakFloorGrain: '#7d6246',
+    oakFloorLip:  '#ecdcbc',
+    oakFloorSeam: '#7a624a',
+    /* the far walls, the greige of Table ref 4, and the haze the gap's
+       six metres lay over everything in it */
+    farWall:      '#b8ae9a',
+    farHaze:      '#7f7868',
+    ceilDay:      '#d6d2c4',
+    ceilBright:   '#e4e0d2',
+    grout:        '#c3bdb0',
+    hoodGlass:    '#a6b5b5',
+    hoodGlassLit: '#d6e2e0',
 
     /* THE CRUMBS - five kinds, one physics. Every body is held at least
-       thirty values clear of the board it lands on (strip 3 under the
-       table's shade measures 139 across FLOOR-6..FLOOR-3, grain and all,
-       on the harness): bread 228, rice 229, cracker 200, cereal 198,
-       cookie 192 - fifty-four and up. The brief's cereal (175) and cookie
-       (168) were being read by their outline alone against the bare face
-       of that board, so both were lifted a value, hue kept. */
+       fifty values clear of the floor it lands on (the boards under the
+       table's shade measure 140..143 across FLOOR-6..FLOOR-1 on the
+       harness): bread 228, rice 229, cracker 200, cereal 198, cookie 192. The brief's cereal (175) and cookie (168) were being
+       read by their outline alone against that board, so both were lifted
+       a value, hue kept. */
     bread:        '#f0e4c8', breadHi: '#fbf5e4', breadShade: '#cdb990',
     crust:        '#b47c3f', crustDeep: '#7e5024',
     cracker:      '#e4c67c', crackerHi: '#f3dea3', crackerToast: '#b68a3c',
@@ -437,612 +486,679 @@ var Floor = (function () {
     }
   }
 
+  /* ======================================================== THE CAMERA
+
+     ONE ROOM, TWO LENSES. The Table and the Floor are cut from one model
+     of this room (the planner's table_floor_room brief), so a chair, the
+     island and the fridge stand at the same heights in both bays and only
+     the lens moves. This bay's lens is FOUR CENTIMETRES OFF THE OAK, under
+     the dining table, 14 cm in from its near apron, looking level across
+     to the island - Floor ref 6, the owner's own photograph of the view he
+     wants. A pinhole with the photograph's vertical field:
+
+         row(H, D) = Y_H - FOC * (H - EYE) / D      width(w, D) = FOC * w / D
+
+     H the height above the boards and D the depth from the lens, both in
+     cm; EYE 4, Y_H 146 (the horizon row - it puts the island's toe-kick,
+     H 0 at D 250, on row 150 and a far chair's seat (45) and feet at
+     D 117 on 54 and 155, exactly where Floor ref 6 has them), FOC 262.
+     Every row below is quoted off this, so anything can be re-derived.
+
+     The depths (cm): the far apron of the table 136; the far chair's front
+     legs 100 and its back 154; the island's
+     overhang edge 210, its base 250, its toe-kick 257, the stools tucked
+     under it 230; the fridge 323; the hood 382; the back wall 596.
+
+     PARALLAX is one law for both bays, p(D) = min(1, (45 / D)^0.75):
+     monotonic in depth, which is the thing the eye checks, and it puts
+     anything nearer than 45 cm on the play plane:
+         far wall + fridge + hood  0.15     the island + stools  0.30
+         the lid + the far chair   0.48     the near board      1.00
+     The floor between them is one oak floor in true perspective (THE
+     FLOOR), and every layer carries its own furniture's feet and contact
+     shadows; the feet stand where the floor is the window's bright haze,
+     so each thing slides over the floor at its own depth and never off it.
+     (The pedestal's splayed foot was here at 0.65 for one cut; on its own
+     it read as a random slab in the middle of the floor, and the whole
+     pedestal - a white post from the boards to the table - would be one
+     more white pillar in a bay whose pillars are white legs, so it is
+     gone. The pedestal stands under the lens.) */
+  var Y_H = 146, EYE = 4, FOC = 262;
+
   /* ========================================================= THE LID
 
-     The underside of the walnut table, 240 wide (one pedestal block and
-     two brackets per tile, so the pedestal comes round every 240px and
-     never two at once), parallax 1.0: it is right above you.
-
-     Floor ref 3 and 4: the dark ply of the underside with its figure, the
-     white-painted pedestal block bolted under the middle, zinc L-brackets
-     at the corners, and along the bottom the white apron rail with a
-     screw head every 60px. ONE outline row under the apron and then a
-     walnut row, never the room's double black: that pair is the kill
-     line, and this lid only stops you. */
-  var LID_W = 240;
+     The table's underside, seen from four centimetres off the floor 1.2 to
+     1.4 m away: the last of the walnut-stained ply (rows 0..14, with its
+     figure), the far apron's white face (15..21, a screw head every 60, a
+     zinc bracket at each leaf joint - Floor ref 3 and ref 4), and the
+     bounce pair - ONE outline row then a walnut row, never the room's
+     double black: that pair is the kill line, and this lid only stops you.
+     240 wide, at the far chair's parallax (0.48): the apron is 1.36 m off
+     and moves like the chair beside it, not like the boards under you.
+     The pedestal's top block has gone - the pedestal is under the lens. */
+  var LID_W = 240, LID_P = 0.48;
 
   function bakeLid() {
     var t = makeCanvas(LID_W, CEIL), c = t.ctx;
     var r = mulberry32(3207), i, x;
 
-    fill(c, H.walnutDeep, 0, 0, LID_W, 12);
-    /* the ply's figure: long, thin, sparse - one sheet of veneer */
-    for (i = 0; i < 14; i++) {
-      runW(c, H.walnut, r() * LID_W, 2 + Math.floor(r() * 10), 10 + Math.floor(r() * 21), LID_W);
+    fill(c, H.walnutDeep, 0, 0, LID_W, 15);
+    /* the ply's figure, foreshortened: long thin runs, denser toward the
+       apron where the underside is seen more edge-on */
+    for (i = 0; i < 18; i++) {
+      var ry = Math.floor(Math.pow(r(), 0.6) * 14);
+      runW(c, H.walnut, r() * LID_W, ry, 10 + Math.floor(r() * 26), LID_W);
     }
-    for (i = 0; i < 5; i++) {
-      runW(c, H.walnutLit, r() * LID_W, 3 + Math.floor(r() * 8), 4 + Math.floor(r() * 7), LID_W);
-    }
+    for (i = 0; i < 6; i++) runW(c, H.walnutLit, r() * LID_W, 6 + Math.floor(r() * 8), 4 + Math.floor(r() * 7), LID_W);
+    /* the shadow the apron throws back along the underside */
+    shadeRows(c, H.void, 0, 9, LID_W, 6, 0.30, false);
 
-    /* THE PEDESTAL'S TOP BLOCK (Floor ref 3): the white column's head,
-       screwed up into the underside. Lit on its left face. */
-    var PX = 98, PW = 44;
-    fill(c, H.paint, PX, 2, PW, 8);
-    fill(c, P.paintHi, PX + 1, 2, 3, 8);
-    fill(c, H.paintShade, PX + PW - 5, 2, 4, 8);
-    fill(c, H.paintShade, PX, 10, PW, 1);
-    fill(c, H.paintDeep, PX, 11, PW, 1);
-    fill(c, H.outline, PX, 2, 1, 10);
-    fill(c, H.outline, PX + PW - 1, 2, 1, 10);
-    fill(c, H.steelShade, PX + 6, 6, 2, 2);
-    fill(c, H.steelShade, PX + 36, 6, 2, 2);
-    fill(c, H.steelLit, PX + 6, 6, 1, 1);
-    fill(c, H.steelLit, PX + 36, 6, 1, 1);
-
-    /* two zinc L-brackets (Floor ref 3), with their bolts */
-    [40, 190].forEach(function (bx) {
-      fill(c, H.outline, bx - 1, 6, 11, 6);
-      fill(c, H.steelLit, bx, 7, 9, 4);
-      fill(c, H.steelShade, bx, 11, 9, 1);
-      fill(c, H.steel, bx + 6, 7, 3, 4);
-      fill(c, H.steelDeep, bx + 2, 8, 1, 1);
-      fill(c, H.steelDeep, bx + 6, 10, 1, 1);
-    });
-
-    /* THE APRON (Floor ref 4): a white-painted rail with an arris lit
-       from the window, a rounded under-edge and the hard line below it */
-    fill(c, H.outline, 0, 12, LID_W, 1);
-    fill(c, P.paintHi, 0, 13, LID_W, 1);
-    fill(c, H.paint, 0, 14, LID_W, 5);
-    fill(c, H.paintShade, 0, 19, LID_W, 1);
-    fill(c, H.paintDeep, 0, 20, LID_W, 2);
+    /* THE APRON (Floor ref 4): white paint, its top arris catching the
+       light off the boards, the lower two rows turning away */
+    fill(c, H.outline, 0, 14, LID_W, 1);
+    fill(c, P.paintHi, 0, 15, LID_W, 1);
+    fill(c, H.paint, 0, 16, LID_W, 4);
+    fill(c, H.paintShade, 0, 20, LID_W, 2);
     fill(c, H.outline, 0, 22, LID_W, 1);
     fill(c, H.walnutDeep, 0, 23, LID_W, 1);
-    /* a screw head every 60px, 23 into the tile so none sits on a seam */
     for (x = 23; x < LID_W; x += 60) {
-      fill(c, H.steel, x, 16, 2, 2);
-      fill(c, H.steelShade, x + 1, 16, 1, 2);
-      fill(c, H.steelShade, x, 17, 2, 1);
+      fill(c, H.steel, x, 17, 2, 2);
+      fill(c, H.steelShade, x + 1, 17, 1, 2);
+      fill(c, H.steelShade, x, 18, 2, 1);
     }
-    /* and the scuffs a rail gets from knees: short and pale grey, the
-       chalky wear on every white thing in Floor ref 3 */
-    for (i = 0; i < 6; i++) {
-      runW(c, H.paintShade, r() * LID_W, 14 + Math.floor(r() * 5), 2 + Math.floor(r() * 3), LID_W);
-    }
+    /* the leaf joint and its zinc L-bracket (Floor ref 3) */
+    fill(c, H.paintDeep, 150, 15, 1, 7);
+    fill(c, H.outline, 143, 8, 11, 6);
+    fill(c, H.steelLit, 144, 9, 9, 4);
+    fill(c, H.steel, 150, 9, 3, 4);
+    fill(c, H.steelShade, 144, 12, 9, 1);
+    fill(c, H.steelDeep, 146, 10, 1, 1);
+    fill(c, H.steelDeep, 150, 11, 1, 1);
+    for (i = 0; i < 6; i++) runW(c, H.paintShade, r() * LID_W, 16 + Math.floor(r() * 4), 2 + Math.floor(r() * 3), LID_W);
     return t;
   }
 
-  /* ================================================ THE FAR KITCHEN WALL
+  /* ========================================================= THE FAR WALL
 
-     480 x 164, screen rows 24..187, parallax 0.18 - the far side of the
-     kitchen, which barely moves (Floor 2, Floor ref 4). Small-featured,
-     because it is far: no pulls on the uppers, no hinges, nothing a 1px
-     dot would have to carry.
+     720 x 127, screen rows 24..150, at 0.15. Opaque. ALONG THE ISLAND ALL
+     OF IT THAT SHOWS IS ROWS 24..36: a sliver of bright daylit ceiling with
+     its cans (the ceiling at 2.7 m only enters this frame past 5.7 m -
+     Floor ref 6's top edge), the crown, the tops of the uppers, and the
+     range hood over the island. The rest shows through the island's gap.
 
-     Across the tile, left to right: three white uppers, a GLASS one, the
-     HOOD over the range with the tile splash running up behind it, a
-     second glass upper, the SHUTTERED WINDOW (the bay's light source, and
-     the brightest thing in the layer) in a bay of plain wall, and one
-     more upper. Under them the splash, the far counter with the pothos,
-     the coffee maker and the kettle, and the far base cabinets - which
-     only ever show in the gap between one island and the next. */
-  var FAR_W = 480, FAR_H = 164, FAR_Y = CEIL;
+     AT ITS REAL SIZE, AND WITH ITS REAL COUNT OF DOORS. At 5.96 m a metre
+     of wall is 44 px, so the kitchen's back wall in Table ref 4 is about
+     300 px of this tile, and the first cut packed sixteen metres of
+     cabinet doors into it - the owner counted, and he was right. Left to
+     right as Table ref 4 and Ceiling ref 6 have it: the tall pantry (two
+     tall doors), the FRIDGE standing in front of the wall (Floor ref 6,
+     its photographs from Table ref 2), window B, three glass uppers and a
+     plain one with the hood's chimney in front of them, window A (the
+     big shutters), one more upper, the back counter's base run under all
+     of it (four doors, a sink pair and a drawer stack), the doorway to the
+     hall with the coats on their hooks; and then the living side of the
+     room the rest of the way round - plain wall, its skirting, the cork
+     board of photographs (Table ref 1) and a tall plant on the floor - so
+     the kitchen comes round once every 4800 px of world, 27 to 43
+     seconds, and is never wallpaper.
+
+     The rows, off the camera (D 596 for the wall): the ceiling 24..28, the
+     crown 29..31, the uppers 31..79, the windows 49..97, the splash
+     80..107, the counter 108, the base cabinets 110..142, the toe-kick and
+     the skirting 143..147. The fridge (D 323) 73 px wide, rows 24..149,
+     its handles 36..68, the freezer line 92. The hood (D 382): a 17 px
+     chimney to row 27, a 62 px glass canopy 27..36. */
+  var FAR_W = 720, FAR_H = 127, FAR_Y = 24, FAR_P = 0.15;
 
   function bakeFar() {
     var t = makeCanvas(FAR_W, FAR_H), c = t.ctx;
     var r = mulberry32(4411), i, k, x, y;
-    var UP_H = 36;                    /* the uppers: tile rows 0..35 */
-    var SPL = 37, CTR = 60;           /* splash 37..59, the counter 60..64 */
+    function Y(sy) { return sy - FAR_Y; }
+    var UP_T = Y(31), UP_B = Y(80), CTR = Y(108), BASE_B = Y(143), FL = Y(148);
+    var K0 = 113, K1 = 315;            /* the back counter's run */
 
-    fill(c, H.wall, 0, 0, FAR_W, FAR_H);
-    /* the grout, a pale grey and not the white it is up close: a white
-       grid at this pitch is a net thrown over the wall */
-    var GROUT = '#cbc5b7';
+    fill(c, P.farWall, 0, 0, FAR_W, FAR_H);
 
-    /* -- THE SPLASH, laid first so the hood and the window sit on it:
-       Floor 2's grey subway tile, 6x3 with a 1px grout, half-bond, the odd
-       tile a shade darker by hash. It was 4x2 at first, and at that pitch
-       half the wall was grout and it read as a net thrown over it. */
-    function splash(x0, x1, y0, y1) {
-      for (y = y0; y < y1; y++) {
-        var course = Math.floor((y - SPL) / 4), ry = wrap(y - SPL, 4);
-        for (x = x0; x < x1; x++) {
-          var bx = x + ((course & 1) ? 3 : 0);
-          var col;
-          if (ry === 3 || (bx % 7) === 6) col = GROUT;
-          else col = (hash(Math.floor(bx / 7) * 131 + course * 977) % 6 === 0) ? H.tileShade : H.tile;
-          c.fillStyle = col;
-          c.fillRect(x, y, 1, 1);
+    /* -- THE CEILING SLIVER: the house's plaster under the afternoon,
+       capped (a white chair leg crosses it), with two recessed cans - one
+       over the kitchen, one over the living side - each with a soft halo */
+    fill(c, P.ceilDay, 0, 0, FAR_W, Y(29));
+    fill(c, P.ceilBright, 0, Y(28), FAR_W, 1);
+    [205, 560].forEach(function (cn) {
+      for (y = 0; y < Y(29); y++) {
+        for (x = cn - 9; x < cn + 13; x++) {
+          var hd = Math.sqrt(Math.pow((x - cn - 2) / 10, 2) + Math.pow((y - Y(26)) / 4, 2));
+          if (hd < 1) { c.fillStyle = rgba('#fffbea', 0.45 * (1 - ease(hd))); c.fillRect(x, y, 1, 1); }
         }
       }
-    }
-    splash(0, FAR_W, SPL, CTR);
-    /* and up behind the hood, where there are no cabinets */
-    splash(192, 288, 0, SPL);
+      fill(c, H.plasterShade, cn - 1, Y(26), 6, 2);
+      fill(c, H.lampCore, cn, Y(26), 4, 1);
+      fill(c, '#fff3cf', cn, Y(27), 4, 1);
+    });
 
-    /* -- THE UPPERS. 48 wide, a 4px frame lit on its left stile, a
-       recessed field with the shaker bevel: dark under the top rail and
-       inside the left stile, lit inside the right stile and on the bottom
-       rail. Two are glass (Floor 2), with two shelves of white dishes
-       behind the glints. */
-    function upper(x0, glass) {
-      var w = 48;
-      fill(c, H.cabinetDeep, x0, 0, 1, UP_H);
-      fill(c, H.cabinet, x0 + 1, 0, w - 1, UP_H);
-      fill(c, H.cabinetLit, x0 + 1, 0, 1, UP_H);
-      var fx = x0 + 5, fy = 3, fw = w - 9, fh = UP_H - 7;
-      if (glass) {
-        fill(c, H.tileShade, fx, fy, fw, fh);
-        /* two glass shelves and the dishes standing on them */
-        for (k = 0; k < 2; k++) {
-          var sy = fy + 10 + k * 10;
-          fill(c, H.cabinetLit, fx, sy, fw, 1);
-          for (x = fx + 2; x < fx + fw - 4;) {
-            var kind = Math.floor(r() * 3);
-            if (kind === 0) {               /* a stack of plates */
-              fill(c, H.paint, x, sy - 3, 7, 3);
-              fill(c, H.paintShade, x, sy - 2, 7, 1);
-              x += 9;
-            } else if (kind === 1) {        /* a mug */
-              fill(c, H.paint, x, sy - 3, 3, 3);
-              fill(c, H.paintShade, x + 2, sy - 3, 1, 3);
-              x += 5;
-            } else {                        /* a glass */
-              fill(c, H.steelLit, x, sy - 4, 2, 4);
-              x += 4;
-            }
-          }
-        }
-        /* two glints across the glass, top left, where the window catches it */
-        for (k = 0; k < 2; k++) {
-          for (i = 0; i < 7 - k * 2; i++) fill(c, H.steelLit, fx + 3 + k * 4 + i, fy + 7 - i, 1, 1);
-        }
-      } else {
-        fill(c, H.cabinetShade, fx, fy, fw, fh);
-      }
-      fill(c, H.cabinetDeep, fx, fy, fw, 1);
-      fill(c, H.cabinetDeep, fx, fy, 1, fh);
-      fill(c, H.cabinetLit, fx + fw - 1, fy + 1, 1, fh - 1);
-      fill(c, H.cabinetLit, fx + 1, fy + fh - 1, fw - 1, 1);
-    }
-    upper(0, false); upper(48, false); upper(96, false);
-    upper(144, true);
-    upper(288, true);
-    upper(432, false);
-    /* the run's bottom edge, under every upper but not across the hood
-       bay or the window bay, where there are none */
-    fill(c, H.outline, 0, UP_H, 192, 1);
-    fill(c, H.outline, 288, UP_H, 48, 1);
-    fill(c, H.outline, 432, UP_H, 48, 1);
-    fill(c, H.outline, 191, 0, 1, UP_H);
-    fill(c, H.outline, 288, 0, 1, UP_H);
-    fill(c, H.outline, 335, 0, 1, UP_H);
-    fill(c, H.outline, 432, 0, 1, UP_H);
-    /* the shadow the uppers throw on the splash under them */
-    shadeRows(c, H.void, 0, SPL, 192, 4, 0.22, true);
-    shadeRows(c, H.void, 288, SPL, 48, 4, 0.22, true);
-    shadeRows(c, H.void, 432, SPL, 48, 4, 0.22, true);
+    /* -- THE CROWN round the whole room */
+    fill(c, H.cabinetLit, 0, Y(29), FAR_W, 1);
+    fill(c, H.cabinet, 0, Y(30), FAR_W, 1);
+    fill(c, H.cabinetShade, 0, Y(31), FAR_W, 1);
 
-    /* -- THE HOOD over the range: a steel chimney up into the lid and a
-       wedge canopy under it, lit down its left edge. */
-    var HX = 240;
-    fill(c, H.outline, HX - 14, 0, 28, 12);
-    fill(c, H.steel, HX - 13, 0, 26, 12);
-    fill(c, H.steelLit, HX - 13, 0, 3, 12);
-    fill(c, H.steelShade, HX + 9, 0, 4, 12);
-    for (y = 12; y <= 33; y++) {
-      var hw = Math.round(25 + 10 * (y - 12) / 21);
-      fill(c, H.outline, HX - hw - 1, y, hw * 2 + 2, 1);
-      fill(c, H.steel, HX - hw, y, hw * 2, 1);
-      fill(c, H.steelLit, HX - hw, y, 3, 1);
-      fill(c, H.steelShade, HX + hw - 4, y, 4, 1);
-    }
-    fill(c, H.outline, HX - 26, 11, 52, 1);
-    fill(c, H.steelLit, HX - 25, 12, 50, 2);
-    fill(c, H.steelDeep, HX - 35, 31, 70, 2);
-    fill(c, H.outline, HX - 36, 33, 72, 1);
-    /* its little lamp, lit, and the shadow it throws on the splash */
-    fill(c, H.daylight, HX - 18, 33, 6, 1);
-    fill(c, H.daylight, HX + 12, 33, 6, 1);
-    shadeRows(c, H.void, HX - 34, 34, 68, 3, 0.18, true);
-
-    /* -- THE WINDOW, in a bay of plain wall (Floor ref 4, top right): a
-       white frame and seven open louvres with the daylight between them,
-       a tilt rod down the middle, and a sill. */
-    fill(c, H.wall, 336, 0, 96, SPL);
-    var WX = 360, WY = 6, WW = 56, WH = 48;
-    fill(c, H.outline, WX - 1, WY - 1, WW + 2, WH + 2);
-    fill(c, H.paint, WX, WY, WW, WH);
-    fill(c, P.paintHi, WX, WY, 1, WH);
-    var ix = WX + 3, iy = WY + 3, iw = WW - 6;
-    fill(c, H.paintShade, ix - 1, iy - 1, iw + 2, 1);
-    fill(c, P.paintHi, ix + iw, iy - 1, 1, WH - 5);
-    for (k = 0; k < 7; k++) {
-      y = iy + k * 6;
-      fill(c, H.paint, ix, y, iw, 1);
-      fill(c, H.paintShade, ix, y + 1, iw, 1);
-      fill(c, H.daylight, ix, y + 2, iw, 3);
-      fill(c, H.paintDeep, ix, y + 5, iw, 1);
-    }
-    /* a frond of the garden through the slats, broken by them the way a
-       thing behind a blind is (the Couch's palm, by day) */
-    for (k = 0; k < 4; k++) {
-      var fx0 = ix + 4 + Math.floor(r() * (iw - 16));
-      var fy0 = iy + 2 + Math.floor(r() * 7) * 6;
-      for (i = 0; i < 9; i++) {
-        var py = fy0 + Math.round(i / 4) * 6;
-        if (py >= iy + 42 || ((py - iy) % 6) < 2 || ((py - iy) % 6) > 4) continue;
-        fill(c, '#c9d9a8', fx0 + i, py, 1, 1);
-      }
-    }
-    fill(c, H.paintShade, ix + 24, iy, 2, 42);
-    fill(c, P.paintHi, ix + 24, iy, 1, 42);
-    /* the sill */
-    fill(c, H.outline, WX - 4, WY + WH, WW + 8, 1);
-    fill(c, P.paintHi, WX - 3, WY + WH + 1, WW + 6, 1);
-    fill(c, H.paint, WX - 3, WY + WH + 2, WW + 6, 1);
-    fill(c, H.outline, WX - 4, WY + WH + 3, WW + 8, 1);
-    shadeRows(c, H.void, WX - 3, WY + WH + 4, WW + 6, 2, 0.16, true);
-    /* THE WINDOW'S BLOOM: the afternoon pouring through the louvres lights
-       the wall, the splash and the counter round it - a soft warm disc,
-       baked per pixel as alpha so it has no edge, strongest at the sill */
-    for (y = 0; y < CTR + 5; y++) {
-      for (x = WX - 70; x < WX + WW + 70; x++) {
-        var bdx = (x - (WX + WW / 2)) / 78, bdy = (y - (WY + WH - 6)) / 46;
-        var bd = Math.sqrt(bdx * bdx + bdy * bdy);
-        if (bd >= 1) continue;
-        c.fillStyle = rgba('#fff4dc', 0.20 * (1 - ease(bd)));
+    /* -- THE SPLASH behind the back counter, the counter, its base run */
+    for (y = UP_B; y < CTR; y++) {
+      var course = Math.floor((y - UP_B) / 3), ry = (y - UP_B) % 3;
+      for (x = K0; x < K1; x++) {
+        var bx = x + ((course & 1) ? 2 : 0);
+        c.fillStyle = (ry === 2 || bx % 5 === 4) ? P.grout : H.tile;
         c.fillRect(x, y, 1, 1);
       }
     }
-
-    /* -- THE FAR COUNTER (a white quartz top), and what stands on it */
-    fill(c, H.cabinetLit, 0, CTR, FAR_W, 1);
-    fill(c, H.cabinet, 0, CTR + 1, FAR_W, 2);
-    fill(c, H.cabinetShade, 0, CTR + 3, FAR_W, 1);
-    fill(c, H.outline, 0, CTR + 4, FAR_W, 1);
-
-    /* the pothos in its white pot (Floor 2), heart leaves fanned up and
-       two runners trailing over the lip */
-    var PX0 = 114;
-    fill(c, H.outline, PX0 - 1, CTR - 9, 14, 9);
-    fill(c, H.cabinetLit, PX0, CTR - 8, 12, 8);
-    fill(c, H.cabinetShade, PX0 + 9, CTR - 8, 3, 8);
-    fill(c, H.cabinet, PX0, CTR - 8, 12, 1);
-    var LEAVES = [[-4, -13], [1, -17], [6, -19], [11, -16], [15, -12], [-1, -21], [9, -23]];
-    for (i = 0; i < LEAVES.length; i++) {
-      var lx = PX0 + LEAVES[i][0], ly = CTR + LEAVES[i][1];
-      fill(c, H.leafDeep, lx, ly, 5, 3);
-      fill(c, H.leaf, lx + 1, ly - 1, 4, 3);
-      fill(c, H.leafLit, lx + 1, ly - 1, 2, 2);
-      fill(c, H.leafDeep, lx + 2, ly + 2, 1, 1);
+    shadeRows(c, H.void, K0, UP_B, K1 - K0, 3, 0.22, true);
+    fill(c, H.cabinetLit, K0, CTR, K1 - K0, 1);
+    fill(c, H.cabinetShade, K0, CTR + 1, K1 - K0, 1);
+    /* the base run, 25 px a unit (55 cm): door door, the sink pair under
+       window A, door door, the drawer stack */
+    var UNITS = ['d', 'd', 'd', 'd', 's', 'd', 'd', 'k'];
+    for (i = 0; i < UNITS.length; i++) {
+      x = K0 + 2 + i * 25;
+      fill(c, H.cabinetDeep, x, CTR + 2, 1, BASE_B - CTR - 2);
+      fill(c, H.cabinet, x + 1, CTR + 2, 24, BASE_B - CTR - 2);
+      fill(c, H.cabinetLit, x + 1, CTR + 2, 1, BASE_B - CTR - 2);
+      if (UNITS[i] === 'k') {
+        for (k = 0; k < 3; k++) {
+          fill(c, H.cabinetShade, x + 3, CTR + 4 + k * 11, 20, 8);
+          fill(c, H.cabinetDeep, x + 1, CTR + 13 + k * 11, 24, 1);
+          fill(c, H.steelShade, x + 10, CTR + 7 + k * 11, 6, 1);
+        }
+      } else {
+        fill(c, H.cabinetShade, x + 3, CTR + 4, 20, 6);              /* a drawer front */
+        fill(c, H.cabinetDeep, x + 1, CTR + 11, 24, 1);
+        fill(c, H.cabinetShade, x + 3, CTR + 14, 20, BASE_B - CTR - 17);
+        fill(c, H.steelShade, x + 11, CTR + 6, 4, 1);
+        fill(c, H.steelShade, (i % 2) ? x + 3 : x + 21, CTR + 18, 1, 5);
+      }
     }
+    shadeRows(c, H.void, K0, CTR + 2, K1 - K0, 4, 0.22, true);
+    /* the toe-kick under the kitchen, the skirting round the rest */
+    fill(c, H.cabinetDeep, 0, BASE_B, K1, FL - BASE_B);
+    fill(c, H.cabinetLit, K1, Y(144), FAR_W - K1, 1);
+    fill(c, H.cabinet, K1, Y(145), FAR_W - K1, 2);
+    fill(c, H.outline, 0, FL - 1, FAR_W, 1);
+
+    /* -- THE PANTRY at the left: two tall doors to the crown */
     for (i = 0; i < 2; i++) {
-      var sx = PX0 + (i ? 12 : -1);
-      for (k = 0; k < 9; k++) fill(c, H.leafDeep, sx + (i ? Math.round(k / 3) : -Math.round(k / 3)), CTR - 4 + k, 1, 1);
-      fill(c, H.leaf, sx + (i ? 2 : -4), CTR + 1, 3, 2);
-      fill(c, H.leafLit, sx + (i ? 3 : -5), CTR + 5, 3, 2);
+      x = i * 20;
+      fill(c, H.cabinetDeep, x, UP_T, 1, BASE_B - UP_T);
+      fill(c, H.cabinet, x + 1, UP_T, 19, BASE_B - UP_T);
+      fill(c, H.cabinetLit, x + 1, UP_T, 1, BASE_B - UP_T);
+      fill(c, H.cabinetShade, x + 4, UP_T + 4, 13, Y(84) - UP_T - 6);
+      fill(c, H.cabinetShade, x + 4, Y(86), 13, BASE_B - Y(86) - 4);
+      fill(c, H.cabinetDeep, x + 4, UP_T + 4, 13, 1);
+      fill(c, H.steelShade, i ? x + 3 : x + 16, Y(70), 1, 12);
     }
 
-    /* the coffee maker and the kettle (Floor 2) */
-    var CX = 300;
-    fill(c, H.outline, CX - 1, CTR - 13, 16, 13);
-    fill(c, H.steelDeep, CX, CTR - 12, 14, 12);
-    fill(c, H.steel, CX, CTR - 12, 14, 2);
-    fill(c, H.steelLit, CX, CTR - 12, 2, 12);
-    fill(c, H.outline, CX + 4, CTR - 8, 6, 4);       /* the brew recess */
-    fill(c, H.paint, CX + 5, CTR - 4, 3, 3);          /* the cup in it */
-    fill(c, P.hotSauce, CX + 11, CTR - 9, 1, 1);      /* the red light */
-    var KX = 318;
-    var KET = [[2, 4], [1, 6], [0, 8], [0, 8], [0, 8], [0, 8], [1, 6]];
-    for (i = 0; i < KET.length; i++) {
-      fill(c, H.outline, KX + KET[i][0] - 1, CTR - 7 + i, KET[i][1] + 2, 1);
+    /* -- THE UPPERS: three glass and one plain over the hood's stretch,
+       one plain past window A - 20 px (45 cm) a door */
+    function upper(x0, glass) {
+      fill(c, H.cabinetDeep, x0, UP_T, 1, UP_B - UP_T);
+      fill(c, H.cabinet, x0 + 1, UP_T, 19, UP_B - UP_T);
+      fill(c, H.cabinetLit, x0 + 1, UP_T, 1, UP_B - UP_T);
+      fill(c, glass ? H.tileShade : H.cabinetShade, x0 + 3, UP_T + 3, 15, UP_B - UP_T - 6);
+      if (glass) {
+        fill(c, H.cabinetLit, x0 + 3, UP_T + 16, 15, 1);
+        fill(c, H.cabinetLit, x0 + 3, UP_T + 31, 15, 1);
+        fill(c, H.paint, x0 + 5, UP_T + 13, 4, 3);
+        fill(c, H.paint, x0 + 12, UP_T + 28, 3, 3);
+        fill(c, H.paint, x0 + 6, UP_T + 41, 6, 2);
+        fill(c, H.steelLit, x0 + 4, UP_T + 8, 1, 3);
+        fill(c, H.steelLit, x0 + 5, UP_T + 6, 1, 2);
+      }
+      fill(c, H.cabinetDeep, x0 + 3, UP_T + 3, 15, 1);
+      fill(c, H.cabinetLit, x0 + 17, UP_T + 4, 1, UP_B - UP_T - 7);
+      fill(c, H.steelShade, x0 + (glass ? 16 : 4), UP_B - 9, 1, 4);
     }
-    fill(c, H.outline, KX + 3, CTR - 9, 2, 2);
-    for (i = 0; i < KET.length; i++) {
-      fill(c, H.steel, KX + KET[i][0], CTR - 7 + i, KET[i][1], 1);
-      fill(c, H.steelLit, KX + KET[i][0], CTR - 7 + i, 2, 1);
-    }
-    fill(c, H.steelDeep, KX + 8, CTR - 5, 2, 1);      /* the spout */
-    /* a paper-towel roll on its stand, far left, and a bowl of lemons by
-       the window - the clutter of a kitchen that is used */
-    fill(c, H.outline, 21, CTR - 11, 8, 11);
-    fill(c, H.daylight, 22, CTR - 10, 6, 10);
-    fill(c, H.cabinetShade, 26, CTR - 10, 2, 10);
-    fill(c, H.steelShade, 24, CTR - 12, 2, 2);
-    fill(c, H.outline, 437, CTR - 5, 14, 5);
-    fill(c, H.cabinetLit, 438, CTR - 4, 12, 3);
-    fill(c, H.cabinetShade, 439, CTR - 2, 10, 1);
-    fill(c, '#e8cf4a', 439, CTR - 7, 3, 3); fill(c, '#e8cf4a', 443, CTR - 8, 3, 3);
-    fill(c, '#e8cf4a', 446, CTR - 6, 3, 2); fill(c, '#fff0a0', 440, CTR - 7, 1, 1);
+    upper(153, true); upper(173, true); upper(193, true); upper(213, false);
+    upper(295, false);
+    fill(c, H.outline, 153, UP_B - 1, 80, 1);
+    fill(c, H.outline, 295, UP_B - 1, 20, 1);
 
-    /* -- THE FAR BASE CABINETS: a drawer over a door, 48 wide, in the
-       counter's shadow. Only the gap between islands ever shows them. */
-    var BT = CTR + 5, BB = 156;
-    for (x = 0; x < FAR_W; x += 48) {
-      fill(c, H.cabinetDeep, x, BT, 1, BB - BT);
-      fill(c, H.cabinet, x + 1, BT, 47, BB - BT);
-      fill(c, H.cabinetLit, x + 1, BT, 1, BB - BT);
-      fill(c, H.cabinetShade, x + 4, BT + 3, 41, 7);       /* the drawer */
-      fill(c, H.cabinetDeep, x + 1, BT + 12, 47, 1);
-      fill(c, H.cabinetShade, x + 4, BT + 16, 41, BB - BT - 20);   /* the door */
-      fill(c, H.cabinetDeep, x + 4, BT + 16, 41, 1);
-      fill(c, H.cabinetDeep, x + 4, BT + 16, 1, BB - BT - 20);
-      fill(c, H.cabinetLit, x + 4, BB - 5, 41, 1);
-      fill(c, H.steelShade, x + 22, BT + 6, 5, 1);         /* the drawer pull */
-      fill(c, H.steelShade, x + 40, BT + 30, 1, 6);        /* the door pull   */
+    /* -- THE TWO WINDOWS with their shutters (Table ref 4, Floor ref 4):
+       a white frame, louvres open to the afternoon, a tilt rod, a sill -
+       and the light each throws on the wall round it */
+    function shutters(wx, ww) {
+      var wy = Y(49), wh = Y(97) - Y(49);
+      for (y = Math.max(0, wy - 30); y < CTR; y++) {
+        for (x = wx - 40; x < wx + ww + 40; x++) {
+          var bdx = (x - (wx + ww / 2)) / (ww / 2 + 40), bdy = (y - (wy + wh - 8)) / 44;
+          var bd = Math.sqrt(bdx * bdx + bdy * bdy);
+          if (bd >= 1) continue;
+          c.fillStyle = rgba('#fff4dc', 0.16 * (1 - ease(bd)));
+          c.fillRect(x, y, 1, 1);
+        }
+      }
+      fill(c, H.outline, wx - 1, wy - 1, ww + 2, wh + 2);
+      fill(c, H.paint, wx, wy, ww, wh);
+      for (k = 0; k * 4 < wh - 6; k++) {
+        y = wy + 3 + k * 4;
+        fill(c, H.paintShade, wx + 3, y, ww - 6, 1);
+        fill(c, H.daylight, wx + 3, y + 1, ww - 6, 2);
+        fill(c, H.paint, wx + 3, y + 3, ww - 6, 1);
+      }
+      fill(c, H.paintShade, wx + Math.round(ww / 2) - 1, wy + 3, 2, wh - 6);
+      fill(c, P.paintHi, wx - 2, wy + wh + 1, ww + 4, 1);
+      fill(c, H.outline, wx - 2, wy + wh + 2, ww + 4, 1);
     }
-    shadeRows(c, H.void, 0, BT, FAR_W, 8, 0.24, true);
-    fill(c, H.outline, 0, BB, FAR_W, 1);
-    fill(c, H.cabinetDeep, 0, BB + 1, FAR_W, FAR_H - BB - 1);
+    shutters(116, 34);
+    shutters(236, 56);
+
+    /* -- the back counter's things: the monstera under window B (Table ref
+       4), the coffee maker and kettle, a rack by the sink */
+    [[-9, -24, 9], [-2, -30, 10], [6, -26, 9], [12, -20, 8], [-12, -15, 8], [3, -18, 8]].forEach(function (lf) {
+      var lx = 133 + lf[0], ly = CTR + lf[1], lw = lf[2];
+      fill(c, H.leafDeep, lx - 1, ly, lw + 2, 6);
+      fill(c, H.leaf, lx, ly, lw, 5);
+      fill(c, H.leafLit, lx, ly, Math.ceil(lw / 2), 2);
+      fill(c, H.leafDeep, lx + Math.floor(lw / 2), ly + 1, 1, 4);
+    });
+    fill(c, H.outline, 128, CTR - 8, 11, 8);
+    fill(c, H.cabinetLit, 129, CTR - 7, 9, 7);
+    fill(c, H.outline, 182, CTR - 9, 10, 9);
+    fill(c, H.steelDeep, 183, CTR - 8, 8, 8);
+    fill(c, H.steel, 183, CTR - 8, 8, 1);
+    fill(c, P.hotSauce, 189, CTR - 6, 1, 1);
+    fill(c, H.outline, 195, CTR - 5, 7, 5);
+    fill(c, H.steel, 196, CTR - 4, 5, 4);
+    fill(c, H.steelLit, 196, CTR - 4, 1, 3);
+    fill(c, H.walnutLit, 275, CTR - 6, 10, 1);
+    fill(c, H.walnutLit, 277, CTR - 9, 1, 4); fill(c, H.walnutLit, 282, CTR - 9, 1, 4);
+
+    /* -- THE DOORWAY to the hall: a white casing, the dim hall, the coats
+       on their hooks (Table ref 4, right) */
+    var DX = 330, DW = 40, DT = Y(58);
+    fill(c, H.outline, DX - 3, DT - 3, DW + 6, FL - DT + 2);
+    fill(c, H.cabinetLit, DX - 2, DT - 2, DW + 4, FL - DT);
+    fill(c, '#57514a', DX, DT, DW, FL - DT - 1);
+    fill(c, '#6b645a', DX, DT, DW, 4);
+    fill(c, H.cabinetShade, DX + DW - 2, DT, 2, FL - DT - 1);
+    [[DX + 6, '#2c2a2e', 12, 34], [DX + 15, '#3d4552', 11, 30], [DX + 24, '#5a4e45', 10, 26]].forEach(function (co) {
+      fill(c, H.outline, co[0] - 1, DT + 8, co[2] + 2, co[3] + 1);
+      fill(c, co[1], co[0], DT + 9, co[2], co[3]);
+      fill(c, '#77706a', co[0] + 1, DT + 9, 2, co[3] - 4);
+    });
+    fill(c, H.steelShade, DX + 4, DT + 7, DW - 8, 1);
+
+    /* -- THE LIVING SIDE: wall the rest of the way round, the cork board
+       of photographs (Table ref 1), the shuttered window over there (Floor
+       ref 4, top right), a tall plant standing on the floor */
+    var CB = 396;
+    shutters(510, 62);                     /* the living side's window (Floor ref 4) */
+    fill(c, H.outline, CB - 1, Y(58), 66, Y(102) - Y(58) + 2);
+    fill(c, '#b8956a', CB, Y(59), 64, Y(102) - Y(59));
+    for (i = 0; i < 22; i++) {
+      var px0 = CB + 2 + Math.floor(r() * 56), py0 = Y(60) + Math.floor(r() * 34);
+      var pc = [P.photoWhite, P.magnetYellow, P.photoSkin, P.magnetBlue, P.photoDark, P.magnetPink][i % 6];
+      fill(c, pc, px0, py0, 5 + (i % 3), 4 + (i % 2) * 2);
+    }
+    var PLX = 640;
+    fill(c, H.outline, PLX - 9, Y(128), 19, Y(147) - Y(128));
+    fill(c, H.cabinetLit, PLX - 8, Y(129), 17, Y(146) - Y(129));
+    fill(c, H.cabinetShade, PLX + 4, Y(129), 5, Y(146) - Y(129));
+    for (i = 0; i < 16; i++) {
+      var la = -1.4 + (i / 15) * 2.8, ll = 14 + (i % 4) * 5;
+      var lx2 = PLX + Math.round(Math.sin(la) * ll), ly2 = Y(128) - Math.round(Math.cos(la) * ll) - 4;
+      fill(c, H.leafDeep, lx2 - 3, ly2, 8, 4);
+      fill(c, (i % 3) ? H.leaf : H.leafLit, lx2 - 2, ly2, 6, 3);
+    }
+    for (i = 0; i < 4; i++) fill(c, H.leafDeep, PLX - 3 + i * 2, Y(112), 1, 16);
+
+    /* -- THE HOOD over the island: the steel chimney down from the
+       ceiling, the top of its curved glass canopy, in front of the uppers */
+    var HX = 200;
+    fill(c, H.outline, HX - 9, 0, 19, Y(28));
+    fill(c, H.steel, HX - 8, 0, 17, Y(28));
+    fill(c, H.steelLit, HX - 8, 0, 3, Y(28));
+    fill(c, H.steelShade, HX + 6, 0, 3, Y(28));
+    for (y = Y(27); y <= Y(36); y++) {
+      var gw = Math.round(22 + 9 * Math.sqrt((y - Y(27)) / 9));
+      fill(c, H.outline, HX - gw - 1, y, gw * 2 + 2, 1);
+      fill(c, P.hoodGlass, HX - gw, y, gw * 2, 1);
+      fill(c, P.hoodGlassLit, HX - gw, y, 3, 1);
+    }
+    fill(c, H.steelLit, HX - 22, Y(27), 44, 1);
+
+    /* -- THE FRIDGE (Floor ref 6), steel, French doors over the freezer
+       drawer, standing in front of the pantry's end on the floor */
+    var FX = 40, FW = 73, FT = 0, FB = Y(150);
+    fill(c, H.outline, FX - 1, FT, FW + 2, FB - FT);
+    fill(c, H.steel, FX, FT, FW, FB - FT - 1);
+    for (i = 0; i < 16; i++) {
+      fill(c, r() < 0.5 ? H.steelLit : H.steelShade, FX + 2 + Math.floor(r() * (FW - 26)),
+           FT + 2 + Math.floor(r() * (FB - FT - 8)), 6 + Math.floor(r() * 18), 1);
+    }
+    fill(c, H.steelLit, FX, FT, 2, FB - FT - 1);
+    fill(c, H.steelShade, FX + FW - 2, FT, 2, FB - FT - 1);
+    fill(c, H.steelDeep, FX + 36, FT, 1, Y(92) - FT);
+    fill(c, H.steelDeep, FX, Y(92), FW, 1);
+    fill(c, H.steelLit, FX, Y(93), FW, 1);
+    [FX + 31, FX + 39].forEach(function (hx) {
+      fill(c, H.outline, hx - 1, Y(36), 5, Y(68) - Y(36));
+      fill(c, H.steelLit, hx, Y(36), 3, Y(68) - Y(36));
+      fill(c, H.steelShade, hx + 2, Y(36), 1, Y(68) - Y(36));
+    });
+    fill(c, H.outline, FX + 20, Y(99), 34, 4);
+    fill(c, H.steelLit, FX + 21, Y(100), 32, 2);
+    fill(c, H.steelDeep, FX, Y(144), FW, FB - Y(144) - 1);
+    var PH = [[3, 30, 7, 9, P.photoWhite, P.photoDark], [11, 28, 8, 6, P.photoWhite, P.photoSkin],
+              [21, 32, 6, 8, P.photoWhite, P.photoGrass], [4, 42, 6, 7, P.photoWhite, P.photoSkin],
+              [12, 38, 9, 10, P.photoWhite, null], [23, 44, 6, 6, P.magnetYellow, null],
+              [5, 52, 8, 6, P.photoWhite, P.photoDark], [15, 51, 6, 8, P.photoWhite, P.photoSkin],
+              [24, 54, 5, 5, P.magnetPink, null], [7, 62, 6, 6, P.photoWhite, P.photoGrass],
+              [45, 30, 6, 7, P.photoWhite, P.photoSkin], [54, 34, 5, 5, P.magnetBlue, null]];
+    for (i = 0; i < PH.length; i++) {
+      var p = PH[i];
+      fill(c, p[4], FX + p[0], Y(p[1]), p[2], p[3]);
+      if (p[5]) fill(c, p[5], FX + p[0] + 1, Y(p[1]) + 1, p[2] - 2, p[3] - 2);
+      fill(c, H.steelShade, FX + p[0] + 1, Y(p[1]) + p[3], p[2], 1);
+    }
+    for (k = 0; k < 3; k++) {
+      fill(c, P.magnetGreen, FX + 13, Y(39) + 2 + k, 3 - k, 1);
+      fill(c, P.magnetPink, FX + 16 + k, Y(39) + 5 + k, 4 - k, 1);
+    }
+    fill(c, rgba(H.void, 0.18), FX + FW + 1, FT, 4, FB - FT);
+
+    /* -- AND THE STEP BACK: the far kitchen is in the sun, but nothing
+       behind the lane may outshine a white leg, so the crown and the
+       uppers' tops over the island sit a quarter under their own colours,
+       and what only the gap shows a step further: it is six metres off */
+    Tint.rect(c, 0, Y(29), FAR_W, Y(37) - Y(29), H.wallShade, 4);
+    Tint.rect(c, 0, Y(37), FAR_W, FAR_H - Y(37), P.farHaze, 5);
     return t;
   }
 
-  /* ======================================================== THE ISLAND
+  /* ========================================================= THE ISLAND
 
-     720 x 132, screen rows 56..187, parallax 0.42 (Floor ref 1, 5, 4).
-     Transparent wherever nothing is listed, so the far wall shows above
-     the overhang and through the gap.
+     720 x 116, screen rows 37..152, at 0.30 - the island seen from the
+     floor (Floor ref 6, the f6_mid crop): high up, the white quartz nose
+     (37..39) on its honey ply edge (39..44), the ply's underside
+     foreshortened over the 40 cm overhang (44..60); under it the white
+     shaker base in the overhang's shade (60..139) and the dark recessed
+     toe-kick (140..149). Two black stools are tucked under the overhang,
+     standing on the floor at row 150 (Floor ref 1/6: walnut seat at 76,
+     foot ring at 125, splayed legs, one with the chrome glide).
 
-     Across the 720: [door][door][drawers][door][door][drawers][door]
-     [door] - 60 each, x 0..479 - then the FRIDGE 480..575, then a GAP of
-     144 with the sneakers in it. Two whole stools stand at the doors.
-
-     The overhang's shadow and the cream doors are what a white chair leg
-     is read against for most of the screen's height, so the doors are
-     the photograph's shadowed grey-cream (P.doorShade), not the white
-     they are in the sun. */
-  var ISL_W = 720, ISL_H = 132, ISL_Y = 56;
+     ITS REAL LENGTH AND ITS REAL DOORS. At 2.5 m a 45 cm door is 47 px,
+     and Table ref 4 and ref 1 show the island's dining face as four doors
+     and a drawer stack between two plain end panels - 247 px of a 720 px
+     tile, so some of it is always on screen, as in Floor ref 6. The rest
+     of the tile is the GAP past its ends, transparent but for the
+     sneakers kicked off on the floor, where the back wall, the fridge and
+     the hall show; at 0.30 the island comes round every 2400 px of world.
+     The floor under all of it is THE FLOOR (below); this tile carries only
+     the island's own contact shadow and the stools' and shoes'. */
+  var ISL_W = 720, ISL_H = 116, ISL_Y = 37, ISL_P = 0.30;
+  var IX0 = 100, IX1 = 347;          /* the island, end panel to end panel */
 
   function bakeIsland() {
     var t = makeCanvas(ISL_W, ISL_H), c = t.ctx;
     var r = mulberry32(5521), i, k, x, y;
     function Y(sy) { return sy - ISL_Y; }
-    var RUN = 480;
+    var OX0 = IX0 - 4, OX1 = IX1 + 4;       /* the counter overhangs its ends a little */
 
-    /* -- THE OVERHANG, seen from below: the white stone lip, then the
-       honey ply of its underside lit by the window (Floor ref 1, 5) */
-    fill(c, H.outline, 0, Y(96), RUN, 1);
-    fill(c, H.cabinetLit, 0, Y(97), RUN, 1);
-    fill(c, H.cabinetShade, 0, Y(98), RUN, 1);
-    fill(c, P.plyLit, 0, Y(99), RUN, 2);
-    fill(c, P.ply, 0, Y(101), RUN, 5);
-    fill(c, P.plyShade, 0, Y(106), RUN, 2);
-    fill(c, H.outline, 0, Y(108), RUN, 1);
-    /* the ply's grain, long and pale */
-    for (i = 0; i < 40; i++) {
-      fill(c, r() < 0.5 ? P.plyLit : P.plyShade, Math.floor(r() * (RUN - 30)), Y(100) + Math.floor(r() * 6),
-           8 + Math.floor(r() * 22), 1);
+    /* -- THE OVERHANG: the quartz nose, the ply edge, the underside */
+    fill(c, H.outline, OX0, Y(37), OX1 - OX0, 1);
+    fill(c, H.cabinetLit, OX0, Y(38), OX1 - OX0, 1);
+    fill(c, H.cabinetShade, OX0, Y(39), OX1 - OX0, 1);
+    fill(c, P.plyLit, OX0, Y(40), OX1 - OX0, 1);
+    fill(c, P.ply, OX0, Y(41), OX1 - OX0, 3);
+    fill(c, P.plyShade, OX0, Y(44), OX1 - OX0, 1);
+    fill(c, H.outline, OX0 - 1, Y(37), 1, Y(45) - Y(37));
+    fill(c, H.outline, OX1, Y(37), 1, Y(45) - Y(37));
+    fill(c, P.plyUnder, IX0, Y(45), IX1 - IX0, Y(60) - Y(45));
+    for (i = 0; i < 26; i++) {
+      var gy = Y(45) + Math.floor(Math.pow(r(), 0.7) * (Y(60) - Y(45)));
+      var gx = IX0 + Math.floor(r() * (IX1 - IX0 - 20));
+      fill(c, r() < 0.45 ? P.plyLit : P.plyShade, gx, gy, Math.min(IX1 - gx, 8 + Math.floor(r() * 26)), 1);
     }
+    for (i = 0; i < 10; i++) {
+      var gx2 = OX0 + Math.floor(r() * (OX1 - OX0 - 16));
+      fill(c, P.plyLit, gx2, Y(41) + Math.floor(r() * 3), 6 + Math.floor(r() * 10), 1);
+    }
+    shadeRows(c, H.void, IX0, Y(45), IX1 - IX0, Y(60) - Y(45), 0.20, false);
+    fill(c, H.cabinetDeep, IX0, Y(60), IX1 - IX0, 1);
 
-    /* -- THE DOORS AND THE DRAWERS */
-    var DT = Y(109), DB = Y(180);         /* 53 .. 124 */
-    for (i = 0; i < 8; i++) {
-      var x0 = i * 60;
-      fill(c, H.cabinetDeep, x0, DT, 2, DB - DT);
-      if (i === 2 || i === 5) {
-        /* a drawer stack (Floor ref 4): three drawers, a horizontal pull */
+    /* -- THE BASE: four shaker doors in two pairs, then the drawer stack */
+    var BT = Y(61), BB = Y(140);
+    var KIND = ['d', 'd', 'd', 'd', 's'];
+    for (i = 0; i < KIND.length; i++) {
+      var x0 = IX0 + 6 + i * 47;
+      fill(c, P.isleDeep, x0, BT, 1, BB - BT);
+      fill(c, P.isleFrame, x0 + 1, BT, 46, BB - BT);
+      fill(c, P.isleLit, x0 + 1, BT, 1, BB - BT);
+      if (KIND[i] === 's') {
         for (k = 0; k < 3; k++) {
-          var dy0 = DT + k * 24, dh = 22;
-          fill(c, P.doorFrame, x0 + 2, dy0, 56, dh);
-          fill(c, P.doorLit, x0 + 2, dy0, 56, 1);
-          fill(c, P.doorLit, x0 + 2, dy0, 1, dh);
-          fill(c, P.doorShade, x0 + 5, dy0 + 3, 50, dh - 6);
-          fill(c, H.cabinetDeep, x0 + 5, dy0 + 3, 50, 1);
-          fill(c, H.cabinetDeep, x0 + 5, dy0 + 3, 1, dh - 6);
-          fill(c, P.doorLit, x0 + 54, dy0 + 4, 1, dh - 7);
-          fill(c, P.doorLit, x0 + 6, dy0 + dh - 4, 49, 1);
-          fill(c, H.cabinetDeep, x0 + 2, dy0 + dh, 56, 2);
-          fill(c, H.outline, x0 + 21, dy0 + 9, 18, 4);
-          fill(c, H.steelLit, x0 + 22, dy0 + 10, 16, 2);
-          fill(c, H.steelShade, x0 + 22, dy0 + 11, 16, 1);
+          var dy0 = BT + 2 + k * 26, dh = 24;
+          fill(c, P.isleField, x0 + 4, dy0 + 3, 40, dh - 6);
+          fill(c, P.isleDeep, x0 + 4, dy0 + 3, 40, 1);
+          fill(c, P.isleDeep, x0 + 4, dy0 + 3, 1, dh - 6);
+          fill(c, P.isleLit, x0 + 43, dy0 + 4, 1, dh - 7);
+          fill(c, P.isleLit, x0 + 5, dy0 + dh - 4, 38, 1);
+          fill(c, P.isleDeep, x0 + 1, dy0 + dh, 46, 1);
+          fill(c, H.outline, x0 + 16, dy0 + 10, 15, 3);
+          fill(c, H.steelLit, x0 + 17, dy0 + 11, 13, 1);
         }
       } else {
-        /* a shaker door: 6px stiles and rails, the bevel lit from the left */
-        fill(c, P.doorFrame, x0 + 2, DT, 56, DB - DT);
-        fill(c, P.doorLit, x0 + 2, DT, 56, 1);
-        fill(c, P.doorLit, x0 + 2, DT, 1, DB - DT);
-        var fx = x0 + 8, fy = DT + 6, fw = 44, fh = DB - DT - 12;
-        fill(c, P.doorShade, fx, fy, fw, fh);
-        fill(c, H.cabinetDeep, fx, fy, fw, 1);
-        fill(c, H.cabinetDeep, fx, fy, 1, fh);
-        fill(c, P.doorLit, fx + fw - 1, fy + 1, 1, fh - 1);
-        fill(c, P.doorLit, fx + 1, fy + fh - 1, fw - 1, 1);
-        /* the pull, on the stile where the pair meets */
-        var leftOfPair = (i === 0 || i === 3 || i === 6);
-        var px = leftOfPair ? x0 + 53 : x0 + 4;
-        fill(c, H.outline, px - 1, Y(117), 5, 16);
-        fill(c, H.steelLit, px, Y(118), 3, 14);
-        fill(c, H.steelShade, px + 2, Y(118), 1, 14);
-        fill(c, H.steelShade, px, Y(118), 3, 1);
-        fill(c, H.steelShade, px, Y(131), 3, 1);
+        var fx = x0 + 6, fw = 36, fy = BT + 6, fh = BB - BT - 12;
+        fill(c, P.isleField, fx, fy, fw, fh);
+        fill(c, P.isleDeep, fx, fy, fw, 1);
+        fill(c, P.isleDeep, fx, fy, 1, fh);
+        fill(c, P.isleLit, fx + fw - 1, fy + 1, 1, fh - 1);
+        fill(c, P.isleLit, fx + 1, fy + fh - 1, fw - 1, 1);
+        var px = (i % 2 === 0) ? x0 + 43 : x0 + 3;          /* pulls where a pair meets */
+        fill(c, H.outline, px - 1, BT + 14, 3, 9);
+        fill(c, H.steelLit, px, BT + 15, 1, 7);
       }
     }
-    /* the overhang's shadow down the doors: a strip, never a flat Tint */
-    shadeRows(c, H.void, 0, DT, RUN, 16, 0.24, true);
-    /* the toe kick */
-    fill(c, H.outline, 0, DB, RUN, 1);
-    fill(c, H.cabinetDeep, 0, DB + 1, RUN, ISL_H - DB - 1);
+    shadeRows(c, H.walnutDeep, IX0 + 6, BT, IX1 - IX0 - 12, 16, 0.30, true);
 
-    /* -- THE POTHOS trailing off the island top (Floor 2): the runner the
-       leaves on the floor came off */
-    var VX = 300;
-    for (y = Y(96); y <= Y(124); y++) {
-      fill(c, H.leafDeep, VX + Math.round(Math.sin((y - Y(96)) / 5) * 1.5), y, 1, 1);
-    }
-    [[Y(103), -6], [Y(112), 2], [Y(119), -5]].forEach(function (lf) {
-      var lx = VX + lf[1], ly = lf[0];
-      var HEART = [[1, 2], [0, 7], [0, 7], [1, 5], [2, 3], [3, 1]];
-      for (k = 0; k < HEART.length; k++) {
-        fill(c, H.outline, lx + HEART[k][0] - 1, ly + k, HEART[k][1] + 2, 1);
-      }
-      fill(c, H.outline, lx + 4, ly - 1, 2, 1);
-      fill(c, H.outline, lx + 3, ly + HEART.length, 1, 1);
-      for (k = 0; k < HEART.length; k++) {
-        fill(c, H.leaf, lx + HEART[k][0], ly + k, HEART[k][1], 1);
-        fill(c, H.leafLit, lx + HEART[k][0], ly + k, Math.ceil(HEART[k][1] / 2), 1);
-      }
-      fill(c, P.leafVein, lx + 3, ly + 1, 1, 3);
+    /* -- THE TOE-KICK, recessed and dark, between the end panels */
+    fill(c, P.toeKick, IX0 + 6, BB, IX1 - IX0 - 12, Y(149) - BB);
+    fill(c, P.isleDeep, IX0 + 6, BB, IX1 - IX0 - 12, 1);
+    /* -- THE TWO END PANELS: plain white sides down to the floor */
+    [IX0, IX1 - 6].forEach(function (ex) {
+      fill(c, H.outline, ex, Y(45), 6, Y(149) - Y(45));
+      fill(c, P.isleFrame, ex + 1, Y(45), 4, Y(149) - Y(45));
+      fill(c, P.isleLit, ex + 1, Y(45), 1, Y(149) - Y(45));
     });
+    fill(c, H.outline, IX0, Y(149), IX1 - IX0, 1);
+    /* its contact shadow on the floor */
+    fill(c, rgba(H.void, 0.30), IX0 - 2, Y(150), IX1 - IX0 + 4, 1);
+    fill(c, rgba(H.void, 0.14), IX0 - 4, Y(151), IX1 - IX0 + 8, 1);
 
-    /* -- THE FRIDGE (Floor ref 5): French doors over a freezer drawer,
-       brushed steel lit on its left, the two tall handles, the base
-       grille - and its photographs and magnets */
-    var FX0 = 480, FW = 96;
-    fill(c, H.outline, FX0, 0, FW, ISL_H);
-    fill(c, H.steel, FX0 + 1, 1, FW - 2, ISL_H - 2);
-    for (i = 0; i < 24; i++) {
-      fill(c, r() < 0.5 ? H.steelLit : H.steelShade, FX0 + 3 + Math.floor(r() * (FW - 36)),
-           4 + Math.floor(r() * (ISL_H - 12)), 8 + Math.floor(r() * 23), 1);
-    }
-    fill(c, H.steelLit, FX0 + 1, 1, FW - 2, 2);
-    fill(c, H.steelLit, FX0 + 1, 1, 2, ISL_H - 2);
-    fill(c, H.steelShade, FX0 + FW - 3, 1, 2, ISL_H - 2);
-    fill(c, H.steelDeep, FX0 + 48, 2, 1, Y(150) - 2);              /* the doors' seam */
-    fill(c, H.steelDeep, FX0 + 1, Y(150), FW - 2, 1);              /* the freezer's   */
-    fill(c, H.steelLit, FX0 + 1, Y(151), FW - 2, 1);
-    [FX0 + 40, FX0 + 52].forEach(function (hx) {
-      fill(c, H.steelDeep, hx, Y(84), 4, 2);
-      fill(c, H.steelDeep, hx, Y(146), 4, 2);
-      fill(c, H.outline, hx - 1, Y(86), 6, 60);
-      fill(c, H.steelLit, hx, Y(86), 4, 60);
-      fill(c, H.steelShade, hx + 3, Y(86), 1, 60);
-    });
-    fill(c, H.outline, FX0 + 27, Y(157), 42, 5);
-    fill(c, H.steelLit, FX0 + 28, Y(158), 40, 3);
-    fill(c, H.steelShade, FX0 + 28, Y(160), 40, 1);
-    fill(c, H.steelDeep, FX0 + 1, Y(182), FW - 2, 5);
-    for (x = FX0 + 4; x < FX0 + FW - 4; x += 3) fill(c, H.outline, x, Y(183), 1, 3);
-
-    /* the photographs, the triangle card and the magnets, clustered on the
-       left door the way Floor ref 5's are (and a couple on the right).
-       [x, y, w, h, border, inside, top-half] */
-    var PH = [
-      [486, 62, 9, 11, P.photoWhite, null, null],        /* the triangle card */
-      [497, 60, 6, 7, P.photoWhite, P.photoSkin, null],
-      [505, 64, 7, 5, P.photoWhite, P.photoGrass, P.magnetBlue],
-      [489, 75, 6, 6, P.magnetYellow, null, null],
-      [497, 70, 7, 8, P.photoWhite, P.photoDark, null],
-      [507, 72, 5, 6, P.photoWhite, P.photoSkin, null],
-      [486, 84, 6, 7, P.photoWhite, P.photoDark, null],
-      [494, 82, 8, 6, P.photoWhite, P.photoGrass, P.magnetBlue],
-      [504, 81, 6, 7, P.photoWhite, P.photoSkin, null],
-      [490, 93, 7, 6, P.photoWhite, P.photoDark, null],
-      [500, 92, 5, 5, P.magnetPink, null, null],
-      [534, 66, 6, 7, P.photoWhite, P.photoSkin, null],
-      [544, 63, 7, 5, P.photoWhite, P.photoGrass, P.magnetBlue]
-    ];
-    for (i = 0; i < PH.length; i++) {
-      var p = PH[i], px0 = p[0], py0 = Y(p[1]);
-      fill(c, p[4], px0, py0, p[2], p[3]);
-      if (p[5]) fill(c, p[5], px0 + 1, py0 + 1, p[2] - 2, p[3] - 2);
-      if (p[6]) fill(c, p[6], px0 + 1, py0 + 1, p[2] - 2, Math.floor((p[3] - 2) / 2));
-      fill(c, H.steelShade, px0 + 1, py0 + p[3], p[2], 1);       /* its shadow */
-    }
-    /* the triangle card's two triangles (Floor ref 5) */
-    var TC = [[486, 62]];
-    for (k = 0; k < 3; k++) {
-      fill(c, P.magnetGreen, TC[0][0] + 1, Y(TC[0][1]) + 2 + k, 3 - k, 1);
-      fill(c, P.magnetPink, TC[0][0] + 4 + k, Y(TC[0][1]) + 6 + k, 4 - k, 1);
-    }
-    fill(c, P.magnetPink, 512, Y(90), 3, 3);
-    fill(c, P.magnetYellow, 540, Y(76), 3, 3);
-
-    /* -- TWO STOOLS at the island (Floor ref 1): a walnut disc seat, a
-       chrome column, the hub, four splayed legs, the foot ring */
+    /* -- TWO STOOLS tucked under the overhang (Floor ref 1, 6): a walnut
+       seat 40 wide, the black frame and the threaded spindle under it,
+       four splayed legs to the floor, the foot ring. The far pair of legs
+       first, in the dark; the near pair over the ring. */
     function stool(cx, glide) {
-      var sy = Y(134);
-      /* the far pair of legs first, in the dark */
-      legLine(c, P.ironDeep, cx - 2, Y(149), cx - 7, Y(184));
-      legLine(c, P.ironDeep, cx + 1, Y(149), cx + 6, Y(184));
-      /* the ring's far half */
-      fill(c, P.ironDeep, cx - 14, Y(168), 28, 1);
-      /* the near pair */
-      legLine(c, H.outline, cx - 4, Y(149), cx - 16, Y(186), 3);
-      legLine(c, H.outline, cx + 2, Y(149), cx + 14, Y(186), 3);
-      legLine(c, H.iron, cx - 4, Y(149), cx - 16, Y(186));
-      legLine(c, H.iron, cx + 3, Y(149), cx + 15, Y(186));
-      legLine(c, H.ironLit, cx - 4, Y(149), cx - 16, Y(186), 1);
-      /* the column and the hub */
-      fill(c, H.outline, cx - 2, Y(140), 5, 8);
-      fill(c, H.steelLit, cx - 1, Y(140), 2, 7);
-      fill(c, H.steelShade, cx + 1, Y(140), 1, 7);
-      fill(c, H.outline, cx - 6, Y(145), 12, 5);
-      fill(c, H.iron, cx - 5, Y(146), 10, 3);
-      fill(c, H.ironLit, cx - 5, Y(146), 10, 1);
-      /* the seat, a dark walnut disc edge-on (Floor ref 1) */
-      fill(c, H.outline, cx - 15, sy - 1, 30, 8);
-      fill(c, H.outline, cx - 16, sy, 32, 6);
-      fill(c, H.walnutHi, cx - 14, sy, 28, 1);
-      fill(c, H.walnut, cx - 15, sy + 1, 30, 4);
-      fill(c, H.walnutDeep, cx - 14, sy + 5, 28, 1);
-      fill(c, H.walnutLit, cx - 13, sy + 1, 8, 2);  /* the window on the seat's edge */
-      /* the near half of the foot ring */
-      fill(c, H.outline, cx - 17, Y(169), 34, 4);
-      fill(c, H.ironLit, cx - 16, Y(170), 32, 1);
-      fill(c, H.iron, cx - 16, Y(171), 32, 1);
-      /* the feet */
-      fill(c, P.ironDeep, cx - 18, Y(186), 4, 2);
-      fill(c, P.ironDeep, cx + 13, Y(186), 4, 2);
-      if (glide) {
-        /* Floor ref 1's adjustable chrome foot, on the right near leg */
-        fill(c, H.steelLit, cx + 14, Y(184), 2, 3);
-        fill(c, H.steelShade, cx + 15, Y(184), 1, 3);
-      }
+      var ST = Y(76), HUB = Y(83), RING = Y(125), FT = Y(150);
+      legLine(c, P.ironDeep, cx - 3, HUB, cx - 13, FT - 3, 2);
+      legLine(c, P.ironDeep, cx + 2, HUB, cx + 12, FT - 3, 2);
+      fill(c, P.ironDeep, cx - 15, RING - 1, 30, 1);
+      fill(c, P.ironDeep, cx - 17, RING, 2, 1);
+      fill(c, P.ironDeep, cx + 15, RING, 2, 1);
+      fill(c, H.outline, cx - 2, HUB, 4, Y(108) - HUB);
+      for (y = HUB; y < Y(108); y++) fill(c, (y & 1) ? H.iron : H.ironLit, cx - 1, y, 2, 1);
+      legLine(c, H.outline, cx - 6, HUB, cx - 23, FT - 1, 4);
+      legLine(c, H.outline, cx + 3, HUB, cx + 20, FT - 1, 4);
+      legLine(c, H.iron, cx - 5, HUB, cx - 22, FT - 1, 2);
+      legLine(c, H.iron, cx + 4, HUB, cx + 21, FT - 1, 2);
+      legLine(c, '#5e5955', cx - 5, HUB, cx - 22, FT - 1, 1);
+      fill(c, H.outline, cx - 19, RING, 38, 3);
+      fill(c, H.ironLit, cx - 18, RING + 1, 36, 1);
+      fill(c, H.outline, cx - 10, Y(80), 20, 4);
+      fill(c, H.iron, cx - 9, Y(81), 18, 2);
+      fill(c, H.outline, cx - 21, ST - 1, 42, 6);
+      fill(c, H.walnutLit, cx - 20, ST, 40, 1);
+      fill(c, H.walnut, cx - 20, ST + 1, 40, 2);
+      fill(c, H.walnutDeep, cx - 19, ST + 3, 38, 1);
+      fill(c, H.walnutHi, cx - 18, ST, 7, 2);
+      fill(c, H.outline, cx - 25, FT - 1, 6, 2);
+      fill(c, H.outline, cx + 18, FT - 1, 6, 2);
+      if (glide) { fill(c, H.steelLit, cx + 19, FT - 4, 2, 3); fill(c, H.steelShade, cx + 20, FT - 4, 1, 3); }
+      fill(c, rgba(H.void, 0.24), cx - 26, FT, 52, 1);
     }
-    stool(150, false);
-    stool(400, true);
+    stool(IX0 + 66, false);
+    stool(IX0 + 180, true);
 
-    /* -- THE SNEAKERS, kicked off by the fridge (Floor ref 1's shoes,
-       without the person): one standing, one rolled onto its side */
+    /* -- THE SNEAKERS in the gap, kicked off on the floor (Floor ref 1) */
     var SHOE = [
-      '.UUU..................',
-      'UUUUUl................',
-      'LUUUUUUl..............',
-      'LUUUUUUUUl............',
-      'LUUUUUUUUUUUl.........',
-      'LUUUUUUUUUUUUUUUU.....',
-      'LUUUUUUUUUUUUUUUUUUUU.',
-      'WWWWWWWWWWWWWWWWWWWWWW',
-      '.KKKKKKKKKKKKKKKKKKKK.'
+      '.UUU..............',
+      'UUUUUl............',
+      'LUUUUUUl..........',
+      'LUUUUUUUUUl.......',
+      'LUUUUUUUUUUUUUUU..',
+      'WWWWWWWWWWWWWWWWWW',
+      '.KKKKKKKKKKKKKKKK.'
     ];
     var SOLE = [
-      '....UUUUUUUUU.......',
-      '..UUUUUUUUUUUUUU....',
-      '.WWWWWWWWWWWWWWWWW..',
-      'WWKWWKWWKWWKWWKWWWW.',
-      'WWWWWWWWWWWWWWWWWWWW',
-      '.WWKWWKWWKWWKWWKWWW.',
-      '..WWWWWWWWWWWWWWWW..'
+      '...UUUUUUU......',
+      '.WWWWWWWWWWWWW..',
+      'WWKWWKWWKWWKWWW.',
+      '.WWWWWWWWWWWWWW.',
+      '..WWWWWWWWWWWW..'
     ];
     var SHOE_INK = { U: P.sneaker, L: P.sneakerLit, l: P.sneakerSole, W: P.sneakerSole, K: P.sneakerDark };
-    var s1 = bakeGrid(SHOE, SHOE_INK, 24, 11), s2 = bakeGrid(SOLE, SHOE_INK, 22, 9);
-    c.drawImage(s1.canvas, 592, Y(177));
-    c.drawImage(s2.canvas, 617, Y(179));
-
-    /* -- every stool and shoe sits in a soft contact shadow on the floor
-       it is standing on (the bottom two rows of this tile) */
-    [[132, 36], [382, 36], [594, 46]].forEach(function (s) {
-      fill(c, rgba(H.void, 0.18), s[0], ISL_H - 2, s[1], 2);
-    });
+    c.drawImage(bakeGrid(SHOE, SHOE_INK, 20, 9).canvas, 420, Y(142));
+    c.drawImage(bakeGrid(SOLE, SHOE_INK, 18, 7).canvas, 440, Y(144));
+    fill(c, rgba(H.void, 0.22), 419, Y(150), 40, 1);
     return t;
   }
 
-  /* ============================================== THE FAR FLOOR STRIPS
+  /* ====================================================== THE FAR CHAIR
 
-     The boards run left-right, along the flight, so a strip boundary is a
-     board seam, and a nearer strip sliding faster than a farther one
-     reads as perspective rather than as three conveyors. The far boards
-     are compressed and in the sun; the near two come under the table,
-     and the daylight sheet lays the shade over them - so all three are
-     baked in the same daylit pigments and the shade is continuous across
-     their seams. (Floor ref 1 and 2.)
+     720 x 137, screen rows 24..160, at 0.48: one white X-back chair
+     (Floor ref 6 left, ref 5) pushed in at the far side of the table, seen
+     from four centimetres off the floor. Its front legs are 1.0 m off and
+     its back 1.54 m, so it is drawn by the camera: the seat's front edge
+     and rail 110 wide at rows 39..57, the honey underside with its maker's
+     label narrowing to the rear rail (73 wide, rows 74..87) with the oval
+     dowel pockets and the zinc bracket of Floor ref 6's top-right corner,
+     four tapered legs - front 13 px to their glides on row 156, rear 9 px
+     to row 153 - and over the seat's front edge the X-back's two stiles and
+     the bottom of the X rising into the table's shadow.
 
-       STRIP 1  rows 188..209, 0.55   sunlit kitchen floor, 4-row boards
-       STRIP 2  rows 210..225, 0.72   two 8-row boards, the shadow's edge
-       STRIP 3  rows 226..241, 0.86   one board in the table's shade - the
-                                      one every crumb lands on (FLOOR-4
-                                      is 238, its row 12) */
+     IT IS NOT A PILLAR and must not read as one: a whole chair, seat and
+     rails and four thin legs, one per 720, in the table's shade (the house
+     paint's shade, not its lit white), its feet on the floor at rows 153
+     and 156 with their contact shadows in its own tile, so they slide
+     over the floor with it and never off it. */
+  var CHR_W = 720, CHR_H = 134, CHR_Y = 24, CHR_P = 0.48;
+
+  function bakeChairFar() {
+    var t = makeCanvas(CHR_W, CHR_H), c = t.ctx;
+    var r = mulberry32(5809), i, y, k;
+    function Y(sy) { return sy - CHR_Y; }
+
+    var CX = 575;                    /* the chair's centre in the tile */
+    /* contact shadows under its four feet */
+    [[CX - 52, Y(156)], [CX + 44, Y(156)], [CX - 37, Y(153)], [CX + 30, Y(153)]].forEach(function (f) {
+      fill(c, rgba(H.void, 0.22), f[0] - 2, f[1], 12, 1);
+    });
+
+    /* a leg, tapering from w0 at row y0 to w1 at the foot row y1, its left
+       edge from x0 to x1, lit on its left face */
+    function leg(x0, x1, y0, y1, w0, w1, body, lit, deep) {
+      for (var yy = y0; yy < y1; yy++) {
+        var k2 = (yy - y0) / Math.max(1, y1 - y0);
+        var xx = Math.round(x0 + (x1 - x0) * k2), ww = Math.round(w0 + (w1 - w0) * k2);
+        fill(c, H.outline, xx - 1, yy, ww + 2, 1);
+        fill(c, body, xx, yy, ww, 1);
+        fill(c, lit, xx, yy, Math.max(1, Math.round(ww * 0.3)), 1);
+        fill(c, deep, xx + ww - 1, yy, 1, 1);
+      }
+      fill(c, H.outline, x1 - 1, y1, w1 + 2, 1);
+      fill(c, P.glide, x1, y1 - 1, w1, 1);
+    }
+    /* the rear legs, further and a shade darker */
+    leg(CX - 36, CX - 37, Y(87), Y(153), 9, 6, P.chairBody, H.paintShade, H.paintDeep);
+    leg(CX + 27, CX + 30, Y(87), Y(153), 9, 6, P.chairBody, H.paintShade, H.paintDeep);
+
+    /* the stiles and the bottom of the X, over the seat's front edge */
+    fill(c, H.outline, CX - 38, 0, 9, Y(40));
+    fill(c, P.chairBody, CX - 37, 0, 7, Y(40));
+    fill(c, H.paintShade, CX - 37, 0, 2, Y(40));
+    fill(c, H.outline, CX + 29, 0, 9, Y(40));
+    fill(c, P.chairBody, CX + 30, 0, 7, Y(40));
+    fill(c, H.paintShade, CX + 30, 0, 2, Y(40));
+    /* THE X: two solid painted slats (Floor ref 6, left), each about as
+       wide as a leg's foot, running from the top of one stile (behind the
+       lid, at screen row 13) to the foot of the other (behind the seat, at
+       row 61) and crossing at row 37 - so from this low eye what shows is
+       the crossing and the two upper arms opening toward the lid. Lit on
+       their left faces like the legs, the second laid over the first where
+       they lap. The first cut drew them four pixels wide on a 2.4px step,
+       and with a body the value of the doors behind them only their
+       outlines showed: a wire net. */
+    function slat(x0, dir) {
+      for (var yy = 0; yy <= Y(40); yy++) {
+        var cx2 = Math.round(x0 + dir * (yy - Y(13)) * (68 / 48));
+        fill(c, H.outline, cx2 - 6, yy, 13, 1);
+        fill(c, P.chairBody, cx2 - 5, yy, 11, 1);
+        fill(c, H.paintShade, cx2 - 5, yy, 2, 1);
+        fill(c, H.paintDeep, cx2 + 4, yy, 2, 1);
+      }
+    }
+    slat(CX - 34, 1);
+    slat(CX + 34, -1);
+
+    /* the seat's underside: the honey board between the rails, narrowing
+       from the front rail to the rear one, the maker's label, the side
+       rails' inner faces in the white paint */
+    for (y = Y(57); y < Y(87); y++) {
+      var kk = (y - Y(57)) / (Y(74) - Y(57));
+      if (kk > 1) kk = 1;
+      var half = Math.round(55 - 18 * kk);
+      fill(c, H.outline, CX - half - 1, y, half * 2 + 2, 1);
+      if (y < Y(74)) {
+        fill(c, P.plyUnder, CX - half + 5, y, half * 2 - 10, 1);
+        fill(c, P.chairBody, CX - half, y, 5, 1);
+        fill(c, H.paintDeep, CX + half - 5, y, 5, 1);
+      } else {
+        /* the rear rail's inner face */
+        fill(c, P.chairBody, CX - half, y, half * 2, 1);
+      }
+    }
+    shadeRows(c, H.void, CX - 50, Y(57), 100, 6, 0.25, true);
+    fill(c, P.photoWhite, CX + 8, Y(62), 9, 4);                     /* the label */
+    fill(c, P.photoDark, CX + 10, Y(63), 5, 1);
+    fill(c, P.photoDark, CX + 9, Y(64), 3, 1);
+    fill(c, H.paintDeep, CX - 37, Y(74), 74, 1);
+    fill(c, H.outline, CX - 37, Y(87), 74, 1);
+    /* the dowel pockets in the rear rail and the corner bracket */
+    [CX - 22, CX + 12].forEach(function (dx) {
+      fill(c, P.plyShade, dx, Y(79), 10, 4);
+      fill(c, H.walnutDeep, dx + 1, Y(80), 8, 2);
+      fill(c, H.steelShade, dx + 6, Y(80), 2, 2);
+    });
+    fill(c, H.outline, CX + 23, Y(75), 7, 6);
+    fill(c, H.steelLit, CX + 24, Y(76), 5, 4);
+    fill(c, H.steelDeep, CX + 26, Y(78), 1, 1);
+
+    /* the front legs, nearest, over the underside's corners */
+    leg(CX - 55, CX - 54, Y(57), Y(156), 13, 9, P.chairBody, H.paintShade, H.paintDeep);
+    leg(CX + 42, CX + 45, Y(57), Y(156), 13, 9, P.chairBody, H.paintShade, H.paintDeep);
+
+    /* the seat's front edge and front rail: the rounded nosing catching
+       the light, the rail's face, its underside dark */
+    fill(c, H.outline, CX - 56, Y(39), 112, Y(57) - Y(39) + 1);
+    fill(c, H.paintShade, CX - 55, Y(40), 110, 2);
+    fill(c, P.chairBody, CX - 55, Y(42), 110, 3);
+    fill(c, H.paintDeep, CX - 55, Y(45), 110, 1);
+    fill(c, H.outline, CX - 55, Y(46), 110, 1);
+    fill(c, P.chairBody, CX - 53, Y(47), 106, Y(56) - Y(47));
+    fill(c, H.paintShade, CX - 53, Y(47), 106, 1);
+    fill(c, H.paintDeep, CX - 53, Y(55), 106, 1);
+    fill(c, H.paint, CX - 55, Y(40), 30, 1);
+    for (i = 0; i < 4; i++) fill(c, H.paintDeep, CX - 40 + Math.floor(r() * 80), Y(49) + Math.floor(r() * 5), 2 + Math.floor(r() * 3), 1);
+    return t;
+  }
+
   /* GRAIN AS CONTOURS. Oak's figure is the growth rings cut through at a
      shallow angle, so the honest way to draw it is as the level lines of
      a field: F(x, y) = y, plus a slow wave along the board, minus a
@@ -1094,204 +1210,242 @@ var Floor = (function () {
     }
   }
 
-  /* the far boards' quieter pigments: at this distance a seam is a soft
-     line and the grain is a texture, not a drawing - full-strength seams
-     every four rows read as brick paving */
-  var FAR_SEAM = '#b0a184', FAR_GRAIN = '#c3b698';
 
-  function bakeStrip1() {
-    var W = 192, Hh = 22, t = makeCanvas(W, Hh), c = t.ctx;
-    var r = mulberry32(6101), b, i, y0, face;
-    for (b = 0; b * 4 < Hh; b++) {
-      y0 = b * 4;
-      face = Math.min(3, Hh - y0);
-      fill(c, (b % 2) ? P.oakDayWarm : P.oakDay, 0, y0, W, face);
-      for (i = 0; i < 5; i++) runW(c, FAR_GRAIN, r() * W, y0 + Math.floor(r() * face), 4 + Math.floor(r() * 10), W);
-      /* one end joint per board per tile, staggered */
-      var jx = Math.floor(r() * W);
-      for (i = 0; i < face; i++) dotW(c, FAR_SEAM, jx, y0 + i, W);
-      if (y0 + face < Hh) fill(c, FAR_SEAM, 0, y0 + face, W, 1);
+  /* ========================================================== THE FLOOR
+
+     ONE FLOOR, ITS BOARDS RUNNING INTO THE ROOM (Floor ref 6). The lens
+     looks along the boards, so their seams are lines that fan out from the
+     vanishing point toward you - narrow and crowded by the island, a
+     third of the screen wide at your feet - and the grain runs with them.
+     Two cuts got this wrong in opposite directions: boards seen side-on in
+     strips that stepped back like layers, then a smooth plane with no
+     wood in it at all. This is the photograph: one continuous oak floor,
+     in perspective, from the toe-kicks to the bottom of the screen.
+
+     HOW IT IS DRAWN. A top-down oak floor is baked once as a texture -
+     boards 14 cm wide running along the depth, each with its cathedral
+     grain, an end joint somewhere along it, the odd knot - and every
+     screen row from 154 down samples it at that row's depth: the row's
+     width in centimetres is 480 * D / FOC, centred on the vanishing point
+     at x 240. One drawImage per row. The texture is baked at four
+     densities (2, 4, 8 and 16 texels a centimetre) and each row reads the
+     one that puts one to two screen pixels on a texel, so nothing is ever
+     minified into noise and nothing magnified into blocks: the far rows
+     are soft and quiet (their grain is baked faint), the near rows carry
+     the grain at full strength.
+
+     HOW IT MOVES, AND WHY NOT BY THE PARALLAX LAW. A fan of seams stays a
+     fan only if every row slides by the SAME distance in centimetres -
+     the lens moving sideways over the floor - which on screen is T * FOC
+     / D pixels: fast near, slow far, and zero at the horizon. Any other
+     per-row speed shears the fan, and the shear grows with the run: slide
+     each row at the law's own p(D) and by a minute in the seams near the
+     island have wound round into hatching, and the rows nearer than 45 cm
+     (the law's p is 1 for all of them) swing their vanishing point off the
+     side of the screen. So the boards move in true perspective, tied to
+     the play plane: the lens moves T = scroll * D_PLAY / FOC cm, where
+     D_PLAY is the kill row's depth (10.9 cm), so row 242 slides at exactly
+     the pillars' speed and every row above it proportionally slower -
+     row 200 at 0.56, row 170 at 0.25. Each row's shift is rounded to whole
+     pixels, so a row only ever translates and never re-samples: nothing
+     boils.
+
+     WHERE THE FURNITURE STANDS. The island, its stools and the far chair
+     keep the room model's parallax (0.30, 0.48), and their feet stand on
+     rows 150..156, which is the far floor in the window's sheen: there
+     the static light below washes the boards out completely (by 1.5 m a
+     board is seven pixels and the photograph shows it as a bright haze),
+     so a foot never visibly skates over a seam. The boards come up out of
+     the sheen from row 158 and are full strength by 176.
+
+     THE LIGHT is a static sheet over the boards, because light belongs to
+     the room and not to the wood: the sheen by the toe-kicks easing into
+     the table's shade toward you. THE ACTUAL GROUND - the band, 242..269,
+     the same boards on the same mapping, wider still - lies under a
+     lighter shade than the floor just beyond it, and between them at 242
+     a hard dark seam with the board's lit arris under it: the one
+     horizontal line in the floor, and the kill line. */
+  function hexRGB(h) { var n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  function mixRGB(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; }
+  function css(c3) { return 'rgb(' + Math.round(c3[0]) + ',' + Math.round(c3[1]) + ',' + Math.round(c3[2]) + ')'; }
+
+  var VPX = 240;                                  /* the vanishing point's column */
+  var D_PLAY = FOC * EYE / (FLOOR - Y_H);         /* 10.9 cm: the kill row's depth */
+  var BOARD_CM = 14, PERIOD_CM = 112;             /* eight boards, then it repeats */
+  var OAK_R0 = 154;                               /* the first row with boards in it */
+  function depthAt(r) { return FOC * EYE / (r + 0.5 - Y_H); }
+
+  /* the four densities and the rows that read each: one to two screen
+     pixels a texel. `g` is how strong the grain is baked at that density
+     (quiet far off), `ss` the supersampling a coarse level needs so a 2mm
+     seam averages into its texel instead of flickering in and out */
+  var LODS = [
+    { k: 2,  r0: OAK_R0, r1: 162, g: 0.18, s: 0.55, ss: 3 },
+    { k: 4,  r0: 162, r1: 178, g: 0.40, s: 0.85, ss: 2 },
+    { k: 8,  r0: 178, r1: 210, g: 0.80, s: 1.00, ss: 1 },
+    { k: 16, r0: 210, r1: VH,  g: 1.00, s: 1.00, ss: 1 }
+  ];
+
+  /* The oak at a point of the floor, x across the room and z away from
+     the lens, in cm: [r, g, b]. */
+  var OAK_A = null, OAK_B, OAK_GR, OAK_SM, OAK_LIP, OAK_KN, OAK_KR;
+  function oakAt(x, z, L) {
+    x = wrap(x, PERIOD_CM);
+    var b = Math.floor(x / BOARD_CM), u = x - b * BOARD_CM;
+    var hb = hash(b * 7919 + 13);
+    /* one end joint per board somewhere in view, staggered */
+    var zj = 16 + (hb % 101), seg = z < zj ? 0 : 1;
+    var hs = hash(b * 131 + seg * 977 + 5);
+    var col = mixRGB(OAK_A, OAK_B, ((hs >>> 3) % 100) / 160);
+    /* the cathedral: contour lines of the distance from the board's
+       heart, pushed out round a flame somewhere along it, wobbling gently */
+    var uc = 4.5 + ((hs >>> 9) % 50) / 10;
+    var zf = 10 + ((hs >>> 15) % 140), zl = 18 + ((hs >>> 21) % 30);
+    var F = Math.abs(u - uc) - 3.2 * Math.exp(-((z - zf) / zl) * ((z - zf) / zl)) + 0.35 * Math.sin(z * 0.06 + b * 1.7);
+    /* lines 1.3 cm apart, each its own strength and some missing, so it
+       is grain and not corrugation */
+    var gn = Math.floor(F / 1.3), fr = F / 1.3 - gn;
+    var gs = (hash(gn * 31 + b * 977 + seg * 7) % 100) / 100;
+    if (gs > 0.3 && fr < 0.17) col = mixRGB(col, OAK_GR, L.g * gs * (1 - fr / 0.17));
+    /* the odd knot (Floor ref 1), one board in three */
+    if (hs % 3 === 0) {
+      var kx = (u - (3 + (hs >>> 5) % 8)) / 0.9, kz = (z - (12 + (hs >>> 11) % 110)) / 1.6;
+      var kd = Math.sqrt(kx * kx + kz * kz);
+      if (kd < 1) col = mixRGB(col, OAK_KN, L.g);
+      else if (kd < 1.5) col = mixRGB(col, OAK_KR, L.g * 0.7);
     }
-    /* the island's shadow on the floor in front of it */
-    shadeRows(c, H.void, 0, 0, W, 8, 0.28, true);
+    /* the end joint, across the board. (The long seams between boards
+       are NOT in the texture: drawn row by row from a texture a line that
+       runs steeply across the rows breaks into dashes, so drawSeams lays
+       them as lines - see there.) */
+    if (Math.abs(z - zj) < 0.18 && u > 0.3 && u < BOARD_CM - 0.3) col = mixRGB(col, OAK_SM, L.s * 0.8);
+    if (Math.abs(z - zj - 0.3) < 0.12 && u > 0.3 && u < BOARD_CM - 0.3) col = mixRGB(col, OAK_LIP, L.s * 0.5);
+    return col;
+  }
+
+  function bakeOakLevel(L) {
+    var dmax = depthAt(L.r0), dmin = depthAt(L.r1 - 1);
+    var win = Math.ceil(VW * dmax / FOC * L.k) + 2;
+    var W = PERIOD_CM * L.k + win, Hh = Math.ceil((dmax - dmin) * L.k) + 2;
+    var t = makeCanvas(W, Hh), img = t.ctx.createImageData(W, Hh), d = img.data;
+    var i, j, a, b2, n = L.ss * L.ss;
+    for (j = 0; j < Hh; j++) {
+      for (i = 0; i < W; i++) {
+        var sr = 0, sg = 0, sb = 0;
+        for (a = 0; a < L.ss; a++) {
+          for (b2 = 0; b2 < L.ss; b2++) {
+            var c3 = oakAt((i + (a + 0.5) / L.ss) / L.k, dmin + (j + (b2 + 0.5) / L.ss) / L.k, L);
+            sr += c3[0]; sg += c3[1]; sb += c3[2];
+          }
+        }
+        var o = (j * W + i) * 4;
+        d[o] = sr / n; d[o + 1] = sg / n; d[o + 2] = sb / n; d[o + 3] = 255;
+      }
+    }
+    t.ctx.putImageData(img, 0, 0);
+    return { t: t, k: L.k, r0: L.r0, r1: L.r1, dmin: dmin };
+  }
+
+  function bakeOak() {
+    OAK_A = hexRGB(P.oakFloor); OAK_B = hexRGB(P.oakFloorWarm); OAK_GR = hexRGB(P.oakFloorGrain);
+    OAK_SM = hexRGB(P.oakSeam); OAK_LIP = hexRGB(P.oakFloorLip);
+    OAK_KN = hexRGB(P.oakKnot); OAK_KR = hexRGB(P.oakKnotRing);
+    return LODS.map(bakeOakLevel);
+  }
+
+  /* the boards, rows r0..r1-1, for this scroll: one drawImage a row, each
+     row's shift rounded to whole pixels so it only ever translates */
+  function drawOak(ctx, scroll, r0, r1) {
+    var tcm = scroll * D_PLAY / FOC, li = 0, L, r;
+    for (r = r0; r < r1; r++) {
+      while (li < T.oak.length - 1 && r >= T.oak[li].r1) li++;
+      L = T.oak[li];
+      var D = depthAt(r), cmPx = D / FOC;
+      var shift = Math.round(tcm / cmPx);
+      var u0 = wrap(((shift - VPX) * cmPx) * L.k, PERIOD_CM * L.k);
+      var v = Math.max(0, Math.floor((D - L.dmin) * L.k));
+      ctx.drawImage(L.t.canvas, u0, v, VW * cmPx * L.k, 1, 0, r, VW, 1);
+    }
+  }
+
+  /* THE SEAMS between the boards, as lines: for each board edge in view,
+     row by row, the run from where it crosses this row to where it
+     crosses the next, so a seam is one unbroken staircase however steeply
+     it runs - and on exactly the whole-pixel shift drawOak gave the row,
+     so it sits on its boards. Its width is the seam's 2.5 mm at the row's
+     scale (a pixel far off, six at your feet), with the satin lip of the
+     next board on its right where the window catches it. */
+  var SEAM_CM = 0.25;
+  function drawSeams(ctx, scroll, r0, r1) {
+    var tcm = scroll * D_PLAY / FOC, r, k;
+    function shiftAt(rr) { return Math.round(tcm * (rr + 0.5 - Y_H) / EYE); }
+    for (r = r0; r < r1; r++) {
+      var pc = (r + 0.5 - Y_H) / EYE, pc2 = (r + 1.5 - Y_H) / EYE;
+      var sh = shiftAt(r);
+      var w = Math.min(2, Math.max(1, Math.round(SEAM_CM * pc)));
+      var k0 = Math.floor((sh - VPX - 8) / pc / BOARD_CM), k1 = Math.ceil((sh + VW - VPX + 8) / pc / BOARD_CM);
+      for (k = k0; k <= k1; k++) {
+        var xa = VPX - sh + k * BOARD_CM * pc;
+        var xb = r + 1 < r1 ? xa + (k * BOARD_CM - tcm) * (pc2 - pc) : xa;
+        var lo = Math.round(Math.min(xa, xb)), hi = Math.round(Math.max(xa, xb));
+        if (hi + w < 0 || lo > VW) continue;
+        ctx.fillStyle = P.oakFloorSeam;
+        ctx.fillRect(lo, r, hi - lo + w, 1);
+        ctx.fillStyle = P.oakFloorLip;
+        ctx.fillRect(hi + w, r, 1, 1);
+      }
+    }
+  }
+
+  /* THE LIGHT ON THE FLOOR, static, rows 148..241: the window's sheen by
+     the toe-kicks - opaque to row 157, so the furniture's feet stand on
+     the bright haze the far boards become - lifting off by 176, and the
+     table's shade gathering toward the lens */
+  var FL_Y = 148;
+  function bakeFloorLight() {
+    var Hh = FLOOR - FL_Y, t = makeCanvas(VW, Hh), c = t.ctx, y;
+    var S0 = hexRGB(P.floorSheen), S1 = hexRGB(P.floorMid);
+    for (y = 0; y < Hh; y++) {
+      var sy = y + FL_Y;
+      var sc = mixRGB(S0, S1, ease((sy - FL_Y) / 28));
+      var sa = sy <= 157 ? 1 : 1 - ease((sy - 157) / 19);
+      if (sa > 0) { c.fillStyle = 'rgba(' + Math.round(sc[0]) + ',' + Math.round(sc[1]) + ',' + Math.round(sc[2]) + ',' + sa.toFixed(3) + ')'; c.fillRect(0, y, VW, 1); }
+      var sh = 0.34 * ease((sy - 168) / (FLOOR - 1 - 168));
+      if (sh > 0) { c.fillStyle = rgba(H.walnutDeep, sh); c.fillRect(0, y, VW, 1); }
+    }
     return t;
   }
 
-  function bakeStrip2() {
-    var W = 192, Hh = 16, t = makeCanvas(W, Hh), c = t.ctx;
-    var r = mulberry32(6202), b, i, y0;
-    for (b = 0; b < 2; b++) {
-      y0 = b * 8;
-      fill(c, b ? P.oakDayWarm : P.oakDay, 0, y0 + 1, W, 6);
-    }
-    grain(c, W, 1, 15, 2.6, [], [[0.8, 1, 0.2], [0.5, 3, 0.7]], 6202, FAR_GRAIN, P.oakGrain);
-    for (b = 0; b < 2; b++) {
-      y0 = b * 8;
-      fill(c, P.oakSun, 0, y0, W, 1);                     /* the satin lip  */
-      fill(c, '#8e7d62', 0, y0 + 7, W, 1);                /* the seam       */
-      var jx = 20 + Math.floor(r() * 150) + b * 60;
-      fill(c, '#8e7d62', wrap(jx, W), y0 + 1, 1, 6);
-      fill(c, P.oakSun, wrap(jx + 1, W), y0 + 1, 1, 6);
-    }
-    /* one small knot per tile, softly */
-    var kx = 30 + Math.floor(r() * 120);
-    fill(c, P.oakGrain, kx - 1, 10, 6, 3);
-    fill(c, P.oakKnotRing, kx, 11, 4, 1);
-    return t;
-  }
-
-  function bakeStrip3() {
-    var W = 288, Hh = 16, t = makeCanvas(W, Hh), c = t.ctx;
-    fill(c, P.oakDay, 0, 1, W, 13);
-    fill(c, P.oakDayWarm, 0, 14, W, 2);
-    /* two compressed cathedrals - the near board's figure seen further off */
-    grain(c, W, 1, Hh, 3,
-          [{ cx: 90, cy: 8, sy: 3.2, d: 6, back: 90, front: 18 },
-           { cx: 235, cy: 7, sy: 3, d: 5, back: 70, front: 16 }],
-          [[0.9, 1, 0.6]], 6303, P.oakGrain, P.oakGrainDeep);
-    fill(c, P.oakSun, 0, 0, W, 1);
-    var jx = 170;
-    fill(c, P.oakSeam, jx, 1, 1, 15);
-    fill(c, P.oakSun, jx + 1, 1, 1, 15);
-    return t;
-  }
-
-  /* ==================================================== THE NEAR BOARD
-
-     The floor band, 480 x 28 at FLOOR, parallax 1.0: the nearest board,
-     in the table's shade, with the raking light just catching its edge.
-
-       row 0     THE SEAM - the kill line. Hard, dark, one row, the whole
-                 way across.
-       row 1     the lit ARRIS - the rake skims the top edge of the near
-                 board even in the shade, and it is the legible line every
-                 crumb's spot and every puddle is laid on
-       2..27     the face, with Floor 2's CATHEDRAL GRAIN - nested pointed
-                 arches of grain running along the board, two flames a
-                 tile - and Floor ref 1's KNOT sitting in the heart of one
-                 of them, and one end joint
-
-     The face is laid in oakDay and then the table's shade goes over it as
-     one flat Tint (it scrolls, so it may not be a Dither), and then the
-     arris is re-laid so the shade does not take it. */
-  function bakeBoard() {
-    var W = 480, Hh = VH - FLOOR, t = makeCanvas(W, Hh), c = t.ctx;
-    var r = mulberry32(7414), i, k, n, dy;
-
-    fill(c, P.oakDay, 0, 2, W, Hh - 2);
-    /* THE CATHEDRALS, as contours (see grain): two flames a tile, a long
-       one pointing right at x 150 and a rounder one with the knot in its
-       heart at x 400, and long straight grain flowing between them */
-    grain(c, W, 2, Hh, 3.2,
-          [{ cx: 160, cy: 13, sy: 5.5, d: 12, back: 150, front: 30 },
-           { cx: 405, cy: 17, sy: 4.5, d: 10, back: 110, front: 26 }],
-          [[1.6, 1, 0.1], [0.7, 3, 0.55]], 7414, P.oakGrain, P.oakGrainDeep);
-    /* a few long pale flecks - the medullary ray of white oak catching the
-       rake, the satin shine on the boards in Floor 2 */
-    for (i = 0; i < 10; i++) runW(c, P.oakSun, r() * W, 4 + Math.floor(r() * 22), 3 + Math.floor(r() * 6), W);
-
-    /* THE KNOT (Floor ref 1), at the heart of the second flame: an oval of
-       dark heartwood with a paler ring, and the innermost grain wrapped
-       round it rather than through it */
-    var KX = 396, KY = 13;
-    var KNOT = [[2, 7], [0, 11], [0, 11], [0, 11], [1, 9], [3, 5]];
-    for (i = 0; i < KNOT.length; i++) fill(c, P.oakKnotRing, KX + KNOT[i][0] - 1, KY + i - 1, KNOT[i][1] + 2, 1);
-    fill(c, P.oakKnotRing, KX + 2, KY + KNOT.length - 1, 7, 1);
-    for (i = 0; i < KNOT.length; i++) fill(c, P.oakKnot, KX + KNOT[i][0], KY + i, KNOT[i][1], 1);
-    fill(c, P.oakGrainDeep, KX + 3, KY + 1, 4, 1);
-    fill(c, P.oakSeam, KX + 4, KY + 2, 3, 2);
-
-    /* one end joint (Floor ref 1's dark line between two boards) */
-    var JX = 318;
-    fill(c, P.oakSeam, JX, 2, 1, Hh - 2);
-    fill(c, P.oakSun, JX + 1, 2, 1, Hh - 2);
-
-    /* the table's shade over the face, the seam, then the arris re-laid
-       over the shade so the rake still catches it */
-    Tint.rect(c, 0, 2, W, Hh - 2, H.walnutDeep, 5);
-    fill(c, P.oakSeam, 0, 0, W, 1);
-    fill(c, P.oakSun, 0, 1, W, 1);
-    /* and the bottom of the frame falls off a touch */
-    Tint.rect(c, 0, Hh - 6, W, 6, P.oakShade, 2);
-    return t;
-  }
-
-  /* ===================================================== THE FOREGROUND
-
-     960 x 14 at row 256, parallax 1.35: two things nearer than anything,
-     and nothing else. It never climbs above 256, so it hides nothing that
-     matters - spots and splats are rows 243..245, litter 244..250.
-
-     THE PEDESTAL FOOT (Floor ref 3): the long white splayed foot with its
-     chamfered nose, and its shadow on the board to the right. A CHAIR
-     FOOT (Floor ref 4): the bottom of a near leg with its dark glide. */
-  function bakeFore() {
-    var W = 960, Hh = 14, t = makeCanvas(W, Hh), c = t.ctx;
-    var i, k;
-    /* the pedestal foot: x 120..269, the nose at the right end */
-    var X0 = 120, X1 = 270;
-    var NOSE_T = [6, 4, 2], NOSE_B = [2, 4, 6];
-    for (i = 0; i < Hh; i++) {
-      var inset = i < 3 ? NOSE_T[i] : (i > 10 ? NOSE_B[i - 11] : 0);
-      var col = i === 0 ? P.paintHi : (i < 10 ? H.paint : (i < 12 ? H.paintShade : (i === 12 ? H.paintDeep : H.outline)));
-      /* its shadow first, to the right, on the board */
-      fill(c, rgba(H.void, 0.25), X1 - inset, i + 2 < Hh ? i + 2 : i, 5, 1);
-      fill(c, col, X0, i, X1 - X0 - inset, 1);
-      fill(c, H.outline, X1 - inset, i, 1, 1);
-      fill(c, H.outline, X0, i, 1, 1);
-    }
-    fill(c, H.outline, X0, 0, X1 - X0 - 6, 1);
-    fill(c, P.paintHi, X0 + 1, 1, X1 - X0 - 9, 1);
-    fill(c, P.paintHi, X0 + 1, 1, 2, 9);
-    /* two grey scuffs near the nose */
-    fill(c, H.paintDeep, X1 - 22, 5, 3, 1);
-    fill(c, H.paintDeep, X1 - 13, 8, 3, 1);
-    fill(c, H.paintShade, X0 + 40, 6, 4, 1);
-
-    /* a near chair foot: x 640..661, the bottom of a leg with its glide */
-    var CX = 640, CW = 22;
-    fill(c, rgba(H.void, 0.25), CX + CW, 4, 3, Hh - 4);
-    fill(c, H.outline, CX, 2, CW, Hh - 2);
-    fill(c, H.paint, CX + 1, 2, CW - 2, Hh - 5);
-    fill(c, P.paintHi, CX + 1, 2, 3, Hh - 5);
-    fill(c, H.paintShade, CX + CW - 4, 2, 3, Hh - 5);
-    fill(c, P.glideLit, CX + 2, Hh - 3, CW - 4, 1);
-    fill(c, P.glide, CX + 2, Hh - 2, CW - 4, 1);
-    for (k = 0; k < 2; k++) fill(c, H.outline, CX + k * (CW - 1), Hh - 3, 1, 3);
-    return t;
+  /* the band's light: a lighter shade than the floor just beyond it (the
+     value step at the kill line), the seam and the lit arris across 242
+     and 243, and the bottom of the frame falling off a touch */
+  function drawBandLight(ctx) {
+    ctx.fillStyle = rgba(H.walnutDeep, 0.20);
+    ctx.fillRect(0, FLOOR + 2, VW, VH - FLOOR - 2);
+    ctx.fillStyle = rgba(P.oakShade, 0.12);
+    ctx.fillRect(0, VH - 6, VW, 6);
+    ctx.fillStyle = P.oakSeam; ctx.fillRect(0, FLOOR, VW, 1);
+    ctx.fillStyle = P.oakSun;  ctx.fillRect(0, FLOOR + 1, VW, 1);
   }
 
   /* ================================================ THE DAYLIGHT SHEET
 
-     480 x 270, baked once, blitted last in drawBackdrop. Four smoothstep
-     ramps and nothing with an edge (a lamp's - or a window's - falloff has
-     no edge; the room module's lesson):
-
-       1. the TABLE'S SHADE OVERHEAD, rows 24..72: under a table it is
-          dusky up top, and it is also what keeps a white chair leg's seat
-          block legible against the far uppers
-       2. the TABLE'S SHADE ON THE BOARDS, 196..241: the sunlit kitchen
-          floor runs into shade as it comes under the table, and the
-          crumbs land in it - pale crumbs on shaded boards, which is the
-          Couch's crease arithmetic done with daylight
-       3. the WINDOW'S WARMTH on the right third, the kitchen window
-       4. the DIM CORNER on the left, where the mop parks */
-  /* the table's shade overhead: 0.34 at the apron fading to nothing at
-     row 92, just over the island's top. The brief had 0.26 to row 72; on
-     screen that left the far uppers at 190 behind a white leg's 211, and
-     a leg hanging into the top of the bay is where the eye has least to
-     separate it by. */
-  var SHADE_TOP = 0.34, SHADE_TO = 92;
+     480 x 270, baked once, blitted last in drawBackdrop. Three smoothstep
+     ramps and nothing with an edge:
+       1. the TABLE'S SHADE OVERHEAD, rows 24..80 - over the bright ceiling
+          sliver and the overhang it shades; it is also what keeps a white
+          chair leg's seat block legible against the bright kitchen
+       2. the WINDOW'S WARMTH on the right third
+       3. the DIM CORNER on the left, where the mop parks
+     The shade on the floor is baked into the floor sheet itself, row by
+     row, where it belongs. */
+  var SHADE_TOP = 0.26, SHADE_TO = 80;
 
   function bakeDaylight() {
     var t = makeCanvas(VW, VH), c = t.ctx, x, y, k;
     for (y = CEIL; y < SHADE_TO; y++) {
       k = 1 - ease((y - CEIL) / (SHADE_TO - CEIL));
       fill(c, rgba(H.walnutDeep, SHADE_TOP * k), 0, y, VW, 1);
-    }
-    for (y = 196; y < FLOOR; y++) {
-      k = ease((y - 196) / (FLOOR - 1 - 196));
-      fill(c, rgba(H.walnutDeep, 0.30 * k), 0, y, VW, 1);
     }
     for (x = 300; x < VW; x++) {
       k = ease((x - 300) / (VW - 1 - 300));
@@ -1897,11 +2051,9 @@ var Floor = (function () {
     T.lid = bakeLid();
     T.far = bakeFar();
     T.island = bakeIsland();
-    T.s1 = bakeStrip1();
-    T.s2 = bakeStrip2();
-    T.s3 = bakeStrip3();
-    T.board = bakeBoard();
-    T.fore = bakeFore();
+    T.chair = bakeChairFar();
+    T.oak = bakeOak();
+    T.floorLight = bakeFloorLight();
     T.daylight = bakeDaylight();
 
     T.seatBlock = bakeSeatBlock();
@@ -1933,33 +2085,40 @@ var Floor = (function () {
 
   /* ============================================================ drawing */
 
-  /* SEVEN LAYERS AND THE DAYLIGHT, back to front. The flat fill is a
-     safety net; the far wall and the strips cover every row from CEIL to
-     FLOOR between them. NOT LivingRoom.drawLight: that is night. */
+  /* THE ROOM, back to front: the far wall (0.15), the oak floor in true
+     perspective with its seams and its static light (see THE FLOOR), the
+     island (0.30) and the far chair (0.48) standing on it, and the
+     daylight. The flat fill is a safety
+     net. NOT LivingRoom.drawLight: that is night. */
   function drawBackdrop(ctx, scroll) {
     ctx.fillStyle = H.wall;
     ctx.fillRect(0, 0, VW, VH);
-    tileX(ctx, T.far.canvas, scroll * 0.18, FAR_Y);
-    tileX(ctx, T.island.canvas, scroll * 0.42, ISL_Y);
-    tileX(ctx, T.s1.canvas, scroll * 0.55, 188);
-    tileX(ctx, T.s2.canvas, scroll * 0.72, 210);
-    tileX(ctx, T.s3.canvas, scroll * 0.86, 226);
+    tileX(ctx, T.far.canvas, scroll * FAR_P, FAR_Y);
+    drawOak(ctx, scroll, OAK_R0, FLOOR);
+    drawSeams(ctx, scroll, OAK_R0, FLOOR);
+    ctx.drawImage(T.floorLight.canvas, 0, FL_Y);
+    tileX(ctx, T.island.canvas, scroll * ISL_P, ISL_Y);
+    tileX(ctx, T.chair.canvas, scroll * CHR_P, CHR_Y);
     ctx.drawImage(T.daylight.canvas, 0, 0);
   }
 
   /* the calm room for a menu to sit on: the furniture without the
-     hazards - no legs, crumbs, leaves or mop, and no foreground */
+     hazards - no legs, crumbs, leaves or mop */
   function drawMenuBackdrop(ctx, scroll) {
     drawBackdrop(ctx, scroll);
-    tileX(ctx, T.lid.canvas, scroll, 0);
-    tileX(ctx, T.board.canvas, scroll, FLOOR);
+    drawCeiling(ctx, scroll);
+    drawFloor(ctx, scroll);
   }
 
-  function drawCeiling(ctx, scroll) { tileX(ctx, T.lid.canvas, scroll, 0); }
+  /* the table's underside and far apron, at the far chair's parallax */
+  function drawCeiling(ctx, scroll) { tileX(ctx, T.lid.canvas, scroll * LID_P, 0); }
 
+  /* the near board, the actual ground. No foreground lip: the near
+     chairs' feet ARE the pillars. */
   function drawFloor(ctx, scroll) {
-    tileX(ctx, T.board.canvas, scroll, FLOOR);
-    tileX(ctx, T.fore.canvas, scroll * 1.35, 256);
+    drawOak(ctx, scroll, FLOOR, VH);
+    drawSeams(ctx, scroll, FLOOR, VH);
+    drawBandLight(ctx);
   }
 
   /* --------------------------------------------------------- pillars */
@@ -2234,129 +2393,124 @@ var Floor = (function () {
   /* ---------------------------------------------------- the cover art
 
      118x114 on the big card, 82x94 on the side ones; the caller has
-     already clipped. A live miniature in the level's own proportions:
-     the table's underside across the top, the kitchen beyond (glass
-     uppers, the hood, the shuttered window, the far counter), the island
-     with its stool and the fridge with its magnets, the daylit floor
-     running into the table's shade - then, sliding past, white chair legs
-     from the lid and black stool legs from the boards, crumbs hopping on
-     the near seam, a hot sauce droplet on its way down, and THE MOP at the
-     left edge drinking the carpet. */
+     already clipped. A live miniature of the bay in its own proportions,
+     which are Floor ref 6's: the table's underside and its white apron
+     across the top tenth, a sliver of bright kitchen under it, the island's
+     honey overhang high up at 0.14, its shaded white doors, the dark
+     toe-kick at 0.56 with a stool standing on the floor in front of it
+     and the fridge showing in the gap where the island ends, the oak
+     floor with its boards fanning out toward you from the window's sheen
+     into the table's shade, and the near board under its seam - then,
+     sliding past, white chair legs from the lid and black stool legs from the near seam, crumbs hopping on it, a
+     hot sauce droplet bending back toward THE MOP at the left edge. */
   function drawPreview(ctx, x, y, w, h, t, big) {
     var s = t * 22, i, k, xx, yy;
     function Y(f) { return y + Math.round(h * f); }
     function R(col, rx, ry, rw, rh) { if (rw > 0 && rh > 0) { ctx.fillStyle = col; ctx.fillRect(rx, ry, rw, rh); } }
-    var lidB = Y(0.07), farB = Y(0.26), ovB = Y(0.29), islB = Y(0.48), kickB = Y(0.51);
-    var far2 = Y(0.62), seamY = Y(0.80);
+    var lidB = Y(0.09), noseY = Y(0.14), ovB = Y(0.22), kickY = Y(0.52), floorY = Y(0.56);
+    var seamY = Y(0.896);
+    var gapX = x + Math.round(w * 0.72), gapW = Math.round(w * 0.2);
 
-    /* the far wall: uppers, splash, counter */
-    R(H.wall, x, lidB, w, farB - lidB);
-    var upB = lidB + Math.round((farB - lidB) * 0.42);
-    var pitch = Math.max(8, Math.round(w * 0.12));
-    for (xx = x; xx < x + w; xx += pitch) {
-      R(H.cabinet, xx, lidB, pitch, upB - lidB);
-      R(((xx - x) / pitch) % 4 === 2 ? H.tileShade : H.cabinetShade, xx + 2, lidB + 1, pitch - 4, upB - lidB - 3);
-      R(H.cabinetDeep, xx, lidB, 1, upB - lidB);
-    }
-    R(H.outline, x, upB, w, 1);
-    /* the subway splash: flat tile, a grout line every third row and a
-       half-bonded joint every six pixels */
-    R(H.tile, x, upB + 1, w, farB - 3 - upB);
-    for (yy = upB + 3; yy < farB - 2; yy += 3) R('#cbc5b7', x, yy, w, 1);
-    for (yy = upB + 1; yy < farB - 2; yy += 3) {
-      for (xx = x + (((yy - upB) / 3 | 0) % 2) * 3; xx < x + w; xx += 6) R('#cbc5b7', xx, yy, 1, 2);
-    }
-    /* the hood, and the window over the sink */
-    var hx = x + Math.round(w * 0.36);
-    R(H.outline, hx - 1, lidB, 8, upB - lidB + 4);
-    R(H.steel, hx, lidB, 6, upB - lidB + 3);
-    R(H.outline, hx - 7, upB + 2, 20, 4);
-    R(H.steel, hx - 6, upB + 2, 18, 3);
-    R(H.steelLit, hx - 6, upB + 2, 18, 1);
-    var wx = x + Math.round(w * 0.78), ww = Math.max(6, Math.round(w * 0.12)), wh = Math.max(5, Math.round(h * 0.1));
-    R(H.outline, wx - 1, lidB + 2, ww + 2, wh + 2);
-    R(H.daylight, wx, lidB + 3, ww, wh);
-    for (k = 0; k < 3; k++) R(H.paint, wx, lidB + 4 + k * Math.max(2, Math.floor(wh / 3)), ww, 1);
-    /* the far counter, the plant and the coffee maker on it */
-    R(H.cabinetLit, x, farB - 2, w, 1);
-    R(H.cabinetShade, x, farB - 1, w, 1);
-    var px0 = x + Math.round(w * 0.14);
-    R(H.cabinetLit, px0, farB - 5, 4, 3);
-    R(H.leaf, px0 - 1, farB - 8, 6, 3);
-    R(H.leafLit, px0, farB - 9, 3, 2);
-    R(H.steelDeep, x + Math.round(w * 0.58), farB - 6, 4, 4);
+    /* the sliver of kitchen over the overhang: bright ceiling, a can, the
+       crown, the tops of the uppers, the hood's glass */
+    R(P.ceilDay, x, lidB, w, noseY - lidB);
+    R(H.lampCore, x + Math.round(w * 0.3), lidB + 1, 2, 1);
+    R(H.cabinetLit, x, noseY - 3, w, 1);
+    for (xx = x; xx < x + w; xx += 6) R(H.cabinetShade, xx + 1, noseY - 2, 4, 2);
+    var hx = x + Math.round(w * 0.55);
+    R(H.steel, hx - 2, lidB, 4, noseY - lidB - 2);
+    R(P.hoodGlass, hx - 7, noseY - 3, 14, 3);
 
-    /* the overhang: the white lip and the honey ply */
-    R(H.outline, x, farB, w, 1);
-    R(H.cabinetLit, x, farB + 1, w, 1);
-    R(P.ply, x, farB + 2, w, ovB - farB - 2);
-    R(P.plyLit, x, farB + 2, w, 1);
-    R(H.outline, x, ovB, w, 1);
+    /* the gap where the island ends: the fridge and the far base run */
+    R(H.cabinet, gapX, noseY, gapW, floorY - noseY);
+    R(H.tile, gapX, noseY + Math.round((floorY - noseY) * 0.35), gapW, Math.round((floorY - noseY) * 0.2));
+    for (xx = gapX; xx < gapX + gapW; xx += 5) R(H.cabinetShade, xx + 1, noseY + Math.round((floorY - noseY) * 0.6), 3, Math.round((floorY - noseY) * 0.3));
+    var fx = gapX + Math.round(gapW * 0.45), fw = Math.max(8, Math.round(gapW * 0.5));
+    R(H.outline, fx - 1, lidB, fw + 2, floorY - lidB);
+    R(H.steel, fx, lidB, fw, floorY - lidB - 1);
+    R(H.steelLit, fx, lidB, 1, floorY - lidB - 1);
+    R(H.steelDeep, fx + Math.round(fw / 2), lidB, 1, Math.round((floorY - lidB) * 0.6));
+    R(P.magnetPink, fx + 1, lidB + 3, 2, 2);
+    R(P.photoWhite, fx + 3, lidB + 6, 2, 3);
+    R(P.magnetYellow, fx + 1, lidB + 9, 2, 2);
 
-    /* the island's doors in its shade, with the fridge standing at the end */
-    R(P.doorFrame, x, ovB + 1, w, islB - ovB - 1);
-    var dw = Math.max(10, Math.round(w * 0.2));
-    for (xx = x; xx < x + w; xx += dw) {
-      R(H.cabinetDeep, xx, ovB + 1, 1, islB - ovB - 1);
-      R(P.doorShade, xx + 3, ovB + 3, dw - 6, islB - ovB - 6);
-      R(P.doorLit, xx + 3, islB - 3, dw - 6, 1);
-      R(H.steelLit, xx + dw - 3, ovB + 5, 1, 5);
-    }
-    Tint.rect(ctx, x, ovB + 1, w, 3, H.void, 3);
-    var fx = x + Math.round(w * 0.62), fw = Math.round(w * 0.22), fTop = y + Math.round(h * 0.14);
-    R(H.outline, fx - 1, fTop - 1, fw + 2, islB - fTop + 1);
-    R(H.steel, fx, fTop, fw, islB - fTop);
-    R(H.steelLit, fx, fTop, 1, islB - fTop);
-    R(H.steelDeep, fx + Math.round(fw / 2), fTop + 1, 1, Math.round((islB - fTop) * 0.62));
-    R(H.steelLit, fx + Math.round(fw / 2) - 2, fTop + 4, 1, Math.round((islB - fTop) * 0.4));
-    R(H.steelLit, fx + Math.round(fw / 2) + 2, fTop + 4, 1, Math.round((islB - fTop) * 0.4));
-    R(P.magnetPink, fx + 2, fTop + 3, 2, 2);
-    R(P.magnetYellow, fx + 5, fTop + 6, 2, 2);
-    R(P.magnetBlue, fx + 2, fTop + 8, 2, 2);
-    R(P.photoWhite, fx + 5, fTop + 2, 2, 3);
-    /* one small stool at the island */
-    var sx = x + Math.round(w * 0.3);
-    R(H.walnut, sx - 4, islB - 9, 9, 2);
-    R(H.iron, sx - 3, islB - 7, 1, 7); R(H.iron, sx + 3, islB - 7, 1, 7);
-    R(H.iron, sx, islB - 7, 1, 7);
-    R(H.ironLit, sx - 4, islB - 3, 9, 1);
-
-    /* the toe kick, then the floor running from the sun into the shade */
-    R(H.outline, x, islB, w, 1);
-    R(H.cabinetDeep, x, islB + 1, w, kickB - islB - 1);
-    for (yy = kickB; yy < far2; yy++) {
-      R(((yy - kickB) % 3 === 2) ? FAR_SEAM : (((yy - kickB) / 3 | 0) % 2 ? P.oakDayWarm : P.oakDay), x, yy, w, 1);
-    }
-    for (yy = far2; yy < seamY; yy++) {
-      R((yy - far2) % 5 === 0 ? P.oakSun : ((yy - far2) % 5 === 4 ? P.oakSeam : P.oakDay), x, yy, w, 1);
-    }
-    for (k = 0; k < 6; k++) R(P.oakGrain, x + ((k * 37 + 11) % Math.max(1, w - 10)), far2 + 2 + (k % 3) * 5, 6 + (k % 3) * 2, 1);
-    Tint.rect(ctx, x, far2, w, seamY - far2, H.walnutDeep, 4);
-    R(P.oakSeam, x, seamY, w, 1);
-    R(P.oakSun, x, seamY + 1, w, 1);
-    R(P.oakDay, x, seamY + 2, w, y + h - seamY - 2);
-    /* three nested cathedral arcs and the knot at their heart, and a few
-       straight runs of grain either side */
-    for (k = 0; k < 3; k++) {
-      var aw = Math.round(w * (0.62 - k * 0.14)), ax = x + Math.round(w * (0.04 + k * 0.1));
-      for (i = 0; i < aw; i++) {
-        R(k ? P.oakGrain : P.oakGrainDeep, ax + i, seamY + 5 + k * 3 - Math.round((3 - k) * Math.sin(Math.PI * i / aw)), 1, 1);
+    /* THE ISLAND: quartz nose, honey ply, its underside, the shaded doors */
+    var runW2 = gapX - x;
+    R(H.outline, x, noseY, runW2, 1);
+    R(H.cabinetLit, x, noseY + 1, runW2, 1);
+    R(P.ply, x, noseY + 2, runW2, 2);
+    R(P.plyUnder, x, noseY + 4, runW2, ovB - noseY - 4);
+    R(P.plyShade, x, ovB - 1, runW2, 1);
+    R(P.isleFrame, x, ovB, runW2, kickY - ovB);
+    /* four doors and the drawer stack, at the level's width */
+    var dw = Math.max(10, Math.round((runW2 - 2) / 5));
+    for (k = 0; k < 5; k++) {
+      xx = x + k * dw;
+      R(P.isleDeep, xx, ovB, 1, kickY - ovB);
+      if (k === 4) {
+        for (i = 0; i < 3; i++) {
+          R(P.isleField, xx + 2, ovB + 2 + i * Math.round((kickY - ovB) / 3), dw - 4, Math.round((kickY - ovB) / 3) - 3);
+          R(H.steelLit, xx + Math.round(dw / 2) - 2, ovB + 4 + i * Math.round((kickY - ovB) / 3), 4, 1);
+        }
+      } else {
+        R(P.isleField, xx + 2, ovB + 2, dw - 4, kickY - ovB - 4);
+        R(P.isleLit, xx + dw - 3, ovB + 3, 1, kickY - ovB - 6);
       }
     }
-    for (k = 0; k < 4; k++) R(P.oakGrain, x + Math.round(w * (0.55 + (k % 2) * 0.2)), seamY + 4 + k * 3, 6 + k * 2, 1);
-    R(P.oakKnotRing, x + Math.round(w * 0.55) - 1, seamY + 7, 7, 4);
-    R(P.oakKnot, x + Math.round(w * 0.55), seamY + 8, 5, 2);
-    Tint.rect(ctx, x, seamY + 2, w, y + h - seamY - 2, H.walnutDeep, 5);
+    Tint.rect(ctx, x, ovB, runW2, 3, H.walnutDeep, 4);
+    R(P.toeKick, x, kickY, runW2, floorY - kickY - 1);
+    R(H.outline, x, floorY - 1, runW2, 1);
+    R(P.isleFrame, gapX - 2, noseY, 2, floorY - noseY);
+    /* one stool at the island, on the boards */
+    var sx = x + Math.round(w * 0.3);
+    R(H.walnut, sx - 5, Y(0.27), 11, 2);
+    R(H.walnutLit, sx - 5, Y(0.27), 11, 1);
+    for (yy = Y(0.29); yy < floorY; yy++) {
+      var sp = Math.round((yy - Y(0.29)) / (floorY - Y(0.29)) * 5);
+      R(H.iron, sx - 1 - sp, yy, 1, 1); R(H.iron, sx + 1 + sp, yy, 1, 1);
+    }
+    R(H.iron, sx, Y(0.29), 1, Y(0.38) - Y(0.29));
+    R(H.ironLit, sx - 5, Y(0.465), 11, 1);
 
-    /* the lid: the table's underside and its white apron */
+    /* the floor: ONE oak floor, its boards running into the room and
+       their seams fanning out from the vanishing point, sliding as the
+       level's do (fast near, slow far); the window's sheen by the
+       toe-kick, the table's shade toward you; and the near board, the
+       ground, a shade lighter under its dark seam and lit arris */
+    var hY = Y(0.54), cx2 = x + Math.round(w / 2), bw = w * 0.5;
+    var off = wrap(s * 0.5, bw), bot = y + h;
+    R(P.oakFloor, x, floorY, w, bot - floorY);
+    for (yy = floorY; yy < bot; yy++) {
+      var sc = (yy + 0.5 - hY) / (bot - hY), sc2 = (yy + 1.5 - hY) / (bot - hY);
+      for (k = -6; k <= 6; k++) {
+        var xa = cx2 + (k * bw - off) * sc, xb = cx2 + (k * bw - off) * sc2;
+        var lo = Math.round(Math.min(xa, xb)), hi = Math.round(Math.max(xa, xb));
+        if (hi < x - 2 || lo > x + w + 2) continue;
+        R(P.oakFloorSeam, lo, yy, hi - lo + 1, 1);
+        R(P.oakFloorLip, hi + 1, yy, 1, 1);
+      }
+    }
+    var SHN = hexRGB(P.floorSheen);
+    for (yy = floorY; yy < seamY; yy++) {
+      var sa = 1 - ease((yy - floorY) / Math.max(1, (seamY - floorY) * 0.35));
+      if (sa > 0) R('rgba(' + Math.round(SHN[0]) + ',' + Math.round(SHN[1]) + ',' + Math.round(SHN[2]) + ',' + sa.toFixed(3) + ')', x, yy, w, 1);
+      R(rgba(H.walnutDeep, 0.34 * ease((yy - floorY) / Math.max(1, seamY - floorY))), x, yy, w, 1);
+    }
+    R(rgba(H.walnutDeep, 0.20), x, seamY + 2, w, bot - seamY - 2);
+    R(P.oakSeam, x, seamY, w, 1);
+    R(P.oakSun, x, seamY + 1, w, 1);
+
+    /* the lid: the table's underside, its white apron, the bounce pair */
     R(H.walnutDeep, x, y, w, lidB - y);
-    R(P.paintHi, x, y + 2, w, 1);
-    R(H.paint, x, y + 3, w, Math.max(1, lidB - y - 6));
+    R(H.walnut, x + Math.round(w * 0.2), y + 2, Math.round(w * 0.3), 1);
+    R(P.paintHi, x, lidB - 6, w, 1);
+    R(H.paint, x, lidB - 5, w, 2);
     R(H.paintShade, x, lidB - 3, w, 1);
     R(H.outline, x, lidB - 2, w, 1);
+    R(H.walnutDeep, x, lidB - 1, w, 1);
 
-    /* THE LEGS, sliding past: a white chair leg from the lid, a black stool
-       leg from the boards, with the gap between them */
+    /* THE LEGS, sliding past: a white chair leg from the lid, a black
+       stool leg from the near seam, with the gap between them */
     var period = big ? 46 : 38;
     var span = seamY - lidB;
     var gapH = Math.round(span * 0.34);
@@ -2364,7 +2518,6 @@ var Floor = (function () {
       var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
       if (ox < x - 14 || ox > x + w + 2) continue;
       var gapY = Math.round(lidB + 6 + ((i * 19) % Math.max(1, span - gapH - 14)));
-      /* the chair leg */
       Tint.rect(ctx, ox + 10, lidB, 2, gapY - lidB, H.void, 6);
       R(H.outline, ox, lidB, 10, gapY - lidB);
       R(P.paintHi, ox + 1, lidB, 2, gapY - lidB - 2);
@@ -2374,7 +2527,6 @@ var Floor = (function () {
       R(H.outline, ox - 2, lidB, 14, 4);
       R(H.paint, ox - 1, lidB, 12, 3);
       R(P.glide, ox + 1, gapY - 2, 8, 2);
-      /* the stool leg, its seat and its ring */
       var by = gapY + gapH;
       Tint.rect(ctx, ox + 10, by, 2, seamY - by, H.void, 6);
       R(H.outline, ox, by, 10, seamY - by);
@@ -2385,20 +2537,19 @@ var Floor = (function () {
       R(H.outline, ox - 2, by - 1, 14, 4);
       R(H.walnutHi, ox - 1, by, 12, 1);
       R(H.walnut, ox - 1, by + 1, 12, 1);
-      var ry = y + Math.round(h * 0.76);
+      var ry = seamY - Math.round(h * 0.11);
       if (ry > by + 5) {
         R(H.outline, ox - 3, ry - 1, 16, 3);
         R(H.ironLit, ox - 2, ry, 14, 1);
       }
     }
 
-    /* THE CRUMBS hopping on the near seam - drawn faster toward the mop
-       than the room slides, because the mop has them - each with its spot */
-    var band = seamY - farB;
+    /* THE CRUMBS hopping on the near seam, drawn toward the mop */
+    var band = Math.round(h * 0.2);
     for (i = 0; i < 3; i++) {
       var kx = x + Math.round(wrap(w - s * 1.3 + i * 37, w + 8)) - 4;
       if (kx < x + Math.round(w * 0.2) || kx > x + w - 4) continue;
-      var apex = Math.round(band * (0.18 + i * 0.07));
+      var apex = Math.round(band * (0.5 + i * 0.2));
       var rise = Math.abs(Math.sin(t * (2.6 - i * 0.4) + i * 1.3));
       var ky = Math.round(seamY - 4 - rise * apex);
       Tint.rect(ctx, kx - 1, seamY + 1, 5, 1, H.void, 15 - Math.round(rise * 9));
@@ -2416,21 +2567,21 @@ var Floor = (function () {
     R(P.hotSheen, hotX, hotY + 1, 1, 1);
     R(P.hotSauceDeep, hotX + 2, hotY + 3, 1, 1);
 
-    /* THE MOP at the left edge: its body leaning back off the card with the
-       handle going up, and the head on the boards with the roller turning */
-    var mw = Math.max(16, Math.round(w * 0.24)), hy0 = Y(0.68), hy1 = Y(0.84);
-    var bw = Math.max(8, Math.round(w * 0.12)), bTop = Y(0.30);
+    /* THE MOP at the left edge: its body leaning back off the card, the
+       handle going up, the head on the near seam with the roller turning */
+    var mw = Math.max(16, Math.round(w * 0.24)), hy1 = seamY + 2, hy0 = hy1 - Math.round(h * 0.12);
+    var bw = Math.max(8, Math.round(w * 0.12)), bTop = Y(0.36);
     for (yy = bTop; yy < hy0; yy++) {
       var lean = Math.floor((hy0 - yy) / 8);
-      var bx0 = x + bw - 2 - bw - lean;
+      var bx0 = x - 2 - lean;
       var inTank = yy > bTop + (hy0 - bTop) * 0.45;
       R(H.outline, bx0 - 1, yy, bw + 2, 1);
       R(inTank ? P.mopTank : P.mopWhite, bx0, yy, bw, 1);
       if (inTank && yy > hy0 - (hy0 - bTop) * 0.25) R(P.mopWater, bx0 + 1, yy, bw - 2, 1);
       if (!inTank && (yy - bTop) % 9 < 2) R(P.mopGreen, bx0, yy, bw, 1);
     }
-    for (yy = y; yy < bTop; yy++) {
-      var hx2 = x + Math.round(bw / 2) - 2 - Math.floor((hy0 - yy) / 8);
+    for (yy = lidB; yy < bTop; yy++) {
+      var hx2 = x + Math.round(bw / 2) - 4 - Math.floor((hy0 - yy) / 8);
       R(H.outline, hx2 - 1, yy, 4, 1);
       R(P.mopWhite, hx2, yy, 2, 1);
     }
@@ -2439,14 +2590,12 @@ var Floor = (function () {
     R(P.mopGreen, x, hy0 + 3, mw, 2);
     R(P.mopGreyDeep, x, hy0 + 5, mw, hy1 - hy0 - 7);
     R(P.mopTank, x, hy0 + 6, mw - 1, hy1 - hy0 - 9);
-    var sh = Math.floor(t * 10) % 3;
+    var sh2 = Math.floor(t * 10) % 3;
     for (k = 0; k < mw; k += 5) {
-      for (i = 0; i < hy1 - hy0 - 9; i++) R(P.rollerStripe, x + k + i + sh, hy0 + 6 + i, 2, 1);
+      for (i = 0; i < hy1 - hy0 - 9; i++) R(P.rollerStripe, x + k + i + sh2, hy0 + 6 + i, 2, 1);
     }
     R(P.mopWhite, x + mw - 4, hy0 + 1, 4, hy1 - hy0 - 3);
     R(P.mopGreen, x, hy1 - 2, mw, 1);
-    R(P.cable, x + mw - 7, hy1, 4, 2);
-    /* and the air going into it */
     for (i = 0; i < 3; i++) {
       var dx2 = wrap(w * 0.4 - s * 1.1 + i * w * 0.13, w * 0.4);
       R(P.oakSun, x + mw + 1 + Math.round(dx2), hy0 + 4 + i * 3, 2, 1);
@@ -2454,7 +2603,7 @@ var Floor = (function () {
 
     /* the doodad flying it, with a halo so it never goes missing */
     var dx = Math.round(x + w * 0.42);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
+    var dy = Math.round(y + h * 0.45 + Math.sin(t * 3.1) * (h * 0.16));
     var sz = big ? 8 : 6;
     Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, H.void, 5);
     R(H.outline, dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
@@ -2463,9 +2612,9 @@ var Floor = (function () {
     R(H.outline, dx + sz / 2 - 2, dy - 1, 1, 1);
     R('#f3cc84', dx + sz / 2, dy, 2, 1);
 
-    /* the daylight: the table's shade at the top, the window's warmth on
-       the right */
-    Tint.rect(ctx, x, lidB, w, Y(0.20) - lidB, H.walnutDeep, 3);
+    /* the daylight: the table's shade over the top, the window's warmth
+       on the right */
+    Tint.rect(ctx, x, lidB, w, ovB - lidB, H.walnutDeep, 3);
     Tint.rect(ctx, x + Math.round(w * 0.66), lidB, w - Math.round(w * 0.66), seamY - lidB, '#ffe9b8', 1);
   }
 

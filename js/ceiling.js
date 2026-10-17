@@ -15,23 +15,23 @@
    an outline on the kill line. The bottom (rows 242..269) is THE SAME
    TILE UPSIDE DOWN - the owner's pick - with its pendants hanging UP out
    of it, which is the one sign in the frame that says what has happened.
-   Both are lethal. Between them is the same ceiling FURTHER AWAY: the
-   plaster plane seen along the room at ceiling height (Ceiling ref
-   5j/5p), running off to the far wall with its pendants, cans and
-   skylights receding at three depths and three speeds, and under the
-   fold its mirror running off to the same wall - two ceilings converging
-   on a soft horizon between rows 132 and 133. See `the field`.
+   Both are lethal - and the mirror is the GROUND and only the ground,
+   the owner's words. Between them is the room as Ceiling ref 6, 5j and
+   5p see it from up under the plaster: the ceiling running away overhead
+   to the far wall's crown on row 125, with its cans, registers and
+   skylights receding at three depths and three speeds, and under that
+   crown the kitchen, with the pendants hanging down in front of it on
+   their long black rods. See `the field`.
 
    CREAM IS SOLID AND SOLID KILLS. This is cream on cream - a plaster
    ceiling with drywall soffits hanging off it - and the only answer that
    reads at 180px/s is to keep every cream thing in the bay lethal and
    every lethal thing cream: the lid, the bottom and the soffit columns.
-   The field behind them is the same plaster a long way off, dim and
-   cooling toward the horizon, so nothing cream ever has to separate from
-   more cream: measured in a run, the soffit face is 217 and the field
-   beside it 122 on average and 162 at its brightest (a near lamp's
-   pool). The lint is GREY and ringed, the gifts glow, the pole is cold
-   metal with an outline (198 against a field of 107..118).
+   The field behind them is the room after dark, a long way off: the
+   plaster dim and cooling toward the far wall, and the kitchen's whites
+   held to 165 at the very most, so nothing cream ever has to separate
+   from cream as bright as itself. The lint is GREY and ringed, the gifts
+   glow, the pole is cold metal with an outline.
 
    THE POLE is the bay's invented hazard and it lives in the engine's
    spike slot. Everything it does is a function of ITS OWN SCREEN X (the
@@ -89,11 +89,31 @@ var Ceiling = (function () {
     planeNear: '#806f5d',   /* lum ~114, just under the lid             */
     planeMid:  '#6e665d',   /* ~103                                     */
     planeFar:  '#5d5a5a',   /* ~91, where the ceiling meets the far wall */
-    /* the far wall's strip at the fold is the far ceiling's own value,
-       a shade warmer, and blended in over four rows each side: the first
-       cut of it was 10 darker with a crown line on top, and it read as a
-       dark ledge across the middle of the screen */
-    farWall:   '#625c57',   /* ~93                                      */
+    farWall:   '#625c57',   /* ~93, the cover's horizon                 */
+
+    /* THE KITCHEN UNDER THE CEILING (Ceiling ref 6, 5j, 5p), after dark:
+       white shaker and glass-front uppers, the steel hood and its curved
+       glass, white plantation shutters closed for the night, the grey
+       splash, the white counter and everything on it. Every white in it
+       is taken down by the evening and the distance to 165 at the very
+       most - the column faces are 217 and the lid 148..197, and a white
+       cabinet as bright as a soffit would be a soffit to the eye. */
+    kWall: '#77736b', kWallShade: '#66625b',
+    kCrown: '#9b958a', kCrownMid: '#8a857b', kCrownShade: '#5c5852',
+    kCab: '#a39e91', kCabLit: '#aba594', kCabShade: '#8a8579', kCabDeep: '#6a665e',
+    kGlass: '#4b4f51', kGlassLit: '#5d6264', kDish: '#878a88', kDishHi: '#9b9e9b', kShelf: '#666865',
+    kSteel: '#8a8e91', kSteelLit: '#a1a5a8', kSteelShade: '#62676b', kSteelDeep: '#45494c',
+    kHoodGlass: '#748590', kHoodGlassLit: '#94a6ae',
+    kShutter: '#9c978b', kShutterLit: '#a8a396', kShutterShade: '#7c776d', kShutterGap: '#57534c',
+    kTile: '#74736d', kTileLine: '#64635e', kTileLit: '#82817a',
+    kCounter: '#a5a196', kCounterEdge: '#86827a', kCounterShade: '#6b6861',
+    kLower: '#857f74', kLowerShade: '#6d685f', kLowerDeep: '#55514b', kToe: '#35322e',
+    kBlack: '#2c2c2e', kBlackLit: '#46464a', kLed: '#9a6a3e',
+    kWicker: '#7a6650', kWickerDeep: '#5c4c3b', kTeal: '#4a7a80', kBlue: '#3e5684',
+    kDoor: '#36322e', kTrim: '#948f84',
+    kCoatA: '#4a5a6c', kCoatB: '#6a5046', kCoatC: '#5a5f4c', kCoatD: '#7a6d60', kCoatE: '#3e3c44',
+    kPhoto: '#a39d8f', kPhotoWarm: '#9c8466', kMagRed: '#8c5a4e', kMagBlue: '#5f6f86', kMagYellow: '#a39058',
+    kLeaf: '#3d5a34', kLeafLit: '#55734a', kLeafDeep: '#2a3d24',
     /* the pendants down the room, dimmer with distance (air, not lamps
        you could touch): glass, filament, rod */
     glassMid: '#d9b24a', glassFar: '#a88a46', coreMid: '#f6e4ad', coreFar: '#c9b178',
@@ -399,32 +419,39 @@ var Ceiling = (function () {
 
   /* ------------------------------------------------------- the field
 
-     TWO CEILINGS CONVERGING ON A HORIZON. The owner picked the mirrored
-     ceiling, "as if the room had folded", and all six Ceiling photographs
-     are about one thing: the plaster plane, with the amber crackle-glass
-     pendants on their black rods, the recessed cans, the angled soffit
-     planes and the skylight's dusk. So the field is that plane, seen the
-     way ref 5j and 5p see it - looking along the room at ceiling height,
-     the underside of the ceiling running away from you to the far wall -
-     and under the fold, the same plane upside down, running away to the
-     same far wall. (The first cut of this field was the far KITCHEN wall,
-     cabinets and hood and a plant, mirrored; at scale 2 it read as a
-     kitchen with a dark line across it. It is gone.)
+     THE CEILING, AND THE ROOM UNDER IT. Ceiling ref 6, 5j and 5p are all
+     the same picture: the camera just under the plaster, looking across
+     the room - the ceiling running away overhead to where its crown meets
+     the far wall, and under that crown the kitchen, with the pendants'
+     long black rods coming down out of the ceiling in front of it. That
+     is the field.
+
+     (It has been two other things. First the far kitchen wall mirrored
+     about the fold, which read as a kitchen with a dark line across it;
+     then two ceilings converging on a horizon, which the owner played and
+     called an endless abyss of Backrooms ceilings - "I only meant for the
+     physical ground that the player hits". The mirrored ceiling is the
+     lethal bottom BAND and nothing more. The room under the ceiling is the
+     room.)
 
      THE PERSPECTIVE IS ONE NUMBER. A thing on the ceiling at depth z is
      drawn at y = HORIZON - K/z and slides past at a parallax that goes as
-     1/z, so its row and its speed are tied: y = HORIZON - 222 * parallax.
+     1/z, so its row and its speed are tied: y = 132.5 - 222 * parallax.
      The lid's own lamps are overhead (parallax 1.0, off this scale
-     entirely); the field carries three depths, each a baked 109-row tile
-     with its own width so they never repeat together:
-       NEAR  0.45   canopies on row 33, glass 11 wide, the big warm pools
-       MID   0.25   canopies on row 77, glass 7 wide
-       FAR   0.12   canopies on row 106, a 3x4 glint on a 3-row rod
-     and everything on a layer is scaled by its parallax - the pendant's
-     drop, the glass, the pool, the can - so the room recedes and does not
-     merely shrink. The ceiling meets the far wall on row 124; the wall's
-     strip runs 125..140 across the fold, and that is the horizon: a soft
-     band at most, never a hard line a player could read as a ledge.
+     entirely); the ceiling carries three depths, each a baked tile with
+     its own width so they never repeat together:
+       NEAR  0.45   canopies on row 33, glass 11 wide, hung to row ~186
+       MID   0.25   canopies on row 77, glass 7 wide, hung to row ~158
+       FAR   0.12   canopies and cans on row 106 - nothing hung there
+     (see bakeLayer: one PAIR of lamps per near and mid tile, as the
+     photographs have them)
+     and everything on a layer is scaled by its parallax - the drop, the
+     glass, the pool, the can - so the room recedes and does not merely
+     shrink. A lamp's drop below the ceiling is the same in the room for
+     all of them, so on the screen the near ones hang longest and lowest,
+     which is ref 6's two rods exactly. The ceiling meets the far wall's
+     crown on row 125; the kitchen is that wall, at 0.06, and a ZZ plant on
+     the island in front of it at 0.09.
 
      The plane itself is a STATIC gradient: a flat surface sliding
      sideways looks exactly like itself, and a static sheet cannot boil.
@@ -434,7 +461,15 @@ var Ceiling = (function () {
   var HORIZON = 132.5;
   var WALL_TOP = 125;
   var LAYER_PX = [0.12, 0.25, 0.45];
-  var LAYER_W  = [240, 360, 480];
+  var LAYER_W  = [600, 720, 480];
+  var LAYER_H  = FLOOR - CEIL;          /* the lamps hang into the kitchen */
+  /* the glass's first row (screen) for each depth, far to near */
+  var HANG_TO  = [139, 158, 186];
+  /* the kitchen: the far wall's tile, where it sits, how fast it goes */
+  var KIT_W = 720, KIT_Y = 112, KIT_H = FLOOR - 112, KIT_PX = 0.06;
+  var CROWN_K = WALL_TOP - KIT_Y;       /* 13: the far crown, on screen 125 */
+  /* the plant on the island in front of it */
+  var FRONT_W = 600, FRONT_Y = 160, FRONT_H = FLOOR - 160, FRONT_PX = 0.09;
 
   /* a hex pigment mixed toward another, for the static gradient */
   function mixHex(a, b, k) {
@@ -450,21 +485,15 @@ var Ceiling = (function () {
     return '#' + ((1 << 24) + (+m[0] << 16) + (+m[1] << 8) + (+m[2])).toString(16).slice(1);
   }
 
-  /* T.plane, VW x 218, drawn at 24: both ceilings and the far wall */
+  /* T.plane, VW x 101, drawn at 24: the ceiling from the lid to the far
+     crown, warm under the lamps, cooling and dimming as it goes */
   function bakePlane() {
-    var t = makeCanvas(VW, FIELD_H * 2), c = t.ctx, y, sy, k, col;
-    for (y = 0; y < FIELD_H; y++) {
-      sy = CEIL + y;
-      k = (sy - CEIL) / (WALL_TOP - CEIL);
-      col = k < 0.5 ? mixHex(P.planeNear, P.planeMid, ease(k * 2))
-                    : mixHex(P.planeMid, P.planeFar, ease(Math.min(1, (k - 0.5) * 2)));
-      /* and the far wall, blended in over the four rows either side of
-         where the ceiling meets it */
-      var wk = ease((sy - (WALL_TOP - 4)) / 8);
-      if (wk > 0) col = mixHex(col.charAt(0) === '#' ? col : rgbHex(col), P.farWall, wk);
-      c.fillStyle = col;
+    var H0 = WALL_TOP - CEIL, t = makeCanvas(VW, H0), c = t.ctx, y, k;
+    for (y = 0; y < H0; y++) {
+      k = y / (H0 - 1);
+      c.fillStyle = k < 0.5 ? mixHex(P.planeNear, P.planeMid, ease(k * 2))
+                            : mixHex(P.planeMid, P.planeFar, ease((k - 0.5) * 2));
       c.fillRect(0, y, VW, 1);
-      c.fillRect(0, FIELD_H * 2 - 1 - y, VW, 1);
     }
     return t;
   }
@@ -475,7 +504,7 @@ var Ceiling = (function () {
       for (var x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
         var dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
         var d = Math.sqrt(dx * dx + dy * dy);
-        if (d >= 1 || y < 0 || y >= FIELD_H) continue;
+        if (d >= 1 || y < 0 || y >= c.canvas.height) continue;
         c.fillStyle = rgba(colour, peak * (1 - ease(d)));
         c.fillRect(x, y, 1, 1);
       }
@@ -487,14 +516,17 @@ var Ceiling = (function () {
   var SHADE11 = [[4, 3], [2, 7], [1, 9], [0, 11], [0, 11], [0, 11], [0, 11], [0, 11],
                  [1, 9], [1, 9], [2, 7], [2, 7], [3, 5], [4, 3]];
   var SHADE7 = [[2, 3], [1, 5], [0, 7], [0, 7], [0, 7], [1, 5], [1, 5], [2, 3]];
-  var SHADE3 = [[1, 1], [0, 3], [0, 3], [1, 1]];
+  var SHADE5 = [[1, 3], [0, 5], [0, 5], [0, 5], [1, 3]];
 
   /* one pendant hung from the plane at depth s (0 near, 1 mid, 2 far):
      its pool on the plaster round the canopy, the light in the air round
-     the glass, the canopy disc, the rod, the glass */
+     the glass, the canopy disc, the long rod down in front of the kitchen
+     (two pixels on the near ones, with the lamp catching one side of it,
+     as ref 6's two rods do), the glass */
   function fieldPendant(c, x, cy, s, r) {
-    var shade = [SHADE11, SHADE7, SHADE3][s], rod = [13, 7, 3][s];
-    var gw = shade[3][1], gx = x - (gw >> 1), gy = cy + 1 + rod, i, ri;
+    var shade = [SHADE11, SHADE7, SHADE5][s];
+    var gy = HANG_TO[2 - s] - CEIL, rod = gy - cy - 1;
+    var gw = shade[3][1], gx = x - (gw >> 1), i, ri;
     poolOn(c, x + 0.5, cy + 1, [40, 24, 12][s], [10, 6, 3][s], H.lampGlow, [0.22, 0.17, 0.12][s]);
     /* the light in the air round the glass, kept low on the far two: a
        lamp down the room is a lamp, and a glowing dot the size of a
@@ -505,25 +537,26 @@ var Ceiling = (function () {
     else if (s === 1) c.fillRect(x - 1, cy, 3, 1);
     else c.fillRect(x - 1, cy, 2, 1);
     c.fillRect(x, cy + 1, 1, rod);
-    if (s === 0) { c.fillStyle = P.canopyRim; c.fillRect(x - 2, cy, 5, 1); }
-    if (s < 2) {
+    if (s === 0) {
+      c.fillStyle = P.canopyRim;
+      c.fillRect(x - 2, cy, 5, 1); c.fillRect(x + 1, cy + 2, 1, rod - 1);
+      c.fillStyle = H.lampRod; c.fillRect(x - 1, gy - 2, 4, 2);     /* the cap */
+    }
+    {
       var g = makeCanvas(gw + 2, shade.length + 2), m = makeCanvas(gw + 2, shade.length + 2);
-      rowsFill(g.ctx, shade, 1, 1, s === 0 ? H.lampGlass : P.glassMid);
+      rowsFill(g.ctx, shade, 1, 1, s === 0 ? H.lampGlass : (s === 1 ? P.glassMid : P.glassFar));
       rowsFill(m.ctx, shade, 1, 1, '#ffffff');
       g.ctx.fillStyle = H.lampCrackle;
-      for (i = 0; i < (s === 0 ? 12 : 3); i++) {
+      for (i = 0; i < [12, 3, 1][s]; i++) {
         ri = 1 + Math.floor(r() * (shade.length - 2));
         g.ctx.fillRect(1 + shade[ri][0] + Math.floor(r() * shade[ri][1]), 1 + ri, 1, 1);
       }
-      g.ctx.fillStyle = s === 0 ? H.lampCore : P.coreMid;
-      if (s === 0) g.ctx.fillRect(5, 5, 3, 4); else g.ctx.fillRect(4, 3, 1, 2);
+      g.ctx.fillStyle = s === 0 ? H.lampCore : (s === 1 ? P.coreMid : P.coreFar);
+      if (s === 0) g.ctx.fillRect(5, 5, 3, 4); else if (s === 1) g.ctx.fillRect(4, 3, 1, 2); else g.ctx.fillRect(3, 2, 1, 1);
       g.ctx.fillStyle = H.lampDark;
       g.ctx.fillRect(1 + shade[shade.length - 1][0], shade.length, shade[shade.length - 1][1], 1);
       ringUnder(g, m);
       c.drawImage(g.canvas, gx - 1, gy - 1);
-    } else {
-      rowsFill(c, SHADE3, gx, gy, P.glassFar);
-      c.fillStyle = P.coreFar; c.fillRect(x, gy + 1, 1, 1);
     }
   }
 
@@ -607,31 +640,304 @@ var Ceiling = (function () {
   }
 
   /* THE THREE LAYERS. Tile rows are screen rows - 24. */
+  /* THE PENDANTS COME IN PAIRS, AND THE CEILING IS MOSTLY CEILING.
+     Every photograph with pendants in it - Ceiling ref 1, 2, 5j, 6 - shows
+     two, about a metre apart, over the island or over the table, and long
+     stretches of bare plaster either side. So each near tile carries ONE
+     pair, 56px apart (a metre, at five shade-widths, which is ref 6's
+     spacing), each mid tile ONE pair 34px apart on a tile half again as
+     wide, and the far layer hangs nothing at all - a far lamp is a canopy
+     and a can. The cut before this one hung two singles per tile at all
+     three depths, about ten lamps dangling across one screen, and with
+     their rods down in front of the kitchen the room read as a bead
+     curtain. The cans, registers and skylights are as sparse: a few per
+     tile, never a grid. */
   function bakeLayer(s) {
-    var w = LAYER_W[s], t = makeCanvas(w, FIELD_H), c = t.ctx, r = mulberry32(3430 + s);
+    var w = LAYER_W[s], t = makeCanvas(w, LAYER_H), c = t.ctx, r = mulberry32(3430 + s);
     if (s === 2) {
-      /* NEAR, 480 at 0.45: two big pendants, two cans, a register, the
-         detector, one coffer */
+      /* NEAR, 480 at 0.45: the pair, one can, the detector, one skylight */
       fieldTooth(c, w, 0, 34, 260, r);
-      fieldCoffer(c, 250, 4, 26, 8);
-      fieldCan(c, 30, 12, 0); fieldCan(c, 420, 11, 0);
-      fieldRegister(c, 60, 15, 0); fieldDetector(c, 310, 13, 0);
-      fieldPendant(c, 140, 9, 0, r); fieldPendant(c, 362, 9, 0, r);
+      fieldCoffer(c, 400, 4, 26, 8);
+      fieldCan(c, 60, 12, 0);
+      fieldDetector(c, 310, 13, 0);
+      fieldPendant(c, 176, 9, 0, r); fieldPendant(c, 232, 9, 0, r);
     } else if (s === 1) {
-      /* MID, 360 at 0.25: two pendants, two cans, a register, a
-         detector, one coffer */
-      fieldTooth(c, w, 34, 66, 150, r);
-      fieldCoffer(c, 196, 48, 15, 5);
-      fieldCan(c, 120, 55, 1); fieldCan(c, 290, 54, 1);
-      fieldRegister(c, 330, 57, 1); fieldDetector(c, 160, 56, 1);
-      fieldPendant(c, 60, 53, 1, r); fieldPendant(c, 250, 53, 1, r);
+      /* MID, 720 at 0.25: the pair, one can, a register, one skylight */
+      fieldTooth(c, w, 34, 66, 300, r);
+      fieldCoffer(c, 520, 48, 15, 5);
+      fieldCan(c, 130, 55, 1);
+      fieldRegister(c, 640, 57, 1);
+      fieldPendant(c, 300, 53, 1, r); fieldPendant(c, 334, 53, 1, r);
     } else {
-      /* FAR, 240 at 0.12: two glints, a can, a soffit bulkhead near the
-         far wall */
-      fieldTooth(c, w, 66, 98, 70, r);
-      fieldSoffit(c, 156, 90, 48);
-      fieldCan(c, 104, 84, 2);
-      fieldPendant(c, 40, 82, 2, r); fieldPendant(c, 196, 81, 2, r);
+      /* FAR, 600 at 0.12: a canopy with nothing hung from it - the lamps
+         at this depth are over the far end of the table, behind the
+         island's - a can, and the soffit bulkhead near the far wall */
+      fieldTooth(c, w, 66, 98, 170, r);
+      fieldSoffit(c, 380, 90, 48);
+      fieldCan(c, 140, 84, 2);
+      c.fillStyle = P.rodFar; c.fillRect(250, 82, 2, 1);
+    }
+    return t;
+  }
+
+  /* ------------------------------------------------------- the kitchen
+
+     T.kitchen, 720x130 at 0.06, drawn at screen 112: the far wall, from
+     the crown on row 125 down to the toe kick on 241, and the hood's
+     chimney rising above the crown into the ceiling at its own depth (it
+     hangs in front of the wall, ref 6). Left to right, off ref 6 and 5p:
+     the fridge with the family's photos on it, the small window's shutters
+     with the monstera in front, the glass-front uppers with the dishes in
+     them over the espresso machine, the pressure cooker and the air fryer,
+     the big window's plantation shutters with the sink and tap under it
+     and the hood in front, the basket and the bottles, and the doorway with
+     the coats. 720 wide because at 0.06 that is a minute of play at top
+     speed before it comes round again.
+     Rows (local): crown 13..15, uppers 16..61, splash 62..85, counter
+     86..89, lowers 90..123, toe kick 124..129. */
+  var K_UP = 16, K_UPB = 61, K_CTR = 86, K_LOW = 90, K_TOE = 124;
+
+  function kr(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+
+  /* a white shaker door in the evening: field, recessed panel, pull */
+  function kShaker(c, x, y, w, h, pull, low) {
+    kr(c, x, y, w, h, low ? P.kLower : P.kCab);
+    kr(c, x + 3, y + 3, w - 6, 1, low ? P.kLowerShade : P.kCabShade);
+    kr(c, x + 3, y + 3, 1, h - 6, low ? P.kLowerShade : P.kCabShade);
+    kr(c, x + 3, y + h - 4, w - 6, 1, low ? P.kLowerDeep : P.kCabLit);
+    kr(c, x + w - 4, y + 3, 1, h - 6, low ? P.kLowerDeep : P.kCabLit);
+    if (pull === 'v') kr(c, x + w - 6, y + h - 12, 1, 5, P.kSteelLit);
+    else if (pull === 'h') kr(c, x + (w >> 1) - 3, y + 2, 6, 1, P.kSteelLit);
+    else if (pull === 'u') kr(c, x + w - 6, y + 4, 1, 5, P.kSteelLit);
+  }
+
+  /* plantation shutters, closed for the night: a frame, louvres on a 3px
+     pitch, and the tilt rod down the middle of each panel */
+  function kShutters(c, x, y, w, h, panels) {
+    var pw = Math.floor(w / panels), i, yy;
+    kr(c, x - 2, y - 2, w + 4, h + 3, P.kCab);
+    kr(c, x - 2, y - 2, w + 4, 1, P.kCabLit);
+    for (i = 0; i < panels; i++) {
+      var px = x + i * pw;
+      kr(c, px, y, pw - 1, h, P.kShutter);
+      for (yy = y + 2; yy < y + h - 2; yy += 3) {
+        kr(c, px + 2, yy, pw - 5, 1, P.kShutterLit);
+        kr(c, px + 2, yy + 2, pw - 5, 1, P.kShutterGap);
+      }
+      kr(c, px + (pw >> 1), y + 2, 1, h - 4, P.kShutterShade);
+      kr(c, px + pw - 1, y, 1, h, P.kShutterShade);
+    }
+    kr(c, x - 2, y + h, w + 4, 1, P.kCabShade);
+  }
+
+  /* glass-front uppers with dishes on two shelves */
+  function kGlassUppers(c, x, y, doors, dw, h, r) {
+    var i, j, k;
+    kr(c, x - 1, y - 1, doors * (dw + 1) + 1, h + 2, P.kCabDeep);
+    for (i = 0; i < doors; i++) {
+      var dx = x + i * (dw + 1);
+      kr(c, dx, y, dw, h, P.kCab);
+      kr(c, dx + 3, y + 3, dw - 6, h - 6, P.kGlass);
+      kr(c, dx + 3, y + 3, 1, h - 6, P.kGlassLit);
+      for (j = 0; j < 2; j++) {
+        var sy = y + 3 + Math.round((h - 6) * (j + 1) / 3);
+        kr(c, dx + 3, sy, dw - 6, 1, P.kShelf);
+        /* plates stood on edge, bowls stacked, a mug */
+        for (k = dx + 5; k < dx + dw - 6; k += 4 + Math.floor(r() * 3)) {
+          var kind = Math.floor(r() * 3);
+          if (kind === 0) { kr(c, k, sy - 6, 3, 6, P.kDish); kr(c, k, sy - 6, 1, 6, P.kDishHi); }
+          else if (kind === 1) { kr(c, k, sy - 3, 4, 3, P.kDish); kr(c, k, sy - 3, 4, 1, P.kDishHi); }
+          else { kr(c, k, sy - 3, 2, 3, P.kDish); kr(c, k + 2, sy - 2, 1, 1, P.kDish); }
+        }
+      }
+      kr(c, i % 2 ? dx + 2 : dx + dw - 3, y + h - 12, 1, 5, P.kSteelLit);
+    }
+  }
+
+  function bakeKitchen() {
+    var t = makeCanvas(KIT_W, KIT_H), c = t.ctx, r = mulberry32(3470), i, x, y;
+    var C = CROWN_K;
+
+    /* the wall, the far crown along the top of it - the horizon, one soft
+       lit row and its shade, not a line you could stand on - and the
+       shadow the crown lays on the wall */
+    kr(c, 0, C, KIT_W, KIT_H - C, P.kWall);
+    kr(c, 0, C, KIT_W, 1, P.kCrown);
+    kr(c, 0, C + 1, KIT_W, 1, P.kCrownMid);
+    kr(c, 0, C + 2, KIT_W, 1, P.kCrownShade);
+    Tint.rect(c, 0, C + 3, KIT_W, 3, P.void, 2);
+
+    /* THE SPLASH, the grey tile behind the counter, all along it */
+    kr(c, 64, K_UPB + 1, 540, K_CTR - K_UPB - 1, P.kTile);
+    for (y = K_UPB + 3; y < K_CTR; y += 4) kr(c, 64, y, 540, 1, P.kTileLine);
+    for (y = K_UPB + 1; y < K_CTR; y += 4) {
+      for (x = 64 + ((y >> 2) % 2) * 4; x < 604; x += 8) kr(c, x, y, 1, 3, P.kTileLine);
+    }
+    for (i = 0; i < 40; i++) kr(c, 64 + Math.floor(r() * 540), K_UPB + 2 + Math.floor(r() * 22), 2, 1, P.kTileLit);
+
+    /* THE FRIDGE, at the left-hand end (ref 5p): a short cabinet over it,
+       the steel doors, the freezer seam, the handles, and the photos */
+    kr(c, 3, K_UP, 61, 15, P.kCabDeep);
+    kShaker(c, 4, K_UP, 29, 14, 'u'); kShaker(c, 34, K_UP, 29, 14, 'u');
+    kr(c, 3, K_UP + 15, 61, KIT_H - K_UP - 15, P.kSteelDeep);
+    kr(c, 4, K_UP + 16, 59, K_TOE - K_UP - 16, P.kSteel);
+    kr(c, 5, K_UP + 16, 1, K_TOE - K_UP - 16, P.kSteelLit);
+    kr(c, 61, K_UP + 16, 1, K_TOE - K_UP - 16, P.kSteelShade);
+    kr(c, 4, 70, 59, 1, P.kSteelShade);
+    kr(c, 9, 40, 2, 24, P.kSteelLit); kr(c, 9, 76, 2, 30, P.kSteelLit);
+    var MAGS = [[18, 38, 6, 5, P.kPhoto], [28, 36, 5, 6, P.kMagRed], [40, 40, 7, 5, P.kPhoto],
+                [52, 35, 4, 4, P.kMagBlue], [20, 50, 5, 4, P.kMagYellow], [33, 52, 6, 5, P.kPhoto],
+                [46, 49, 5, 6, P.kPhotoWarm], [16, 80, 6, 5, P.kPhoto], [30, 84, 4, 4, P.kMagBlue],
+                [42, 78, 7, 8, P.kPhoto], [53, 88, 4, 3, P.kMagRed], [22, 94, 5, 5, P.kPhotoWarm]];
+    for (i = 0; i < MAGS.length; i++) {
+      kr(c, MAGS[i][0], MAGS[i][1], MAGS[i][2], MAGS[i][3], MAGS[i][4]);
+      kr(c, MAGS[i][0] + 1, MAGS[i][1] + MAGS[i][3], MAGS[i][2], 1, P.kSteelShade);
+    }
+
+    /* THE SMALL WINDOW's shutters (ref 6, left), down to the counter */
+    kShutters(c, 74, 22, 80, K_CTR - 22, 2);
+
+    /* THE COUNTER and THE LOWERS, all along: a lit top edge, the front, the
+       drawers and doors in the shade of the counter's own lip */
+    kr(c, 64, K_CTR, 540, 1, P.kCounter);
+    kr(c, 64, K_CTR + 1, 540, 2, P.kCounterEdge);
+    kr(c, 64, K_CTR + 3, 540, 1, P.kCounterShade);
+    for (x = 66; x < 600; x += 34) {
+      kShaker(c, x, K_LOW, 33, 8, 'h', true);
+      kShaker(c, x, K_LOW + 9, 33, K_TOE - K_LOW - 9, (x / 34) % 2 ? 'u' : 'v', true);
+    }
+    kr(c, 64, K_TOE, 540, KIT_H - K_TOE, P.kToe);
+
+    /* the end panel, and THE GLASS-FRONT UPPERS with the dishes in them */
+    kr(c, 160, K_UP, 6, K_UPB - K_UP, P.kCabShade);
+    kr(c, 164, K_UP - 2, 158, 2, P.kCabLit);
+    kGlassUppers(c, 167, K_UP, 4, 37, K_UPB - K_UP, r);
+    /* the under-cabinet light, warm, on the splash under them */
+    Tint.rect(c, 166, K_UPB + 1, 154, 3, H.lampGlow, 3);
+    Tint.rect(c, 166, K_UPB + 4, 154, 4, H.lampGlow, 1);
+
+    /* ON THE COUNTER: the espresso machine (steel, its dark group head and
+       a cup), the pressure cooker (steel pot, black lid), the air fryer
+       (black, its little window) and the utensil crock */
+    kr(c, 176, 64, 28, 22, P.kSteelDeep);
+    kr(c, 177, 65, 26, 20, P.kSteel);
+    kr(c, 178, 65, 1, 20, P.kSteelLit);
+    kr(c, 181, 70, 18, 5, P.kBlack); kr(c, 186, 75, 8, 3, P.kBlackLit);
+    kr(c, 187, 81, 5, 4, P.kDishHi);
+    kr(c, 196, 66, 4, 2, P.kLed);
+    kr(c, 214, 72, 22, 14, P.kSteelDeep);
+    kr(c, 215, 73, 20, 12, P.kSteel); kr(c, 216, 73, 2, 12, P.kSteelLit);
+    kr(c, 213, 69, 24, 4, P.kBlack); kr(c, 222, 67, 8, 2, P.kBlackLit);
+    kr(c, 244, 68, 22, 18, P.kBlack);
+    kr(c, 246, 70, 18, 8, P.kBlackLit); kr(c, 248, 72, 14, 4, P.kGlass);
+    kr(c, 252, 81, 6, 1, P.kLed);
+    kr(c, 276, 74, 8, 12, P.kSteelShade); kr(c, 277, 66, 1, 8, P.kSteelLit); kr(c, 280, 64, 1, 10, P.kWickerDeep);
+
+    /* THE BIG WINDOW's plantation shutters, four panels, closed */
+    kShutters(c, 352, 24, 148, K_CTR - 24, 4);
+
+    /* the sink in the counter under it, and the tap */
+    kr(c, 420, K_CTR, 44, 2, P.kBlack);
+    kr(c, 422, K_CTR + 2, 40, 1, P.kSteelShade);
+    kr(c, 440, 70, 2, 16, P.kSteelLit);
+    kr(c, 440, 70, 8, 2, P.kSteelLit); kr(c, 446, 72, 2, 3, P.kSteel);
+    kr(c, 433, 80, 2, 6, P.kSteel);
+
+    /* THE HOOD (ref 6, 5p), in front of the window: the chimney rising
+       from the steel body right up into the ceiling at its own depth -
+       above the crown, which is why this tile starts at 112 - the grille
+       at its top, the body, and the curved glass canopy */
+    kr(c, 401, 0, 22, 52, P.kSteel);
+    kr(c, 402, 0, 2, 52, P.kSteelLit);
+    kr(c, 420, 0, 2, 52, P.kSteelShade);
+    kr(c, 401, 0, 22, 1, P.kSteelDeep);
+    for (y = 3; y < 9; y += 2) kr(c, 405, y, 14, 1, P.kSteelDeep);
+    for (i = 0; i < 8; i++) {
+      var hw = 11 + i * 2;
+      kr(c, 412 - hw, 52 + i, hw * 2, 1, i < 2 ? P.kSteelLit : P.kSteel);
+      kr(c, 412 - hw, 52 + i, 1, 1, P.kSteelShade); kr(c, 411 + hw, 52 + i, 1, 1, P.kSteelShade);
+    }
+    for (x = 372; x < 452; x++) {
+      var dxh = (x - 411.5) / 40, cy = 61 + Math.round(dxh * dxh * -3);
+      kr(c, x, cy, 1, 1, P.kHoodGlassLit);
+      kr(c, x, cy + 1, 1, 2, P.kHoodGlass);
+    }
+    Tint.rect(c, 372, 64, 80, 4, P.void, 2);
+
+    /* the basket and the bottles on the counter to the right */
+    kr(c, 506, 77, 26, 9, P.kWicker);
+    for (x = 507; x < 532; x += 3) kr(c, x, 78, 1, 8, P.kWickerDeep);
+    kr(c, 505, 76, 28, 1, P.kWickerDeep);
+    kr(c, 538, 72, 5, 14, P.kTeal); kr(c, 539, 70, 3, 2, P.kTeal); kr(c, 539, 73, 1, 10, '#6a9aa0');
+    kr(c, 546, 74, 5, 12, P.kBlue); kr(c, 547, 72, 3, 2, P.kBlue);
+    kr(c, 560, 50, 4, 6, P.kCabShade); kr(c, 561, 51, 2, 4, P.kCab);
+
+    /* THE DOORWAY at the right-hand end, and the coats hung inside it */
+    kr(c, 610, 20, 94, K_TOE - 20 + 6, P.kTrim);
+    kr(c, 614, 24, 86, KIT_H - 24, P.kDoor);
+    kr(c, 618, 32, 78, 1, P.kSteelShade);
+    var COATS = [[620, 16, 46, P.kCoatA], [634, 14, 52, P.kCoatB], [646, 18, 40, P.kCoatC],
+                 [661, 15, 56, P.kCoatE], [674, 14, 44, P.kCoatD], [686, 10, 36, P.kCoatA]];
+    for (i = 0; i < COATS.length; i++) {
+      var cx0 = COATS[i][0], cw = COATS[i][1], ch = COATS[i][2];
+      kr(c, cx0 + 2, 33, cw - 4, 2, COATS[i][3]);
+      kr(c, cx0, 35, cw, ch, COATS[i][3]);
+      kr(c, cx0, 35, 1, ch, P.kDoor); kr(c, cx0 + cw - 1, 35, 1, ch, P.kLowerDeep);
+      kr(c, cx0 + (cw >> 1), 36, 1, ch - 4, P.kDoor);
+    }
+    kr(c, 618, 96, 78, 4, P.kCabShade); kr(c, 618, 96, 78, 1, P.kCab);
+    kr(c, 640, 88, 18, 8, P.kCoatB); kr(c, 664, 90, 14, 6, P.kCoatC);
+
+    /* THE MONSTERA on the counter in front of the small window: split
+       leaves on arching stems */
+    var LEAVES = [[90, 66, 12, 8], [104, 60, 14, 9], [118, 68, 12, 8], [96, 76, 10, 7], [128, 74, 10, 7]];
+    for (i = 0; i < LEAVES.length; i++) {
+      var lx = LEAVES[i][0], ly = LEAVES[i][1], lw = LEAVES[i][2], lh = LEAVES[i][3];
+      for (y = 0; y < lh; y++) {
+        var ins = Math.round(Math.abs(y - lh / 2) / (lh / 2) * (lw / 3));
+        kr(c, lx + ins, ly + y, lw - ins * 2, 1, y < 2 ? P.kLeafLit : P.kLeaf);
+      }
+      kr(c, lx + (lw >> 1), ly + 1, 1, lh - 2, P.kLeafDeep);
+      kr(c, lx + 2, ly + (lh >> 1), 2, 1, P.kWall); kr(c, lx + lw - 4, ly + (lh >> 1) + 1, 2, 1, P.kWall);
+      kr(c, lx + (lw >> 1), ly + lh, 1, K_CTR - ly - lh, P.kLeafDeep);
+    }
+    kr(c, 104, 80, 22, 6, P.kCabShade); kr(c, 104, 80, 22, 1, P.kCab);
+    return t;
+  }
+
+  /* THE ZZ PLANT on the island (ref 6, bottom middle), nearer than the
+     wall at 0.09: a fan of thick stems out of one pot below the frame,
+     each arching outward, with glossy oval leaflets in pairs up the whole
+     of it - a bush, not a creeper. The first cut ran thin straight stems
+     with tiny leaves and read as ivy climbing the cabinets. Evening
+     green, nearly as dark as the room. */
+  function bakeFront() {
+    var t = makeCanvas(FRONT_W, FRONT_H), c = t.ctx, i, j, k;
+    var BX = 300, BY = FRONT_H + 2;
+    /* [angle off vertical at the base, length, curl] */
+    var STEMS = [[-0.62, 44, -0.5], [-0.34, 58, -0.3], [-0.10, 66, 0.1], [0.16, 62, 0.25],
+                 [0.40, 54, 0.4], [0.66, 40, 0.55], [-0.85, 30, -0.4]];
+    for (i = 0; i < STEMS.length; i++) {
+      var a0 = STEMS[i][0], len = STEMS[i][1], curl = STEMS[i][2];
+      var px = BX, py = BY, ang = a0;
+      for (j = 0; j < len; j++) {
+        ang += curl / len;
+        px += Math.sin(ang); py -= Math.cos(ang);
+        var x = Math.round(px), y = Math.round(py);
+        kr(c, x, y, 2, 1, P.kLeafDeep);
+        if (j > 6 && j % 6 === 0) {
+          /* a pair of leaflets, glossy, lit on their upper edge */
+          var sz = j > len - 10 ? 3 : 5;
+          for (k = -1; k <= 1; k += 2) {
+            var lx = x + (k < 0 ? -sz - 1 : 3), ly = y - (k < 0 ? 1 : 0);
+            kr(c, lx, ly, sz, 3, P.kLeaf);
+            kr(c, lx + 1, ly, sz - 2, 1, P.kLeafLit);
+            kr(c, k < 0 ? lx : lx + sz - 1, ly + 2, 1, 1, P.kLeafDeep);
+          }
+        }
+      }
+      kr(c, Math.round(px) - 1, Math.round(py) - 2, 3, 2, P.kLeaf);
+      kr(c, Math.round(px), Math.round(py) - 2, 1, 1, P.kLeafLit);
     }
     return t;
   }
@@ -640,12 +946,10 @@ var Ceiling = (function () {
 
      T.light, 480x270, one blit, the last call of drawBackdrop. Per-row
      and per-column rgba fills, smoothstepped, nothing else:
-       warm off the lid, 0.11 at 24 to nothing at 80, and its mirror
-       THE FOLD GLOOM: void, 0.16 at the horizon, nothing at 100 and 165
-         - the far end of the room, where the lamps do not reach. Lighter
-         than it was (0.26 over 92..173), because the plane now darkens
-         toward the far wall on its own and the two together made a
-         band dark enough to read as a ledge across the screen
+       warm off the lid, 0.11 at 24 to nothing at 80
+       the night rising off the floor over the lower cabinets, 0.20 at
+         the bottom band to nothing at 196 - which is also what keeps the
+         lethal band's lit plaster standing clear of the kitchen above it
        the two side columns, the Living Room's 64px */
   function bakeLight() {
     var t = makeCanvas(VW, VH), c = t.ctx, y, x, k;
@@ -653,11 +957,10 @@ var Ceiling = (function () {
       k = 1 - ease((y - CEIL) / 56);
       c.fillStyle = rgba(H.lampGlow, 0.11 * k);
       c.fillRect(0, y, VW, 1);
-      c.fillRect(0, mirror(y), VW, 1);
     }
-    for (y = 100; y <= 165; y++) {
-      k = ease(1 - Math.abs(y - HORIZON) / 33);
-      c.fillStyle = rgba(H.void, 0.16 * k);
+    for (y = 196; y < FLOOR; y++) {
+      k = ease((y - 196) / (FLOOR - 196));
+      c.fillStyle = rgba(H.void, 0.20 * k);
       c.fillRect(0, y, VW, 1);
     }
     for (x = 0; x < 64; x++) {
@@ -1082,8 +1385,9 @@ var Ceiling = (function () {
     T.lid = bakeLid();
     T.bottom = bakeBottom();
     T.plane = bakePlane();
+    T.kitchen = bakeKitchen();
+    T.front = bakeFront();
     T.layer = [bakeLayer(0), bakeLayer(1), bakeLayer(2)];
-    T.layerUp = [flipV(T.layer[0]), flipV(T.layer[1]), flipV(T.layer[2])];
     T.light = bakeLight();
     T.pool = LivingRoom.tiles.pool;
     T.poolUp = flipV(T.pool);
@@ -1130,17 +1434,19 @@ var Ceiling = (function () {
     }
   }
 
-  /* the two ceilings and the far wall, the three depths of lamps far to
-     near and each one's mirror, the pools of the lid's own lamps, the
+  /* the ceiling, the kitchen under it, the plant on the island, the three
+     depths of lamps far to near, the pools of the lid's own lamps, the
      light, and the shadow the mirrored crown throws up into the room -
-     here rather than in drawFloor so it falls on the plane and not on the
-     columns, exactly as the lid's crownShade does at the top */
+     here rather than in drawFloor so it falls on the kitchen and not on
+     the columns, exactly as the lid's crownShade does at the top */
   function drawField(ctx, scroll, slow) {
+    var k = slow || 1;
     ctx.drawImage(T.plane.canvas, 0, CEIL);
+    tileX(ctx, T.kitchen.canvas, scroll * KIT_PX * k, KIT_Y);
+    tileX(ctx, T.front.canvas, scroll * FRONT_PX * k, FRONT_Y);
     for (var i = 0; i < 3; i++) {
       if (slow && i === 2) continue;
-      tileX(ctx, T.layer[i].canvas, scroll * LAYER_PX[i] * (slow || 1), CEIL);
-      tileX(ctx, T.layerUp[i].canvas, scroll * LAYER_PX[i] * (slow || 1), FOLD_Y);
+      tileX(ctx, T.layer[i].canvas, scroll * LAYER_PX[i] * k, CEIL);
     }
   }
 
@@ -1151,9 +1457,10 @@ var Ceiling = (function () {
     ctx.drawImage(T.crownShadeUp.canvas, 0, FLOOR - 10);
   }
 
-  /* a calm version for the menus: the two ceilings with only their far
-     and middle lamps, drifting at half speed, the light, the two bands. No
-     near lamps, no columns, no pole - somewhere quiet for the boards. */
+  /* a calm version for the menus: the ceiling and the kitchen with only
+     the far and middle lamps, drifting at half speed, the light, the two
+     bands. No near lamps, no columns, no pole - somewhere quiet for the
+     boards. */
   function drawMenuBackdrop(ctx, scroll) {
     drawField(ctx, scroll, 0.5);
     drawPools(ctx, scroll * 0.6);
@@ -1704,17 +2011,20 @@ var Ceiling = (function () {
     Tint.rect(ctx, x + 11, y, 2, h, P.void, 5);
   }
 
-  /* one pendant down the room inside a cover, at depth d (0 nearer, 1
-     further): a rod and a glint, hanging (or, under the fold, standing) */
-  function miniDepthLamp(ctx, px, cy, d, up) {
-    var dir = up ? -1 : 1, rod = d ? 2 : 4, i;
+  /* one pendant inside a cover, hung from the ceiling at row cy down to
+     its glass at row gy, at depth d (0 nearer, 1 further) */
+  function miniHangLamp(ctx, px, cy, gy, d) {
     ctx.fillStyle = d ? P.rodFar : P.lampRod;
-    for (i = 0; i < rod; i++) ctx.fillRect(px, cy + i * dir, 1, 1);
-    var gy = cy + rod * dir;
-    Tint.rect(ctx, px - 4 + d * 2, up ? gy - 6 + d * 3 : gy, 9 - d * 4, 7 - d * 3, P.lampGlow, 3);
-    ctx.fillStyle = d ? P.glassFar : P.glassMid;
-    if (d) ctx.fillRect(px, up ? gy - 1 : gy, 1, 2);
-    else { ctx.fillRect(px - 1, up ? gy - 2 : gy, 3, 3); ctx.fillStyle = P.coreMid; ctx.fillRect(px, up ? gy - 1 : gy + 1, 1, 1); }
+    ctx.fillRect(px - 1, cy, 3, 1);
+    ctx.fillRect(px, cy, 1, gy - cy);
+    Tint.rect(ctx, px - 4 + d * 2, gy - 1, 9 - d * 4, 7 - d * 3, P.lampGlow, 3);
+    ctx.fillStyle = P.outline;
+    if (d) { ctx.fillStyle = P.glassFar; ctx.fillRect(px - 1, gy, 3, 2); }
+    else {
+      ctx.fillRect(px - 2, gy - 1, 5, 5);
+      ctx.fillStyle = P.lampGlass; ctx.fillRect(px - 1, gy, 3, 3);
+      ctx.fillStyle = P.lampCore;  ctx.fillRect(px, gy + 1, 1, 1);
+    }
   }
 
   function drawPreview(ctx, x, y, w, h, t, big) {
@@ -1723,34 +2033,60 @@ var Ceiling = (function () {
     var lidY = y + band, botY = y + h - band, midY = y + Math.round(h / 2);
     var span = botY - lidY;
 
-    /* 1. THE FIELD, as the level has it: the two ceilings running away to
-       the fold, warm under the lids and dimmer toward the far wall, with
-       lamps hanging at two depths - bigger and higher near, a glint low
-       and far - and each one's mirror standing up from the other side */
-    var half = midY - lidY;
+    /* 1. THE FIELD, as the level has it: the ceiling running away to the
+       far crown at the middle of the card, and under it a strip of the
+       kitchen - the uppers with their glass fronts, the hood rising into
+       the ceiling, the shutters, the splash, the counter, the lowers - with
+       the lamps hanging down in front of it on long rods */
+    var half = midY - lidY, i2;
     for (i = 0; i <= half; i++) {
       var kk = i / Math.max(1, half);
       ctx.fillStyle = kk < 0.5 ? mixHex(P.planeNear, P.planeMid, ease(kk * 2))
-                               : mixHex(P.planeMid, P.farWall, ease((kk - 0.5) * 2));
+                               : mixHex(P.planeMid, P.planeFar, ease((kk - 0.5) * 2));
       ctx.fillRect(x, lidY + i, w, 1);
-      ctx.fillRect(x, botY - 1 - i, w, 1);
     }
-    var drift = s * 0.25;
+    var drift = s * 0.06, kh = botY - midY;
+    var kU = midY + 2, kUB = midY + Math.round(kh * 0.40), kC = midY + Math.round(kh * 0.66);
+    ctx.fillStyle = P.kWall;      ctx.fillRect(x, midY, w, kh);
+    ctx.fillStyle = P.kCrown;     ctx.fillRect(x, midY, w, 1);
+    ctx.fillStyle = P.kCrownShade; ctx.fillRect(x, midY + 1, w, 1);
+    ctx.fillStyle = P.kTile;      ctx.fillRect(x, kUB, w, kC - kUB);
+    for (i = 0; i < 4; i++) {
+      /* a bay of the kitchen every 60 px, drifting slowly: glass uppers,
+         then shutters with the hood in front, by turns */
+      var bx = x + Math.round(wrap(i * 60 - drift, 240)) - 30;
+      if (i % 2 === 0) {
+        ctx.fillStyle = P.kCabDeep; ctx.fillRect(bx, kU, 36, kUB - kU);
+        for (i2 = 0; i2 < 3; i2++) {
+          ctx.fillStyle = P.kCab;  ctx.fillRect(bx + 1 + i2 * 12, kU, 11, kUB - kU - 1);
+          ctx.fillStyle = P.kGlass; ctx.fillRect(bx + 3 + i2 * 12, kU + 2, 7, kUB - kU - 5);
+          ctx.fillStyle = P.kDish; ctx.fillRect(bx + 4 + i2 * 12, kU + 5, 5, 1);
+        }
+      } else {
+        ctx.fillStyle = P.kCab;     ctx.fillRect(bx, kU + 2, 40, kC - kU - 2);
+        for (i2 = kU + 4; i2 < kC - 1; i2 += 2) { ctx.fillStyle = P.kShutterGap; ctx.fillRect(bx + 2, i2, 36, 1); }
+        ctx.fillStyle = P.kSteel;   ctx.fillRect(bx + 17, lidY + Math.round(half * 0.8), 6, midY - lidY - Math.round(half * 0.8) + Math.round(kh * 0.3));
+        ctx.fillStyle = P.kSteelLit; ctx.fillRect(bx + 17, lidY + Math.round(half * 0.8), 1, midY - lidY - Math.round(half * 0.8) + Math.round(kh * 0.3));
+        ctx.fillStyle = P.kHoodGlassLit; ctx.fillRect(bx + 8, midY + Math.round(kh * 0.3), 24, 1);
+      }
+    }
+    ctx.fillStyle = P.kCounter;   ctx.fillRect(x, kC, w, 1);
+    ctx.fillStyle = P.kCounterEdge; ctx.fillRect(x, kC + 1, w, 1);
+    ctx.fillStyle = P.kLower;     ctx.fillRect(x, kC + 2, w, botY - kC - 2);
+    for (i = 0; i < w; i += 9) { ctx.fillStyle = P.kLowerDeep; ctx.fillRect(x + Math.round(wrap(i - drift, w)), kC + 3, 1, botY - kC - 4); }
+    Tint.rect(ctx, x, botY - 4, w, 4, P.void, 5);
+    /* the lamps, hanging from the ceiling down in front of it: near ones
+       on long rods, far ones short */
     for (i = 0; i < 3; i++) {
-      var lx0 = x + Math.round(wrap(i * 44 + 10 - drift * 0.55, w + 20)) - 10;
-      miniDepthLamp(ctx, lx0, lidY + Math.round(half * 0.30), 0, false);
-      miniDepthLamp(ctx, lx0, botY - 1 - Math.round(half * 0.30), 0, true);
-      var lx1 = x + Math.round(wrap(i * 29 + 24 - drift * 0.27, w + 10)) - 5;
-      miniDepthLamp(ctx, lx1, lidY + Math.round(half * 0.72), 1, false);
-      miniDepthLamp(ctx, lx1, botY - 1 - Math.round(half * 0.72), 1, true);
+      var lx0 = x + Math.round(wrap(i * 44 + 10 - s * 0.14, w + 20)) - 10;
+      var lx1 = x + Math.round(wrap(i * 29 + 24 - s * 0.07, w + 10)) - 5;
+      miniHangLamp(ctx, lx0, lidY + Math.round(half * 0.30), midY + Math.round(kh * 0.62), 0);
+      miniHangLamp(ctx, lx1, lidY + Math.round(half * 0.72), midY + Math.round(kh * 0.28), 1);
     }
-    /* a skylight opening down the room, and its mirror */
-    var sx0 = x + Math.round(wrap(70 - drift * 0.4, w + 30)) - 15;
+    /* a skylight opening in the ceiling */
+    var sx0 = x + Math.round(wrap(70 - s * 0.1, w + 30)) - 15;
     ctx.fillStyle = P.lavFarEdge; ctx.fillRect(sx0 - 1, lidY + Math.round(half * 0.5) - 1, 14, 4);
-    ctx.fillStyle = P.sky;        ctx.fillRect(sx0, lidY + Math.round(half * 0.5), 12, 2);
-    ctx.fillStyle = P.lavFarEdge; ctx.fillRect(sx0 - 1, botY - Math.round(half * 0.5) - 2, 14, 4);
-    ctx.fillStyle = P.sky;        ctx.fillRect(sx0, botY - Math.round(half * 0.5) - 1, 12, 2);
-    Tint.rect(ctx, x, midY - Math.round(h * 0.12), w, Math.round(h * 0.24), P.void, 2);
+    ctx.fillStyle = P.skyFar;     ctx.fillRect(sx0, lidY + Math.round(half * 0.5), 12, 2);
 
     /* 2. the lid, and the same rows reversed for the bottom */
     ctx.fillStyle = P.plasterMid; ctx.fillRect(x, y, w, band - 4); ctx.fillRect(x, botY + 4, w, y + h - botY - 4);

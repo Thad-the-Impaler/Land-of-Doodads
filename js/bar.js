@@ -7,36 +7,40 @@
    the grey-washed ledge of the half wall, with the kitchen beyond it -
    the shaker cabinets, the fridge with its photographs, the amber
    pendant hanging in front of the stone and the dark television - showing
-   as a sliver over the top. Drawn from Bar ref 1-5 in Assets/Concept:
-   ref 5 is the composition (kitchen, ledge, cream wall, white chair rail,
-   bar top, the box, the envelope, the humidifier, the photographs, the
-   planter, the pinecones), ref 3 is the spirit box and the humidifier
-   close up, ref 1 and 2 the still life (the paper tent with its twig
-   fire and the RIP note, the snowman, the rock, the cell-textured pot),
-   and ref 4 the same cabinet after dark with its open shelf - the red
-   book, the board game, the clock - between the two mesh doors. The
-   lamp in ref 1-3 throws long soft shadows of everything on the bar up
-   the wall, and so does this one; and since a home bar is bottles and
-   glasses, a nearer layer of them stands along the back of the bar top.
+   as a sliver over the top. Drawn from Bar ref 1-6 in Assets/Concept:
+   ref 6 is the owner's own picture of the view he wants and the
+   background is built from it - the ledge, the plain cream wall, the
+   white chair rail, and the real things standing on the bar against it
+   (the humidifier, the envelope, the photo prints, the snowman, the
+   rock, the paper tent with its campfire and its RIP card, the pinecone
+   behind the tent); ref 5 is the kitchen beyond and the composition,
+   ref 3 is the spirit box and the humidifier close up, ref 1 and 2 the
+   still life and the cell-textured pot, and ref 4 the same cabinet after
+   dark with its open shelf - the red book, the board game, the clock -
+   between the two mesh doors.
 
    THE SIGNATURE IS THE HUMIDIFIER, and it is the one obstacle in the
    game that kills nothing. It stands on the bar against the wall - the
-   frosted, snow-speckled dome on its white base from Bar ref 3, never
-   off the screen, sliding slowly by at the wall's parallax - and from
-   the late score it clears its throat. The ring at its foot lights,
-   three small chuffs come out of the nozzle with a hiss, and a second
-   and a half later it SPRAYS: a column of mist climbs out of the apex
-   and billows, and a fog rolls out of it across the whole room, so that
-   for three seconds the wall, the stacks and the corks are seen through
-   about half a value of vapour. Then it clears. See THE MIST.
+   frosted, snow-speckled dome on its white base from Bar ref 3 and 6,
+   going by with the rest of the bar - and from the late score it clears
+   its throat. The ring at its foot lights, three small chuffs come out
+   of the nozzle with a hiss, and a second and a half later it SPRAYS: a
+   column of mist climbs out of the top and billows, and a fog rolls
+   out of it across the whole room and THICKENS UNTIL THE ROOM IS NEARLY
+   GONE - for four seconds the stacks are faint grey ghosts with only
+   their outlines left, and a cork is hard to see until it is close.
+   The owner's word for the first, gentler fog was that it made no
+   difference to the game, and that it should make things harder. Then
+   it clears. See THE MIST.
 
    What it may not hide is anything a player needs. The doodad, the HUD
    and Pepper's sight lines are drawn after it; the fog is clipped to the
    lane, so the two kill edges - the ledge's outline and the bar top's
    arris - stay crisp, and so does every spot a falling cork throws on
-   the bar. A stack in the fog is still a dark line round a lighter
-   field; a cork in it is still a dark ring. What the fog takes away is
-   the wall, which is the one thing nobody needed.
+   the bar: in the fog the spot under a cork is the one clear clue to
+   where it is, and it is always there. A stack in the fog is a faint
+   dark line round a field a shade off the mist; the fog takes away
+   nearly everything else, which is the point of it.
 
    THE CORKS ARE THE BAY'S DROPS: they leave the ledge with a little
    pace, tumble end over end, TOCK on the bar, take ONE hop and lie down,
@@ -124,36 +128,28 @@ var Bar = (function () {
     cone:          '#8a5a30',  coneLit: '#b47f49',  coneShade: '#5a3619',  coneDeep: '#2f1a0b',
     /* the still life: the tent, the note, the twigs, the envelope, the
        prints, the snowman, the rock */
-    paper:         '#e8df9a',  paperLine: '#c9bd6e', paperDeep: '#a3974c',
+    paper:         '#f0e59c',  paperLine: '#d8ca70', paperDeep: '#bfae55', paperShade: '#e0d283',
     note:          '#f1efe8',  ink: '#4a4a4a',
     twig:          '#6b4a2c',  ember: '#ff8a2a',
     kraft:         '#8e6d48',  kraftShade: '#6b5034',
-    envelope:      '#ece8de',  envelopeShade: '#c6c1b5',
+    envelope:      '#dcd7cc',  envelopeShade: '#bdb6a9', envelopeLit: '#e9e5dc',
     stampRed:      '#b8433b',  stampBlue: '#4a6fa5',
     print:         '#e6e2d8',  printShade: '#b9b4a8',  printInk: '#6c6a64',
+    printEdge:     '#9ea6ae',  printColour: '#8d6b5c',
+    /* THE BOX AND THE POT AS SCENERY: the photograph's warm mid-brown
+       wood, well lighter than a pillar box, and a duller white than a
+       pillar pot, each with a soft ring of its own dark */
+    bgBox:         '#87583a',  bgBoxLit: '#a5724c',  bgBoxGrain: '#73492f',
+    bgBoxSide:     '#5e3a24',  bgBoxDeep: '#4a2c1a',  bgBoxEdge: '#3f2a1c',
+    bgPot:         '#c6c1b6',  bgPotLit: '#d4d0c6',  bgPotCell: '#aca69b',
+    bgPotShade:    '#a19b8f',  bgPotDeep: '#8a847a',  bgPotEdge: '#736d64',
+    bgLeafEdge:    '#2c4422',
+    cardBlue:      '#4f79a8',  cardPink: '#d9849c',
     snow:          '#dfeaf0',  snowHi: '#ffffff',  snowShade: '#a9bcc6',
     rock:          '#9c978e',  rockShade: '#6f6a62',
     /* the kitchen's own few things the house does not keep */
     tv:            '#1e2124',  tvFrame: '#3a3e42',
     photoSky:      '#6f8fb0',  photoLand: '#7a6a4a',
-    picGround:     '#d9dfe2',
-    /* the back of the bar: the glass, the foil, the blank labels, the
-       steel, the slate */
-    glassGreen:    '#203a2a',  glassGreenLit: '#3f6450', glassGreenDeep: '#14231a',
-    glassBlack:    '#1d1c22',  glassBlackLit: '#4a4855', glassBlackDeep: '#111014',
-    glassSpec:     '#9fbcae',
-    foilRed:       '#6e1f2a',  foilRedLit: '#9a3a46',  foilRedDeep: '#4a1219',
-    label:         '#d1c5a6',  labelShade: '#b1a588',  labelEdge: '#a39778',
-    glassClear:    '#e9eeee',  glassRim: '#d6dddd',  glassEdge: '#aab2b2',  glassEdgeDim: '#7f8888',
-    whisky:        '#a2621f',  whiskyLit: '#cf8a3c',
-    slate:         '#46423f',  slateLit: '#615c57',  slateDeep: '#33302d',
-    steelFace:     '#9aa0a3',  steelBright: '#d3d8da', steelDim: '#6a7073', steelJoint: '#454a4d',
-    handle:        '#2f2a27',  handleLit: '#4e4743',
-    /* the two hung photographs: light wood, and muted pictures */
-    frame:         '#8d775c',  frameLit: '#a48d70',  frameShade: '#6c5944',
-    photoHill:     '#6f7d74',  photoCoat: '#4f4a4a',  photoShirt: '#8a6f5a',
-    photoSkin:     '#c4a088',  photoHair: '#3e3632',
-    sepia:         '#8c7a5e',  sepiaLit: '#c2b293',  sepiaDeep: '#5c4c38',
     /* a spare life glows the same in every level */
     lifeJade:      '#5fae9a',  lifePale: '#93d8bd',
     /* the evening's shade: the Living Room's night, because the house
@@ -215,23 +211,20 @@ var Bar = (function () {
 
   /* ------------------------------------------------------- geometry
 
-     The bay by screen row, Bar ref 5's proportions:
+     The bay by screen row, Bar ref 6's proportions:
 
         0..11    THE KITCHEN beyond the half wall, a sliver: shaker
                  cabinets, the fridge, the stone and the dark TV, the
                  amber pendant. 0.12, it is across a room.
         12..23   THE LEDGE, grey-washed timber, 1.0. Row 23 is the kill
                  line, and nothing solid comes below it.
-        24..241  THE WALL, 0.30: cream after dark, lit in warm pools with
-                 dusk between them, two family photographs hung high, the
-                 white chair rail at 186..195, and the still life on the
-                 bar against it - the balloon print, the envelope, the
-                 photographs, the paper tent - with THE HUMIDIFIER
-                 standing among them at 192..241, and every one of them
-                 throwing a long soft shadow up the wall.
-        142..241 THE BACK OF THE BAR, 0.60: bottles, glasses, a decanter,
-                 a shaker, standing on the bar's back edge under the rail,
-                 nearer than the humidifier and behind the pillars.
+        24..241  THE WALL AND WHAT STANDS AGAINST IT, one plane at 0.88:
+                 the plain cream wall, the white chair rail at 186..195,
+                 and on the bar the humidifier (181..241), the envelope
+                 behind it, the photo prints, the snowman, the rock, the
+                 paper tent with its fire and its card and the pinecone
+                 behind it - with plain wall between one group and the
+                 next.
         242..269 THE BAR TOP AND THE CABINET FACE, 1.0: the arris (the
                  kill edge), the charcoal slab, its lit front edge, and
                  the open shelf with the mesh doors either side.
@@ -242,31 +235,31 @@ var Bar = (function () {
   var LEDGE_Y = 12, LEDGE_W = 240;
   var WALL_H = FLOOR - CEIL;          /* 218 */
   var RAIL_Y = 186;                   /* screen row of the rail's top    */
-  var KITCHEN_PAR = 0.12, WALL_PAR = 0.30;
+  var KITCHEN_PAR = 0.12, WALL_PAR = 0.88;
 
-  /* THE HUMIDIFIER'S PLACE. It rides the wall at 0.30 and the wall tile
-     is exactly one screen wide, so tileX lays exactly ONE humidifier on
-     the screen at every scroll (split across the two edges for the half
-     second its 44px take to cross the seam). It drifts left at 0.30 of
-     the room's speed - 34 to 53 px/s - crossing the screen in 9 to 14
-     seconds and coming back in at the right, which reads as one machine
-     being slowly passed on a long bar: the Couch's propped cushions ride
-     at 0.62 on a seat that scrolls at 1.0 in exactly this way. At scroll
-     0 it stands at x 300, in view and right of the doodad, before the
-     first cork ever falls. It is never pinned to the screen - a thing on
-     the bar that did not scroll would read as HUD - and it is never a
-     pillar and never has a box. */
-  var HUM_X = 300, HUM_Y = 192, HUM_W = 44, HUM_H = 50;
-  var NOZ_DX = 22, NOZ_Y = 194;      /* the hole in the apex, Bar ref 3 */
+  /* THE HUMIDIFIER'S PLACE: tile x 300 on the 768 wall tile, standing on
+     the bar (its last row on 241), so at scroll 0 - GET READY - it
+     stands at x 300, in view and right of the doodad. It rides the wall
+     at 0.88 like everything else on the bar: 100 to 155 px/s, across the
+     screen in 3.5 to 5.4 seconds, and back round every 4.9 to 7.7, so it
+     is on the screen nearly three quarters of the time. It is never pinned
+     to the screen - a thing on the bar that did not scroll would read as
+     HUD - and it is never a pillar and never has a box. */
+  var HUM_X = 300, HUM_Y = 181, HUM_W = 70, HUM_H = 61;
+  var NOZ_DX = 35, NOZ_Y = 183;      /* the hole in the top, Bar ref 3 */
 
   /* where the copy tileX draws at the left is, exactly as tileX rounds
      it, so the sprite and the wall it is baked against never part */
-  function humX(scroll) { return HUM_X + Math.round(-wrap(scroll * WALL_PAR, VW)); }
+  function humX(scroll) { return HUM_X + Math.round(-wrap(scroll * WALL_PAR, WALL_W)); }
 
-  /* the nozzle of whichever copy has its nozzle on the screen */
+  /* the nozzle of whichever copy has its nozzle on the screen, or -1
+     when no humidifier is on the screen at all */
   function nozzleX(scroll) {
-    var n = humX(scroll) + NOZ_DX;
-    return n < 0 ? n + VW : n;
+    var n = humX(scroll) + NOZ_DX, k;
+    for (k = -1; k <= 1; k++) {
+      if (n + k * WALL_W >= 0 && n + k * WALL_W < VW) return n + k * WALL_W;
+    }
+    return -1;
   }
 
   /* ------------------------------------------------------- helpers */
@@ -301,14 +294,22 @@ var Bar = (function () {
 
   /* the 1px dark ring round whatever is already painted on a canvas,
      laid UNDER it - so it follows every notch the shape has (ringOf) */
-  function ringed(t) {
+  function ringed(t, colour) {
     var m = makeCanvas(t.w, t.h), c = t.ctx;
     m.ctx.drawImage(t.canvas, 0, 0);
     m.ctx.globalCompositeOperation = 'source-in';
     m.ctx.fillStyle = '#ffffff';
     m.ctx.fillRect(0, 0, t.w, t.h);
+    var ring = ringOf(m, t.w, t.h);
+    /* a SOFT ring, for scenery that must sit behind the hazards: the
+       same shape in a colour of the thing's own instead of black */
+    if (colour) {
+      ring.ctx.globalCompositeOperation = 'source-in';
+      ring.ctx.fillStyle = colour;
+      ring.ctx.fillRect(0, 0, t.w, t.h);
+    }
     c.globalCompositeOperation = 'destination-over';
-    c.drawImage(ringOf(m, t.w, t.h).canvas, 0, 0);
+    c.drawImage(ring.canvas, 0, 0);
     c.globalCompositeOperation = 'source-over';
     return t;
   }
@@ -551,152 +552,137 @@ var Bar = (function () {
 
   /* --------------------------------------------------------- the wall
 
-     480 x 218 at 0.30, the cream wall of the half wall after dark: its
-     tooth, the white chair rail from Bar ref 1/5 with its shadow on the
-     wall below it, and - in the full version - the still life standing
-     on the bar against it. `still` false is the bare wall the menu
-     backdrop wants.
+     THE BAR IN BAR REF 6, and it is the owner's own picture of it: the
+     grey-washed ledge high up, a plain cream wall, the white chair rail
+     about a quarter of the way up from the bar, and ON THE BAR, against
+     the wall, the things that are actually there - the frosted
+     humidifier with a big white envelope leaning on the wall behind it,
+     a stack of photo prints with one loose print lying on top, the tiny
+     clear snowman, the small white rock, the yellow lined-paper tent with
+     its twig campfire and its paper flame, the RIP card leaning on the
+     tent, and the brown pinecone standing behind the tent's peak - and
+     at either end of them THE SPIRIT BOX and THE PLANTER, which the
+     pillars are made of and which the owner wants on the bar anyway, as
+     they are in every photograph; see stillBox for how they are kept
+     from ever being mistaken for the pillars.
 
-     THE STILL LIFE IS HALF WHAT IS ON THAT BAR, deliberately. Bar ref 5
-     has a box, an envelope, the humidifier, the photographs, a snowman,
-     a rock, a paper tent, a planter and two pinecones. The box and the
-     planter are the PILLARS and the pinecone is the SPARE LIFE, so none
-     of the three appears on this wall in any form: scenery wearing a
-     hazard's or a gift's badge is the Couch's whole lesson. The snowman
-     and the rock are on the bar top as litter. What is left back here is
-     what nobody could mistake for anything: an envelope leaning on the
-     wall, a stack of photographs lying flat, the paper tent with its
-     twig fire and its note - and the humidifier, which is drawn over
-     this tile every frame (drawBackdrop) so that its ring can light. */
+     ONE PLANE, ONE SCALE. Everything here stands on the same bar against
+     the same wall, so the wall, the rail, the still life and the
+     shadows the still life throws are ONE tile, 640 x 218, laid at ONE
+     parallax, 0.88 - nearly the bar top's own 1.0, so nothing skates
+     across the bar. The sizes come off ref 6 and off the real things:
+     the lane from the bar to the ledge is about half a metre, so the
+     humidifier (about 16cm across and 14 high) is 70 x 61, a little
+     wider than tall as in the photograph; the photo stack about as wide
+     as the humidifier and a third as tall; the tent a little shorter
+     than the humidifier; the snowman a third of it. The envelope is the
+     one thing that looks too big, and it is the photograph's: a large
+     mailer standing at the wall whose top shows over the dome.
+
+     ONE GROUP A TILE, the photograph's left to right - the box, the
+     humidifier and the envelope, the photo stack, the snowman, rock,
+     tent, card and pinecone, the planter and the big pinecones by it -
+     about 470 pixels of it, and then nearly 300 of plain cream wall
+     before it comes round again. The plain wall is the photograph too.
+
+     THE LIGHT is ref 6's: warm and soft, from low and in front on the
+     right, so every real thing throws a short soft shadow up and to the
+     LEFT of itself onto the wall - the humidifier's most of all, falling
+     across the envelope behind it. Only things that are in the picture
+     throw shadows. The humidifier itself is drawn over this tile every
+     frame (drawBackdrop) so that its ring can light; its shadow is baked
+     here, at the same parallax and the same rounding, so the two never
+     part. `still` false is the bare wall the menu backdrop wants. */
+  var WALL_W = 768;
+  var BASE_ROW = WALL_H - 1;        /* the tile row the bar's back edge is on */
+  /* the group, by tile x, ref 6 left to right */
+  var BOX_X = 194, ENV_X = 286, PRINT_X = 384, SNOW_X = 462, ROCK_X = 474, TENT_X = 486,
+      NOTE_X = 520, POT_X = 530, CONE_X = 612;
+  /* THE STEP BACK: everything on this wall is laid back this far toward
+     the wall's own colour, so the whole group sits behind the hazards in
+     value - its black rings come out about 55 instead of 26, its darks
+     lighter and its whites duller - and the pillars, drawn after the
+     light and never touched by this, are the crispest and the most
+     extreme things at any x. */
+  var STEP_BACK = 0.20;
+
   function bakeWall(still) {
-    var t = makeCanvas(VW, WALL_H), c = t.ctx, r = mulberry32(4901);
-    var x, y, i, k;
+    var t = makeCanvas(WALL_W, WALL_H), c = t.ctx, r = mulberry32(4901);
+    var x, y, i;
 
-    c.fillStyle = P.wall; c.fillRect(0, 0, VW, WALL_H);
+    c.fillStyle = P.wall; c.fillRect(0, 0, WALL_W, WALL_H);
     /* TOOTH: single pixels, one in seventy, never ticks - the Garden's
        stucco rule. Painted plaster has a tooth and no grain. */
     for (y = 0; y < WALL_H; y++) {
-      for (x = 0; x < VW; x++) {
+      for (x = 0; x < WALL_W; x++) {
         if (r() > 1 / 70) continue;
         dot(c, r() < 0.5 ? P.wallTooth : P.wallToothDark, x, y);
       }
     }
 
-    /* THE CHAIR RAIL, Bar ref 1/5, screen rows 186..195: a cap catching
+    /* THE CHAIR RAIL, Bar ref 1/5/6, screen rows 186..195: a cap catching
        the light, the face, a lower bead that catches it too, the face
        again, the underside, and the hard line where it leaves the wall */
     var RL = RAIL_Y - CEIL;           /* 162 */
     var RAIL = [P.railLit, P.rail, P.rail, P.rail, P.rail, P.railLit, P.rail, P.rail,
                 P.railShade, P.outline];
-    for (i = 0; i < RAIL.length; i++) { c.fillStyle = RAIL[i]; c.fillRect(0, RL + i, VW, 1); }
+    for (i = 0; i < RAIL.length; i++) { c.fillStyle = RAIL[i]; c.fillRect(0, RL + i, WALL_W, 1); }
     /* and its shadow down the wall: eight rows, per-row alpha, because
        this is a static tile and a strip on a static tile has no edge */
     for (i = 0; i < 8; i++) {
       c.fillStyle = rgba(P.void, 0.22 * (1 - (i + 0.5) / 8));
-      c.fillRect(0, RL + RAIL.length + i, VW, 1);
+      c.fillRect(0, RL + RAIL.length + i, WALL_W, 1);
     }
-
-    /* THE EVENING LIGHT ON IT, which is the most striking thing in Bar
-       ref 1, 2 and 3: the wall is not lit evenly, it is lit in WARM
-       POOLS where the amber light falls - up under the ledge, from the
-       pendants - with cooler, darker stretches between them. Two pools a
-       tile at about a sixth of lampGlow, two soft bands of night between,
-       all of it wrapped so the tile still tiles. Measured at the middle
-       of the lane the wall now runs about 150 in the dusk between the
-       pools to about 172 at their hearts; the planters stay 40 clear of
-       the brightest of it and the boxes 100 under it. */
-    c.drawImage(alphaSheet(VW, WALL_H, H.lampGlow, function (x, y) {
-      var keep = 1, j, dx, dy, d;
-      for (j = 0; j < POOLS.length; j++) {
-        dx = Math.abs(x + 0.5 - POOLS[j][0]); if (dx > VW / 2) dx = VW - dx;
-        dx /= POOLS[j][2]; dy = (y + 0.5 - POOLS[j][1]) / POOLS[j][3];
-        d = Math.sqrt(dx * dx + dy * dy);
-        if (d < 1) keep *= 1 - POOLS[j][4] * (1 - ease(d));
-      }
-      return 1 - keep;
-    }).canvas, 0, 0);
-    c.drawImage(alphaSheet(VW, WALL_H, P.night, function (x, y) {
-      var a = 0, j, dx;
-      for (j = 0; j < DUSK.length; j++) {
-        dx = Math.abs(x + 0.5 - DUSK[j][0]); if (dx > VW / 2) dx = VW - dx;
-        if (dx < DUSK[j][1]) a = Math.max(a, DUSK[j][2] * (1 - ease(dx / DUSK[j][1])));
-      }
-      return a;
-    }).canvas, 0, 0);
 
     if (!still) return t;
 
-    /* THE STILL LIFE, painted first into a sheet of its own, because its
-       silhouette is what the lamp throws up the wall */
-    var S = makeCanvas(VW, WALL_H), sc = S.ctx;
-    stillPicture(sc, 45, 192);
-    stillEnvelope(sc, 139, 200);
-    stillPrints(sc, 192, 210);
-    stillTent(sc, 236, 201);
+    /* the still life, into a sheet of its own first, back to front:
+       the envelope at the wall, the prints, the pinecone behind the
+       tent, the tent, the card leaning on it, the fire in front of its
+       door, the snowman and the rock */
+    var S = makeCanvas(WALL_W, WALL_H), sc = S.ctx;
+    stillBox(sc, BOX_X, BASE_ROW);
+    stillEnvelope(sc, ENV_X, BASE_ROW);
+    stillPrints(sc, PRINT_X, BASE_ROW);
+    stillPinecone(sc, TENT_X + 8, BASE_ROW - 48);
+    stillTent(sc, TENT_X, BASE_ROW);
+    stillBigCone(sc, CONE_X, BASE_ROW);
+    stillPlanter(sc, POT_X, BASE_ROW);
+    stillNote(sc, NOTE_X, BASE_ROW);
+    stillFire(sc, TENT_X + 7, BASE_ROW);
+    stillSnowman(sc, SNOW_X, BASE_ROW);
+    stillRock(sc, ROCK_X, BASE_ROW);
+    sc.globalCompositeOperation = 'source-atop';
+    sc.fillStyle = rgba(P.wall, STEP_BACK);
+    sc.fillRect(0, 0, WALL_W, WALL_H);
+    sc.globalCompositeOperation = 'source-over';
 
-    /* THE SHADOWS ON THE WALL. The lamp in here is low and to the LEFT -
-       the side every lit arris in the bay is on: the boxes' lit left
-       edge, the dome's highlight, the pots' lit cells - so everything
-       standing on the bar throws a LONG soft shadow up the wall and to
-       the right of itself, the way the lamp does in Bar ref 1 and 3: half
-       as tall again as the thing, leaning over, softening and fading as
-       it climbs (castShadow). The humidifier's reaches past the chair
-       rail. Ref 3's shadow of a peace lily's leaves stays high on the
-       wall, thrown by a plant out of the frame, and the two hung
-       photographs throw a narrow soft edge. One alpha sheet, the darkest
-       wins where two meet: the wall is lit from somewhere, not
-       stencilled. Everything here moves with the wall, and so do the
-       things casting it. */
-    var M = makeCanvas(VW, WALL_H);
-    M.ctx.drawImage(S.canvas, 0, 0);
-    M.ctx.drawImage(T.hum[0].canvas, HUM_X - 1, HUM_Y - CEIL - 1);
-    var cast = castShadow(M, WALL_H - 1, 1.6, 0.6, 2, 0.34, 52, true);
-    var LEAF = [];
-    for (k = 0; k < LILY_SHADOW.length; k++) {
-      var la = LILY_SHADOW[k][0] * Math.PI / 180;
-      LEAF.push([Math.sin(la), -Math.cos(la), LILY_SHADOW[k][1], LILY_SHADOW[k][2]]);
-    }
-    c.drawImage(alphaSheet(VW, WALL_H, P.night, function (x, y) {
-      var a = cast[y * VW + x], j, s2, tt, u, hw;
-      for (j = 0; j < HUNG.length; j++) {
-        a = Math.max(a, rectShade(x, y, HUNG[j][0] + 3, HUNG[j][1] - 2, HUNG[j][2], HUNG[j][3], 3, 0.16));
-      }
-      var px = x + 0.5 - LILY_BX, py = y + 0.5 - LILY_BY;
-      if (px > -110 && px < 110 && py > -110 && py < 4) {
-        for (j = 0; j < LEAF.length; j++) {
-          s2 = px * LEAF[j][0] + py * LEAF[j][1];
-          tt = Math.abs(px * LEAF[j][1] - py * LEAF[j][0]);
-          if (s2 > 0 && s2 < LILY_STEM) {
-            if (tt < 1.2) a = Math.max(a, 0.11 * (1 - tt / 1.2));
-            continue;
-          }
-          u = (s2 - LILY_STEM) / LEAF[j][2];
-          if (u <= 0 || u >= 1) continue;
-          hw = LEAF[j][3] / 2 * Math.pow(Math.sin(Math.PI * u), 0.75);
-          a = Math.max(a, 0.13 * (1 - ease((tt - hw + 3) / 6)));
-        }
-      }
-      return a;
-    }).canvas, 0, 0);
-
-    /* the two photographs hung on the wall, then the still life */
-    hungPhoto(c, HUNG[0], 0);
-    hungPhoto(c, HUNG[1], 1);
+    /* THE SHADOWS: short and soft, up and to the left (castShadow with a
+       negative lean). The still life's go down under it; the
+       humidifier's goes down OVER it, because the envelope stands
+       between the humidifier and the wall and the dome's shadow falls
+       across it - as it does in ref 6. */
+    var shS = castShadow(S, BASE_ROW, 1.0, -0.55, -3, 0.20, 60, true);
+    c.drawImage(alphaSheet(WALL_W, WALL_H, P.night, function (x, y) { return shS[y * WALL_W + x]; }).canvas, 0, 0);
     c.drawImage(S.canvas, 0, 0);
+    var Hm = makeCanvas(WALL_W, WALL_H);
+    Hm.ctx.drawImage(T.hum[0].canvas, HUM_X - 1, HUM_Y - CEIL - 1);
+    var shH = castShadow(Hm, BASE_ROW, 1.05, -0.6, -4, 0.26, 44, true);
+    c.drawImage(alphaSheet(WALL_W, WALL_H, P.night, function (x, y) { return shH[y * WALL_W + x]; }).canvas, 0, 0);
     return t;
   }
 
-  /* THE LONG SHADOW. `m` is a sheet with the shadow-casters painted on
-     it, standing on row `base`. Each row of wall above the base shows
-     the slice of the casters `1/stretch` as high, slid `shear` pixels
-     right for every pixel of height and `off` more: a low lamp on the
-     left throws everything up and over. The casters' mask is blurred
-     twice first, and every row is blurred again sideways in proportion
-     to how far up it is, so the shadow is crisp-ish at the foot and a
-     soft penumbra at the top; and it fades by two thirds over `reach`
-     pixels of the caster's height. Returns per-pixel alpha (times
-     `peak`), for an alphaSheet. `wrapX` for a tile laid end to end. */
-  function castShadow(m, base, stretch, shear, off, peak, reach, wrapX) {
+  /* THE SHADOW A LOW LAMP THROWS. `m` is a sheet with the casters on it,
+     standing on row `base`. Each row of wall above the base shows the
+     slice of the casters `1/stretch` as high, slid `lean` pixels sideways
+     for every pixel of height and `off` more - negative leans left. The
+     casters' mask is blurred twice first, and every row is blurred again
+     sideways in proportion to its height, so the shadow is firm at the
+     foot and a soft penumbra at the top; and it fades by two thirds over
+     `reach` pixels of the casters' height. Returns per-pixel alpha
+     (times `peak`), for an alphaSheet. `wrapX` for a tile laid end to
+     end. */
+  function castShadow(m, base, stretch, lean, off, peak, reach, wrapX) {
     var w = m.w, h = m.h, d = m.ctx.getImageData(0, 0, w, h).data;
     var A = new Float32Array(w * h), out = new Float32Array(w * h), i, x, y, k;
     for (i = 0; i < w * h; i++) A[i] = d[i * 4 + 3] > 0 ? 1 : 0;
@@ -704,10 +690,10 @@ var Bar = (function () {
     for (y = 0; y <= base; y++) {
       var hh = (base - y) / stretch;
       if (hh > reach * 1.5) continue;
-      var oy = Math.round(base - hh), r = Math.round(hh / 14);
+      var oy = Math.round(base - hh), r = Math.round(hh / 12);
       var fade = Math.max(0, 1 - 0.66 * hh / reach);
       for (x = 0; x < w; x++) {
-        var cx = Math.round(x - off - shear * hh), sum = 0;
+        var cx = Math.round(x - off - lean * hh), sum = 0;
         for (k = -r; k <= r; k++) {
           var sx = cx + k;
           if (wrapX) sx = wrap(sx, w); else if (sx < 0 || sx >= w) continue;
@@ -747,463 +733,442 @@ var Bar = (function () {
     return C;
   }
 
-  /* a soft rectangle's alpha: full inside, gone `soft` pixels outside */
-  function rectShade(x, y, rx, ry, rw, rh, soft, peak) {
-    var dx = Math.max(rx - (x + 0.5), 0, (x + 0.5) - (rx + rw));
-    var dy = Math.max(ry - (y + 0.5), 0, (y + 0.5) - (ry + rh));
-    if (dx > soft || dy > soft) return 0;
-    var d = Math.sqrt(dx * dx + dy * dy);
-    return peak * (1 - ease(d / soft));
-  }
-
-  /* THE HUNG PHOTOGRAPHS: family photographs in plain light-wood frames,
-     the house's own (Bar ref 5 has one on the wall beyond the half
-     wall). [x, y, w, h] in tile pixels, high in the field between the
-     ledge and the rail, one in each pool of lamplight so the light has
-     something to fall on. They are kept QUIET: a mid-tone frame with no
-     black outline, a muted picture, and the whole thing laid back a
-     third of the way toward the wall colour - nothing up here may read
-     louder than a box stack or a cork, and it slides at the wall's 0.30
-     against the room's 1.0, so nothing up here can be mistaken for
-     something coming. */
-  var HUNG = [[94, 28, 48, 36], [332, 38, 26, 34]];
-
-  function hungPhoto(c, f, kind) {
-    var x0 = f[0], y0 = f[1], W = f[2], Hh = f[3], i, k;
-    var t = makeCanvas(W, Hh), g = t.ctx;
-    /* the frame: lit along its top and left, shade along its bottom and
-       right, a darker line where the picture is set into it */
-    g.fillStyle = P.frame;      g.fillRect(0, 0, W, Hh);
-    g.fillStyle = P.frameLit;   g.fillRect(0, 0, W, 1); g.fillRect(0, 0, 1, Hh);
-    g.fillStyle = P.frameShade; g.fillRect(0, Hh - 1, W, 1); g.fillRect(W - 1, 0, 1, Hh);
-    g.fillRect(3, 3, W - 6, 1); g.fillRect(3, 3, 1, Hh - 6);
-    if (kind === 0) {
-      /* a couple out of doors, Bar ref 5's photograph: sky, a line of
-         hills, grass, and two figures standing in it */
-      g.fillStyle = P.photoSky;  g.fillRect(4, 4, W - 8, 12);
-      g.fillStyle = P.photoHill; g.fillRect(4, 14, W - 8, 3);
-      for (k = 0; k < W - 8; k++) if (hash(91 + k) % 3 === 0) dot(g, P.photoHill, 4 + k, 13);
-      g.fillStyle = P.photoLand; g.fillRect(4, 17, W - 8, Hh - 21);
-      var FIG = [[Math.round(W / 2) - 7, P.photoCoat, P.photoSkin], [Math.round(W / 2) - 1, P.photoShirt, P.photoSkin]];
-      for (i = 0; i < FIG.length; i++) {
-        var fx = FIG[i][0];
-        g.fillStyle = FIG[i][2]; g.fillRect(fx + 1, 10, 3, 3);
-        g.fillStyle = P.photoHair; g.fillRect(fx + 1, 9, 3, 1);
-        g.fillStyle = FIG[i][1]; g.fillRect(fx, 13, 5, 8);
-        g.fillStyle = P.photoHair; g.fillRect(fx + 1, 21, 1, 5); g.fillRect(fx + 3, 21, 1, 5);
-      }
-    } else {
-      /* an old print, sepia: a tree on a hill */
-      g.fillStyle = P.sepiaLit; g.fillRect(4, 4, W - 8, Hh - 8);
-      g.fillStyle = P.sepia;    g.fillRect(4, Hh - 10, W - 8, 6);
-      for (k = 0; k < W - 8; k++) if (hash(77 + k) % 2) dot(g, P.sepia, 4 + k, Hh - 11);
-      var tx = Math.floor(W / 2);
-      g.fillStyle = P.sepiaDeep; g.fillRect(tx, 13, 1, Hh - 23);
-      g.fillRect(tx - 3, 9, 7, 5); g.fillRect(tx - 2, 8, 5, 1); g.fillRect(tx - 2, 14, 5, 1);
-    }
-    /* and the whole of it laid back toward the wall */
-    g.globalCompositeOperation = 'source-atop';
-    g.fillStyle = rgba(P.wall, 0.30);
-    g.fillRect(0, 0, W, Hh);
-    g.globalCompositeOperation = 'source-over';
-    c.drawImage(t.canvas, x0, y0);
-  }
-
-  /* the two pools of lamplight, [x, y, rx, ry, peak] in tile pixels */
-  var POOLS = [[118, 58, 150, 120, 0.22], [350, 54, 140, 112, 0.19]];
-  /* and the dusk between them, [x, half-width, peak] in tile pixels */
-  var DUSK = [[236, 72, 0.16], [0, 66, 0.14]];
-
-  /* THE LILY'S SHADOW: seven leaves fanned up from a point on the rail,
-     [degrees off straight up, blade length, blade width]. A peace lily
-     is a fountain of long pointed blades on long stems - Bar ref 1's
-     plant and ref 3's shadow of it. */
-  var LILY_BX = 410, LILY_BY = 160, LILY_STEM = 16;
-  var LILY_SHADOW = [[-64, 34, 9], [-46, 46, 11], [-24, 60, 13], [-6, 70, 14],
-                     [14, 58, 13], [32, 50, 12], [54, 40, 10]];
-
-  /* THE FRAMED PICTURE, Bar ref 5: leaning on the wall at the left end
-     of the bar, a white frame round a print of coloured balloons - the
-     one burst of colour on the back of the bar. 22 x 26, leaning two
-     pixels over at the top. */
-  function stillPicture(c, x0, y0) {
-    var W = 22, Hh = 26, i, k;
-    var flat = makeCanvas(W, Hh), f = flat.ctx;
-    f.fillStyle = P.note;          f.fillRect(0, 0, W, Hh);
-    f.fillStyle = P.envelopeShade; f.fillRect(W - 2, 0, 2, Hh); f.fillRect(0, Hh - 2, W, 2);
-    f.fillStyle = P.printShade;    f.fillRect(3, 3, W - 6, Hh - 6);
-    f.fillStyle = P.picGround;     f.fillRect(4, 4, W - 8, Hh - 8);
-    var BALLS = [P.stampRed, P.pegBlue, P.paper, P.ember, P.stampBlue, H.leafLit, P.pegRed];
-    for (i = 0; i < 26; i++) {
-      var h = hash(4411 + i * 977);
-      f.fillStyle = BALLS[h % BALLS.length];
-      f.fillRect(5 + (h >>> 4) % (W - 11), 5 + (h >>> 12) % (Hh - 11), 2, 2);
-    }
-    var t = makeCanvas(W + 4, Hh + 2);
-    for (i = 0; i < Hh; i++) {
-      k = Math.round((Hh - 1 - i) / (Hh - 1) * 2);
-      t.ctx.drawImage(flat.canvas, 0, i, W, 1, 1 + k, 1 + i, W, 1);
-    }
+  /* draw a flat sprite into the still life with every row slid sideways
+     by `lean(row)` - how a thing leaning on a wall is drawn at this size -
+     and ringed. (x0, base) is its left edge and the row it stands on. */
+  function placeLeaning(c, flat, x0, base, lean) {
+    var W = flat.w, Hh = flat.h, i, mx = 0;
+    for (i = 0; i < Hh; i++) mx = Math.max(mx, Math.abs(lean(i)));
+    var t = makeCanvas(W + mx * 2 + 2, Hh + 2);
+    for (i = 0; i < Hh; i++) t.ctx.drawImage(flat.canvas, 0, i, W, 1, 1 + mx + lean(i), 1 + i, W, 1);
     ringed(t);
-    c.drawImage(t.canvas, x0 - 1, y0 - 1);
+    c.drawImage(t.canvas, x0 - 1 - mx, base - Hh);
   }
 
-  /* THE ENVELOPE, Bar ref 5: a long white envelope stood on its edge and
-     leaning back on the wall behind the box. 38 x 17 - a business
-     envelope is two and a quarter times as long as it is tall - with
-     the stamp in the corner and the address as three scribbled lines,
-     which is what handwriting is from across a room. Every row shifted
-     right a little more than the one below it: it leans. */
-  function stillEnvelope(c, x0, y0) {
-    var W = 38, Hh = 17, i, k;
-    var flat = makeCanvas(W, Hh), f = flat.ctx;
-    f.fillStyle = P.envelope;      f.fillRect(0, 0, W, Hh);
-    f.fillStyle = P.envelopeShade; f.fillRect(W - 2, 0, 2, Hh); f.fillRect(0, Hh - 1, W, 1);
-    /* the stamp */
-    f.fillStyle = P.stampRed;  f.fillRect(W - 7, 2, 4, 4);
-    f.fillStyle = P.stampBlue; f.fillRect(W - 6, 3, 2, 2);
-    /* the return address, two short lines, and the address, three */
-    for (k = 0; k < 2; k++) {
-      for (i = 0; i < 7; i++) if (hash(311 + k * 31 + i) % 4) dot(f, P.printInk, 2 + i, 2 + k * 2);
+  /* THE SPIRIT BOX AND THE PLANTER, AS THEMSELVES. The owner asked for
+     both on the bar, as they are in every photograph, even though the
+     pillars are made of them - "just make sure it's not confusing". So
+     the two here are separated from the two that kill on every axis
+     that does not falsify the objects:
+       - ONE of each, standing on the bar. Never a stack, never a cap.
+       - AT TRUE SCALE: the box is twice the humidifier's height (ref 5,
+         6), 82 x 124, nearly three times a pillar's 44px box; the pot is
+         112 across, more than three times a pillar's 34px pot. A pillar
+         unit is a toy beside them.
+       - IN THE BACKGROUND'S VALUES: the group's step back toward the
+         wall, a SOFT ring in a dark of the thing's own colour instead
+         of the pillars' black, and the box's wood is the photograph's
+         warm mid-brown, well lighter than a pillar box; the pot is a
+         duller white than a pillar pot. Measured at scale 2 with the
+         pillars standing in front of them: the box's body 95..106
+         against a pillar box's 56..68 (27 or more lighter), the pot's
+         body 148..170 against a pillar pot's 194..199 (24 or more
+         darker), and their rings 43 and 100-odd against the pillars'
+         26.
+       - IN THE BACKGROUND'S LIGHT: lit from the right like everything
+         else on this wall (the pillars are lit from the left), and
+         throwing the same soft shadow up the wall.
+       - DRESSED: the succulent and the coloured card on the box's lid,
+         the peace lily out of the pot, the big pinecones by its foot. */
+  function stillBox(c, x0, base) {
+    var FW = 70, SW = 12, W = FW + SW, Hh = 124, i, k, x, y;
+    var t = makeCanvas(W + 2, Hh + 2), g = t.ctx, r = mulberry32(5511);
+    /* the front, lit from the right: a lit right arris, a shaded left */
+    g.fillStyle = P.bgBox;      g.fillRect(1, 1, FW, Hh);
+    g.fillStyle = P.bgBoxLit;   g.fillRect(1 + FW - 3, 1, 2, Hh);
+    g.fillStyle = P.bgBoxGrain; g.fillRect(1, 1, 2, Hh);
+    /* the long figure of the wood, running up the box */
+    for (i = 0; i < 46; i++) {
+      x = 4 + Math.floor(r() * (FW - 9));
+      y = 16 + Math.floor(r() * (Hh - 24));
+      var len = 6 + Math.floor(r() * 26);
+      g.fillStyle = r() < 0.5 ? P.bgBoxGrain : P.bgBoxLit;
+      g.fillRect(1 + x, 1 + y, 1, Math.min(len, Hh - 4 - y));
     }
+    /* the right side, turned from the camera, darker */
+    g.fillStyle = P.bgBoxSide; g.fillRect(1 + FW, 1 + 2, SW, Hh - 2);
+    g.fillStyle = P.bgBoxDeep; g.fillRect(1 + FW, 1 + 2, 1, Hh - 2);
+    for (i = 0; i < 6; i++) {
+      g.fillStyle = P.bgBoxDeep;
+      g.fillRect(1 + FW + 3 + Math.floor(r() * (SW - 4)), 1 + 20 + Math.floor(r() * 80), 1, 8 + Math.floor(r() * 14));
+    }
+    /* THE LID: its top edge catching the light, and the seam a seventh of
+       the way down - a dark line with a lit lip under it */
+    g.fillStyle = P.bgBoxLit;  g.fillRect(1, 1, FW, 1); g.fillRect(1 + FW, 1 + 2, SW, 1);
+    g.fillStyle = P.bgBoxDeep; g.fillRect(1, 1 + 16, W, 1);
+    g.fillStyle = P.bgBoxLit;  g.fillRect(1, 1 + 17, FW, 1);
+    /* the plinth, and the plaque low on the front - brass, blank */
+    g.fillStyle = P.bgBoxDeep; g.fillRect(1, 1 + Hh - 3, W, 3);
+    var px = 1 + 25, py = 1 + 94;
+    g.fillStyle = P.brass;    g.fillRect(px, py, 20, 10);
+    g.fillStyle = P.brassLit; g.fillRect(px, py, 20, 1); g.fillRect(px + 19, py, 1, 10);
+    g.fillStyle = P.bgBoxDeep; g.fillRect(px, py + 9, 19, 1); g.fillRect(px, py, 1, 9);
+    g.fillStyle = P.brassLit; g.fillRect(px + 3, py + 3, 14, 4);
+    g.fillStyle = P.brass;    g.fillRect(px + 4, py + 4, 12, 2);
+    ringed(t, P.bgBoxEdge);
+    c.drawImage(t.canvas, x0 - 1, base - Hh);
+
+    /* ON THE LID, Bar ref 5/6: the little succulent rosette in a clay
+       saucer, and the coloured card standing up behind it */
+    var lid = base - Hh;
+    var card = makeCanvas(14, 18), cg = card.ctx;
+    cg.fillStyle = P.cardBlue; cg.fillRect(1, 1, 12, 16);
+    for (i = 0; i < 14; i++) {
+      var h = hash(611 + i * 37);
+      cg.fillStyle = [P.cardPink, P.paper, P.stampRed, P.print][h % 4];
+      cg.fillRect(2 + (h >>> 4) % 9, 2 + (h >>> 9) % 13, 2, 2);
+    }
+    ringed(card, P.bgBoxEdge);
+    c.drawImage(card.canvas, x0 + 42, lid - 17);
+    var suc = makeCanvas(20, 11), sg = suc.ctx;
+    var ROS = ['...L....L....L...',
+               '..LGL..LGL..LGL..',
+               '.LGGDLLGGGLLDGGL.',
+               'LGGDGGGGDGGGGDGGL',
+               '.DGGGDGGGGGDGGGD.',
+               '..DDGGGDGDGGGDD..',
+               '.....KKKKKKK.....'];
+    plot(sg, ROS, { L: H.leafLit, G: H.leaf, D: H.leafDeep, K: P.kraftShade }, 1, 2);
+    ringed(suc, P.bgLeafEdge);
+    c.drawImage(suc.canvas, x0 + 14, lid - 9);
+  }
+
+  /* THE PLANTER, Bar ref 1/5/6: the big white footed pot with the peace
+     lily, at true scale. A wide rolled rim, a bowl that narrows to its
+     foot, the cells all over it - laid round the pot, sixteen columns
+     across, wider in the middle and squeezed at the flanks - and three
+     flat feet splaying out under it. Lit from the right; a soft grey
+     ring, not a black one. */
+  function stillPlanter(c, x0, base) {
+    var W = 112, BODY = 86, FEET = 10, Hh = 6 + BODY + FEET, i, x, y;
+    var LEAF_H = 58;
+    var t = makeCanvas(W + 40, LEAF_H + Hh + 2), g = t.ctx;
+    var ox = 20, oy = 1 + LEAF_H;
+    /* the lily first, rising out of the pot from behind the rim */
+    stillLily(g, ox + W / 2, oy + 3);
+    /* the rim */
+    g.fillStyle = P.bgPot;      g.fillRect(ox, oy, W, 6);
+    g.fillStyle = P.bgPotLit;   g.fillRect(ox + 1, oy, W - 2, 2);
+    g.fillStyle = P.soil;       g.fillRect(ox + 8, oy, W - 16, 1);
+    g.fillStyle = P.bgPotShade; g.fillRect(ox, oy + 5, W, 1); g.fillRect(ox, oy, 3, 6);
+    /* the bowl and its cells */
+    for (y = 0; y < BODY; y++) {
+      var k = y / (BODY - 1);
+      var hw = 55 * (1 - 0.40 * Math.pow(k, 2.2));
+      var x0b = Math.round(W / 2 - hw), x1b = Math.round(W / 2 + hw);
+      for (x = x0b; x < x1b; x++) {
+        var u = Math.asin(clamp((x + 0.5 - W / 2) / hw, -1, 1)) / (Math.PI / 2);
+        var cell = Math.min(15, Math.floor((u + 1) / 2 * 16));
+        var u2 = Math.asin(clamp((x + 1.5 - W / 2) / hw, -1, 1)) / (Math.PI / 2);
+        var vline = Math.min(15, Math.floor((u2 + 1) / 2 * 16)) !== cell;
+        var hline = y % 6 === 5;
+        var edge = vline || hline;
+        var lit = cell >= 12 && k < 0.85, dark = cell <= 2 || k > 0.84;
+        var col;
+        if (dark) col = edge ? P.bgPotDeep : P.bgPotShade;
+        else if (lit) col = edge ? P.bgPotCell : P.bgPotLit;
+        else col = edge ? P.bgPotCell : P.bgPot;
+        dot(g, col, ox + x, oy + 6 + y);
+      }
+    }
+    /* THE FEET: two splayed out at the sides and one square in front */
+    for (i = 0; i < FEET; i++) {
+      var fy = oy + 6 + BODY + i;
+      g.fillStyle = P.bgPotShade; g.fillRect(ox + 24 - Math.floor(i * 0.7), fy, 9, 1);
+      g.fillStyle = P.bgPotLit;   g.fillRect(ox + W - 33 + Math.floor(i * 0.7), fy, 9, 1);
+      g.fillStyle = P.bgPot;      g.fillRect(ox + 50, fy, 13, 1);
+      g.fillStyle = P.bgPotShade; g.fillRect(ox + 50, fy, 2, 1);
+    }
+    ringed(t, P.bgPotEdge);
+    c.drawImage(t.canvas, x0 - ox, base - (oy + Hh) + 1);
+  }
+
+  /* THE PEACE LILY: long pointed leaves on long stems, fanned up and out
+     of the pot - each a lens-shaped blade with its midrib, lit on the
+     side toward the lamp. [degrees off straight up, stem, blade length,
+     blade width], back to front. */
+  var LILY_LEAVES = [[-62, 10, 40, 11], [52, 10, 42, 12], [-36, 12, 44, 13], [24, 12, 46, 13],
+                     [-10, 14, 42, 12], [70, 6, 34, 10], [-78, 6, 30, 9], [6, 8, 30, 11]];
+
+  function stillLily(g, bx, by) {
+    var i, x, y;
+    for (i = 0; i < LILY_LEAVES.length; i++) {
+      var L = LILY_LEAVES[i], a = L[0] * Math.PI / 180;
+      var dx = Math.sin(a), dy = -Math.cos(a);
+      var reach = L[1] + L[2];
+      for (y = Math.floor(by - reach - 4); y <= by; y++) {
+        for (x = Math.floor(bx - reach - 6); x <= bx + reach + 6; x++) {
+          var px = x + 0.5 - bx, py = y + 0.5 - by;
+          var s2 = px * dx + py * dy;
+          var tt = px * dy - py * dx;              /* signed: + is the leaf's right */
+          if (s2 <= 0 || s2 >= reach) continue;
+          var col = null;
+          if (s2 < L[1]) { if (Math.abs(tt) < 0.8) col = H.leafDeep; }
+          else {
+            var u = (s2 - L[1]) / L[2];
+            var hw = L[3] / 2 * Math.pow(Math.sin(Math.PI * Math.min(1, u)), 0.7) * (1 - 0.25 * u);
+            if (Math.abs(tt) < hw) {
+              if (Math.abs(tt) < 0.6) col = H.leafDeep;
+              else if (tt > hw - 1.6) col = H.leafLit;
+              else if (tt < -hw + 1.2) col = P.bgLeafEdge;
+              else col = H.leaf;
+            }
+          }
+          if (col) dot(g, col, x, y);
+        }
+      }
+    }
+  }
+
+  /* THE BIG PINECONE by the planter's foot, Bar ref 1/5: a big open cone
+     standing on its base, 26 x 34, in the cone's SHADED browns, a dark
+     gap between every scale, no lit tips, no glow - twice the size of the
+     spare life, half behind the pot's foot, and never bobbing. */
+  function stillBigCone(c, x0, base) {
+    var Hh = 34, W = 26, t = makeCanvas(W + 4, Hh + 2), g = t.ctx, i, k;
+    for (i = 0; i < Hh; i++) {
+      var v = (i + 0.5) / Hh;
+      var hw = Math.max(1, Math.round(13 * Math.pow(Math.sin(Math.PI * Math.min(1, v * 0.92 + 0.08)), 0.8)));
+      var tip = (i % 4 === 3) ? 1 : 0;
+      var band = Math.floor(i / 4), shift = (band & 1) ? 3 : 0;
+      for (k = -hw - tip; k < hw + tip; k++) {
+        var u = wrap(k + 13 - shift, 6);
+        var col = (u === 5) ? P.coneDeep : ((i % 4 === 3) ? P.cone : P.coneShade);
+        dot(g, col, 2 + 13 + k, 1 + i);
+      }
+    }
+    ringed(t, P.coneDeep);
+    c.drawImage(t.canvas, x0 - 2, base - Hh);
+  }
+
+  /* THE ENVELOPE, Bar ref 5/6: a large white mailer standing on the bar
+     against the wall, behind the humidifier, its top showing over the
+     dome and its left end out past it. Stamps in the top right corner,
+     a postmark beside them, and the handwriting where it shows - at the
+     top left - as scribbled lines, which is what an address is from
+     across a room. 80 x 74, leaning back a pixel at the top. */
+  function stillEnvelope(c, x0, base) {
+    var W = 80, Hh = 74, i, k;
+    var f = makeCanvas(W, Hh), g = f.ctx;
+    g.fillStyle = P.envelope;      g.fillRect(0, 0, W, Hh);
+    g.fillStyle = P.envelopeShade; g.fillRect(W - 2, 0, 2, Hh); g.fillRect(0, Hh - 2, W, 2);
+    g.fillStyle = P.envelopeLit;   g.fillRect(0, 0, W - 2, 1);
+    /* two stamps and a postmark */
+    g.fillStyle = P.stampRed;  g.fillRect(W - 11, 2, 7, 8);
+    g.fillStyle = P.stampBlue; g.fillRect(W - 9, 4, 3, 4);
+    g.fillStyle = P.stampBlue; g.fillRect(W - 20, 2, 7, 8);
+    g.fillStyle = P.stampRed;  g.fillRect(W - 18, 4, 3, 3);
     for (k = 0; k < 3; k++) {
-      for (i = 0; i < 13 - k * 2; i++) if (hash(733 + k * 57 + i) % 5) dot(f, P.ink, 12 + i, 8 + k * 2);
+      for (i = 0; i < 9; i++) dot(g, P.printInk, W - 31 + i, 3 + k * 2 + (i % 3 === 1 ? 1 : 0));
     }
-    var t = makeCanvas(W + 6, Hh + 2);
-    for (i = 0; i < Hh; i++) {
-      var sh = Math.round((Hh - 1 - i) / (Hh - 1) * 3);
-      t.ctx.drawImage(flat.canvas, 0, i, W, 1, 1 + sh, 1 + i, W, 1);
+    /* the return address, top left, and the address below it */
+    for (k = 0; k < 3; k++) {
+      for (i = 0; i < 14 - k * 2; i++) if (hash(311 + k * 31 + i) % 4) dot(g, P.ink, 4 + i, 3 + k * 2);
     }
-    ringed(t);
-    c.drawImage(t.canvas, x0 - 1, y0 - 1);
+    for (k = 0; k < 4; k++) {
+      for (i = 0; i < 26 - k * 3; i++) if (hash(733 + k * 57 + i) % 5) dot(g, P.ink, 24 + i, 14 + k * 3);
+    }
+    placeLeaning(c, f, x0, base, function (row) { return row < 30 ? 1 : 0; });
   }
 
-  /* THE PHOTOGRAPHS, Bar ref 1/3/5: a stack of prints lying flat, seen
-     nearly edge on from bar height. The top print is a picture - ref 5's
-     has red and green in it - and the edges under it are the pale and
-     grey of a pile of card. */
-  function stillPrints(c, x0, y0) {
-    var W = 32, Hh = 7, i;
-    var t = makeCanvas(W + 2, Hh + 2), g = t.ctx;
-    g.fillStyle = P.print;      g.fillRect(1, 1, W, 2);
-    g.fillStyle = P.printShade; g.fillRect(1, 3, W, Hh - 2);
-    g.fillStyle = P.print;      g.fillRect(1, 4, W, 1); g.fillRect(2, 6, W - 1, 1);
-    /* the picture on top, a few pixels of it */
-    g.fillStyle = P.stampRed;  g.fillRect(8, 1, 4, 1);
-    g.fillStyle = H.leaf;      g.fillRect(12, 1, 6, 1); g.fillRect(10, 2, 5, 1);
-    g.fillStyle = P.printInk;  g.fillRect(22, 2, 2, 1);
-    /* the bottom print stuck out a little further, the way a pile does */
-    g.fillStyle = P.printShade; g.fillRect(W - 2, Hh - 1, 3, 1);
-    ringed(t);
-    c.drawImage(t.canvas, x0 - 1, y0 - 1);
-  }
-
-  /* THE PAPER TENT, Bar ref 1/2: yellow lined paper folded into an
-     A-frame, lit on its left face and in shade on its right, with the
-     lines running down both faces, a dark doorway, a little fire of
-     twigs in front of it on a scrap of brown paper, and the RIP note
-     leaning against its right side - a scribble, not letters. */
-  var TENT = [[11, 2], [10, 4], [9, 6], [8, 8], [7, 10], [6, 12], [5, 14], [4, 16],
-              [3, 18], [2, 20], [1, 22], [0, 24], [0, 24], [0, 24], [0, 24], [0, 24]];
-  var FIRE = ['...F..',
-              '..EE..',
-              '.T..T.',
-              '..TT..',
-              '.T..T.'];
-
-  function stillTent(c, x0, y0) {
-    var W = 24, Hh = TENT.length, i, k;
-    var t = makeCanvas(W + 2, Hh + 2), g = t.ctx;
-    for (i = 0; i < Hh; i++) {
-      for (k = TENT[i][0]; k < TENT[i][0] + TENT[i][1]; k++) {
-        var right = k >= 12;
-        var line = (k % 3) === 1;
-        dot(g, right ? (line ? P.paperDeep : P.paperLine) : (line ? P.paperLine : P.paper), 1 + k, 1 + i);
-      }
+  /* THE PHOTO PRINTS, Bar ref 1/5/6: a fat stack of 4x6 prints lying
+     flat, their edges a striped block of pale card and the colour of the
+     pictures showing at the sides, and one loose print lying askew on
+     top, overhanging the stack at both ends. 60 x 23. */
+  function stillPrints(c, x0, base) {
+    var W = 60, Hh = 23, i, k;
+    var t = makeCanvas(W + 8, Hh + 2), g = t.ctx;
+    /* the stack: one row per print or two, each a hair out of line */
+    for (i = 6; i < Hh; i++) {
+      var o = (hash(1201 + i) % 3) - 1;
+      var col = (i % 3 === 0) ? P.printShade : ((i % 3 === 1) ? P.print : P.printEdge);
+      g.fillStyle = col; g.fillRect(4 + 1 + o, 1 + i, W - 2, 1);
+      g.fillStyle = P.printShade; g.fillRect(4 + W - 2 + o, 1 + i, 2, 1);
+      if (hash(77 + i) % 3 === 0) { g.fillStyle = P.printColour; g.fillRect(4 + 2 + o + hash(i) % 20, 1 + i, 4, 1); }
     }
-    /* the doorway: a dark triangle at the foot of the gable */
+    /* its top face */
+    g.fillStyle = P.print; g.fillRect(5, 1 + 5, W - 2, 1);
+    /* the loose print on top, skewed: each row slid a pixel further */
     for (i = 0; i < 5; i++) {
+      g.fillStyle = i === 4 ? P.printShade : P.print;
+      g.fillRect(1 + 6 - i, 1 + i, 44, 1);
+    }
+    dot(g, P.printInk, 30, 3); dot(g, P.printInk, 31, 3);
+    ringed(t);
+    c.drawImage(t.canvas, x0 - 4, base - Hh);
+  }
+
+  /* THE SNOWMAN, Bar ref 1/2/6: three little clear balls stacked, 10 x
+     20, lit on their right, with the wall showing through the middle of
+     each - it is glass */
+  function stillSnowman(c, x0, base) {
+    var W = [4, 6, 6, 6, 6, 4, 6, 8, 8, 8, 8, 8, 6, 8, 10, 10, 10, 10, 10, 8];
+    var t = makeCanvas(12, W.length + 2), g = t.ctx, i;
+    for (i = 0; i < W.length; i++) {
+      var o = (10 - W[i]) / 2;
+      g.fillStyle = P.snow; g.fillRect(1 + o, 1 + i, W[i], 1);
+      dot(g, P.snowShade, 1 + o, 1 + i);
+      dot(g, P.snowHi, o + W[i], 1 + i);
+    }
+    /* the joins between the balls, and the glass you can see through */
+    g.fillStyle = P.snowShade; g.fillRect(3, 7, 6, 1); g.fillRect(2, 14, 8, 1);
+    dot(g, P.wall, 5, 4); dot(g, P.wall, 5, 10); dot(g, P.wall, 6, 10); dot(g, P.wall, 5, 17); dot(g, P.wall, 6, 17);
+    dot(g, P.snowHi, 7, 2); dot(g, P.snowHi, 8, 9); dot(g, P.snowHi, 9, 16);
+    ringed(t);
+    c.drawImage(t.canvas, x0 - 1, base - W.length);
+  }
+
+  /* THE ROCK, Bar ref 1/6: a small pale pumice, pitted */
+  function stillRock(c, x0, base) {
+    var t = makeCanvas(18, 10), g = t.ctx;
+    DiningRoom.rowsFill(g, [[3, 9], [1, 13], [0, 16], [0, 16], [0, 15], [1, 13], [2, 11], [4, 7]], 1, 1, P.rock);
+    g.fillStyle = P.potHi; g.fillRect(9, 2, 4, 1); g.fillRect(11, 3, 3, 1);
+    g.fillStyle = P.rockShade; g.fillRect(2, 6, 6, 2); g.fillRect(4, 8, 6, 1);
+    dot(g, P.rockShade, 6, 3); dot(g, P.rockShade, 10, 5); dot(g, P.rockShade, 13, 4);
+    ringed(t);
+    c.drawImage(t.canvas, x0 - 1, base - 8);
+  }
+
+  /* THE TENT, Bar ref 1/2/6: yellow lined paper folded into an A-frame,
+     38 x 38, the lines running down both faces, the face toward the
+     lamp lit and the other in shade, and a dark doorway at the foot of
+     the front where the fire is. */
+  function stillTent(c, x0, base) {
+    var W = 38, Hh = 38, i, k;
+    var t = makeCanvas(W + 2, Hh + 2), g = t.ctx;
+    for (i = 0; i < Hh; i++) {
+      var w = Math.min(W, 2 + Math.round(36 * i / 32));
+      var o = Math.floor((W - w) / 2);
+      for (k = o; k < o + w; k++) {
+        var right = k >= W / 2;
+        var line = (k % 3) === 1;
+        dot(g, right ? (line ? P.paperLine : P.paper) : (line ? P.paperDeep : P.paperShade), 1 + k, 1 + i);
+      }
+    }
+    /* the ridge, and the doorway: a dark triangle at the foot */
+    dot(g, P.paperDeep, 1 + 18, 1); dot(g, P.paperDeep, 1 + 19, 1);
+    for (i = 0; i < 12; i++) {
       g.fillStyle = P.kraftShade;
-      g.fillRect(1 + 12 - 1 - Math.floor(i / 2), 1 + Hh - 5 + i, 2 + Math.floor(i / 2) * 2, 1);
+      var dw = 2 + Math.floor(i * 0.8) * 2;
+      g.fillRect(1 + 19 - dw / 2, 1 + Hh - 12 + i, dw, 1);
     }
     ringed(t);
-    c.drawImage(t.canvas, x0 - 1, y0 - 1);
-
-    /* the brown paper the fire sits on, and the fire */
-    var fx = x0 + 9, fy = y0 + Hh - 6;
-    c.fillStyle = P.kraftShade; c.fillRect(fx - 3, y0 + Hh - 1, 12, 1);
-    c.fillStyle = P.kraft;      c.fillRect(fx - 2, y0 + Hh - 2, 10, 1);
-    plot(c, FIRE, { F: H.lampGlass, E: P.ember, T: P.twig }, fx, fy);
-
-    /* the note, leaning one pixel at the top, three pixels of ink */
-    var n = makeCanvas(9, 9), ng = n.ctx;
-    for (i = 0; i < 7; i++) {
-      ng.fillStyle = P.note;
-      ng.fillRect(1 + (i < 3 ? 1 : 0), 1 + i, 6, 1);
-    }
-    dot(ng, P.ink, 3, 3); dot(ng, P.ink, 4, 3); dot(ng, P.ink, 6, 3);
-    dot(ng, P.ink, 3, 5); dot(ng, P.ink, 5, 5);
-    ringed(n);
-    c.drawImage(n.canvas, x0 + 17, y0 + Hh - 8);
+    c.drawImage(t.canvas, x0 - 1, base - Hh);
   }
 
-  /* ------------------------------------------- the back of the bar
-
-     A NEARER LAYER, 640 x 100 at 0.60, standing on the bar's back edge
-     (row 99 is screen 241) and staying under the chair rail: the things
-     that make it a home bar - wine bottles of three shapes (a shouldered
-     Bordeaux, a sloping Burgundy, a fat sparkling bottle in its foil),
-     two stemmed wine glasses catching the lamp, a decanter, a tumbler of
-     whisky on a stack of slate coasters, a cocktail shaker, a waiter's
-     corkscrew lying flat. Six groups with a long stretch of bare bar
-     between each, so it is a bar with things on it and not a shelf.
-
-     WHAT IS NOT HERE, and why. No box, no footed planter, no pinecone and
-     no cork: those are a hazard's and a gift's badges. And NO SUCCULENT,
-     though Bar ref 5 has one: a small potted succulent is exactly what
-     the Garden and the Deck hand out as a spare life, and a player who
-     has come through the Backyard would see one sitting on this bar and
-     fly down for it. The steel shaker stands where it would have.
-
-     IT SITS BEHIND THE PILLARS IN VALUE. Every object is outlined, then
-     the whole layer is laid back 28% toward the wall's own colour, and
-     the light sheet's night is drawn over it (the pillars are drawn
-     after the sheet and never are). The glass is dark green and near
-     black, but nothing here reaches the box stacks' hard black edge, and
-     nothing reaches the planters' white: the brightest pixel on the
-     layer, the shaker's lit edge, comes out about 185 against a planter
-     at 215. Each thing throws the same long soft shadow up the wall as
-     the still life does (castShadow), baked into a second sheet that is
-     drawn UNDER the humidifier, because the humidifier is nearer the
-     wall than anything casting it. */
-  var BB_W = 640, BB_H = 100, BB_PAR = 0.60;
-
-  /* a solid sprite from a list of row widths, centred in W, painted by a
-     function of (row, column-in-row, row width), ringed */
-  function solid(W, widths, paint) {
-    var t = makeCanvas(W + 2, widths.length + 2), c = t.ctx, i, k;
-    for (i = 0; i < widths.length; i++) {
-      var w = widths[i], o = Math.floor((W - w) / 2);
-      for (k = 0; k < w; k++) {
-        var col = paint(i, k, w);
-        if (col) dot(c, col, 1 + o + k, 1 + i);
+  /* THE PINECONE BEHIND THE TENT, Bar ref 1/2/6: only its top shows over
+     the tent's peak. It is NOT the spare life and is drawn so it cannot
+     be read as one: bigger than the boon's, in the cone's SHADED browns
+     with no lit scale tips, no glow, no sparkle, not bobbing, and two
+     thirds of it hidden behind the paper - a dark spiky crown sticking
+     up behind the tent, which is exactly what is in the photograph. */
+  function stillPinecone(c, x0, top) {
+    var ROWS = [[9, 4], [7, 8], [5, 12], [4, 14], [3, 16], [2, 18], [2, 18], [1, 20],
+                [1, 20], [1, 20], [1, 20], [2, 18], [2, 18], [3, 16], [4, 14], [5, 12]];
+    var t = makeCanvas(24, ROWS.length + 2), g = t.ctx, i, k;
+    for (i = 0; i < ROWS.length; i++) {
+      var shift = (Math.floor(i / 3) & 1) ? 2 : 0;
+      for (k = ROWS[i][0]; k < ROWS[i][0] + ROWS[i][1]; k++) {
+        var u = wrap(k - shift, 4);
+        dot(g, u === 3 ? P.coneDeep : ((i % 3 === 2 && u === 1) ? P.cone : P.coneShade), 1 + k, 1 + i);
       }
     }
-    return ringed(t);
+    /* the scale tips sticking out of the crown */
+    dot(g, P.coneShade, 1 + 6, 2); dot(g, P.coneShade, 1 + 15, 2);
+    dot(g, P.coneShade, 1 + 3, 4); dot(g, P.coneShade, 1 + 18, 4);
+    ringed(t);
+    c.drawImage(t.canvas, x0 - 1, top - 1);
   }
 
-  function repeat(v, n) { var a = []; while (n-- > 0) a.push(v); return a; }
-
-  /* A BOTTLE: foil over the neck, glass with a lit column on its left and
-     shade down its right, one specular point on the shoulder, and a
-     blank label - no word, no mark. */
-  function bottle(widths, foil, label, glass, foilCol, spec) {
-    return solid(Math.max.apply(null, widths), widths, function (i, k, w) {
-      var last = k === w - 1 || k === w - 2 && w > 6;
-      if (i >= foil[0] && i <= foil[1]) {
-        if (i === foil[0] || k === 0) return foilCol[1];
-        return last ? foilCol[2] : foilCol[0];
-      }
-      if (label && i >= label[0] && i <= label[1] && k >= 1 && k <= w - 2) {
-        if (i === label[0] || i === label[1]) return P.labelEdge;
-        return k >= w - 3 ? P.labelShade : P.label;
-      }
-      if (i === spec[0] && k === spec[1]) return glass[3];
-      if (i === widths.length - 1) return glass[2];
-      if (k === 1 && w > 4) return glass[1];
-      if (last) return glass[2];
-      return glass[0];
-    });
+  /* THE RIP CARD, Bar ref 1/2/6: a folded white card leaning on the
+     tent's right side, a scribble on it - no letters - 18 x 20 */
+  function stillNote(c, x0, base) {
+    var W = 18, Hh = 20, i;
+    var f = makeCanvas(W, Hh), g = f.ctx;
+    g.fillStyle = P.note; g.fillRect(0, 0, W, Hh);
+    g.fillStyle = P.envelopeShade; g.fillRect(W - 2, 0, 2, Hh); g.fillRect(0, Hh - 1, W, 1);
+    for (i = 0; i < 8; i++) if (i % 3 !== 2) dot(g, P.ink, 3 + i, 5);
+    for (i = 0; i < 10; i++) if (hash(51 + i) % 3) dot(g, P.ink, 3 + i, 9 + (i % 2));
+    placeLeaning(c, f, x0, base, function (row) { return -Math.round((Hh - 1 - row) / (Hh - 1) * 3); });
   }
 
-  function bakeBordeaux() {
-    var W = [7].concat(repeat(5, 15), [7, 9], repeat(11, 28));
-    return bottle(W, [0, 10], [26, 37], [P.glassGreen, P.glassGreenLit, P.glassGreenDeep, P.glassSpec],
-                  [P.foilRed, P.foilRedLit, P.foilRedDeep], [18, 2]);
-  }
-  function bakeBurgundy() {
-    var W = [7].concat(repeat(5, 14), [5, 5, 7, 7, 7, 9, 9, 9, 11, 11], repeat(11, 21));
-    return bottle(W, [0, 9], [30, 40], [P.glassBlack, P.glassBlackLit, P.glassBlackDeep, P.glassSpec],
-                  [P.brass, P.brassLit, P.boxShade], [21, 2]);
-  }
-  function bakeSparkling() {
-    var W = [7].concat(repeat(5, 13), [7, 7, 9, 9, 11, 11, 13, 13], repeat(13, 21));
-    return bottle(W, [0, 15], [28, 36], [P.glassGreen, P.glassGreenLit, P.glassGreenDeep, P.glassSpec],
-                  [P.brass, P.brassLit, P.boxShade], [19, 3]);
-  }
+  /* THE CAMPFIRE in the tent's doorway, Bar ref 1/2/6: a scrap of
+     crumpled brown paper, a few twigs crossed on it, and the little
+     orange paper flame standing up out of them. 24 x 11. */
+  var FIRE = ['..........F.............',
+              '.........EFE............',
+              '.........EEE............',
+              '....T.....E.....T.......',
+              '.....TT.......TT........',
+              '.......TTT.TTT..........',
+              '......TT..T..TT.........',
+              '..KKKKKKKKKKKKKKKKKK....',
+              '.KkKKKKkKKKKKkKKKKKKK...',
+              'KKKKkKKKKKKKKKKkKKKKKK..',
+              '.kkkkkkkkkkkkkkkkkkkk...'];
 
-  /* CLEAR GLASS: the rim, a lit left edge and a dull right one, the stem
-     and the foot, and what is in it - the wall shows through the rest,
-     faintly lightened, which is what glass against a wall looks like */
-  function glassy(W, widths, fill) {
-    var t = makeCanvas(W + 2, widths.length + 2), c = t.ctx, i, k;
-    for (i = 0; i < widths.length; i++) {
-      var w = widths[i], o = Math.floor((W - w) / 2);
-      for (k = 0; k < w; k++) {
-        var col = fill(i, k, w);
-        if (col === 'clear') {
-          c.globalAlpha = 0.22; dot(c, P.glassClear, 1 + o + k, 1 + i); c.globalAlpha = 1;
-        } else if (col) dot(c, col, 1 + o + k, 1 + i);
-      }
-    }
-    return ringed(t);
-  }
-
-  /* the stemmed wine glass, `wine` rows of red in the bowl */
-  function bakeWineGlass(wine) {
-    var W = [7, 9, 9, 9, 9, 9, 7, 7, 5, 3].concat(repeat(1, 9), [9, 7]);
-    return glassy(9, W, function (i, k, w) {
-      if (i === 0) return P.glassRim;
-      if (i >= 10 && i <= 18) return P.glassEdge;
-      if (i === 19) return P.glassRim;
-      if (i === 20) return P.glassEdgeDim;
-      if (k === 0) return P.glassRim;
-      if (k === w - 1) return P.glassEdgeDim;
-      if (wine && i >= 9 - wine) return i === 9 - wine ? P.wineLit : P.wine;
-      return 'clear';
-    });
-  }
-
-  /* the decanter: a narrow neck and a wide flat-bottomed bowl, half full */
-  function bakeDecanter() {
-    var W = [7].concat(repeat(5, 9), [7, 9, 11, 13, 13, 15, 15, 15], repeat(17, 10), [15]);
-    return glassy(17, W, function (i, k, w) {
-      if (i === 0) return P.glassRim;
-      if (i === W.length - 1) return P.glassEdgeDim;
-      if (k === 0 || (k === 1 && w > 9)) return P.glassRim;
-      if (k === w - 1) return P.glassEdgeDim;
-      if (i >= 17) return i === 17 ? P.wineLit : (k === 2 && i < 23 ? P.wineLit : P.wine);
-      return 'clear';
-    });
-  }
-
-  /* the tumbler, whisky and one cube of ice in it */
-  function bakeTumbler() {
-    var W = repeat(9, 11);
-    return glassy(9, W, function (i, k, w) {
-      if (i === 0) return P.glassRim;
-      if (i === 10) return P.glassRim;
-      if (k === 0) return P.glassRim;
-      if (k === w - 1) return P.glassEdgeDim;
-      if (i >= 4) {
-        if (i === 4) return P.whiskyLit;
-        if ((i === 5 || i === 6) && (k === 3 || k === 4)) return P.glassClear;
-        return P.whisky;
-      }
-      return 'clear';
-    });
-  }
-
-  /* the coasters, slate, five of them stacked */
-  function bakeCoasters() {
-    return solid(13, [11, 13, 13, 13, 13], function (i, k, w) {
-      if (i === 0) return P.slateLit;
-      if (k === w - 1) return P.slateDeep;
-      return i % 2 ? P.slate : P.slateDeep;
-    });
-  }
-
-  /* THE SHAKER, a steel cobbler: cap, strainer, and a body that tapers
-     down to its foot, a dark joint between each part */
-  function bakeShaker() {
-    var W = [3, 3, 5, 5, 7, 7, 7, 7, 7, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7, 7, 7];
-    return solid(9, W, function (i, k, w) {
-      if (i === 3 || i === 8) return P.steelJoint;
-      if (k === 0) return P.steelFace;
-      if (k === 1) return P.steelBright;
-      if (k >= w - 2) return P.steelDim;
-      return P.steelFace;
-    });
-  }
-
-  /* the corkscrew lying on its side: the dark handle, the steel worm and
-     the little foil knife */
-  function bakeCorkscrew() {
-    var t = makeCanvas(17, 6), c = t.ctx;
-    c.fillStyle = P.handle;      c.fillRect(1, 2, 12, 2);
-    c.fillStyle = P.handleLit;   c.fillRect(1, 2, 12, 1);
-    c.fillStyle = P.steelFace;   c.fillRect(13, 2, 3, 1); c.fillRect(13, 4, 3, 1);
-    dot(c, P.steelBright, 14, 3); dot(c, P.steelFace, 3, 1); dot(c, P.steelFace, 4, 1);
-    return ringed(t);
-  }
-
-  /* where each thing stands in the 640 tile: [sprite, left x, lift] */
-  function bakeBackBar() {
-    var t = makeCanvas(BB_W, BB_H), c = t.ctx, i;
-    var base = BB_H - 1;
-    var PLACE = [[bakeBordeaux(), 30, 0], [bakeBurgundy(), 43, 0], [bakeSparkling(), 56, 0],
-                 [bakeWineGlass(3), 73, 0],
-                 [bakeCoasters(), 150, 0], [bakeTumbler(), 152, 5],
-                 [bakeDecanter(), 246, 0],
-                 [bakeShaker(), 352, 0],
-                 [bakeWineGlass(2), 444, 0], [bakeWineGlass(4), 456, 0], [bakeCorkscrew(), 472, 0],
-                 [bakeBurgundy(), 566, 0]];
-    for (i = 0; i < PLACE.length; i++) {
-      var sp = PLACE[i][0];
-      /* the sprite's last painted row is its canvas's second-last */
-      c.drawImage(sp.canvas, PLACE[i][1] - 1, base - (sp.h - 2) - PLACE[i][2]);
-    }
-    /* the long soft shadow of all of it, before it is laid back */
-    var cast = castShadow(t, base, 1.6, 0.6, 2, 0.32, 46, true);
-    T.bbShade = alphaSheet(BB_W, BB_H, P.night, function (x, y) { return cast[y * BB_W + x]; });
-    /* and laid back toward the wall */
-    c.globalCompositeOperation = 'source-atop';
-    c.fillStyle = rgba(P.wall, 0.28);
-    c.fillRect(0, 0, BB_W, BB_H);
-    c.globalCompositeOperation = 'source-over';
-    return t;
+  function stillFire(c, x0, base) {
+    var t = makeCanvas(26, FIRE.length + 2);
+    plot(t.ctx, FIRE, { F: H.lampGlass, E: P.ember, T: P.twig, K: P.kraft, k: P.kraftShade }, 1, 1);
+    ringed(t);
+    c.drawImage(t.canvas, x0 - 1, base - FIRE.length);
   }
 
   /* ------------------------------------------------- the humidifier
 
-     Bar ref 3, close up: a frosted dome like a fat bell - broad across
-     the top, steep at the sides, tucked in where it meets the base -
-     white snow-flecks all over it, a small dark nozzle at the apex; a
-     white cylindrical base with three buttons on its front. 44 x 50,
-     against a 34px box stack: the photograph's proportion.
+     Bar ref 3 and 6, close up: a frosted dome like an upturned bowl -
+     broad across the top, steep at the sides, tucked in where it sits
+     in the base - white snow-flecks all over it, a small dark nozzle at
+     the top; a white cylindrical base a third of its height, rounded at
+     the foot, with three small buttons on its front. 70 x 61: a little
+     wider than it is tall, as ref 6 has it.
 
-     THE DOME is two bands and a flat, not a ramp: a lit cap over its
-     upper left, where the lamp is, shade down its right flank and along
-     its foot where it turns under, and one flat between. The highlight
-     is an oval and not a stripe, because a stripe down a dome reads as a
-     tombstone; an oval on its shoulder reads as a dome. THE FLECKS are
-     what says "humidifier" and not "egg": Bar ref 3's frosted snow-fleck
-     finish, forty-six white pixels and a few pairs, thickest low down
-     where the photograph has them. THE RING at the foot of the dome is
-     the LED, and it is the one thing on the sprite that changes: idle,
-     lit (the tell), hot (the spray). Frames 1 and 2 also light the
-     frosted glass from inside, from below - which is what a lit diffuser
-     looks like, and what makes the tell visible out of the side of the
-     eye. */
-  var DOME_W = [10, 16, 20, 24, 26, 28, 30, 31, 32, 33, 34, 35, 36, 36, 37, 37, 38, 38, 39, 39,
-                39, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 39, 38, 37, 36];
+     THE DOME is two bands and a flat, not a ramp: a lit oval on the
+     shoulder toward the lamp, shade down the far flank and along its
+     foot where it turns under, one flat between. The lamp in ref 6 is
+     low on the RIGHT (the dome's shadow falls up and to its left), so
+     the sprite is drawn lit from the left and then mirrored. THE FLECKS
+     are what says "humidifier" and not "egg": Bar ref 3's frosted
+     snow-fleck finish, thickest low down where the photograph has them.
+     THE RING at the foot of the dome is the LED, and it is the one thing
+     on the sprite that changes: idle, lit (the tell), hot (the spray).
+     Frames 1 and 2 also light the frosted glass from inside, from below
+     - which is what a lit diffuser looks like, and what makes the tell
+     visible out of the side of the eye. */
+  var DOME_ROWS = 42;
 
-  function domeX0(y) { return Math.round(22 - DOME_W[y] / 2); }
+  function domeW(y) {
+    if (y >= 39) return [68, 67, 66][y - 39];
+    var yy = 1 - (y + 0.5) / 36;
+    if (yy <= 0) return 70;
+    return 2 * Math.max(4, Math.round(35 * Math.pow(1 - Math.pow(yy, 2.2), 1 / 2.2)));
+  }
+  function domeX0(y) { return Math.round(35 - domeW(y) / 2); }
 
   function bakeHumidifier(frame) {
     var t = makeCanvas(HUM_W + 2, HUM_H + 2), c = t.ctx;
     var r = mulberry32(8811), y, x, w, x0, dx, i, k;
     var RING = [P.ringIdle, P.ringLit, P.ringHot][frame];
 
-    /* the dome, rows 0..39, and the ring on 40 */
-    for (y = 0; y < DOME_W.length; y++) {
-      w = DOME_W[y]; x0 = domeX0(y);
+    /* the dome, rows 0..41, and the ring on 42 */
+    for (y = 0; y <= DOME_ROWS; y++) {
+      w = y === DOME_ROWS ? 66 : domeW(y); x0 = Math.round(35 - w / 2);
       for (x = x0; x < x0 + w; x++) {
-        dx = (x + 0.5 - 22) / (w / 2);
-        var hx = (dx + 0.38) / 0.42, hy = (y - 13) / 12;
+        dx = (x + 0.5 - 35) / (w / 2);
+        var hx = (dx + 0.36) / 0.40, hy = (y - 14) / 13;
         var col = P.humDome;
-        if (y === 40) col = RING;
-        else if (y >= 34 || dx > 0.55 || (dx < -0.86 && y > 24)) col = P.humDomeShade;
+        if (y === DOME_ROWS) col = RING;
+        else if (y >= 37 || dx > 0.6 || (dx < -0.88 && y > 26)) col = P.humDomeShade;
         else if (hx * hx + hy * hy < 1) col = P.humDomeLit;
         dot(c, col, 1 + x, 1 + y);
       }
     }
     /* the LED's light inside the frosted glass, from below */
     if (frame > 0) {
-      var from = frame === 1 ? 14 : 4;
-      for (y = from; y < 40; y++) {
-        w = DOME_W[y]; x0 = domeX0(y);
-        k = Math.pow((y - from) / (40 - from), 0.8);
+      var from = frame === 1 ? 16 : 6;
+      for (y = from; y < DOME_ROWS; y++) {
+        w = domeW(y); x0 = domeX0(y);
+        k = Math.pow((y - from) / (DOME_ROWS - from), 0.8);
         c.globalAlpha = (frame === 1 ? 0.50 : 0.70) * k;
         c.fillStyle = RING;
         c.fillRect(1 + x0, 1 + y, w, 1);
@@ -1211,29 +1176,40 @@ var Bar = (function () {
       c.globalAlpha = 1;
     }
     /* the snow-flecks: never on the outer two columns of a row and never
-       on the apex, where the nozzle is; weighted low, as in the photo */
-    for (i = 0; i < 46; i++) {
-      y = 3 + Math.floor(Math.sqrt(r()) * 35);
-      w = DOME_W[y]; x0 = domeX0(y);
+       on the top, where the nozzle is; weighted low, as in the photo */
+    for (i = 0; i < 80; i++) {
+      y = 3 + Math.floor(Math.sqrt(r()) * 37);
+      w = domeW(y); x0 = domeX0(y);
       x = x0 + 2 + Math.floor(r() * Math.max(1, w - 5));
       dot(c, P.humSpeck, 1 + x, 1 + y);
-      if (i % 6 === 0) dot(c, P.humSpeck, 2 + x, 1 + y);
+      if (i % 5 === 0) dot(c, P.humSpeck, 2 + x, 1 + y);
     }
-    /* the nozzle, a dark hole with the glass's lip lit behind it */
-    c.fillStyle = P.humNozzle; c.fillRect(1 + 21, 1 + 1, 3, 2);
-    dot(c, P.humDomeShade, 1 + 21, 1 + 3); dot(c, P.humDomeShade, 1 + 23, 1 + 3);
+    /* the nozzle, a dark hole with the glass's lip in shade below it */
+    c.fillStyle = P.humNozzle; c.fillRect(1 + 33, 1 + 1, 4, 2);
+    c.fillStyle = P.humDomeShade; c.fillRect(1 + 33, 1 + 3, 4, 1);
 
-    /* THE BASE, rows 41..49, 40 wide: a lit lip where the dome sits in
-       it, the face, the shade down its right and along its foot, its
-       bottom corners rounded, and the three buttons in a row */
-    c.fillStyle = P.humBase;      c.fillRect(1 + 2, 1 + 41, 40, 9);
-    c.fillStyle = P.humDomeLit;   c.fillRect(1 + 3, 1 + 41, 32, 1);
-    c.fillStyle = P.humBaseShade; c.fillRect(1 + 36, 1 + 42, 6, 6);
-    c.fillRect(1 + 2, 1 + 48, 40, 2);
-    c.clearRect(1 + 2, 1 + 49, 1, 1); c.clearRect(1 + 41, 1 + 49, 1, 1);
+    /* THE BASE, rows 43..60, 68 wide: a lit lip where the dome sits in
+       it, the face, the shade down its far side and along its foot, its
+       bottom corners rounded, and the three buttons */
+    c.fillStyle = P.humBase;      c.fillRect(1 + 1, 1 + 43, 68, 18);
+    c.fillStyle = P.humDomeLit;   c.fillRect(1 + 3, 1 + 43, 56, 1);
+    c.fillStyle = P.humBaseShade; c.fillRect(1 + 61, 1 + 44, 8, 12);
+    c.fillRect(1 + 1, 1 + 56, 68, 5);
+    c.clearRect(1 + 1, 1 + 59, 2, 2); c.clearRect(1 + 67, 1 + 59, 2, 2);
+    c.clearRect(1 + 3, 1 + 60, 1, 1); c.clearRect(1 + 66, 1 + 60, 1, 1);
     c.fillStyle = P.humNozzle;
-    c.fillRect(1 + 17, 1 + 45, 2, 1); c.fillRect(1 + 21, 1 + 45, 2, 1); c.fillRect(1 + 25, 1 + 45, 2, 1);
-    return ringed(t);
+    c.fillRect(1 + 28, 1 + 51, 3, 1); c.fillRect(1 + 34, 1 + 51, 3, 1); c.fillRect(1 + 40, 1 + 51, 3, 1);
+    ringed(t);
+    /* laid back with the rest of the wall's group */
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = rgba(P.wall, STEP_BACK);
+    c.fillRect(0, 0, t.w, t.h);
+    c.globalCompositeOperation = 'source-over';
+    /* and mirrored: the lamp is on the right */
+    var m = makeCanvas(t.w, t.h);
+    m.ctx.translate(t.w, 0); m.ctx.scale(-1, 1);
+    m.ctx.drawImage(t.canvas, 0, 0);
+    return m;
   }
 
   /* ---------------------------------------------------- the light
@@ -1815,27 +1791,27 @@ var Bar = (function () {
      stepWorld and drawn by drawOverlay, and every piece of the fog is a
      baked alpha sheet in P.mist.
 
-     ONE CYCLE: IDLE 9..15s (from the end of the last clear), then
+     ONE CYCLE: IDLE 7..12s (from the end of the last clear), then
        TELL  1.5s  the ring lights over 0.4s, a hiss, three small chuffs
                    out of the nozzle half a second apart
        RISE  1.2s  a second hiss: the plume starts, the fog rolls out of
                    the humidifier and thickens
-       HOLD  2.8s  full fog, the plume still pouring, the ring pulsing
+       HOLD  4.0s  full fog, the plume still pouring, the ring pulsing
        CLEAR 2.0s  the fog thins to nothing
      The FIRST tell is due 3s after run.late is first seen - the engine
      shows WARN.late at lateScore for 2.4s, so the first chuff lands just
      as the banner leaves - and nothing at all happens before run.late.
-     A tell that falls due while the machine is about to slide off the
-     left of the screen waits for it to come round again (THE GATE, in
-     stepWorld): up to about 4.4s, because a spray nobody can see coming
-     out of anything is the one version of this the owner did not ask
-     for.
+     A tell only starts as a humidifier comes in at the right of the
+     screen (THE GATE, in stepWorld), so the chuffs and the start of the
+     spray are always seen coming out of it; one comes past every 5 to 8
+     seconds, so a tell that falls due waits about 3s on average.
 
-     MEASURED at the real tune, autopiloted, eight one-minute runs: the
-     late phase arms at 13.5..20.4s, the first tell comes 3.0..6.7s after
-     that, and then one every 17..22s. The fog lasts 6s a time (2.8s of
-     it at full density), so the lane is fogged about three tenths of
-     the late game and at full about a seventh.
+     MEASURED at the real tune, autopiloted, six two-minute runs: the
+     late phase arms at 13.5..20.4s, the first tell comes 3.2..6.3s after
+     that, and then one every 19..24s. The fog lasts 7.2s a time (4.0s of
+     it at full density), so the lane is fogged 34..36% of the late game
+     and at full density 20..21% of it (it was 30% and 14%, at half the
+     thickness).
 
      THREE TELLS, 1.5s AHEAD OF ANY FOG: the hiss, the ring and the
      chuffs. And then the plume itself climbing out of the dome, which
@@ -1844,9 +1820,9 @@ var Bar = (function () {
      fading up everywhere at once, so there is never any doubt where it
      came from. */
   var IDLE = 0, TELL = 1, RISE = 2, HOLD = 3, CLEAR = 4;
-  var T_TELL = 1.5, T_RISE = 1.2, T_HOLD = 2.8, T_CLEAR = 2.0;
-  var GAP_MIN = 9, GAP_MAX = 15, FIRST = 3.0;
-  var GATE_MIN = 150, GATE_MAX = 470;
+  var T_TELL = 1.5, T_RISE = 1.2, T_HOLD = 4.0, T_CLEAR = 2.0;
+  var GAP_MIN = 7, GAP_MAX = 12, FIRST = 3.0;
+  var GATE_MIN = 380, GATE_MAX = 470;
   var CHUFFS = [0, 0.5, 1.0];
   var PUFF_LIFE = 0.8;
   /* THE PLUME: a blob every 0.09s through RISE and HOLD (every 0.045s
@@ -1880,7 +1856,7 @@ var Bar = (function () {
     if (!m) m = L.mist = freshMist();
     var speed = run.speed || 0;
     /* the mist rides the humidifier's layer: everything in it is carried
-       left at the wall's 0.30, or the plume would slide off the nozzle */
+       left at the wall's 0.88, or the plume would slide off the nozzle */
     var carry = speed * WALL_PAR * dt;
     var n1 = humX(run.scroll || 0) + NOZ_DX, k;
 
@@ -1892,7 +1868,7 @@ var Bar = (function () {
     if (m.phase !== IDLE) {
       var want = m.src - carry, best = n1;
       for (k = -1; k <= 1; k++) {
-        if (Math.abs(n1 + k * VW - want) < Math.abs(best - want)) best = n1 + k * VW;
+        if (Math.abs(n1 + k * WALL_W - want) < Math.abs(best - want)) best = n1 + k * WALL_W;
       }
       m.src = best;
     }
@@ -1902,13 +1878,13 @@ var Bar = (function () {
       if (run.late && m.next === Infinity) m.next = FIRST;
       if (m.next !== Infinity) {
         m.next -= dt;
-        /* THE GATE. A spray only starts while the humidifier on screen
-           has room to do it in: nozzle at x 150..470, so that sliding
-           left at up to 53px/s it is still on the screen when the plume
-           starts 1.5s later and through the 1.2s of the rise. Otherwise
-           the clock waits - at most about 4.4s, which is how long the
-           next copy takes to come in from the right - and a tell is never
-           wasted on a machine about to leave. */
+        /* THE GATE. A spray only starts as a humidifier comes in from the
+           right, nozzle at x 380..470: sliding left at 100..155 px/s it
+           is still on the screen, between x 150 and 320, when the plume
+           starts 1.5s later, and mostly still there through the rise.
+           Anywhere else the clock waits for the next one - they come
+           past every 4.9..7.7s - and a tell is never wasted on a machine
+           about to leave. */
         var nx = nozzleX(run.scroll || 0);
         if (m.next <= 0 && nx >= GATE_MIN && nx <= GATE_MAX) {
           m.phase = TELL; m.t = 0; m.chuffs = 0; m.src = nx;
@@ -2078,30 +2054,34 @@ var Bar = (function () {
 
   /* --------------------------------------------- the baked fog pieces
 
-     THE HAZE, 480 x 218: per-row alpha 0.30 at the ledge to 0.52 at the
-     bar top - thinnest at the top, thickest along the bar, because mist
+     THE HAZE, 480 x 218: per-row alpha 0.80 at the ledge to 0.90 at the
+     bar top - thinner at the top, thickest along the bar, because mist
      is heavier than air and rolls along the surface it came out onto.
      THE CLOUDS, two 480 x 218 sheets of seven soft blobs each, radius
-     50 to 90 at a peak of 0.19, wrapped so they tile.
+     50 to 90 at a peak of 0.24, wrapped so they tile, drifting through
+     each other so the fog churns.
 
      WHAT THAT ADDS UP TO, measured off the overlay drawn alone onto a
      clear canvas at full density, three cloud offsets: thinnest pixel
-     0.30 (under the ledge), mean 0.48, 0.49 over the band a doodad
-     actually flies (y 69..197), thickest 0.66..0.72 - low down, where two
-     cloud cores cross over the thickest haze - and not one pixel outside
-     rows 24..241. Under the plume itself, right over the nozzle, it
-     reaches 0.87: that is the spray, it is 30 pixels wide, and it moves.
-     The cloud peak was 0.22 and measured a 0.745 maximum where three
-     cores met; 0.19 holds it under the 0.72 the fairness argument
-     needs. "Fogs up the screen considerably": the wall loses half its
-     contrast for 2.8s, two thirds of it in the bottom third. */
+     0.80 (under the ledge), mean 0.87 over the lane, thickest
+     0.94..0.95 low down where two cloud cores cross, and not one pixel
+     outside rows 24..241. And measured off real frames at full density
+     (six seeds): the step across a stack's outline is 23..29 of
+     luminance high in the lane and less below, against 140 in clear
+     air; a box stack's body is 21..26 off the fog round it and a
+     planter's 3..10, so a planter is its outline and nothing else; a
+     cork's ring is 6..20 off the fog in the lower two thirds of the lane
+     and 20..26 near the ledge. The first fog of this bay measured 0.48
+     mean and left 70 across an outline, and the owner said it made no
+     difference to the game. */
   function bakeHaze() {
     return alphaSheet(VW, WALL_H, P.mist, function (x, y) {
-      return 0.30 + 0.22 * ease(y / (WALL_H - 1));
+      return HAZE_TOP + (HAZE_BOT - HAZE_TOP) * ease(y / (WALL_H - 1));
     });
   }
 
-  var CLOUD_A = 0.19;
+  var HAZE_TOP = 0.80, HAZE_BOT = 0.90;
+  var CLOUD_A = 0.24;
 
   function bakeCloud(seed) {
     var B = [], i;
@@ -2141,8 +2121,8 @@ var Bar = (function () {
      ring lights the wall round the machine lights with it. That glow is
      the tell a player sees out of the side of the eye. */
   function bakeHumPool(hex, peak) {
-    return alphaSheet(120, 80, hex, function (x, y) {
-      var dx = (x + 0.5 - 60) / 60, dy = (y + 0.5 - 40) / 40;
+    return alphaSheet(160, 110, hex, function (x, y) {
+      var dx = (x + 0.5 - 80) / 80, dy = (y + 0.5 - 55) / 55;
       var d = Math.sqrt(dx * dx + dy * dy);
       return d < 1 ? peak * (1 - ease(d)) : 0;
     });
@@ -2157,7 +2137,6 @@ var Bar = (function () {
     T.hum = [bakeHumidifier(0), bakeHumidifier(1), bakeHumidifier(2)];
     T.wall = bakeWall(true);
     T.menuWall = bakeWall(false);
-    T.backBar = bakeBackBar();         /* and T.bbShade with it */
     /* the soft half of a column's cast shadow, a 16px ramp, stretched to
        any height (it is constant down its length, so the stretch is
        exact) */
@@ -2194,7 +2173,7 @@ var Bar = (function () {
   /* -------------------------------------------------------- drawing */
 
   /* THE WALL, THE HUMIDIFIER AND THE LIGHT, back to front:
-       1. the wall tile at 0.30
+       1. the wall tile - wall, rail, still life, shadows - at 0.88
        2. per humidifier copy on screen: its cool pool on the wall (once,
           and once more at the ring's level), its contact shadow on the
           bar, and the sprite in this frame's ring state
@@ -2203,27 +2182,23 @@ var Bar = (function () {
     var hx = humX(scroll), ring = view.ring, i, x;
     var f = ring < 0.33 ? 0 : (ring < 0.8 ? 1 : 2);
     tileX(ctx, T.wall.canvas, scroll * WALL_PAR, CEIL);
-    /* the back bar's long shadows on the wall, under the humidifier */
-    tileX(ctx, T.bbShade.canvas, scroll * BB_PAR, FLOOR - BB_H);
     for (i = 0; i < 2; i++) {
-      x = hx + i * VW;
+      x = hx + i * WALL_W;
       if (x + HUM_W + 40 < 0 || x - 40 > VW) continue;
       /* only the machine that is spraying lights up: at the seam both
          copies are on the screen for half a second and one of them is
          not the one that hissed */
       var on = view.src !== null && Math.abs(x + NOZ_DX - view.src) < 40;
-      ctx.drawImage(T.humPool.canvas, x + NOZ_DX - 60, 216 - 40);
+      ctx.drawImage(T.humPool.canvas, x + NOZ_DX - 80, HUM_Y + 24 - 55);
       if (on && ring > 0.01) {
         var ga = ctx.globalAlpha;
         ctx.globalAlpha = ga * Math.min(1, ring);
-        ctx.drawImage(T.humGlow.canvas, x + NOZ_DX - 60, 216 - 40);
+        ctx.drawImage(T.humGlow.canvas, x + NOZ_DX - 80, HUM_Y + 24 - 55);
         ctx.globalAlpha = ga;
       }
       Tint.rect(ctx, x - 1, FLOOR - 2, HUM_W + 2, 2, H.void, 6);
       ctx.drawImage(T.hum[on ? f : 0].canvas, x - 1, HUM_Y - 1);
     }
-    /* the bottles and glasses, nearer than the humidifier */
-    tileX(ctx, T.backBar.canvas, scroll * BB_PAR, FLOOR - BB_H);
     ctx.drawImage(T.light.canvas, 0, 0);
   }
 
@@ -2493,14 +2468,14 @@ var Bar = (function () {
     if (fogK > 0.01) {
       /* the haze over the whole lane, thicker low down, and three soft
          clouds drifting through it */
-      Tint.rect(ctx, x, wallY, w, lane, P.mist, Math.round(fogK * 8));
+      Tint.rect(ctx, x, wallY, w, lane, P.mist, Math.round(fogK * 12));
       Tint.rect(ctx, x, wallY + Math.round(lane * 0.45), w, lane - Math.round(lane * 0.45), P.mist, Math.round(fogK * 3));
       for (i = 0; i < 3; i++) {
         var mr = w * (0.24 + i * 0.05);
         var mx = x + wrap(w * 0.2 + i * (w * 0.4) - s * 0.5, w + 40) - 20;
         var my = wallY + lane * (0.55 + 0.15 * Math.sin(i * 2.1));
         var mg = ctx.createRadialGradient(mx, my, 1, mx, my, mr);
-        mg.addColorStop(0, 'rgba(221,225,227,' + (0.30 * fogK).toFixed(3) + ')');
+        mg.addColorStop(0, 'rgba(221,225,227,' + (0.45 * fogK).toFixed(3) + ')');
         mg.addColorStop(1, 'rgba(221,225,227,0)');
         ctx.fillStyle = mg; ctx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
       }

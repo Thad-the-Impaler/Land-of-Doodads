@@ -354,10 +354,13 @@ roller is swallowed, which is what fills its tank.
 **THE HUMIDIFIER** stands on the bar against the wall, always somewhere on the
 screen. From **10** it starts misting, and it says so first: its ring lights,
 it chuffs three times and it hisses, a second and a half before anything
-happens. Then a plume comes out of it and the room fogs up - about half
-white on average and nearer three quarters at the thickest, for six seconds -
-and clears. The fog never covers the two edges of the room, the doodad, or the
-spot on the bar where each cork is going to land.
+happens. Then a plume comes out of it and the room fogs up for real - nearly
+nine tenths white at its thickest, so the next plank is a ghost of an outline
+and a cork is hard to see until it is close - holds for four seconds and
+clears, and it comes round every 16 to 23 seconds. The fog never covers the two
+edges of the room, the doodad, or the spot on the bar where each cork is going
+to land, so it is a hazard you fly through on memory and on the spots, not a
+coin toss.
 
 **THE POLE** comes up through the Ceiling's mirrored floor now and then, hook
 first, prods the ceiling three times as if it is looking for something, and
