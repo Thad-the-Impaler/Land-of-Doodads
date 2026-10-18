@@ -396,7 +396,17 @@ var Audio3 = (function () {
        other four, so 0.28 here is the 0.40 they play at, matched on
        measured loudness rather than on peak. */
     voiceInari:  { src: 'Assets/sounds/inariselect.mp3',  vol: 0.28,
-                   channel: 'voice', fallback: 'move' }
+                   channel: 'voice', fallback: 'move' },
+
+    /* HOT WING'S SHOUT, every time he catches a hot drop - ON TOP of the heat's
+       own whoosh, which still plays, the owner's call. Its own channel (the
+       name), so a second catch inside the 3.9 seconds starts it again from
+       the top instead of stacking two. Peak normalised it measures -6.5
+       LUFS, ten dB over the voices, so 0.14 puts it at about -23.5 as
+       heard: level with the stall fanfare (-16.5 at 0.45), which is the
+       other recording that plays over a run. No fallback: if the bytes are
+       not in yet, the whoosh is still there. */
+    leeroy:      { src: 'Assets/sounds/leeroy.mp3', vol: 0.14 }
   };
 
   var bytes = {};               /* name -> ArrayBuffer, fetched at boot   */

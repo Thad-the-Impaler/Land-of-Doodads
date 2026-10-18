@@ -44,7 +44,69 @@ DOODADS = {
     "capybara": {"fall": "CapyFall", "fly": "CapyFly"},
     "teef": {"fall": "TeefFall", "fly": "TeefFly"},
     "baby": {"fall": "BabyFall", "fly": "BabyFly"},
+    # Hot Wing's heat frames are the flap and the neutral pose on fire; the
+    # engine swaps to them for as long as the heat lasts
+    "hotwing": {"fall": "HotwFall", "fly": "HotwFly",
+                "fall_hot": "HotwFallSpicy", "fly_hot": "HotwFlySpicy"},
+    "alpha": {"fall": "AlphFall", "fly": "AlphFly"},
 }
+
+# A doodad painted with a HALO - Hot Wing's smoke, and his flames in the
+# heat frames - needs two things the rest do not. Its body has to be
+# measured at full opacity, or the half-transparent smoke is taken for body
+# and he is drawn a fifth too small (his body at alpha 250 is exactly
+# Cookie's 1292px circle; at the usual 64 the smoke makes it 1579). And the
+# halo's soft edge has to be kept: cutting a cloud at 64 leaves a hard rim.
+BODY_ALPHA = {"hotwing": 250}
+FLOOR = {"hotwing": 8}
+
+# A doodad with things sticking out of his TOP AND BACK - Alpha Roostah's
+# comb and tail - has no bounding box that is his body: the box is the comb
+# to the belly and the tail to the beak, so the body comes out 18% too small
+# and its centre too high. His body is still a circle, so it is FITTED: the
+# left and right edges of every row in the given slice of the box (as
+# fractions of its height, chosen below the tail and the comb) are points on
+# the circle, and a least-squares fit gives its centre and radius.
+BODY_FIT = {"alpha": (0.75, 0.98)}
+
+
+def fit_body(alpha, rows):
+    """Fit a circle through the silhouette's row edges in a slice of its box."""
+    a = alpha.point(lambda v: 255 if v >= 250 else 0)
+    x0, y0, x1, y1 = a.getbbox()
+    px = a.load()
+    pts = []
+    for y in range(int(y0 + rows[0] * (y1 - y0)), int(y0 + rows[1] * (y1 - y0))):
+        xs = [x for x in range(x0, x1) if px[x, y]]
+        if xs:
+            pts.append((xs[0], y))
+            pts.append((xs[-1] + 1, y))
+    # Kasa fit: x^2 + y^2 + D x + E y + F = 0, solved by least squares
+    n = len(pts)
+    sx = sum(p[0] for p in pts); sy = sum(p[1] for p in pts)
+    sxx = sum(p[0] * p[0] for p in pts); syy = sum(p[1] * p[1] for p in pts)
+    sxy = sum(p[0] * p[1] for p in pts)
+    sz = [p[0] * p[0] + p[1] * p[1] for p in pts]
+    szx = sum(z * p[0] for z, p in zip(sz, pts)); szy = sum(z * p[1] for z, p in zip(sz, pts))
+    szs = sum(sz)
+    m = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]]
+    v = [-szx, -szy, -szs]
+    # solve the 3x3 by Cramer's rule
+    def det(q):
+        return (q[0][0] * (q[1][1] * q[2][2] - q[1][2] * q[2][1])
+                - q[0][1] * (q[1][0] * q[2][2] - q[1][2] * q[2][0])
+                + q[0][2] * (q[1][0] * q[2][1] - q[1][1] * q[2][0]))
+    dm = det(m)
+    sol = []
+    for c in range(3):
+        q = [row[:] for row in m]
+        for r in range(3):
+            q[r][c] = v[r]
+        sol.append(det(q) / dm)
+    d, e, f = sol
+    cx, cy = -d / 2, -e / 2
+    r = (cx * cx + cy * cy - f) ** 0.5
+    return (round(cx - r), round(cy - r), round(cx + r), round(cy + r))
 
 ALPHA_FLOOR = 64   # drop the faint drop shadow and the antialiased fringe
 TARGET = 384       # longest side of the exported frame, in pixels
@@ -55,18 +117,25 @@ def main():
         sys.exit("run this from the project root: %s not found" % SRC)
     os.makedirs(DST, exist_ok=True)
 
-    cut = [0 if v < ALPHA_FLOOR else v for v in range(256)]
     meta = {}
 
     for key, stems in DOODADS.items():
+        floor = FLOOR.get(key, ALPHA_FLOOR)
+        cut_k = [0 if v < floor else v for v in range(256)]
         frames = {}
         for name, stem in stems.items():
             im = Image.open(os.path.join(SRC, stem + ".png")).convert("RGBA")
-            im.putalpha(im.getchannel("A").point(cut))
+            im.putalpha(im.getchannel("A").point(cut_k))
             frames[name] = im
 
         boxes = {k: v.getchannel("A").getbbox() for k, v in frames.items()}
-        fall_box = boxes["fall"]
+        body_a = BODY_ALPHA.get(key)
+        if key in BODY_FIT:
+            fall_box = fit_body(frames["fall"].getchannel("A"), BODY_FIT[key])
+        elif body_a:
+            fall_box = frames["fall"].getchannel("A").point(lambda v: 255 if v >= body_a else 0).getbbox()
+        else:
+            fall_box = boxes["fall"]
         union = (min(b[0] for b in boxes.values()), min(b[1] for b in boxes.values()),
                  max(b[2] for b in boxes.values()), max(b[3] for b in boxes.values()))
 

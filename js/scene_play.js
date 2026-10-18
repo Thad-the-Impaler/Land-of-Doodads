@@ -165,8 +165,8 @@ var PlayScene = (function () {
      apart.
 
      What the doubled score DOES reach, said out loud so it reads as a
-     decision: the score gates in the game are three doodads' unlockAt of
-     15, 25 and 35, every room's and bay's `unlock.score` of 20, and the two plates
+     decision: the score gates in the game are four doodads' unlockAt of
+     15, 25, 35 and 50, every room's and bay's `unlock.score` of 20, and the two plates
      the badge check below calls THE SCORE-GATED BADGES - HATCHLING and
      PULLET in js/achievements.js, which probe the same
      Doodads.bestReached() the stalls price themselves against and finish at
@@ -398,6 +398,15 @@ var PlayScene = (function () {
   var passedN = 0;
   /* THE RIDER, or null. See "the rider" below for the phases. */
   var rider = null;
+  /* HOT DROPS CAUGHT IN A ROW: 1 on the catch that lights the heat, +1 for
+     each caught while it is still burning, 0 the moment it goes out. And
+     the streak still OWED, Doodads.streakable() asked once per run - null
+     for everybody once it is paid. See "the streak" below. */
+  var hotChain = 0;
+  var streak = null;
+  /* how much of Alpha Roostah's aura is showing, 0..1, eased - see "the aura" */
+  var auraGlow = 0;
+  var streakPop = 0, streakX = 0, streakY = 0, streakText = '';
   var flickCool = 0;           /* seconds until the tail is back under him */
   /* What the mid-flight banner is currently shouting about, and what is
      waiting behind it. A score can open a level AND a doodad on the very
@@ -585,6 +594,9 @@ var PlayScene = (function () {
     planksUp = 0; flickCool = 0;
     /* a RETRY puts him back in the ceiling: a rescue is all of one run */
     passedN = 0; rider = null;
+    hotChain = 0; streakPop = 0;
+    streak = Doodads.streakable();
+    auraGlow = 0;
     /* THE ONE ROLL OF THE RUN. tune.meetAt is the first plank he may be
        behind and tune.meetSpan is how many more the dice may add, so the
        Couch's 5 and 15 are a uniform 5..20 (randInt is inclusive at both
@@ -751,18 +763,28 @@ var PlayScene = (function () {
       return;
     }
 
+    /* THE STREAK'S HELP, ahead of the timer and independent of it: an extra
+       drop, so the level's own rhythm is untouched. See streakHelp. */
+    if (streakHelp()) { spicyGap = 4; shed(true, false, false, false); }
+
     dropTimer -= dt;
     if (dropTimer > 0) return;
     dropTimer = d.dropEvery * rand(0.78, 1.28);
 
-    /* never two spicy eggs close together, however the dice fall. The two
-       rolls here read the tune and only the tune: a per-doodad multiplier on
-       them was built (CRAVINGS, x1.5 on both) and sent back, because nothing
-       about it could be seen in a run. The odds are the level's and nobody
-       else's. */
+    /* never two spicy eggs close together, however the dice fall. A
+       per-doodad multiplier on these rolls was built once (CRAVINGS, x1.5)
+       and sent back because it could not be seen; `addict` is the owner's
+       ask for Hot Wing, odds and spacing both, and is his to tune - x3 on
+       the odds with the usual spacing of four today, after a day of playing
+       it at other numbers (js/doodads.js has them all). Capped at 0.9
+       so a generous level cannot make every drop a hot one. A level with no
+       spicyChance stays at none: any multiple of nothing is nothing. */
+    var add = doodad.addict;
     if (spicyGap > 0) spicyGap--;
-    var spicy = spicyGap <= 0 && chance(tune.spicyChance);
-    if (spicy) spicyGap = 4;
+    var odds = tune.spicyChance || 0;
+    if (add) odds = Math.min(0.9, odds * add.odds);
+    var spicy = spicyGap <= 0 && chance(odds);
+    if (spicy) spicyGap = add ? add.gap : 4;
 
     /* The gold can and the lime ride the same spawner, and are spaced the
        same hardcoded way. A drop is exactly ONE of plain, spicy, gold or
@@ -784,7 +806,14 @@ var PlayScene = (function () {
     var spun = !spicy && !gold && !lime && whirlGap <= 0 &&
                tune.whirlChance > 0 && chance(tune.whirlChance);
     if (spun) whirlGap = 4;
+    shed(spicy, gold, lime, spun);
+  }
 
+  /* ONE DROP OFF THE LID, already decided: plain, hot, gold, sour or a spin.
+     Pulled out of spawnDrops so the streak's help can shed a hot one
+     through exactly the path every other drop takes - the same maker, the
+     same slower fall for a gift, the same puff and the same sizzle. */
+  function shed(spicy, gold, lime, spun) {
     var x = VW - rand(tune.dropAheadMin, tune.dropAheadMax);
     var fall = rand(tune.dropFallMin, tune.dropFallMax);
     /* anything that is there to be CAUGHT drifts down slower, so it has a
@@ -2172,6 +2201,9 @@ var PlayScene = (function () {
     if (sour > 0) checkDeed('hot-and-sour');
     Screen.shake(4.5, 0.4);
     Audio3.play('spicy');
+    /* and the doodad's own shout on top, if he has one - Hot Wing's */
+    if (doodad.hotCall) Audio3.play(doodad.hotCall);
+    countStreak(ob, wasHot);
     for (var i = 0; i < 26; i++) {
       var a = rand(0, TAU), sp = rand(30, 150);
       particles.push({ x: ob.x, y: ob.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30,
@@ -2303,6 +2335,205 @@ var PlayScene = (function () {
       particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
                        life: rand(0.5, 1.2), g: -50,
                        col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+    }
+  }
+
+  /* ---------------------------------------------------------- the streak
+
+     HOT DROPS CAUGHT IN A ROW, which is the ninth way a doodad comes open:
+     each catch while the heat from the last one is still burning is one
+     more, and the heat going out - or a death, which puts it out - is the
+     end of it. Counted for everybody, always, because it costs a line; it
+     is only SHOWN, and only ever helped, while somebody's price is a streak
+     (`streak`, Doodads.streakable() asked once in start()). Once he is
+     earned this whole section goes quiet: the caption, the help and the
+     unlock all hang off `streak`, which is null from then on.
+
+     THE HELP, the owner's rule. As the levels shed them five in a row is a
+     lottery - after any hot drop the sky must drop four ordinary things,
+     and with a perfect catcher simulated over half an hour of every bay only
+     the Couch and the Floor ever reached five. So once the room the price
+     names is open (`streak.assist`), every hot catch makes the sky send the
+     next one in time: while the heat has STREAK_SEND seconds or less to run
+     and no hot drop is already on its way, one more is shed, through the
+     same path as any other. The player still has to catch it. Before that
+     room the odds are the level's own; after he is earned they are again. */
+
+  var STREAK_SEND = 4.0;   /* a catch lights 6.5 s, so the next one leaves 2.5 s
+                              later and has 4 s to fall and be caught - the
+                              slowest level's drops reach the lane in about 2 */
+
+  /* WHICH FRAME, for a doodad who wears the heat: his burning pair for as
+     long as it lasts. `spicy`, not the eased `heat`, so the costume changes
+     on the frame the heat does. Everybody else gets back what they passed. */
+  function pose(flapping) {
+    if (doodad.hotFrames && spicy > 0) return flapping ? 'fly_hot' : 'fall_hot';
+    return flapping;
+  }
+
+  /* from grabSpicy, after the heat has been lit or topped up */
+  function countStreak(ob, wasHot) {
+    hotChain = wasHot ? hotChain + 1 : 1;
+    if (!streak) return;
+    if (hotChain >= 2) {
+      /* thrown where it happened, clamped the way the gold's shout is */
+      streakText = hotChain + ' OF ' + streak.need + ' IN A ROW';      /* 15 ch, 89px */
+      var half = Math.min(VW / 2, Math.ceil(Font.measure(streakText, 1) / 2) + 2);
+      streakX = clamp(ob.x, half, VW - half);
+      streakY = Math.max(CEIL + 6, ob.y - 16);
+      streakPop = 0.9;
+    }
+    if (hotChain < streak.need) return;
+    var won = Doodads.noteStreak(hotChain);
+    streak = Doodads.streakable();
+    if (!won.length) return;
+    /* checkDeed's flourish, and its passkey rule: the save learns it either
+       way, the banner only when the stall was not already standing open */
+    if (!Doodads.masterKey()) {
+      for (var n = 0; n < won.length; n++) { unlocked.push(won[n]); announce('doodad', won[n]); }
+      spicyBanner = 0; sourBanner = 0; whirlBanner = 0; streakPop = 0;
+      Audio3.play('unlock');
+      Screen.shake(2.5, 0.3);
+      for (var k = 0; k < 30; k++) {
+        var a = rand(0, TAU), sp = rand(40, 170);
+        particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                         life: rand(0.5, 1.2), g: -50,
+                         col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+      }
+    }
+    bank(Achievements.check());
+  }
+
+  /* should the sky send the next hot one now? Only to keep a streak alive
+     that somebody's price is waiting on, only once his room is open, only
+     in a bay that sheds hot drops at all (the Fort's heat is the Cupmen's,
+     and three bays shed none), and never while one is already falling. */
+  function streakHelp() {
+    if (!streak || !streak.assist || hotChain < 1) return false;
+    if (spicy <= 0 || spicy > STREAK_SEND || !(tune.spicyChance > 0)) return false;
+    for (var i = 0; i < obstacles.length; i++) {
+      var o = obstacles[i];
+      if (o.type === 'drop' && o.spicy && !o.broken && !o.gone) return false;
+    }
+    return true;
+  }
+
+  /* ---------------------------------------------------------- the aura
+
+     ALPHA ROOSTAH'S, and the one ability that changes the LEVEL rather than
+     the doodad: the planks make way. A plank whose face comes within
+     `aura.reach` px of his front is TOUCHED - its gap as it stood is written
+     down (gy0, gb0) - and over `aura.ease` seconds each cap eases back
+     `aura.push` px, the top one up and the bottom one down. Every art module
+     draws and collides a plank off ob.gapY/ob.gapH as they are on the frame
+     (rectsFor, the cap draws, the hider's peek, Pepper's sight line, the
+     Cupmen's line of sight), so moving those two moves the plank everywhere
+     at once, and nothing else has to know.
+
+     IT ONLY EVER WIDENS, and only AHEAD of him: a plank is touched while it
+     is still in front, and a cap moving away from the gap can never move
+     into a doodad who is in it. Each side keeps AURA_STUB px of column above
+     or below its cap, which the spawner's 34px margins always leave room
+     for; a side with less simply gives less. Rounded to whole pixels,
+     because the planks are drawn on the pixel layer and a cap at a fraction
+     of a pixel smears. A plank already passed is left as it was. */
+
+  var AURA_STUB = 12;
+
+  function updateAura(dt) {
+    var a = doodad.aura;
+    if (!a) return;
+    var hr = hitR(), front = player.x + hr, lit = false;
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar') continue;
+      var behind = ob.x + ob.w < player.x - hr;
+      if (ob.auraK === undefined) {
+        if (behind || ob.x - front > a.reach) continue;
+        ob.auraK = 0;
+        ob.gy0 = ob.gapY; ob.gb0 = ob.gapY + ob.gapH;
+        ob.pushUp = clamp(ob.gy0 - CEIL - AURA_STUB, 0, a.push);
+        ob.pushDn = clamp(FLOOR - ob.gb0 - AURA_STUB, 0, a.push);
+      }
+      if (!behind) lit = true;
+      if (ob.auraK >= 1) continue;
+      ob.auraK = Math.min(1, ob.auraK + dt / a.ease);
+      var k = ob.auraK * ob.auraK * (3 - 2 * ob.auraK);
+      var top = Math.round(ob.gy0 - ob.pushUp * k), bot = Math.round(ob.gb0 + ob.pushDn * k);
+      ob.gapY = top; ob.gapH = bot - top;
+      /* sparks off both edges as they go, pushed the way the cap is moving */
+      if (chance(dt * 36)) {
+        var up = chance(0.5), sx = ob.x + rand(0, ob.w);
+        particles.push({ x: sx, y: up ? top - 1 : bot + 1,
+                         vx: rand(-20, 20) - speed * 0.2, vy: (up ? -1 : 1) * rand(20, 60),
+                         life: rand(0.2, 0.45), g: 0,
+                         col: chance(0.5) ? AURA_HI : AURA_MID });
+      }
+    }
+    /* on while a touched plank is still ahead of him or round him, off in
+       the open air between planks - so it reads as something he does AT them */
+    auraGlow = damp(auraGlow, lit ? 1 : 0, 0.002, dt);
+  }
+
+  var AURA_HI = '#ffc070', AURA_MID = '#ff8a24', AURA_RGB = '255,138,36', AURA_EDGE_RGB = '255,192,112';
+
+  /* The aura, in the room, behind the sprite for the lime's reason: light,
+     not a filter. THREE parts, because the first cut - a soft glow at the
+     lime's strength - could not be seen on the Coop's dark boards at all:
+       a glow about him with a bright ring at its edge;
+       RIPPLES, arcs that leave his front every 0.6s and spread toward the
+         planks, which is the "energy" pushing - the link between him and
+         what moves;
+       the same light on the gap faces of every plank he has touched and not
+         yet passed, with a bright line on the edge itself, so what was
+         pushed is plain.
+     Gradients and arcs are fine here: this is the engine's light over the
+     planks, not a level's tiled surface. */
+  function drawAlphaAura(ctx) {
+    var gl = auraGlow, pulse = 0.85 + 0.15 * Math.sin(t * 10);
+    var px = player.x, py = player.y, br = bodyR();
+    var r = br + 16 + 3 * Math.sin(t * 7);
+    var g = ctx.createRadialGradient(px, py, 1, px, py, r);
+    g.addColorStop(0, 'rgba(' + AURA_RGB + ',' + (0.55 * gl * pulse).toFixed(3) + ')');
+    g.addColorStop(0.55, 'rgba(' + AURA_RGB + ',' + (0.30 * gl * pulse).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(' + AURA_RGB + ',0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(px - r, py - r, r * 2, r * 2);
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(' + AURA_EDGE_RGB + ',' + (0.7 * gl * pulse).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(px, py, br + 4 + 1.5 * Math.sin(t * 9), 0, TAU); ctx.stroke();
+    /* the ripples: three in flight at once, each a 110-degree arc facing
+       forward, growing from his ring out to about his reach and fading */
+    var reach = doodad.aura.reach;
+    for (var k = 0; k < 3; k++) {
+      var ph = (t / 0.6 + k / 3) % 1;
+      var rr = br + 6 + ph * (reach * 0.75);
+      ctx.lineWidth = ph < 0.5 ? 2 : 1;
+      ctx.strokeStyle = 'rgba(' + AURA_RGB + ',' + ((1 - ph) * 0.6 * gl).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(px, py, rr, -0.96, 0.96); ctx.stroke();
+    }
+    ctx.restore();
+    var hr = hitR();
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar' || ob.auraK === undefined || ob.x + ob.w < player.x - hr) continue;
+      var a = 0.55 * gl * pulse, x = ob.x - 4, w = ob.w + 8;
+      var top = ob.gapY, bot = ob.gapY + ob.gapH;
+      var gt = ctx.createLinearGradient(0, top - 12, 0, top);
+      gt.addColorStop(0, 'rgba(' + AURA_RGB + ',0)');
+      gt.addColorStop(1, 'rgba(' + AURA_RGB + ',' + a.toFixed(3) + ')');
+      ctx.fillStyle = gt;
+      ctx.fillRect(x, top - 12, w, 12);
+      var gb = ctx.createLinearGradient(0, bot, 0, bot + 12);
+      gb.addColorStop(0, 'rgba(' + AURA_RGB + ',' + a.toFixed(3) + ')');
+      gb.addColorStop(1, 'rgba(' + AURA_RGB + ',0)');
+      ctx.fillStyle = gb;
+      ctx.fillRect(x, bot, w, 12);
+      /* and the edge itself, lit */
+      ctx.fillStyle = 'rgba(' + AURA_EDGE_RGB + ',' + Math.min(1, a * 1.5).toFixed(3) + ')';
+      ctx.fillRect(x, top - 1, w, 1);
+      ctx.fillRect(x, bot, w, 1);
     }
   }
 
@@ -3417,6 +3648,7 @@ var PlayScene = (function () {
     loseRider();
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
+    hotChain = 0;
     /* and the spin lets go: the tumble is player.spin's, and whirlAngle
        only finishes the turn it is on (see update) */
     whirl = 0;
@@ -3977,6 +4209,7 @@ var PlayScene = (function () {
     if (nervePop > 0) nervePop -= dt;
     if (goldPop > 0) goldPop -= dt;
     if (fledPop > 0) fledPop -= dt;
+    if (streakPop > 0) streakPop -= dt;
     /* the rider runs in every state but pause, as the timers above do: he
        has to finish a tumble the run has already ended */
     if (rider) updateRider(dt);
@@ -4092,6 +4325,7 @@ var PlayScene = (function () {
         spicy -= dt;
         if (spicy <= 0) {
           spicy = 0; Audio3.play('cooldown');
+          hotChain = 0;
           /* the hold lets go from REST or from a climb, never from a descent: a vy of
              +150 handed straight to gravity hits the floor 0.2 s sooner than a fall from
              nothing, and the player was told the wind would drop, not that it would
@@ -4259,6 +4493,7 @@ var PlayScene = (function () {
       updateWatch(dt);
       updateFlick();
       updateMeet();
+      updateAura(dt);
       collide();
       emberTrail(dt);
       sourTrail(dt);
@@ -4598,6 +4833,7 @@ var PlayScene = (function () {
     if (heat > 0.02) drawHeat(ctx);
     if (shrivel > 0.02) drawSourAura(ctx);
     if (twirl > 0.02) drawWhirlAura(ctx);
+    if (auraGlow > 0.02 && state === 'play') drawAlphaAura(ctx);
   }
 
   /* The spin, in the room: a purple light round the doodad and three
@@ -4758,7 +4994,7 @@ var PlayScene = (function () {
       var pk = 1 - warpIn / WARP_IN, k = pk * pk * pk, sq = 1 - 0.8 * k;
       Doodads.draw(ctx, doodad.id,
                    lerp(player.x, funnelOb.x, k), lerp(player.y, FLOOR - 10, k),
-                   bodyR(), player.angle + k * k * TAU * 1.5, false,
+                   bodyR(), player.angle + k * k * TAU * 1.5, pose(false),
                    { squashX: sq, squashY: sq });
       return;
     }
@@ -4776,7 +5012,7 @@ var PlayScene = (function () {
       ctx.beginPath();
       ctx.rect(0, CEIL, VW, FLOOR - CEIL);
       ctx.clip();
-      Doodads.draw(ctx, doodad.id, player.x, FLOOR + 5 + Math.sin(t * 7), bodyR(), -0.6, false,
+      Doodads.draw(ctx, doodad.id, player.x, FLOOR + 5 + Math.sin(t * 7), bodyR(), -0.6, pose(false),
                    invuln > 0 ? { alpha: 0.5 } : undefined);
       /* a rider holds his breath and goes under with him, clipped by the
          same waterline - nobody carries `dive` and a rider at once today,
@@ -4790,7 +5026,7 @@ var PlayScene = (function () {
     if (invuln > 0 && Math.floor(invuln * (invuln < 0.6 ? 22 : 12)) % 2 === 0) return;
     /* mouth open while his hunger has hold of something, and only if he
        actually has that frame - Doodads.draw falls back on its own */
-    var frame = player.flapTimer > 0;
+    var frame = pose(player.flapTimer > 0);
     if (hungry > 0 && nearestPull > 0.12) frame = 'eat';
     /* a slight throb while it is lit up, as though the heat is getting to it */
     var o = null;
@@ -4949,6 +5185,7 @@ var PlayScene = (function () {
          a kernel was caught or burst, so both captions can be up at once -
          which is why they have their own clamped points and never share one */
       if (fledPop > 0) drawFled(ctx);
+      if (streakPop > 0) drawStreak(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
       else if (hazardWarn > 0) drawHazardWarning(ctx);
@@ -5028,6 +5265,18 @@ var PlayScene = (function () {
     ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
     UI.text(ctx, fledName, fledX, fledY - (1 - k) * 15,
             { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
+    ctx.globalAlpha = ga;
+  }
+
+  /* and the streak's count, the gold shout's shape in the heat's own colours:
+     it is progress toward something, not a reward yet */
+  function drawStreak(ctx) {
+    if (state === 'entry') return;
+    var k = clamp(streakPop / 0.6, 0, 1);
+    var ga = ctx.globalAlpha;
+    ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
+    UI.text(ctx, streakText, streakX, streakY - (1 - k) * 15,
+            { align: 'center', colour: '#ffb45c', shadow: UI.C.shadow });
     ctx.globalAlpha = ga;
   }
 
@@ -5706,6 +5955,8 @@ var PlayScene = (function () {
                                     pottedLives: pottedLives, spentPotted: spentPotted,
                                     planksUp: planksUp, flickCool: flickCool,
                                     passed: passedN, rider: rider ? rider.phase : null,
+                                    hotChain: hotChain, streakOwed: streak ? streak.d.id : null,
+                                    streakAssist: !!(streak && streak.assist), auraGlow: auraGlow,
                                     heavy: heavy(), grav: doodad ? grav() : 0, maxFall: doodad ? maxFall() : 0,
                                     /* the plank this run rolled for the hider,
                                        so a headless test can read what it has

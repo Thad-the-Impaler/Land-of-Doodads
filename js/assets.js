@@ -44,6 +44,14 @@ var Assets = (function () {
     teef_fly:      'Assets/sprites/teef_fly.png',
     baby_fall:     'Assets/sprites/baby_fall.png',
     baby_fly:      'Assets/sprites/baby_fly.png',
+    hotwing_fall:  'Assets/sprites/hotwing_fall.png',
+    hotwing_fly:   'Assets/sprites/hotwing_fly.png',
+    /* and his heat pair, worn for as long as the heat lasts - the only
+       doodad with a second costume rather than a third pose */
+    hotwing_fall_hot: 'Assets/sprites/hotwing_fall_hot.png',
+    hotwing_fly_hot:  'Assets/sprites/hotwing_fly_hot.png',
+    alpha_fall:    'Assets/sprites/alpha_fall.png',
+    alpha_fly:     'Assets/sprites/alpha_fly.png',
     /* THE FORT'S CUPMEN, and the guns they hold, a cup then its gun, in
        the order they arrive in a run. These are not doodads and do not come
        in pairs: one painting each, trimmed by the FOES pass in

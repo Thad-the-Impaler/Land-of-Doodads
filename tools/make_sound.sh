@@ -24,6 +24,10 @@
 #   tools/make_sound.sh "Extra Sounds/Chicken sounds.m4a" Assets/sounds/pepperselect.mp3 327.29 329.34 \
 #       "highpass=f=320,afftdn=nr=12:nf=-38"
 #
+# and Hot Wing's shout on a hot catch (not a voice - it plays in the run):
+#
+#   tools/make_sound.sh "Extra Sounds/Leeroy.mp3" Assets/sounds/leeroy.mp3 0.0 3.935
+#
 # The two cut out of the yard recording are the awkward ones: the calls sit
 # 26 and 32 dB down with the room floor right underneath, so they get a far
 # higher high pass than the others (a hen is well above 320 Hz, the room is

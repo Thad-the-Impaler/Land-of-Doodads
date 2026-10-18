@@ -34,7 +34,9 @@ SOUND_ROLES = {"mkoydokoy.mp3": "unlock", "stressless.mp3": "nerve",
                "billyselect.mp3": "voiceBilly",
                "saddamselect.mp3": "voiceSaddam",
                "geraldselect.mp3": "voiceGerald",
-               "inariselect.mp3": "voiceInari"}
+               "inariselect.mp3": "voiceInari",
+               # Hot Wing's shout when he catches a hot drop
+               "leeroy.mp3": "leeroy"}
 
 
 def read(path):

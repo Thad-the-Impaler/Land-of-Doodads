@@ -8,8 +8,8 @@
    tools/trim_sprites.py to regenerate it; do not hand-edit.
 
    unlockAt is the score the player has to have reached before a doodad
-   can be flown. No unlockAt means it was always there. There are EIGHT kinds
-   of price, and meets() is the one place all eight are written down:
+   can be flown. No unlockAt means it was always there. There are NINE kinds
+   of price, and meets() is the one place all nine are written down:
      unlockAt     a score reached with anyone, on any level
      unlockBoons  succulents collected, any level, ever
      unlockLimes  limes caught, which only the Canopy grows
@@ -25,11 +25,16 @@
      unlockRescue the id of the level he drops into a run in. He lands on
                   the player's back and is CARRIED, and only a carry that
                   lasts until he lets go of his own accord pays.
-   The last four share one save key ('met', a list of doodad ids), because
+     unlockStreak { need, assistAfter } - that many hot drops caught IN A
+                  ROW, each one before the heat from the last has run out.
+                  Once the room `assistAfter` names is open the sky helps:
+                  while the streak is unpaid, PlayScene sends the next hot
+                  drop in time. See streakable().
+   The last five share one save key ('met', a list of doodad ids), because
    they are the same shape of answer: one event that either happened or did
    not, with nothing to total up and nothing to half-finish. A found doodad,
-   a deed doodad, a chased one and a rescued one are one list for that
-   reason and no other.
+   a deed doodad, a chased one, a rescued one and a streak are one list for
+   that reason and no other.
    The same list is also where a stall that has been opened stays opened: an
    id in it is a price PAID, whatever the roster asks for that doodad today,
    which is what let two prices move on 2026-10-10 without anybody losing a
@@ -41,10 +46,12 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm`, `pay`, `dive`, `squall`, `fling` - so a new one is a new field
-   rather than a new branch on an id, and each sits on its own axis: points,
-   sight, pickups, survival, handling, room, spring, duration, direction,
-   tempo, route, hold, lane. `squall` is the HOLD - while the heat runs, gravity is
+   `calm`, `pay`, `dive`, `squall`, `fling`, `addict`, `aura` - so a new one
+   is a new field rather than a new branch on an id, and each sits on its own
+   axis: points, sight, pickups, survival, handling, room, spring, duration,
+   direction, tempo, route, hold, lane, odds, berth. `aura` is the only one
+   that changes the LEVEL rather than the doodad: the planks themselves
+   give way as he comes at them (Alpha Roostah's, see his entry). `squall` is the HOLD - while the heat runs, gravity is
    suspended and UP/DOWN steer him vertically, at the price of a faster room.
    Nobody carries two fields today. Donkey Joe did (`helium` + `pay`,
    HELIUM's hazard pay); both stay supported by the engine as data for a
@@ -94,11 +101,20 @@
    room faster than anybody else could. Speed and acceleration scale
    together, so full speed still arrives in the same 0.13 seconds.
 
+   AND THE ODDS CAME BACK the same day, for Hot Wing ("spicy drops are much
+   more frequent"). The owner tuned it by playing it, all on 2026-10-18, and
+   landed on x3 on the level's hot odds with the usual spacing and the usual
+   6.5s of heat; his entry keeps the measurements of every step. He also
+   WEARS it: `hotFrames` swaps him into his burning pair for as long as the
+   heat lasts, and `hotCall` names the recording played on every hot catch.
+
    `voice` is the sound a doodad makes when the character select lands on
    it: the ROLE js/audio.js plays, not a path, so a doodad that borrows
    another's call just names the same role. A doodad that says nothing has
    no field, and the select screen's own click is all you hear - which is
    what every one of them did until there were recordings for three.
+   `hotCall` is the same idea in the run: the ROLE played, over the heat's
+   own sound, whenever this doodad catches a hot drop.
 
    `size` is the one field the OTHER scenes read too: it is how big the
    doodad is against a standard one, and a doodad that is small is small
@@ -464,6 +480,11 @@ var Doodads = (function () {
          His until 2026-10-10 was three QUARTERs off the Desk; a save that
          paid them keeps him - metIds() says how. */
       unlockDeed: 'hot-and-sour',
+      /* the room the deed can actually be done in - both bays that shed a
+         heat and a sour are the Living Room's - so his price line can say
+         YOU ARE NOT THERE YET until its door is open, as the found ones do.
+         Data rather than a lookup, because a deed names no level. */
+      deedRoom: 'livingroom',
       /* The HANDLE, and the quarter. His art is 83% one near-black,
          #2c2c2c, and 96% near-black all told, so a near-black accent is a
          hole in the coop's dim brown and an invisible light shaft behind
@@ -578,8 +599,8 @@ var Doodads = (function () {
         shout: 'SQUALL!', sub: 'DOUBLE POINTS. NO FALLING.',
         warn: ['\u25B2\u25BC SQUALL \u25B2\u25BC', 'NO FALLING. UP AND DOWN.']
       },
-      /* A score, and the highest on the roster: 35 against Billy's 25 and
-         Maximus's 15. He used to cost the hot-and-sour deed (Roller's now);
+      /* A score: 35, between Billy's 25 and Alpha Roostah's 50. He used to
+         cost the hot-and-sour deed (Roller's now);
          a save that did the deed keeps him - metIds() says how. */
       unlockAt: 35,
       /* His own blue, pushed to indigo. The art is 78% #2d00fe, and taken
@@ -719,6 +740,96 @@ var Doodads = (function () {
       /* a baby: smaller than the rest on the porch, a size the run itself
          never sees (no `size` field - that is Turd's axis, and a hitbox) */
       title: { role: 'perch', r: 15 }
+    },
+    {
+      id: 'hotwing',
+      name: 'HOT WING',                                    /* 8 ch, 141px at scale 3 */
+      tagline: 'STILL SMOKING',                            /* 13 ch, 89px at spacing 2 */
+      about: ['A CHICKEN WING, EXTRA HOT.',                  /* 25 ch, 149px */
+              'HAS NOT STOPPED SMOKING SINCE THE FRYER.'],  /* 40 ch, 239px */
+      /* the second line is a hint and not the price again, and it names no
+         room: the help arrives with the Dining Room, which a locked card
+         must not give away to a player who has never seen it */
+      lockedAbout: ['SOMETHING IN HERE IS RUNNING HOT.',         /* 33 ch, 197px */
+                    'IT ONLY COMES OUT FOR A HOT STREAK.'],      /* 35 ch, 209px */
+      /* THE ODDS - every number here is the owner's, reached by playing it,
+         2026-10-18:
+           x4, spacing 2      "really easy" (3.9 times the hot drops)
+           x1.5, spacing 4    still "super easy": he stacked heat on heat,
+                              the drops stopped mattering (the heat smashes
+                              them) and the score ran away
+           + a 5s heat        his pick of four costs, and then x1.5 was "much
+                              too low" against it; x2.5 followed
+           x3, spacing 4      today, with the heat back at everybody's 6.5s
+         So the last call was for MORE of the heat at the full length, and
+         the shorter heat is gone rather than kept as data nobody sets. Only
+         the drop spawner reads the odds, so they do nothing in the three bays
+         that shed no hot drops (the Canopy, the Mantle, the Bar) and nothing
+         to the Fort's red pellets, which are the Cupmen's business. */
+      ability: 'SPICE ADDICT',
+      abilityLive: true,
+      abilityAbout: ['THE SKY KNOWS WHAT HE LIKES.',             /* 28 ch, 167px */
+                     'SPICY DROPS COME FAR MORE OFTEN.'],        /* 32 ch, 191px */
+      addict: { odds: 3, gap: 4 },
+      /* in his burning pair for as long as the heat lasts, and shouting on
+         every hot catch - both owner's asks, both read off these fields */
+      hotFrames: true,
+      hotCall: 'leeroy',
+      /* A STREAK, the ninth kind of price: five hot drops caught in a row,
+         each before the heat from the last runs out. As the game sheds them
+         that is a lottery - after a hot drop the sky must drop four ordinary
+         things, and simulated with a perfect catcher only the Couch and the
+         Floor ever reached five - so once THE DINING ROOM is open the sky
+         helps (the owner's rule): while he is still owed, every hot catch
+         makes PlayScene send the next one in time. Before that room the odds
+         are the level's own, and once he is earned they are again. */
+      unlockStreak: { need: 5, assistAfter: 'diningroom' },
+      /* HOT RED, the owner's ask (2026-10-18) over the flame orange it
+         shipped with. Saddam's red is a brick, #a4432a - dull and brown -
+         so this one is pushed as far the other way as a red goes: pure,
+         bright and only a touch warm, his body's own red lit up. The light
+         shade is the one his name is written in on the card, so it stays a
+         red too: #ff6a4a was tried first and read as coral. */
+      accent: '#e3241b', accentDark: '#7e0d07', accentLight: '#ff4636',
+      sprite: { w: 384, h: 362, pivotX: 208.6, pivotY: 185.6, bodyR: 137.7, footOffset: 1.00 },
+      /* a perch and not a patrol: the Coop title places a patroller off
+         homeX/homeY of his own, and a perch is a seat the scenery hands out */
+      title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'alpha',
+      name: 'ALPHA ROOSTAH',                               /* 13 ch: 231px at scale 3, so the card steps it to 2 (154px) */
+      tagline: 'RULES THE ROOST',                          /* 15 ch, 103px at spacing 2 */
+      about: ['SHADES ON. CHAIN ON.',                         /* 20 ch, 119px */
+              'NOT ONE FEATHER OUT OF PLACE.'],             /* 29 ch, 173px */
+      lockedAbout: ['SOMEBODY IN HERE THINKS HE RUNS THE PLACE.',   /* 42 ch, 251px */
+                    'HE ONLY RESPECTS A BIG SCORE.'],               /* 29 ch, 173px */
+      /* THE BERTH: the planks themselves make way for him. As a plank comes
+         within `reach` px of his front, both of its caps ease back `push` px
+         over `ease` seconds - the top one up, the bottom one down - so its
+         gap is 2 x push wider by the time he is in it, and an orange aura
+         says so while it happens. 7 a cap, +14 px in all, is the owner's
+         number after playing it at 4 (+8, which matched Turd: 12-19% fewer
+         hits than Pepper against Turd's 11-18%). In the tightest gaps a
+         doodad has about 8 px of room to time a flap; Turd's small body makes
+         that 15, and this makes it 22. It only ever widens, and only ahead of
+         him: a cap never moves toward him, and the spawner's 34 px of column
+         always leaves room for 7 above AURA_STUB. */
+      ability: 'ALPHA AURA',
+      abilityLive: true,
+      abilityAbout: ['THE PILLARS MAKE WAY FOR HIM.',            /* 29 ch, 173px */
+                     'EVERY GAP OPENS A LITTLE WIDER.'],         /* 31 ch, 185px */
+      aura: { push: 7, reach: 96, ease: 0.3 },
+      /* the next score in the line, after Maximus 15, Billy 25 and Donkey Joe
+         35 - the owner's number */
+      unlockAt: 50,
+      /* His orange, which is also his aura's: the body is a saturated
+         #f07020 and nobody on the rail is that orange - Cookie's #c9873c is
+         a tan, and Hot Wing went to red. */
+      accent: '#ee7a1c', accentDark: '#7a3808', accentLight: '#ffb060',
+      sprite: { w: 384, h: 364, pivotX: 233.2, pivotY: 214.3, bodyR: 148.7, footOffset: 1.00 },
+      /* a rooster on a roost */
+      title: { role: 'perch', r: 19 }
     }
   ];
 
@@ -1037,6 +1148,40 @@ var Doodads = (function () {
     return null;
   }
 
+  /* THE STREAK STILL OWED, if any: the first doodad whose price is a run of
+     hot drops and whose price is unpaid, as { d, need, assist }. `assist` is
+     whether the sky should help - true once the room his unlockStreak names
+     is open. roomOpen() and not gateMet(), and meets() and not isUnlocked(),
+     for the reasons meetable() gives: the passkey opens doors and takes
+     nobody out of the world. PlayScene asks this once per run, in start(). */
+  function streakable() {
+    var best = bestReached();
+    for (var i = 0; i < LIST.length; i++) {
+      var d = LIST[i];
+      if (!d.unlockStreak || meets(d, best)) continue;
+      var after = d.unlockStreak.assistAfter;
+      return { d: d, need: d.unlockStreak.need,
+               assist: !after || Levels.roomOpen(Levels.roomById(after)) };
+    }
+    return null;
+  }
+
+  /* A STREAK OF n HOT DROPS, reported by the engine after every hot catch.
+     Returns the doodads it just paid for, [] every time after - noteDeed's
+     shape, for noteDeed's reasons: the engine pushes the result onto its
+     unlock queue and never learns what it bought. */
+  function noteStreak(n) {
+    if (!(n > 0)) return [];
+    var list = metIds();
+    var won = LIST.filter(function (d) {
+      return d.unlockStreak && n >= d.unlockStreak.need && list.indexOf(d.id) < 0;
+    });
+    if (!won.length) return won;
+    won.forEach(function (d) { list.push(d.id); });
+    Save.set('met', list);
+    return won;
+  }
+
   /* found one, caught one, or carried one home. returns it if this was the
      moment, or null if it was already known - so a second touch cannot fire
      the banner twice. The guard names all three kinds, because without it a
@@ -1105,8 +1250,8 @@ var Doodads = (function () {
      than the generous one. The achievements roster asks this: IMP11 opens
      every stall at once, and POULTRY CATCHER is a record of what the player
      DID, so a passkey must not hand it over. Split out of isUnlocked rather
-     than copied into js/achievements.js so that the eight prices are written
-     down once - a ninth kind of lock is a line here and nowhere else. */
+     than copied into js/achievements.js so that the nine prices are written
+     down once - a tenth kind of lock is a line here and nowhere else. */
   function meets(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
@@ -1119,18 +1264,19 @@ var Doodads = (function () {
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
     if (d.unlockGold && goldTaken(d.unlockGold.name) < d.unlockGold.need) return false;
-    /* one test for the found ones, the deed ones, the chased one and the
-       rescued one together, because they share the one list: each is a yes
+    /* one test for the found ones, the deed ones, the chased one, the
+       rescued one and the streak together, because they share the one
+       list: each is a yes
        that is remembered by the doodad's own id, and none has a number to
        fall short of */
-    if ((d.unlockMeet || d.unlockDeed || d.unlockChase || d.unlockRescue) &&
-        metIds().indexOf(d.id) < 0) return false;
+    if ((d.unlockMeet || d.unlockDeed || d.unlockChase || d.unlockRescue ||
+         d.unlockStreak) && metIds().indexOf(d.id) < 0) return false;
     return true;
   }
 
   /* DOES THIS DOODAD COST ANYTHING AT ALL?
 
-     The eight prices are written down HERE, beside meets(), so a ninth
+     The nine prices are written down HERE, beside meets(), so a tenth
      kind of lock is still one line in one file. It exists because the
      question was being asked by building the answer:
      Achievements.doodadsBought() called requirement() on all eight doodads
@@ -1144,13 +1290,13 @@ var Doodads = (function () {
      say different things: meets() asks whether the price was paid, this asks
      whether there was one. POULTRY CATCHER counts the doodads that are
      priced AND met, so a kind this test did not know about would make its
-     doodad free - it would never be counted toward the badge, and eleven of
-     fourteen would be as high as the badge could ever read. */
+     doodad free - it would never be counted toward the badge, and thirteen
+     of sixteen would be as high as the badge could ever read. */
   function priced(d) {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
     return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
                     d.unlockMeet || d.unlockGold || d.unlockDeed ||
-                    d.unlockChase || d.unlockRescue));
+                    d.unlockChase || d.unlockRescue || d.unlockStreak));
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey(),
@@ -1229,15 +1375,25 @@ var Doodads = (function () {
     return (p && Levels.roomOpen(p.room)) ? 'TRY ' + p.name : 'YOU ARE NOT THERE YET';
   }
 
+  /* THE SAME WORDS FOR A PRICE THAT NAMES NO PLACE - a deed, a chase, a
+     streak. Their sentences stay as they are once the room is open, because
+     there is no single bay to send the player to (or, for the chase, because
+     naming it would spend the room's secret); while it is shut they gain the
+     line every found doodad in a shut room already carries. The owner's ask,
+     2026-10-18, for Hot Wing, Roller and Teef. A missing room says nothing. */
+  function notThereYet(room) {
+    return (room && !Levels.roomOpen(room)) ? '. YOU ARE NOT THERE YET' : '';
+  }
+
   /* What a locked doodad is still waiting for: the price to print, how far
      along the player is and what to call it. Here rather than on the select
      screen, so the card never has to know which kind of lock it is looking
-     at - and a ninth kind is a ninth branch in one place.
+     at - and a tenth kind is a tenth branch in one place.
 
      Every string is measured against drawLockedCard's fixed geometry: the
      price is drawn centred at VW/2 with spacing 2, so n characters measure
      7n-2 px against a budget of about 460, and the longest of these is the
-     shut-room form of the capybara's at 42 characters and 292px. The plates
+     shut-room form of Hot Wing's at 51 characters and 355px. The plates
      are spacing 1 (6n-1) and have to sit inside a stall's 92px pitch.
 
      7n-2 and not 8n-2: Font.measure (js/font.js:130-136) is
@@ -1308,7 +1464,8 @@ var Doodads = (function () {
        gives away nothing and is quite enough to go looking with; it used
        to say ONE, and one stopped being true the day the Fort was built. */
     if (d.unlockDeed) {
-      return { price: 'BE HOT AND SOUR AT ONCE', plate: 'HOT + SOUR',
+      return { price: 'BE HOT AND SOUR AT ONCE' +                                   /* 47 ch, 327px shut */
+                      notThereYet(d.deedRoom && Levels.roomById(d.deedRoom)), plate: 'HOT + SOUR',
                hint: 'TWO BAYS SHED BOTH', bar: false };          /* 18 ch, as ONE was */
     }
     /* a catch is one event as well, so no bar here either, and the copy is
@@ -1323,7 +1480,9 @@ var Doodads = (function () {
        landing in it costs are his own business, which is what his
        lockedAbout is for. */
     if (d.unlockChase) {
-      return { price: 'CATCH HIM IF YOU CAN', plate: 'AT LARGE',    /* 20 ch 138px at spacing 2; 8 ch 47px in a 92px pitch */
+      var lair = placeOf(d.unlockChase);
+      return { price: 'CATCH HIM IF YOU CAN' + notThereYet(lair && lair.room),     /* 44 ch, 306px shut */
+               plate: 'AT LARGE',    /* 20 ch 138px at spacing 2; 8 ch 47px in a 92px pitch */
                hint: 'ONE BAY HAS A HOLE IN IT', bar: false };      /* 24 ch, 143px */
     }
     /* a carry is one event too - he was set down safe or he was not - so no
@@ -1334,6 +1493,17 @@ var Doodads = (function () {
     if (d.unlockRescue) {
       return { price: 'RESCUE HIM. ' + placeLine(d.unlockRescue), plate: 'STRANDED',  /* 8 ch, 47px */
                hint: 'HE CANNOT GET DOWN ALONE', bar: false };                      /* 24 ch, 143px */
+    }
+    /* a streak is one event as well - it happened in one run or it did not,
+       and a best-so-far would be a total the save does not keep - so no bar.
+       It names no bay: nearly every bay sheds hot drops, and the ones that
+       help are the business of the room that opens the help. */
+    if (d.unlockStreak) {
+      var n = d.unlockStreak.need;
+      return { price: 'CATCH ' + n + ' SPICY DROPS IN A ROW' +                     /* 51 ch, 355px shut */
+                      notThereYet(Levels.roomById(d.unlockStreak.assistAfter)),
+               plate: n + ' IN A ROW',                                              /* 10 ch, 59px */
+               hint: 'DO NOT LET THE HEAT RUN OUT', bar: false };                 /* 27 ch, 161px */
     }
     if (d.unlockAt) {
       return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
@@ -1377,6 +1547,7 @@ var Doodads = (function () {
        and a find are one event in one save key. */
     meetable: meetable, chaseable: chaseable, rescuable: rescuable,
     noteMeet: noteMeet, noteDeed: noteDeed,
+    streakable: streakable, noteStreak: noteStreak,
     isUnlocked: isUnlocked, meets: meets, priced: priced, firstUnlocked: firstUnlocked,
     pricedOpen: pricedOpen,
     masterKey: masterKey, setMasterKey: setMasterKey
