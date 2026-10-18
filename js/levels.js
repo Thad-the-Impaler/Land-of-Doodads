@@ -688,7 +688,14 @@ var Levels = (function () {
       dropFallMin: 4, dropFallMax: 30,
       spicyChance: 0.075,
       /* no sour: the owner's "no sour drops for this level" */
-      boonChance: 0.032, boonGap: 10
+      boonChance: 0.032, boonGap: 10,
+      /* Somebody small is stuck in the ceiling. On the fifteenth pillar he
+         lets go, lands on the player's back and holds on - heavy - for
+         fifteen more, then hops off at thirty. A death while he is aboard
+         loses him for that run. Who it is is the roster's business
+         (Doodads.rescuable), exactly as meetAt leaves it; these are counted
+         in PILLARS PASSED, not in score, so the heat cannot hurry him. */
+      rescueAt: 15, rescueFor: 15
     }
   };
 

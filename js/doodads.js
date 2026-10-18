@@ -8,8 +8,8 @@
    tools/trim_sprites.py to regenerate it; do not hand-edit.
 
    unlockAt is the score the player has to have reached before a doodad
-   can be flown. No unlockAt means it was always there. There are SEVEN kinds
-   of price, and meets() is the one place all seven are written down:
+   can be flown. No unlockAt means it was always there. There are EIGHT kinds
+   of price, and meets() is the one place all eight are written down:
      unlockAt     a score reached with anyone, on any level
      unlockBoons  succulents collected, any level, ever
      unlockLimes  limes caught, which only the Canopy grows
@@ -22,10 +22,14 @@
                   the player DID, rather than something collected.
      unlockChase  the id of the level with a hole in its floor. He is
                   swimming behind it, and he is CAUGHT rather than found.
-   The last three share one save key ('met', a list of doodad ids), because
+     unlockRescue the id of the level he drops into a run in. He lands on
+                  the player's back and is CARRIED, and only a carry that
+                  lasts until he lets go of his own accord pays.
+   The last four share one save key ('met', a list of doodad ids), because
    they are the same shape of answer: one event that either happened or did
    not, with nothing to total up and nothing to half-finish. A found doodad,
-   a deed doodad and a chased one are one list for that reason and no other.
+   a deed doodad, a chased one and a rescued one are one list for that
+   reason and no other.
    The same list is also where a stall that has been opened stays opened: an
    id in it is a price PAID, whatever the roster asks for that doodad today,
    which is what let two prices move on 2026-10-10 without anybody losing a
@@ -37,10 +41,10 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm`, `pay`, `dive`, `squall` - so a new one is a new field rather than
-   a new branch on an id, and each sits on its own axis: points, sight,
-   pickups, survival, handling, room, spring, duration, direction, tempo,
-   route, hold. `squall` is the HOLD - while the heat runs, gravity is
+   `calm`, `pay`, `dive`, `squall`, `fling` - so a new one is a new field
+   rather than a new branch on an id, and each sits on its own axis: points,
+   sight, pickups, survival, handling, room, spring, duration, direction,
+   tempo, route, hold, lane. `squall` is the HOLD - while the heat runs, gravity is
    suspended and UP/DOWN steer him vertically, at the price of a faster room.
    Nobody carries two fields today. Donkey Joe did (`helium` + `pay`,
    HELIUM's hazard pay); both stay supported by the engine as data for a
@@ -81,6 +85,14 @@
    the third because what it COULD be seen doing was already somebody
    else's; the fourth was refused by the owner on sight, and his word is the
    test the other two stand in for.
+
+   THE LANE CAME BACK, on 2026-10-17, because the owner asked for it by name
+   for Baby Burrito ("he moves faster horizontally"), knowing it had been
+   Koa's once. What sent it back the first time was that x1.5 could not be
+   felt, so `fling` returns at 1.75 and, more to the point, it is DRAWN: he
+   leans into the move and leaves an afterimage whenever he is crossing the
+   room faster than anybody else could. Speed and acceleration scale
+   together, so full speed still arrives in the same 0.13 seconds.
 
    `voice` is the sound a doodad makes when the character select lands on
    it: the ROLE js/audio.js plays, not a path, so a doodad that borrows
@@ -666,6 +678,47 @@ var Doodads = (function () {
       accent: '#5a6878', accentDark: '#2e3640', accentLight: '#aebbc8',
       sprite: { w: 330, h: 384, pivotX: 168.9, pivotY: 192.0, bodyR: 161.4, footOffset: 1.19 },
       title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'baby',
+      name: 'BABY BURRITO',                                /* 12 ch: 213px at scale 3, so the card steps it to 2 (142px), as it does TURD THE BIRD */
+      tagline: 'HANGS ON FOR DEAR LIFE',                   /* 22 ch, 152px at spacing 2 */
+      about: ['A BREAKFAST BURRITO, VERY NEW.',              /* 30 ch, 179px */
+              'WRAPPED TIGHT. GRIPS TIGHTER.'],             /* 29 ch, 173px */
+      /* The rule, in his own words, for Koa's reason: the price line stays
+         generic and the card says what the rescue actually asks. */
+      lockedAbout: ['SOMEBODY SMALL IS STUCK IN THE CEILING.',   /* 39 ch, 233px */
+                    'CARRY HIM FIFTEEN PILLARS. DO NOT FALL.'],  /* 39 ch, 233px */
+      /* THE LANE, the owner's own pick for him - see the header for why it
+         was given back once and what is different now. 1.75 on the sideways
+         nudge's speed AND its acceleration: 116px/s becomes 203, still
+         reached in 0.13s. That is faster than any room scrolls (112..178),
+         which is why it can be felt - and it is still only sideways inside
+         the same 272px of lane, so it buys time to dodge a drop, reach a
+         pickup or set up a gap, and makes nothing survivable that was not.
+         PlayScene draws the lean and the afterimage off the same field;
+         nothing reads his id. */
+      ability: 'THROWABLE',
+      abilityLive: true,
+      abilityAbout: ['SMALL ENOUGH TO THROW AROUND.',           /* 29 ch, 173px */
+                     'HE CROSSES THE ROOM FAST.'],              /* 25 ch, 149px */
+      fling: 1.75,
+      /* RESCUED, which is the eighth kind of price. The level says WHEN he
+         drops (tune.rescueAt, and tune.rescueFor for how long he holds on)
+         and the roster says WHO; the engine carries him, makes the carrier
+         heavy, and calls noteMeet when he lets go of his own accord. A death
+         while he is aboard loses him for that run and nothing else - he is
+         back in the ceiling on the next one. */
+      unlockRescue: 'table',
+      /* Egg yolk, from his filling. His tortilla is a third tan on a rail
+         that already has Cookie's, Gerald's and Maximus's; a clear warm
+         yellow is held by nobody (Capybara's olive is the nearest, and much
+         greener). */
+      accent: '#d9b22a', accentDark: '#7d6412', accentLight: '#f4dc76',
+      sprite: { w: 358, h: 384, pivotX: 178.9, pivotY: 192.0, bodyR: 178.9, footOffset: 1.07 },
+      /* a baby: smaller than the rest on the porch, a size the run itself
+         never sees (no `size` field - that is Turd's axis, and a hitbox) */
+      title: { role: 'perch', r: 15 }
     }
   ];
 
@@ -969,14 +1022,30 @@ var Doodads = (function () {
     return null;
   }
 
-  /* found one, or caught one. returns it if this was the moment, or null if
-     it was already known - so a second touch cannot fire the banner twice.
-     The guard names both kinds, because without it a doodad that carries
-     neither field is written into the save as done the moment anything
-     passes it in - noteDeed states the same trap at length. */
+  /* THE DOODAD WHO DROPS ONTO THE PLAYER IN THIS LEVEL, if any - the third
+     of the twins, and everything written over meetable() applies to it word
+     for word: the level asks rather than naming an id, a falsy place matches
+     nobody, and it asks meets() so that IMP11 cannot take him out of the
+     ceiling. Its own function for chaseable()'s reason - a level that one
+     day had a hider AND a rider would want both answers. */
+  function rescuable(place) {
+    if (!place) return null;
+    var best = bestReached();
+    for (var i = 0; i < LIST.length; i++) {
+      if (LIST[i].unlockRescue === place && !meets(LIST[i], best)) return LIST[i];
+    }
+    return null;
+  }
+
+  /* found one, caught one, or carried one home. returns it if this was the
+     moment, or null if it was already known - so a second touch cannot fire
+     the banner twice. The guard names all three kinds, because without it a
+     doodad that carries none of the fields is written into the save as done
+     the moment anything passes it in - noteDeed states the same trap at
+     length. */
   function noteMeet(d) {
     if (typeof d === 'string') d = BY_ID[d];
-    if (!d || !(d.unlockMeet || d.unlockChase)) return null;
+    if (!d || !(d.unlockMeet || d.unlockChase || d.unlockRescue)) return null;
     var list = metIds();
     if (list.indexOf(d.id) >= 0) return null;
     list.push(d.id);
@@ -1036,8 +1105,8 @@ var Doodads = (function () {
      than the generous one. The achievements roster asks this: IMP11 opens
      every stall at once, and POULTRY CATCHER is a record of what the player
      DID, so a passkey must not hand it over. Split out of isUnlocked rather
-     than copied into js/achievements.js so that the seven prices are written
-     down once - an eighth kind of lock is a line here and nowhere else. */
+     than copied into js/achievements.js so that the eight prices are written
+     down once - a ninth kind of lock is a line here and nowhere else. */
   function meets(d, best) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return false;
@@ -1050,17 +1119,18 @@ var Doodads = (function () {
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
     if (d.unlockGold && goldTaken(d.unlockGold.name) < d.unlockGold.need) return false;
-    /* one test for the found ones, the deed ones and the chased one
-       together, because they share the one list: each is a yes that is
-       remembered by the doodad's own id, and none has a number to fall
-       short of */
-    if ((d.unlockMeet || d.unlockDeed || d.unlockChase) && metIds().indexOf(d.id) < 0) return false;
+    /* one test for the found ones, the deed ones, the chased one and the
+       rescued one together, because they share the one list: each is a yes
+       that is remembered by the doodad's own id, and none has a number to
+       fall short of */
+    if ((d.unlockMeet || d.unlockDeed || d.unlockChase || d.unlockRescue) &&
+        metIds().indexOf(d.id) < 0) return false;
     return true;
   }
 
   /* DOES THIS DOODAD COST ANYTHING AT ALL?
 
-     The seven prices are written down HERE, beside meets(), so an eighth
+     The eight prices are written down HERE, beside meets(), so a ninth
      kind of lock is still one line in one file. It exists because the
      question was being asked by building the answer:
      Achievements.doodadsBought() called requirement() on all eight doodads
@@ -1074,13 +1144,13 @@ var Doodads = (function () {
      say different things: meets() asks whether the price was paid, this asks
      whether there was one. POULTRY CATCHER counts the doodads that are
      priced AND met, so a kind this test did not know about would make its
-     doodad free - it would never be counted toward the badge, and ten of
-     thirteen would be as high as the badge could ever read. */
+     doodad free - it would never be counted toward the badge, and eleven of
+     fourteen would be as high as the badge could ever read. */
   function priced(d) {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
     return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
                     d.unlockMeet || d.unlockGold || d.unlockDeed ||
-                    d.unlockChase));
+                    d.unlockChase || d.unlockRescue));
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey(),
@@ -1162,7 +1232,7 @@ var Doodads = (function () {
   /* What a locked doodad is still waiting for: the price to print, how far
      along the player is and what to call it. Here rather than on the select
      screen, so the card never has to know which kind of lock it is looking
-     at - and an eighth kind is an eighth branch in one place.
+     at - and a ninth kind is a ninth branch in one place.
 
      Every string is measured against drawLockedCard's fixed geometry: the
      price is drawn centred at VW/2 with spacing 2, so n characters measure
@@ -1256,6 +1326,15 @@ var Doodads = (function () {
       return { price: 'CATCH HIM IF YOU CAN', plate: 'AT LARGE',    /* 20 ch 138px at spacing 2; 8 ch 47px in a 92px pitch */
                hint: 'ONE BAY HAS A HOLE IN IT', bar: false };      /* 24 ch, 143px */
     }
+    /* a carry is one event too - he was set down safe or he was not - so no
+       bar. The level is looked up, Saddam's way, and so keeps the Dining
+       Room's secret until its door is open: the shut-room form is 33 ch,
+       229px. HOW LONG he has to be carried is his card's business, in his
+       lockedAbout, for the reason the found ones give. */
+    if (d.unlockRescue) {
+      return { price: 'RESCUE HIM. ' + placeLine(d.unlockRescue), plate: 'STRANDED',  /* 8 ch, 47px */
+               hint: 'HE CANNOT GET DOWN ALONE', bar: false };                      /* 24 ch, 143px */
+    }
     if (d.unlockAt) {
       return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
                plate: 'SCORE ' + d.unlockAt,
@@ -1296,7 +1375,7 @@ var Doodads = (function () {
     /* meetable() takes the level id now - see its comment. chaseable()
        takes one too, and noteMeet() is what answers both of them: a catch
        and a find are one event in one save key. */
-    meetable: meetable, chaseable: chaseable,
+    meetable: meetable, chaseable: chaseable, rescuable: rescuable,
     noteMeet: noteMeet, noteDeed: noteDeed,
     isUnlocked: isUnlocked, meets: meets, priced: priced, firstUnlocked: firstUnlocked,
     pricedOpen: pricedOpen,

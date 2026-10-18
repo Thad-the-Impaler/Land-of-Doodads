@@ -389,6 +389,15 @@ var PlayScene = (function () {
      spawn for the same reason: a second read would roll a second number
      and the window would offer him over and over. */
   var meetPlank = 0;
+  /* PILLARS PASSED this run, whichever way - threaded, swum under, or in a
+     stay - and nothing else: not `score`, which the heat and a tight pass
+     double, and not `pace`, which carries the heat as well. The rider's two
+     numbers are counts of pillars because the owner's were ("upon passing
+     pillar 15 ... until reaching 30 pillars"), and a hot run must not hurry
+     a baby off your back. */
+  var passedN = 0;
+  /* THE RIDER, or null. See "the rider" below for the phases. */
+  var rider = null;
   var flickCool = 0;           /* seconds until the tail is back under him */
   /* What the mid-flight banner is currently shouting about, and what is
      waiting behind it. A score can open a level AND a doodad on the very
@@ -574,6 +583,8 @@ var PlayScene = (function () {
     lives = doodad.lives || 0; invuln = 0; saveFlash = 0; saveBanner = 0;
     pottedLives = 0; spentPotted = false;
     planksUp = 0; flickCool = 0;
+    /* a RETRY puts him back in the ceiling: a rescue is all of one run */
+    passedN = 0; rider = null;
     /* THE ONE ROLL OF THE RUN. tune.meetAt is the first plank he may be
        behind and tune.meetSpan is how many more the dice may add, so the
        Couch's 5 and 15 are a uniform 5..20 (randInt is inclusive at both
@@ -1287,6 +1298,247 @@ var PlayScene = (function () {
       }
       Doodads.draw(ctx, ob.meet.id, grabX(ob), gy, MEET_BODY, 0, false, o);
     }
+  }
+
+  /* ---------------------------------------------------------- the rider
+
+     THE EIGHTH WAY A DOODAD COMES OPEN, and the only one that happens TO
+     the player rather than being reached: somebody small is stuck in the
+     ceiling, and on the pillar the level names (tune.rescueAt) he lets go
+     and lands on the player's back. He holds on for tune.rescueFor more
+     pillars, weighing the carrier down, then hops off of his own accord and
+     is free. A death while he is falling or aboard loses him for that run,
+     and only for that run. THE LEVEL SAYS WHEN, THE ROSTER SAYS WHO
+     (Doodads.rescuable) - nothing in here names either. A spare life is not
+     a death: the run goes on and so does he, because the owner's word was
+     "killed".
+
+     The phases, in order:
+       hang  clinging to the lid over the player for RIDER_HANG, wriggling -
+             the telegraph, so a landing never comes out of nowhere
+       fall  dropping onto the back for RIDER_FALL, homing on it
+       ride  aboard; heavy() is true, and grav() and maxFall() read it
+       hop   let go at the far count: an arc up and back down to the table
+       sit   on the table, carried off to the left with the room
+       lost  thrown off by a death, tumbling to the table
+     hang, fall and ride are drawn off the PLAYER'S position at draw time,
+     so he can never be a frame behind the back he is on; hop, sit and lost
+     are free bodies with their own x, y and velocity. */
+
+  /* his drawn body against a standard doodad's: 8px on 13. FIXED, not
+     scaled by the carrier - a baby is the size he is, so on Turd he is
+     nearly as big as the bird, which is the truth of it */
+  var RIDER_R    = BODY_R * 0.62;
+  var RIDER_HANG = 0.5;
+  var RIDER_FALL = 0.55;
+  var RIDER_G    = 900;
+  /* THE WEIGHT, the owner's "noticeable" (2026-10-17): gravity x1.3 and the
+     top fall speed x1.2, the flap untouched - so a beat lifts 338^2 /
+     (2 x 1534) = 37px instead of 48, and he comes down at 654 rather than
+     545. The flap is left alone on purpose: scaling it with the gravity is
+     how Billy keeps a beat's height, and this is the opposite of Billy. At
+     the 1/30 frame clamp the step is 654 / 30 + 0.5 x 1534 / 900 = 22.7px,
+     against 18.8 for everyone else - only the floor and the lid are ever
+     that close to a hitbox, and both are line tests that cannot be skipped. */
+  var RIDE_GRAV = 1.3, RIDE_FALL = 1.2;
+
+  function heavy() {
+    return !!rider && rider.phase === 'ride' && (state === 'play' || state === 'paused');
+  }
+
+  /* where the back is: up and behind the middle of him, turned with him,
+     so a dive noses the baby down with it and the spin takes him round */
+  function riderAnchor() {
+    var R = bodyR(), a = player.angle + whirlAngle;
+    var ox = -0.48 * R - 0.12 * RIDER_R, oy = -0.62 * R - 0.22 * RIDER_R;
+    var c = Math.cos(a), s = Math.sin(a);
+    return { x: player.x + ox * c - oy * s, y: player.y + ox * s + oy * c, a: a };
+  }
+
+  /* where he is during the fall: straight at the back, linear across and
+     accelerating down, so the drop reads as a drop and still arrives */
+  function riderFallAt() {
+    var k = clamp(rider.t / RIDER_FALL, 0, 1), an = riderAnchor();
+    return { x: lerp(rider.x0, an.x, k), y: lerp(rider.y0, an.y, k * k), a: lerp(rider.a0, an.a, k) };
+  }
+
+  /* called from the scoring block, once per pillar passed */
+  function checkRescue() {
+    if (state !== 'play') return;
+    if (!rider) {
+      if (passedN !== tune.rescueAt) return;
+      var who = Doodads.rescuable(level.id);
+      /* INCLUDING onto himself. rescuable() asks meets() and not
+         isUnlocked(), so with IMP11 typed he can be flown before he has
+         been carried - and he still drops, the way Saddam still hides
+         behind the tenth stake and Koa still bounces in the popcorn for a
+         player flying Saddam or Koa. The owner asked for exactly that
+         (2026-10-17): the passkey opens his stall and takes nobody out of
+         the world. The banner stays quiet under the passkey (hopOff), the
+         save still learns his name. */
+      if (!who) return;
+      rider = { who: who, phase: 'hang', t: 0, x: player.x, y: CEIL + RIDER_R * 0.6,
+                x0: 0, y0: 0, a0: 0, vx: 0, vy: 0, angle: 0, spin: 0, lag: 0, pop: 0 };
+      Audio3.play('chirp');
+      return;
+    }
+    if (rider.phase === 'ride' && passedN >= tune.rescueAt + (tune.rescueFor || 0)) hopOff();
+  }
+
+  function updateRider(dt) {
+    var r = rider;
+    r.t += dt;
+    if (r.pop > 0) r.pop = Math.max(0, r.pop - dt * 4);
+    if (r.phase === 'hang') {
+      /* he shuffles along the lid to be over the player, and the shake is
+         the struggle to let go. A few crumbs of plaster come down with him -
+         FX.motes, the room's own dust, so the lid is whatever this bay's is */
+      r.x = damp(r.x, player.x + 2, 0.002, dt);
+      r.angle = Math.sin(r.t * 22) * 0.18;
+      if (chance(dt * 16)) {
+        particles.push({ x: r.x + rand(-6, 6), y: CEIL + 1, vx: rand(-10, 10), vy: rand(10, 40),
+                         life: rand(0.3, 0.6), g: 300, col: chance(0.5) ? FX.motes : FX.motesHi });
+      }
+      /* only in play: a run that ends while he is still up there leaves
+         him up there, wriggling, which is where he was */
+      if (r.t >= RIDER_HANG && state === 'play') {
+        r.phase = 'fall'; r.t = 0; r.x0 = r.x; r.y0 = r.y; r.a0 = r.angle;
+      }
+      return;
+    }
+    if (r.phase === 'fall') {
+      if (r.t >= RIDER_FALL) landRider();
+      return;
+    }
+    if (r.phase === 'ride') {
+      /* pressed into the back when the carrier beats up, lifted off it a
+         little when he drops - inertia, which is all that says he is a
+         passenger and not a hat */
+      r.lag = damp(r.lag, clamp(-player.vy / 340, -1, 1), 0.00002, dt);
+      return;
+    }
+    if (r.phase === 'sit') {
+      /* the room carries him off while the run is moving, and he bounces
+         where he sits because he is pleased with himself */
+      if (state === 'play') r.x -= speed * dt;
+      r.y = FLOOR - RIDER_R * r.who.sprite.footOffset - Math.abs(Math.sin(r.t * 9)) * 2.5;
+      if (r.x < -30) rider = null;
+      return;
+    }
+    /* hop and lost: a free body falling to the table */
+    r.vy += RIDER_G * dt;
+    r.x += r.vx * dt;
+    r.y += r.vy * dt;
+    r.angle += r.spin * dt;
+    var rest = FLOOR - RIDER_R * r.who.sprite.footOffset;
+    if (r.y < rest || r.vy < 0) return;
+    r.y = rest;
+    if (r.phase === 'hop') {
+      r.phase = 'sit'; r.t = 0; r.angle = 0; r.pop = 1;
+      Audio3.play('bop');
+    } else if (r.vy > 160) {
+      /* one bounce and he lies where he fell */
+      r.vy = -r.vy * 0.3; r.vx *= 0.5; r.spin *= 0.4;
+    } else {
+      r.vy = 0; r.vx = 0; r.spin = 0;
+    }
+  }
+
+  /* ONTO THE BACK. The sentence says the whole rule, once: who, and for how
+     long - the line under the score then counts it down. A gift's sentence,
+     so it yields to a hazard's the way the hole's heads-up does: parked for
+     the first free frame if the slot is busy, and only if nothing else is
+     parked there already. */
+  function landRider() {
+    var r = rider, an = riderAnchor();
+    r.phase = 'ride'; r.t = 0; r.pop = 1; r.lag = 1;
+    Audio3.play('stomp');
+    Screen.shake(1.5, 0.15);
+    for (var i = 0; i < 10; i++) {
+      particles.push({ x: an.x + rand(-6, 6), y: an.y + rand(-3, 3),
+                       vx: rand(-50, 50), vy: rand(-60, -10), life: rand(0.25, 0.5), g: 200,
+                       col: chance(0.5) ? r.who.accentLight : FX.puff });
+    }
+    var lines = [r.who.name + ' GRABS ON',                                   /* 21 ch at scale 2: 250px */
+                 'KEEP HIM SAFE FOR ' + (tune.rescueFor || 0) + ' PILLARS'];  /* 28 ch, 167px */
+    if (hazardWarn <= 0 && unlockBanner <= 0) { warnLines = lines; hazardWarn = 2.4; }
+    else if (!pendingWarn) pendingWarn = lines;
+  }
+
+  /* SET DOWN SAFE: the count is reached, he lets go, and the stall opens.
+     The unlock is takeMeet's to the letter - noteMeet remembers him in the
+     same 'met' list, the passkey guard suppresses the banner and keeps the
+     save, and the badge check runs either way. */
+  function hopOff() {
+    var r = rider, an = riderAnchor();
+    r.phase = 'hop'; r.t = 0;
+    r.x = an.x; r.y = an.y; r.angle = -0.25;
+    r.vx = -45; r.vy = -320; r.spin = 0;
+    Audio3.play('chirp');
+    var who = Doodads.noteMeet(r.who);
+    if (!who) return;
+    if (!Doodads.masterKey()) {
+      unlocked.push(who);
+      announce('doodad', who);
+      Audio3.play('unlock');
+      Screen.shake(3, 0.35);
+      for (var k = 0; k < 30; k++) {
+        var a = rand(0, TAU), sp = rand(40, 170);
+        particles.push({ x: an.x, y: an.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                         life: rand(0.5, 1.2), g: -50,
+                         col: chance(0.45) ? UI.C.gold : (chance(0.5) ? who.accentLight : who.accent) });
+      }
+    }
+    bank(Achievements.check());
+  }
+
+  /* THROWN OFF BY A DEATH, from die(). Nothing calls noteMeet, so the save
+     never learns his name and the next run has him in the ceiling again.
+     Still hanging is not lost - he had not let go - so that phase is left
+     alone. The caption is the fled one, for the fled one's reasons, and it
+     stays up longer because it lands inside a death's own flash and shake. */
+  function loseRider() {
+    var r = rider;
+    if (!r || (r.phase !== 'fall' && r.phase !== 'ride')) return;
+    var at = r.phase === 'fall' ? riderFallAt() : riderAnchor();
+    r.phase = 'lost'; r.t = 0;
+    r.x = at.x; r.y = at.y; r.angle = at.a;
+    r.vx = rand(-60, -20); r.vy = -200; r.spin = rand(5, 8) * (chance(0.5) ? -1 : 1);
+    fledName = r.who.name + ' FELL OFF';
+    var half = Math.min(VW / 2, Math.ceil(Font.measure(fledName, 1) / 2) + 2);
+    fledX = clamp(at.x, half, VW - half);
+    fledY = Math.max(CEIL + 6, at.y - 22);
+    fledPop = 1.6;
+  }
+
+  function drawRider(ctx) {
+    var r = rider, x, y, a, frame = true, o = null;
+    if (r.phase === 'fall') {
+      var f = riderFallAt();
+      x = f.x; y = f.y; a = f.a;
+    } else if (r.phase === 'ride') {
+      var an = riderAnchor();
+      x = an.x; y = an.y + r.lag * 1.5; a = an.a;
+      /* he cheers on the beat: his open mouth is his flap frame */
+      frame = player.flapTimer > 0;
+      var sq = 1 - r.lag * 0.12 - r.pop * 0.2;
+      o = { squashX: 1 / sq, squashY: sq };
+    } else {
+      x = r.x; y = r.y; a = r.angle;
+      frame = r.phase !== 'lost';
+      if (r.pop > 0) o = { squashX: 1 + r.pop * 0.25, squashY: 1 - r.pop * 0.2 };
+    }
+    Doodads.draw(ctx, r.who.id, x, y, RIDER_R, a, frame, o);
+  }
+
+  /* the line under the score while he is aboard, in the stay's place and
+     on the stay's terms: a PASSED banner still wins it, and it is clamped
+     so the frame he lets go on cannot print a negative */
+  function drawCarry(ctx, y) {
+    if (state === 'dead' || state === 'entry') return;
+    var left = Math.max(0, tune.rescueAt + (tune.rescueFor || 0) - passedN);
+    UI.text(ctx, rider.who.name + ': ' + left + ' TO GO', VW / 2, y,
+            { align: 'center', colour: rider.who.accentLight, shadow: UI.C.shadow });
   }
 
   /* ---------------------------------------------------------- watchful
@@ -2520,11 +2772,18 @@ var PlayScene = (function () {
     return doodad.helium && (state === 'play' || state === 'paused') ? -1 : 1;
   }
 
+  /* and the RIDER's weight on top of whatever the doodad's own flight is -
+     heavy() is false for everyone with nobody on their back, so for them
+     both lines are what they were. The flap is not touched; see RIDE_GRAV. */
   function grav() {
     var g = doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY;
+    if (heavy()) g *= RIDE_GRAV;
     return down() < 0 ? -g * doodad.helium : g;
   }
-  function maxFall() { return doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL; }
+  function maxFall() {
+    var f = doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL;
+    return heavy() ? f * RIDE_FALL : f;
+  }
   function flapV()   { return (doodad.light ? FLAP * doodad.light.flap : FLAP) * down(); }
 
   /* THE SPRING, Koa's: the one rule in the game about a flap taken while
@@ -2867,10 +3126,15 @@ var PlayScene = (function () {
     var want = 0;
     if (Input.down('left')) want -= 1;
     if (Input.down('right')) want += 1;
-    /* The same two constants for every doodad in the game. They were scaled
-       per doodad for one round (BOUNCY, x1.5 on both) and the owner sent it
-       back: a faster nudge was true to its word and could not be felt, and
-       an ability nobody can see is not one. The lane is nobody's axis. */
+    /* The same two constants for every doodad in the game, times `fling`.
+       They were scaled per doodad for one round (BOUNCY, x1.5 on both) and
+       the owner sent it back: a faster nudge was true to its word and could
+       not be felt, and an ability nobody can see is not one. It came back
+       for Baby Burrito at his own request, at 1.75 and DRAWN - the lean in
+       the tilt below and the afterimage in drawChars - so it can be seen
+       as well as felt. Both scale together, so full speed still arrives in
+       the same 0.13 seconds and there is simply more of it. */
+    var fl = doodad.fling || 1;
     if (knockT > 0) {
       /* the toss home (drainLedger): an ease-out across the screen - fast
          off the thing that threw him, 2d/T, about 460px/s from the middle of
@@ -2887,7 +3151,7 @@ var PlayScene = (function () {
                          col: chance(0.5) ? FX.puffHi : FX.puff });
       }
     } else {
-      player.vx = approach(player.vx, want * MOVE_SPD, MOVE_ACC * dt);
+      player.vx = approach(player.vx, want * MOVE_SPD * fl, MOVE_ACC * fl * dt);
       player.x = clamp(player.x + player.vx * dt, X_MIN, X_MAX);
       if ((player.x <= X_MIN && player.vx < 0) || (player.x >= X_MAX && player.vx > 0)) player.vx = 0;
       pullAndWall(dt);
@@ -3137,6 +3401,10 @@ var PlayScene = (function () {
     var dn = down(), v = player.vy * dn;
     var target = (v < 0 ? -0.36 : clamp(v / maxFall() * 1.25, -0.36, 1.05)) * dn;
     if (trotting > 0) target = 0.06;
+    /* THE THROW'S LEAN: into the move by up to 0.3 rad at his full sideways
+       speed - nose down going right, nose up going left. Off vx, so it eases
+       in and out with the nudge and is nothing at all while he is still. */
+    if (doodad.fling) target += clamp(player.vx / (MOVE_SPD * doodad.fling), -1, 1) * 0.3;
     /* leaning into the wind: nose into the room at -0.2 and a touch more as he
        climbs or dives, in his own frame; the hold is a flight, not a hang */
     if (squalling()) target = -0.2 + clamp(player.vy / doodad.squall.rise, -1, 1) * 0.3;
@@ -3145,6 +3413,8 @@ var PlayScene = (function () {
 
   function die(cause) {
     if (state !== 'play' || invuln > 0) return;
+    /* first, while the back he was on is still where it was */
+    loseRider();
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
     /* and the spin lets go: the tumble is player.spin's, and whirlAngle
@@ -3707,6 +3977,9 @@ var PlayScene = (function () {
     if (nervePop > 0) nervePop -= dt;
     if (goldPop > 0) goldPop -= dt;
     if (fledPop > 0) fledPop -= dt;
+    /* the rider runs in every state but pause, as the timers above do: he
+       has to finish a tumble the run has already ended */
+    if (rider) updateRider(dt);
     if (warpFlash > 0) warpFlash -= dt;
     /* the quiet before the hole. It runs down here with every other timer so
        that pause, the death tumble and the results screen all freeze it,
@@ -4178,6 +4451,7 @@ var PlayScene = (function () {
       }
       if (ob.type === 'pillar' && !ob.scored && ob.x + ob.w < player.x) {
         ob.scored = true;
+        passedN++;
         /* A PLANK PASSED UNDER PAYS NOTHING AND STILL COUNTS AS DISTANCE,
            which is the one deliberate break in the pace declaration's proof
            and has its own paragraph there. `score` is not written, so
@@ -4228,6 +4502,11 @@ var PlayScene = (function () {
            is allowed to do: endWarp() splices, and this is the inside of a
            backwards walk. update() spends the flag once this loop returns. */
         if (warp && ++warp.scored >= warp.need) warpDone = true;
+        /* and the rider's two moments, outside the fork for the stay's
+           reason: a pillar passed is a pillar passed. It touches the rider,
+           the particles and the banner queue and never this list, so it is
+           safe inside the walk - checkUnlocks above does as much. */
+        if (tune.rescueAt) checkRescue();
       }
       if (ob.x + (ob.w || 40) < -70) obstacles.splice(i, 1);
     }
@@ -4461,6 +4740,12 @@ var PlayScene = (function () {
     /* whoever is hiding goes first, so the player passes in front of him */
     drawMeet(ctx);
 
+    /* and a rider who is NOT on the back - up on the lid, hopping down, or
+       sitting on the table - is part of the room, so he is drawn here, under
+       the player and before every early return below. The two phases that
+       are about the back (fall, ride) go on top of the player, further down. */
+    if (rider && rider.phase !== 'fall' && rider.phase !== 'ride') drawRider(ctx);
+
     /* THE PULL INTO THE HOLE IS A DRAW. player.x and player.y are never
        written by it, which is why there is no frame on which he is somewhere
        the collision path would disagree with. He follows the funnel - still
@@ -4493,6 +4778,10 @@ var PlayScene = (function () {
       ctx.clip();
       Doodads.draw(ctx, doodad.id, player.x, FLOOR + 5 + Math.sin(t * 7), bodyR(), -0.6, false,
                    invuln > 0 ? { alpha: 0.5 } : undefined);
+      /* a rider holds his breath and goes under with him, clipped by the
+         same waterline - nobody carries `dive` and a rider at once today,
+         but the room does not get to say which doodad flies it */
+      if (rider && (rider.phase === 'fall' || rider.phase === 'ride')) drawRider(ctx);
       ctx.restore();
       return;
     }
@@ -4533,7 +4822,29 @@ var PlayScene = (function () {
        doodad, so nothing that integrates or collides him ever sees it.
        Positive is clockwise on a canvas whose y runs down, which is the
        way the owner asked for. */
+    if (doodad.fling) drawFling(ctx, frame, o);
     Doodads.draw(ctx, doodad.id, player.x, player.y, bodyR(), player.angle + whirlAngle, frame, o);
+    /* ON THE BACK, so in front of the body: he is held, and a rider drawn
+       behind the carrier at 8px is a pair of eyes and nothing else. Below the
+       blink, so he blinks with the doodad who is carrying him. */
+    if (rider && (rider.phase === 'fall' || rider.phase === 'ride')) drawRider(ctx);
+  }
+
+  /* THE THROW, SEEN: three fading copies of him along the way he came,
+     shown only for the part of his sideways speed nobody else has - so at
+     116 px/s, which anyone can do, there is nothing, and at his full 203
+     there is the whole trail. Spaced by his velocity, vertical included, so
+     it follows the arc he is actually on. */
+  function drawFling(ctx, frame, o) {
+    var top = MOVE_SPD * doodad.fling, over = Math.abs(player.vx) - MOVE_SPD;
+    if (over <= 0 || top <= MOVE_SPD) return;
+    var k = clamp(over / (top - MOVE_SPD), 0, 1);
+    for (var i = 3; i >= 1; i--) {
+      var g = { alpha: (0.48 - i * 0.12) * k };
+      if (o) { g.squashX = o.squashX; g.squashY = o.squashY; }
+      Doodads.draw(ctx, doodad.id, player.x - player.vx * 0.028 * i, player.y - player.vy * 0.012 * i,
+                   bodyR(), player.angle + whirlAngle, frame, g);
+    }
   }
 
   function drawFg(ctx) {
@@ -4625,6 +4936,7 @@ var PlayScene = (function () {
          this run IS on, and it is gone in under two seconds. */
       var cy = 34 + s * 7 + 4;
       if (warp && passedTimer <= 0) drawStay(ctx, cy);
+      else if (rider && rider.phase === 'ride' && passedTimer <= 0) drawCarry(ctx, cy);
       else drawChase(ctx, cy);
       drawLives(ctx);
       drawSpicy(ctx);
@@ -5393,6 +5705,8 @@ var PlayScene = (function () {
                                     lives: lives, invuln: invuln,
                                     pottedLives: pottedLives, spentPotted: spentPotted,
                                     planksUp: planksUp, flickCool: flickCool,
+                                    passed: passedN, rider: rider ? rider.phase : null,
+                                    heavy: heavy(), grav: doodad ? grav() : 0, maxFall: doodad ? maxFall() : 0,
                                     /* the plank this run rolled for the hider,
                                        so a headless test can read what it has
                                        to fly to rather than guessing, and

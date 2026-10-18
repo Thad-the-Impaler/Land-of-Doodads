@@ -42,6 +42,8 @@ var Assets = (function () {
     capybara_fly:  'Assets/sprites/capybara_fly.png',
     teef_fall:     'Assets/sprites/teef_fall.png',
     teef_fly:      'Assets/sprites/teef_fly.png',
+    baby_fall:     'Assets/sprites/baby_fall.png',
+    baby_fly:      'Assets/sprites/baby_fly.png',
     /* THE FORT'S CUPMEN, and the guns they hold, a cup then its gun, in
        the order they arrive in a run. These are not doodads and do not come
        in pairs: one painting each, trimmed by the FOES pass in
