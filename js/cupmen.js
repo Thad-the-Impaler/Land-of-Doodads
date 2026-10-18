@@ -864,7 +864,9 @@ var Cupmen = (function () {
     var live = 0, i, o;
     for (i = 0; i < obstacles.length; i++) {
       o = obstacles[i];
-      if (o.shot && !o.broken && !o.gone) live++;
+      /* not one a crow is carrying (ob.held, Crow's ORDNANCE): it is a gift
+         in somebody's talons, not a shot in the air */
+      if (o.shot && !o.broken && !o.gone && !o.held) live++;
     }
     var born = run.born || [];
     for (i = 0; i < born.length; i++) if (born[i].shot) live++;
@@ -2170,6 +2172,10 @@ var Cupmen = (function () {
     build: build,
     makeFoe: makeFoe, stepFoe: stepFoe, bopFoe: bopFoe, drawActors: drawActors,
     stepShot: stepShot, foeRects: foeRects, shotRects: shotRects,
+    /* the pellet maker itself, for Crow's ORDNANCE: a red, green or gold
+       pellet held in a crow's talons is drawn, caught and paid exactly as
+       one fired from a gun */
+    makeShot: makeShot,
     drawShot: drawShot, drawShotSplat: drawShotSplat,
     muzzleOf: muzzleOf,
     drawPixelCup: drawPixelCup, drawPixelGun: drawPixelGun

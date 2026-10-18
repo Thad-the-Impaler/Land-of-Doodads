@@ -1442,7 +1442,8 @@ var Construction = (function () {
     var i;
 
     /* the pallet stays on the slab wherever the heart gets to */
-    ctx.drawImage(T.pallet.canvas, px - 11, FLOOR - 8);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its pallet */
+    if (!ob.held) ctx.drawImage(T.pallet.canvas, px - 11, FLOOR - 8);
 
     /* the succulent's exact glow: a life is a life, in any level */
     var pulse = 0.7 + 0.3 * Math.sin(ob.phase);
@@ -1686,9 +1687,13 @@ var Construction = (function () {
      what has to know: a gear it does not know about keeps a beam's width,
      a beam's fall speed and - worst - a beam's long ground shadow, so the
      player reads an incoming 2x4 and dodges a coin. */
-  function makeDrop(x, spicy, fall) {
-    var gold = false;
-    if (!spicy) {
+  /* `want`, Crow's ORDNANCE (js/scene_play.js): 'gold' makes the +5 on
+     request and 'plain' makes anything but, and NEITHER touches the gold
+     dice or the gap - a gift handed to a crow must not move this bay's own
+     rhythm. Any other value is the ordinary roll, exactly as before. */
+  function makeDrop(x, spicy, fall, run, want) {
+    var gold = want === 'gold';
+    if (!spicy && !gold && want !== 'plain') {
       if (goldGap > 0) goldGap--;
       else if (chance(GOLD_CHANCE)) { gold = true; goldGap = GOLD_GAP; }
     }
@@ -1795,7 +1800,7 @@ var Construction = (function () {
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
-    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
+    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor
   };

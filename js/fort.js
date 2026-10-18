@@ -3159,6 +3159,28 @@ var Fort = (function () {
              dx: 0, dy: 0, name: BOON_NAME };
   }
 
+  /* A GIFT FOR CROW'S ORDNANCE, made the way this bay makes its gifts -
+     which is not off the lid: the heat, the sour and the gold all come out
+     of the Cupmen's guns here, so a crow carries a red, a green or a gold
+     PELLET, drawn and paid exactly as a fired one. The spare life is the
+     ammo bag, built here rather than by makeBoon because makeBoon marks the
+     bay as having had its bag, and a bag in a crow's talons must not cost
+     the rug the one it would have had. The engine holds it still and moves
+     it; this only says what it is. */
+  function makeGift(kind, x, y) {
+    if (kind === 'life') {
+      /* built where makeBoon stands it, FLOOR - 17, and NOT at `y`: this
+         bay boxes its bag off the floor plus ob.dy (rectsFor) while it draws
+         it off ob.y plus ob.dy, so the two only agree for a bag at its own
+         height. The engine lifts it to the crow by ob.dy, as the hunger
+         does, and box and bag go up together. */
+      return { type: 'boon', x: x, y: FLOOR - 17, w: 20, taken: false, phase: rand(0, TAU),
+               dx: 0, dy: 0, name: BOON_NAME };
+    }
+    var shot = kind === 'spicy' ? 'red' : (kind === 'sour' ? 'green' : 'gold');
+    return Cupmen.makeShot(shot, x, y, 0, 0, null);
+  }
+
   /* THE LEVEL MOVES ITS OWN DROPS, both kinds. Publishing stepDrop takes
      the engine's four lines away for EVERY drop, so the biscuit has to
      integrate itself here - gravity, position, spin, and land on the rug -
@@ -3290,7 +3312,7 @@ var Fort = (function () {
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
-    makeLitter: makeLitter, makeBoon: makeBoon,
+    makeLitter: makeLitter, makeBoon: makeBoon, makeGift: makeGift,
     stepDrop: stepDrop,
     rectsFor: rectsFor,
     makeFoe: makeFoe, stepFoe: stepFoe, bopFoe: bopFoe, drawActors: drawActors

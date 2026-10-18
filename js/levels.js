@@ -595,6 +595,11 @@ var Levels = (function () {
          with foes on nearly every bay it is the one rug a Cupman is sure
          not to be standing on. */
       boonChance: 0.032, boonGap: 10,
+      /* What Crow's escorts may carry here, said outright because the bay's
+         gifts come out of the Cupmen's guns and not off these odds: the red
+         heat, the green sour, the gold coin, and the ammo bag's spare life.
+         Every other bay's list is worked out from its own odds. */
+      ordnance: ['spicy', 'sour', 'gold', 'life'],
       /* THE CUPMEN, from 12, which is the owner's number: "they appear after
          the player reaches 12 pillars", and it stands: round two asked for
          more of them ("almost every pillar"), which is js/cupmen.js's dice

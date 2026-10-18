@@ -406,6 +406,9 @@ var PlayScene = (function () {
   var streak = null;
   /* how much of Alpha Roostah's aura is showing, 0..1, eased - see "the aura" */
   var auraGlow = 0;
+  /* Crow's escorts, or null; a tenth pillar's request for them; and the kinds
+     of gift this level may hand them - see "the ordnance" */
+  var escort = null, ordnanceDue = false, giftKinds = [];
   var streakPop = 0, streakX = 0, streakY = 0, streakText = '';
   var flickCool = 0;           /* seconds until the tail is back under him */
   /* What the mid-flight banner is currently shouting about, and what is
@@ -597,6 +600,8 @@ var PlayScene = (function () {
     hotChain = 0; streakPop = 0;
     streak = Doodads.streakable();
     auraGlow = 0;
+    escort = null; ordnanceDue = false;
+    giftKinds = doodad.ordnance ? ordnanceKinds() : [];
     /* THE ONE ROLL OF THE RUN. tune.meetAt is the first plank he may be
        behind and tune.meetSpan is how many more the dice may add, so the
        Couch's 5 and 15 are a uniform 5..20 (randInt is inclusive at both
@@ -1936,6 +1941,9 @@ var PlayScene = (function () {
          trouble a keeper causes is what it SENDS, and that is cleared below
          like anything else in reach. */
       if (ob.keep) continue;
+      /* nor a gift in a crow's talons: it is not trouble, and it is not
+         the world's to take - see "the ordnance" */
+      if (ob.held) continue;
       if (ob.type === 'litter' || ob.type === 'boon') continue;
       if (ob.type === 'drop' && ob.broken > 0) continue;
       /* A SHOT IS CLEARED WHEREVER IT IS, reach or no reach: the keeper's
@@ -2199,6 +2207,9 @@ var PlayScene = (function () {
        and the engine never learns which doodad it opens, or that anything
        opens at all on most bays. */
     if (sour > 0) checkDeed('hot-and-sour');
+    /* and Crow's: the heat and the spin at the same instant, reported from
+       both ends exactly as the sour one is */
+    if (whirl > 0) checkDeed('hot-and-spun');
     Screen.shake(4.5, 0.4);
     Audio3.play('spicy');
     /* and the doodad's own shout on top, if he has one - Hot Wing's */
@@ -2537,6 +2548,180 @@ var PlayScene = (function () {
     }
   }
 
+  /* ---------------------------------------------------------- the ordnance
+
+     CROW'S, and the owner's words for it: every tenth pillar PASSED (not
+     score) two smaller crows fly in and glide alongside him, one above and
+     one below, each with a power-up in its talons - two DIFFERENT ones of
+     the LEVEL'S OWN where it has two or more, both the same where it has
+     only one. He flies up or down to take the one he wants; the moment
+     either is taken both crows scatter and the other gift goes with them.
+     They never stack: a tenth pillar that finds them still flying sends
+     nobody.
+
+     THE GIFTS ARE THE LEVEL'S OWN THINGS, made by its own makers and drawn
+     and caught by its own code - a pepper in the Coop, a brownie on the
+     Table, a pellet in the Fort - held still (ob.held) and moved by this
+     section alone. What a level may hand over is worked out from what it
+     sheds (ordnanceKinds); the bays whose +5 comes out of their own drop
+     maker say so with GOLD_GIFT and make one on request ('gold') without
+     touching their dice, and a bay whose gifts are not off its lid at all
+     makes them itself (art.makeGift - the Fort's come out of the guns).
+
+     THEY DRIFT WITH HIM, the owner's pick, and HOW they drift is measured,
+     not guessed. Each gift is led toward `ordnance.gap` px above or below
+     him at no more than `ordnance.follow` px/s: fast enough to keep station
+     through the swing of ordinary flapping and the slide from one gap to
+     the next, too slow to escape a deliberate climb or dive. The first cut
+     (56 px, an eased follow) was grabbed by accident within a second or two
+     - a flap's peak alone swings a doodad 48 px, and every move to the next
+     gap is a burst - so the owner took 72 at 160 px/s (2026-10-18). Over
+     ~50 crews on the Coop, Table and Couch with an autopilot flying the
+     gaps and not trying for them, the median wait before one was brushed by
+     accident was 13 s; flying AT one took it in 0.2 s upward, 0.6 s down.
+     Each gift is kept CREW_EDGE px clear of the lid and the floor, so
+     taking it never means touching either. */
+
+  var CREW_R = BODY_R * 0.6;    /* the escorts' bodies, 8px against his 13 */
+  var CREW_HANG = 9;            /* gift centre below its crow's centre     */
+  var CREW_EDGE = 18;
+
+  function ordnanceKinds() {
+    var k = [];
+    /* a level that names its own list says so; each kind counted once, so
+       a list written with a repeat can never leave the pick below looking
+       for a second kind that is not there */
+    if (tune.ordnance) {
+      tune.ordnance.forEach(function (n) { if (k.indexOf(n) < 0) k.push(n); });
+      return k;
+    }
+    if (tune.spicyChance > 0) k.push('spicy');
+    if (tune.sourChance > 0) k.push('sour');
+    if (tune.whirlChance > 0) k.push('spin');
+    if (tune.boonChance > 0 && art.makeBoon) k.push('life');
+    if (art.GOLD_GIFT) k.push('gold');
+    return k;
+  }
+
+  function makeGift(kind, x, y) {
+    var ob;
+    if (art.makeGift) ob = art.makeGift(kind, x, y, run);
+    else if (kind === 'life') ob = art.makeBoon(x, run);
+    else if (kind === 'spicy') ob = art.makeDrop(x, true, 0, run, 'plain');
+    else if (kind === 'gold') ob = art.makeDrop(x, false, 0, run, 'gold');
+    else {
+      ob = art.makeDrop(x, false, 0, run, 'plain');
+      if (kind === 'sour') ob.sour = true; else ob.whirl = true;
+    }
+    ob.held = true; ob.vy = 0; ob.vx = 0;
+    holdAt(ob, x, y);
+    return admit(ob);
+  }
+
+  /* PUT A HELD GIFT AT (x, y). A drop is where its x and y say. A boon is
+     NOT: three bays (the Garden, the Deck, the Desk) draw and box theirs off
+     the floor plus ob.dy, with no y of its own - the offset Gerald's hunger
+     drags it by - and the rest off ob.y plus ob.dy. So a boon is moved the
+     way the hunger moves one, by its offset from wherever its own bay
+     stands it (boonY), and is drawn and caught there by every bay alike. */
+  function holdAt(ob, x, y) {
+    ob.x = x;
+    if (ob.type === 'boon') { ob.dx = 0; ob.dy = y - boonY(ob); }
+    else ob.y = y;
+  }
+
+  function giftY(side) {
+    return clamp(player.y + side * doodad.ordnance.gap, CEIL + CREW_EDGE, FLOOR - CREW_EDGE);
+  }
+
+  function sendEscort() {
+    if (!giftKinds.length) return;
+    var a = giftKinds[randInt(0, giftKinds.length - 1)];
+    /* the second from the OTHERS, never by re-rolling until it differs */
+    var rest = giftKinds.filter(function (k) { return k !== a; });
+    var b = rest.length ? rest[randInt(0, rest.length - 1)] : a;
+    var kinds = chance(0.5) ? [a, b] : [b, a];
+    escort = { t: 0, phase: 'in', crows: [] };
+    for (var n = 0; n < 2; n++) {
+      var side = n === 0 ? -1 : 1, gy = giftY(side);
+      var c = { side: side, kind: kinds[n], x: -20 - n * 16, y: gy - CREW_HANG,
+                vx: 0, vy: 0, flapT: rand(0, 0.5) };
+      c.gift = makeGift(kinds[n], c.x, gy);
+      escort.crows.push(c);
+    }
+    Audio3.play('chirp');
+  }
+
+  /* scatter: up and back, wings going, and a gift still held goes with its
+     crow - marked `away` so it cannot be caught on the way out */
+  function disperse() {
+    escort.phase = 'off';
+    for (var n = 0; n < escort.crows.length; n++) {
+      var c = escort.crows[n];
+      c.vx = -rand(70, 110);
+      c.vy = c.side < 0 ? -rand(150, 190) : -rand(90, 130);
+      if (c.gift) c.gift.away = true;
+    }
+  }
+
+  function updateOrdnance(dt) {
+    if (ordnanceDue) {
+      ordnanceDue = false;
+      if (!escort && state === 'play') sendEscort();
+    }
+    if (!escort) return;
+    var e = escort, n, c;
+    e.t += dt;
+    /* a gift gone from the list was TAKEN - collide() caught it and spliced
+       it - and that is the signal for both of them to go */
+    if (e.phase !== 'off') {
+      var taken = false;
+      for (n = 0; n < e.crows.length; n++) {
+        c = e.crows[n];
+        if (c.gift && obstacles.indexOf(c.gift) < 0) { c.gift = null; taken = true; }
+      }
+      if (taken) disperse();
+    }
+    var gone = 0;
+    for (n = 0; n < e.crows.length; n++) {
+      c = e.crows[n];
+      c.flapT += dt;
+      if (e.phase === 'off') {
+        c.vy += 60 * dt;
+        c.x += c.vx * dt; c.y += c.vy * dt;
+        if (c.y < -30 || c.x < -40) {
+          gone++;
+          if (c.gift) { c.gift.gone = true; c.gift = null; }
+        }
+      } else if (state === 'play' || state === 'paused') {
+        /* alongside him, the upper one a touch ahead, the lower a touch behind */
+        var tx = player.x + (c.side < 0 ? 8 : -4);
+        if (e.phase === 'in') {
+          c.x = approach(c.x, tx, 280 * dt);
+          if (e.t > 0.4 && Math.abs(c.x - tx) < 1) c.x = tx;
+        } else {
+          c.x = damp(c.x, tx, 0.02, dt);
+        }
+        c.y = approach(c.y, giftY(c.side) - CREW_HANG, doodad.ordnance.follow * dt);
+      }
+      if (c.gift) holdAt(c.gift, c.x, c.y + CREW_HANG);
+    }
+    if (e.phase === 'in' && e.crows[0].x >= player.x - 2 && e.crows[1].x >= player.x - 6) e.phase = 'glide';
+    if (e.phase === 'off' && gone === e.crows.length) escort = null;
+  }
+
+  /* the crew on the smooth layer, same sprites at 0.6: gliding, which is
+     the neutral frame with a beat every half second, and flapping hard on
+     the way out */
+  function drawEscort(ctx) {
+    for (var n = 0; n < escort.crows.length; n++) {
+      var c = escort.crows[n];
+      var beat = escort.phase === 'off' ? (c.flapT % 0.16) < 0.08 : (c.flapT % 0.5) < 0.12;
+      var tilt = escort.phase === 'off' ? -0.35 : 0.04 * Math.sin(c.flapT * 3 + c.side);
+      Doodads.draw(ctx, 'crow', c.x, c.y, CREW_R, tilt, beat);
+    }
+  }
+
   /* emberTrail's twin, and deliberately the other way up: the heat trails
      embers back behind the doodad, the lime fizzes up off it, so at a glance
      the two are never the same power-up even when both are running. */
@@ -2587,6 +2772,7 @@ var PlayScene = (function () {
     /* the banner slot has one tenant - see stun() */
     spicyBanner = 0; sourBanner = 0; stunBanner = 0;
     if (!wasSpun) whirlSlot = freeSlot('whirl');
+    if (spicy > 0) checkDeed('hot-and-spun');
     Screen.shake(3, 0.45);
     Audio3.play('spin');
     /* a ring thrown off SIDEWAYS, clockwise - tangential velocity rather
@@ -3646,6 +3832,9 @@ var PlayScene = (function () {
     if (state !== 'play' || invuln > 0) return;
     /* first, while the back he was on is still where it was */
     loseRider();
+    /* and the crew scatters: nothing was taken, but there is nobody left
+       to bring it to */
+    if (escort && escort.phase !== 'off') disperse();
     state = 'dying';
     spicy = 0;                 /* the run is over; let the coop cool off */
     hotChain = 0;
@@ -3886,6 +4075,8 @@ var PlayScene = (function () {
       /* a thing its level has retired this frame is not there to be hit;
          moveObstacles takes it out of the list on the next walk */
       if (ob.gone) continue;
+      /* a gift a crow is carrying off after its partner's was taken */
+      if (ob.away) continue;
       if (ob.type === 'litter') continue;
       if (ob.type === 'drop' && ob.broken > 0) continue;
       if (ob.x > player.x + 46 || ob.x + (ob.w || 40) < player.x - 46) continue;
@@ -4213,6 +4404,8 @@ var PlayScene = (function () {
     /* the rider runs in every state but pause, as the timers above do: he
        has to finish a tumble the run has already ended */
     if (rider) updateRider(dt);
+    /* the escorts too, for the same reason: they have to finish leaving */
+    if (escort || ordnanceDue) updateOrdnance(dt);
     if (warpFlash > 0) warpFlash -= dt;
     /* the quiet before the hole. It runs down here with every other timer so
        that pause, the death tumble and the results screen all freeze it,
@@ -4584,6 +4777,10 @@ var PlayScene = (function () {
          marked ob.gone and taken out HERE, by the walk that owns the list,
          before it is scrolled, stepped or tested again. */
       if (ob.gone) { obstacles.splice(i, 1); continue; }
+      /* A GIFT IN A CROW'S TALONS goes where the crow goes and nowhere else:
+         no scroll, no fall, no landing, no cull. updateOrdnance puts it under
+         its crow every frame and retires it (ob.gone) when the crow leaves. */
+      if (ob.held) { ob.age = (ob.age || 0) + dt; continue; }
       /* The one clock an art module may read: seconds since this obstacle
          came into the world (admit() starts it). Per-obstacle rather than
          shared, so a deck of misters is never all in phase, and advanced
@@ -4742,6 +4939,9 @@ var PlayScene = (function () {
            the particles and the banner queue and never this list, so it is
            safe inside the walk - checkUnlocks above does as much. */
         if (tune.rescueAt) checkRescue();
+        /* Crow's crew, every tenth pillar - asked for here, sent after the
+           walk, because sending them admits two gifts into this list */
+        if (doodad.ordnance && passedN % doodad.ordnance.every === 0 && !escort) ordnanceDue = true;
       }
       if (ob.x + (ob.w || 40) < -70) obstacles.splice(i, 1);
     }
@@ -4981,6 +5181,8 @@ var PlayScene = (function () {
        the player and before every early return below. The two phases that
        are about the back (fall, ride) go on top of the player, further down. */
     if (rider && rider.phase !== 'fall' && rider.phase !== 'ride') drawRider(ctx);
+    /* Crow's crew, behind him: they are flying alongside, not in front */
+    if (escort) drawEscort(ctx);
 
     /* THE PULL INTO THE HOLE IS A DRAW. player.x and player.y are never
        written by it, which is why there is no frame on which he is somewhere
@@ -5957,6 +6159,10 @@ var PlayScene = (function () {
                                     passed: passedN, rider: rider ? rider.phase : null,
                                     hotChain: hotChain, streakOwed: streak ? streak.d.id : null,
                                     streakAssist: !!(streak && streak.assist), auraGlow: auraGlow,
+                                    giftKinds: giftKinds.slice(),
+                                    escort: escort ? { phase: escort.phase, kinds: escort.crows.map(function (c) { return c.kind; }),
+                                                       ys: escort.crows.map(function (c) { return Math.round(c.y); }),
+                                                       holding: escort.crows.map(function (c) { return !!c.gift; }) } : null,
                                     heavy: heavy(), grav: doodad ? grav() : 0, maxFall: doodad ? maxFall() : 0,
                                     /* the plank this run rolled for the hider,
                                        so a headless test can read what it has

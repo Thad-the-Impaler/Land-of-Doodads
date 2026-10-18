@@ -1403,7 +1403,8 @@ var Deck = (function () {
     var lifted = ob.dy < -1 || ob.dx > 1 || ob.dx < -1;
 
     /* the pot and its saucer stay where somebody put them */
-    ctx.drawImage(T.pot.canvas, px - 10, FLOOR - 19);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its pot */
+    if (!ob.held) ctx.drawImage(T.pot.canvas, px - 10, FLOOR - 19);
 
     /* a calm jade glow that travels with the PLANT, not the pot. Nothing
        else on this deck shines green, which is the whole point of it. */
@@ -1697,8 +1698,12 @@ var Deck = (function () {
      The golden one launches at twice the speed plus 72, which takes its
      trip from ~3.1s to ~1.6s: it SWEEPS through the flight path instead
      of sitting in it, so catching one is nerve rather than a chase. */
-  function makeDrop(x, spicy, fall) {
-    var gold = !spicy && chance(GOLD_CHANCE);
+  /* `want`, Crow's ORDNANCE (js/scene_play.js): 'gold' makes the +5 on
+     request and 'plain' makes anything but, and NEITHER touches the gold
+     dice or the gap - a gift handed to a crow must not move this bay's own
+     rhythm. Any other value is the ordinary roll, exactly as before. */
+  function makeDrop(x, spicy, fall, run, want) {
+    var gold = want === 'gold' || (!spicy && want !== 'plain' && chance(GOLD_CHANCE));
     return { type: 'drop', x: x, y: CEIL + 5, w: spicy ? 8 : 9,
              vy: gold ? fall * 2 + 72 : fall,
              spicy: !!spicy, gold: gold, broken: 0,
@@ -1780,7 +1785,7 @@ var Deck = (function () {
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
-    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
+    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor
   };

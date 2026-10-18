@@ -49,6 +49,7 @@ DOODADS = {
     "hotwing": {"fall": "HotwFall", "fly": "HotwFly",
                 "fall_hot": "HotwFallSpicy", "fly_hot": "HotwFlySpicy"},
     "alpha": {"fall": "AlphFall", "fly": "AlphFly"},
+    "crow": {"fall": "CrowFall", "fly": "CrowFly"},
 }
 
 # A doodad painted with a HALO - Hot Wing's smoke, and his flames in the

@@ -1980,9 +1980,12 @@ var Table = (function () {
     /* the dent and the honey that ran off onto the table stay where it
        was put, even while Gerald is reeling it in */
     var bx = Math.round(ob.x);
-    Tint.rect(ctx, bx - 12, FLOOR - 1, 24, 2, P.shadeCool, 8);
-    rect(ctx, bx - 10, FLOOR - 1, 2, 1, P.honey);
-    rect(ctx, bx + 9, FLOOR - 1, 2, 1, P.honeyDeep);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its shadow and its honey */
+    if (!ob.held) {
+      Tint.rect(ctx, bx - 12, FLOOR - 1, 24, 2, P.shadeCool, 8);
+      rect(ctx, bx - 10, FLOOR - 1, 2, 1, P.honey);
+      rect(ctx, bx + 9, FLOOR - 1, 2, 1, P.honeyDeep);
+    }
     var x = Math.round(ob.x + ob.dx), y = Math.round(FLOOR - 8 + ob.dy);
     /* THE GLOW SAYS SPARE LIFE: the coasters' exact jade. No bob - yogurt
        on a table holds still, and the pulse carries the gift. */
@@ -2379,9 +2382,13 @@ var Table = (function () {
 
   /* ONE MAKER FOR SILVERWARE, THE BROWNIE AND THE CRANE. The engine says
      spicy; the crane is rolled here so the sprite knows what it is. */
-  function makeDrop(x, spicy, fall, run) {
-    var gold = false;
-    if (!spicy) {
+  /* `want`, Crow's ORDNANCE (js/scene_play.js): 'gold' makes the +5 on
+     request and 'plain' makes anything but, and NEITHER touches the gold
+     dice or the gap - a gift handed to a crow must not move this bay's own
+     rhythm. Any other value is the ordinary roll, exactly as before. */
+  function makeDrop(x, spicy, fall, run, want) {
+    var gold = want === 'gold';
+    if (!spicy && !gold && want !== 'plain') {
       if (goldGap > 0) goldGap--;
       else if (chance(GOLD_CHANCE)) { gold = true; goldGap = GOLD_GAP; }
     }
@@ -2546,7 +2553,7 @@ var Table = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
-    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
+    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld,
     rectsFor: rectsFor,

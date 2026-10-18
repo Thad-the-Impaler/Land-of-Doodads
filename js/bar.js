@@ -2293,7 +2293,8 @@ var Bar = (function () {
     if (ob.taken) return;
     var i;
     /* the dent it stood in stays after Gerald has pulled it */
-    Tint.rect(ctx, Math.round(ob.x) - 7, FLOOR - 1, 14, 2, H.void, 8);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its shadow on the bar top */
+    if (!ob.held) Tint.rect(ctx, Math.round(ob.x) - 7, FLOOR - 1, 14, 2, H.void, 8);
     var bob = Math.round(Math.sin(ob.phase + ob.age * 2.2) * 1.2);
     var x = Math.round(ob.x + ob.dx), y = Math.round(FLOOR - 9 + ob.dy) + bob;
     /* the jade every spare life glows, the Couch's gradient verbatim */

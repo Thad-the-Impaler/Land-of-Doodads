@@ -1523,10 +1523,14 @@ var Canopy = (function () {
     ctx.fillStyle = g;
     ctx.fillRect(rx - r, ry - r, r * 2, r * 2);
 
-    /* the stalk, which stays on the ceiling whatever happens to the fruit */
-    ctx.drawImage(T.hanger.canvas, hx - 8, CEIL);
-    ctx.fillStyle = P.stem;
-    ctx.fillRect(hx + Math.round(swing / 2), CEIL + 12, 1, 1);
+    /* the stalk, which stays on the ceiling whatever happens to the fruit -
+       unless a crow is carrying the fruit (ob.held, Crow's ORDNANCE), when
+       there is no stalk where he is: the fruit was picked somewhere else */
+    if (!ob.held) {
+      ctx.drawImage(T.hanger.canvas, hx - 8, CEIL);
+      ctx.fillStyle = P.stem;
+      ctx.fillRect(hx + Math.round(swing / 2), CEIL + 12, 1, 1);
+    }
 
     if (lifted) {
       /* seeds dribbling out of the torn shoulder as it comes off */
@@ -1535,8 +1539,7 @@ var Canopy = (function () {
         ctx.fillStyle = i % 2 ? P.arilPink : P.arilDark;
         ctx.fillRect(rx - 2 + i * 2, ry - 8 + Math.round(kk * 6), 1, 1);
       }
-      ctx.fillStyle = P.arilPink;
-      ctx.fillRect(hx, CEIL + 12, 1, 1);
+      if (!ob.held) { ctx.fillStyle = P.arilPink; ctx.fillRect(hx, CEIL + 12, 1, 1); }
     }
 
     ctx.drawImage(T.pom.canvas, rx - 7, ry - 7);
@@ -1786,7 +1789,11 @@ var Canopy = (function () {
      everything else about it is decided here: the golden apple's odds,
      and the strict apple/orange alternation, which is the point - the sky
      is never two of the same green in a row. */
-  function makeDrop(x, spicy, fall) {
+  /* `want`, Crow's ORDNANCE (js/scene_play.js): 'gold' makes the +5 on
+     request and 'plain' makes anything but, and NEITHER touches the gold
+     dice or the gap - a gift handed to a crow must not move this bay's own
+     rhythm. Any other value is the ordinary roll, exactly as before. */
+  function makeDrop(x, spicy, fall, run, want) {
     var ob = { type: 'drop', x: x, y: CEIL + 6, broken: 0, spin: rand(0, TAU) };
     if (spicy) {
       ob.kind = 'lime'; ob.spicy = true; ob.w = 8; ob.vy = fall;
@@ -1794,9 +1801,12 @@ var Canopy = (function () {
       return ob;
     }
     ob.spicy = false;
-    if (goldGap > 0) goldGap--;
-    if (goldGap <= 0 && chance(GOLD_CHANCE)) {
-      goldGap = GOLD_GAP;
+    var gold = want === 'gold';
+    if (!gold && want !== 'plain') {
+      if (goldGap > 0) goldGap--;
+      if (goldGap <= 0 && chance(GOLD_CHANCE)) { goldGap = GOLD_GAP; gold = true; }
+    }
+    if (gold) {
       ob.kind = 'gold'; ob.gold = true; ob.w = 10;
       /* it is the one thing here that drops rather than falls */
       ob.vy = fall * 2.4 + 50;
@@ -1890,7 +1900,7 @@ var Canopy = (function () {
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
-    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
+    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor
   };

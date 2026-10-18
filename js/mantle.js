@@ -2007,7 +2007,8 @@ var Mantle = (function () {
     var lifted = ob.dy < -1 || ob.dx > 1 || ob.dx < -1;
     var i, k;
 
-    ctx.drawImage(T.door.canvas, px, FLOOR - 3);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its battery door */
+    if (!ob.held) ctx.drawImage(T.door.canvas, px, FLOOR - 3);
 
     /* the jade an extra life glows in, in every level in this game */
     var pulse = 0.7 + 0.3 * Math.sin(ob.phase + ob.age * 2.2);
@@ -2401,10 +2402,16 @@ var Mantle = (function () {
      capybara. Only the capybara is decided here - the engine rolls the
      sour itself and sets ob.sour after this returns, which is why
      nothing below writes down what kind of thing it is making. */
-  function makeDrop(x, spicy, fall, run) {
-    var gold = false;
-    if (goldGap > 0) goldGap--;
-    else if (chance(GOLD_CHANCE)) { gold = true; goldGap = GOLD_GAP; }
+  /* `want`, Crow's ORDNANCE (js/scene_play.js): 'gold' makes the +5 on
+     request and 'plain' makes anything but, and NEITHER touches the gold
+     dice or the gap - a gift handed to a crow must not move this bay's own
+     rhythm. Any other value is the ordinary roll, exactly as before. */
+  function makeDrop(x, spicy, fall, run, want) {
+    var gold = want === 'gold';
+    if (!gold && want !== 'plain') {
+      if (goldGap > 0) goldGap--;
+      else if (chance(GOLD_CHANCE)) { gold = true; goldGap = GOLD_GAP; }
+    }
 
     var ob = { type: 'drop', x: x, y: CEIL + 5, w: 9, vy: fall,
                spicy: !!spicy, gold: gold, broken: 0,
@@ -2546,7 +2553,7 @@ var Mantle = (function () {
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
-    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
+    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor
   };

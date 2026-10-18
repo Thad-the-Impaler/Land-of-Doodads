@@ -46,12 +46,15 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm`, `pay`, `dive`, `squall`, `fling`, `addict`, `aura` - so a new one
+   `calm`, `pay`, `dive`, `squall`, `fling`, `addict`, `aura`, `ordnance` -
+   so a new one
    is a new field rather than a new branch on an id, and each sits on its own
    axis: points, sight, pickups, survival, handling, room, spring, duration,
-   direction, tempo, route, hold, lane, odds, berth. `aura` is the only one
-   that changes the LEVEL rather than the doodad: the planks themselves
-   give way as he comes at them (Alpha Roostah's, see his entry). `squall` is the HOLD - while the heat runs, gravity is
+   direction, tempo, route, hold, lane, odds, berth, choice. `aura` is the
+   only one that changes the LEVEL rather than the doodad: the planks
+   themselves give way as he comes at them (Alpha Roostah's, see his
+   entry). `ordnance` is Crow's: escorts that bring him two of the level's
+   own power-ups to choose between. `squall` is the HOLD - while the heat runs, gravity is
    suspended and UP/DOWN steer him vertically, at the price of a faster room.
    Nobody carries two fields today. Donkey Joe did (`helium` + `pay`,
    HELIUM's hazard pay); both stay supported by the engine as data for a
@@ -830,6 +833,43 @@ var Doodads = (function () {
       sprite: { w: 384, h: 364, pivotX: 233.2, pivotY: 214.3, bodyR: 148.7, footOffset: 1.00 },
       /* a rooster on a roost */
       title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'crow',
+      name: 'CROW',                                        /* 4 ch, 69px at scale 3 */
+      tagline: 'NEVER FLIES ALONE',                        /* 17 ch, 117px at spacing 2 */
+      about: ['BLACK AS A SPENT MATCH.',                     /* 23 ch, 137px */
+              'HE KNOWS PEOPLE WHO KNOW PEOPLE.'],          /* 32 ch, 191px */
+      lockedAbout: ['SOMETHING IS WATCHING FROM THE RAFTERS.',   /* 39 ch, 233px */
+                    'IT WANTS TO SEE YOU HOT AND SPINNING.'],    /* 37 ch, 221px */
+      /* THE CHOICE: every `every` pillars passed (pillars, not score - the
+         owner's words) two smaller crows fly in and glide alongside him, one
+         `gap` px above and one below, each with one of the LEVEL'S OWN
+         power-ups in its talons - two different kinds where the level has
+         two or more, both the same where it has only one (the Coop's heat).
+         They drift with him at up to `follow` px/s, which keeps them clear
+         of ordinary flying and lets a deliberate climb or dive catch one;
+         the moment either gift is taken both fly off, and the other goes
+         with them. They never stack: a tenth pillar that finds them still
+         there sends nobody. 72 at 160 px/s is the owner's pick after 56
+         measured too easy to grab by accident - js/scene_play.js has the
+         numbers. */
+      ability: 'ORDNANCE',
+      abilityLive: true,
+      abilityAbout: ['EVERY TEN PILLARS HIS CREW FLIES IN',      /* 35 ch, 209px */
+                     'WITH TWO POWER-UPS. TAKE ONE.'],           /* 29 ch, 173px */
+      ordnance: { every: 10, gap: 72, follow: 160 },
+      /* DONE, like Roller: the heat and the spin at the same instant. The
+         engine reports 'hot-and-spun' by name and never learns what it buys.
+         Only the Ceiling sheds both, and it is in the Dining Room. */
+      unlockDeed: 'hot-and-spun',
+      deedRoom: 'diningroom',
+      /* violet, off his eyes. His body is near-black and a near-black accent
+         is a hole in the coop (Roller's lesson); Donkey Joe's indigo is
+         #5b4de0, and this sits a clear 30 degrees round from it. */
+      accent: '#8b3fd9', accentDark: '#45156e', accentLight: '#c99bf5',
+      sprite: { w: 384, h: 345, pivotX: 211.5, pivotY: 172.5, bodyR: 172.5, footOffset: 1.00 },
+      title: { role: 'perch', r: 19 }
     }
   ];
 
@@ -1290,8 +1330,8 @@ var Doodads = (function () {
      say different things: meets() asks whether the price was paid, this asks
      whether there was one. POULTRY CATCHER counts the doodads that are
      priced AND met, so a kind this test did not know about would make its
-     doodad free - it would never be counted toward the badge, and thirteen
-     of sixteen would be as high as the badge could ever read. */
+     doodad free - it would never be counted toward the badge, and fourteen
+     of seventeen would be as high as the badge could ever read. */
   function priced(d) {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
     return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
@@ -1401,6 +1441,28 @@ var Doodads = (function () {
      The old number was a glyph box of 6 rather than the font's 5, and every
      width in this file derived from it read about an eighth too wide - a
      comment that was buying headroom nobody had asked for. */
+  /* THE DEEDS' OWN WORDS, by id - the table the one-deed branch said a
+     second deed would want. Each sentence is written out rather than built
+     out of the id, because a sentence reads better than an assembled phrase.
+
+     The hints name no bay, for the secrecy rule: the bays that shed both
+     halves of a deed are in rooms a locked card must not give away.
+       hot-and-sour  the Whiteboard off its lid, the Fort out of its Cupmen's
+                     guns (a red pellet and a green one) and the Floor's
+                     crumbs: THREE BAYS SHED BOTH. It said TWO until
+                     2026-10-18, which stopped being true when the Floor was
+                     built with both a hot and a sour drop.
+       hot-and-spun  only the Ceiling sheds a heat AND a spin (the Bar spins
+                     but sheds no heat): ONE BAY SHEDS BOTH.
+     Widths at spacing 2 (7n-2): the longest shut form is Crow's, 50 ch and
+     348px. Plates are spacing 1 in a 92px pitch. */
+  var DEEDS = {
+    'hot-and-sour': { price: 'BE HOT AND SOUR AT ONCE',      plate: 'HOT + SOUR',   /* 10 ch, 59px */
+                      hint: 'THREE BAYS SHED BOTH' },                               /* 20 ch, 119px */
+    'hot-and-spun': { price: 'BE HOT AND SPINNING AT ONCE',  plate: 'HOT + SPIN',   /* 10 ch, 59px */
+                      hint: 'ONE BAY SHEDS BOTH' }                                  /* 18 ch, 107px */
+  };
+
   function requirement(d) {
     if (typeof d === 'string') d = BY_ID[d];
     if (!d) return null;
@@ -1450,23 +1512,12 @@ var Doodads = (function () {
       return { price: 'FIND HIM. ' + placeLine(d.unlockMeet), plate: 'HIDING',
                hint: 'HE IS NOT FOR SALE', bar: false };
     }
-    /* a deed is one event too, so no bar here either. The copy is written
-       out rather than built, because there is exactly one deed and a
-       sentence reads better than a phrase assembled out of a deed id; a
-       second deed would want a small table keyed by that id rather than a
-       second branch.
-
-       The hint deliberately names neither bay. Two shed both a heat and a
-       sour now - the Whiteboard off its lid, and the Fort out of its
-       Cupmen's guns, a red pellet and a green one - and they are the
-       fourth and fifth bays of a secret room, so naming either would spend
-       the room's secret on a locked card. TWO BAYS SHED BOTH is true,
-       gives away nothing and is quite enough to go looking with; it used
-       to say ONE, and one stopped being true the day the Fort was built. */
+    /* a deed is one event too, so no bar here either. The copy is the
+       DEEDS table's, keyed by the deed's id, now that there are two. */
     if (d.unlockDeed) {
-      return { price: 'BE HOT AND SOUR AT ONCE' +                                   /* 47 ch, 327px shut */
-                      notThereYet(d.deedRoom && Levels.roomById(d.deedRoom)), plate: 'HOT + SOUR',
-               hint: 'TWO BAYS SHED BOTH', bar: false };          /* 18 ch, as ONE was */
+      var deed = DEEDS[d.unlockDeed] || { price: 'DO SOMETHING REMARKABLE', plate: 'A DEED', hint: '' };
+      return { price: deed.price + notThereYet(d.deedRoom && Levels.roomById(d.deedRoom)),
+               plate: deed.plate, hint: deed.hint, bar: false };
     }
     /* a catch is one event as well, so no bar here either, and the copy is
        written out for the deed's reason: there is exactly one chase and a

@@ -1870,7 +1870,11 @@ var Ceiling = (function () {
                     'rgba(147,216,189,' + (0.34 * pulse).toFixed(3) + ')',
                     'rgba(95,174,154,' + (0.14 * pulse).toFixed(3) + ')',
                     'rgba(47,107,98,0)');
-    var top = CEIL + 5, prev, lo, run;
+    /* A TANGLE IN A CROW'S TALONS (ob.held, Crow's ORDNANCE) hangs from
+       them: the patch rides at the gift point and the strands hang their
+       own length below it, rather than stretching down from the plaster */
+    var held = !!ob.held, stretch = held ? 0 : ob.dy;
+    var top = held ? gy - 8 : CEIL + 5, prev, lo, run;
     /* pass 1, the outlines. Each row runs from where the row above left
        off, so a strand Gerald has dragged well over to one side stretches
        as a line and does not break up into dots. */
@@ -1880,7 +1884,7 @@ var Ceiling = (function () {
       prev = null;
       for (r = 0; r <= len; r++) {
         px = x + strandX(ob, i, r, len, age);
-        py = top + r + Math.round(ob.dy * r / len);
+        py = top + r + Math.round(stretch * r / len);
         lo = prev === null ? px : Math.min(prev, px); run = prev === null ? 1 : Math.abs(px - prev) + 1;
         ctx.fillRect(lo - 1, py, run + 2, 1);
         prev = px;
@@ -1894,7 +1898,7 @@ var Ceiling = (function () {
       prev = null;
       for (r = 0; r <= len; r++) {
         px = x + strandX(ob, i, r, len, age);
-        py = top + r + Math.round(ob.dy * r / len);
+        py = top + r + Math.round(stretch * r / len);
         lo = prev === null ? px : Math.min(prev, px); run = prev === null ? 1 : Math.abs(px - prev) + 1;
         ctx.fillStyle = ((r + i) % 4 === 0) ? P.noodleHi : (((r + i) % 4 === 2) ? P.noodleShade : P.noodle);
         ctx.fillRect(lo, py, run, 1);
@@ -1904,8 +1908,8 @@ var Ceiling = (function () {
       ctx.fillRect(px + (i & 1 ? 1 : -1), py, 1, 1);
     }
     /* the tangle pressed against the plaster, over the strands' roots */
-    ctx.drawImage(T.patch.canvas, x - 10, CEIL);
-    if (ob.dy > 1 || Math.abs(ob.dx) > 1) {
+    ctx.drawImage(T.patch.canvas, x - 10, held ? top - 5 : CEIL);
+    if (!held && (ob.dy > 1 || Math.abs(ob.dx) > 1)) {
       /* a drip of broth off the longest strand as it is pulled */
       var kk = wrap(age * 0.5, 1);
       ctx.fillStyle = P.noodleShade;

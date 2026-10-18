@@ -902,7 +902,8 @@ var Garden = (function () {
     var lifted = ob.dy < -1 || ob.dx > 1 || ob.dx < -1;
 
     /* the pot stays where it was planted */
-    ctx.drawImage(T.pot.canvas, px - 10, py - 19);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its pot */
+    if (!ob.held) ctx.drawImage(T.pot.canvas, px - 10, py - 19);
 
     /* a calm green glow - nothing else on the ground shines - and it
        travels with the plant, not the pot */

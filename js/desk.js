@@ -2067,7 +2067,8 @@ var Desk = (function () {
     var i;
 
     /* the napkin stays on the boards wherever the mug gets to */
-    ctx.drawImage(T.napkin.canvas, nx - 9, FLOOR - 2);
+    /* not under a crow's talons (ob.held, Crow's ORDNANCE): the gift has left its napkin */
+    if (!ob.held) ctx.drawImage(T.napkin.canvas, nx - 9, FLOOR - 2);
 
     /* the succulent's exact glow: a life is a life, in any level */
     var pulse = 0.7 + 0.3 * Math.sin(clock * 2.1 + ob.phase);
@@ -2619,9 +2620,13 @@ var Desk = (function () {
   /* Something off the shelves. x and y are its CENTRE, because it falls
      and rocks rather than sitting on a grid. Three kinds, one type
      string: a hardback, a breath mint and a quarter. */
-  function makeDrop(x, spicy, fall, run) {
-    var gold = false;
-    if (!spicy) {
+  /* `want`, Crow's ORDNANCE (js/scene_play.js): 'gold' makes the +5 on
+     request and 'plain' makes anything but, and NEITHER touches the gold
+     dice or the gap - a gift handed to a crow must not move this bay's own
+     rhythm. Any other value is the ordinary roll, exactly as before. */
+  function makeDrop(x, spicy, fall, run, want) {
+    var gold = want === 'gold';
+    if (!spicy && !gold && want !== 'plain') {
       if (goldGap > 0) goldGap--;
       else if (chance(GOLD_CHANCE)) { gold = true; goldGap = GOLD_GAP; }
     }
@@ -2720,7 +2725,7 @@ var Desk = (function () {
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
-    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
+    makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor
   };
