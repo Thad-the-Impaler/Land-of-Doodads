@@ -313,10 +313,11 @@ stop falling, and only the odd Golden Order cupman still turns up.
 ## The Dining Room
 
 The third room, the same house one wall over, and a secret until **20** in the
-Fort opens it and its first bay together. It has four bays, not five, and it
-runs from afternoon to evening across them, because that is how the
-photographs were taken: the Table and the Floor in daylight, the Bar and the
-Ceiling with the pendants on.
+Fort opens it and its first bay together. It has five bays, and the first
+four run from afternoon to evening, because that is how the photographs were
+taken: the Table and the Floor in daylight, the Bar and the Ceiling with the
+pendants on. The fifth is the dining-room television, and what time it is in
+there depends on what is on.
 
 **The lid is not one rule in here.** Each bay's lid is a different object, so
 each bay says for itself whether it kills: the Table's ceiling, the Bar's ledge
@@ -329,6 +330,7 @@ only stops you, Backyard-style.
 | **THE FLOOR** | 3-2 | **20** in the Table | board level under the chairs; crumbs everywhere, and something coming for them |
 | **THE BAR** | 3-3 | **20** in the Floor | the charcoal bar cabinet against the half wall, after dark, with the humidifier on |
 | **THE CEILING** | 3-4 | **20** in the Bar | up against the plaster, with the room folded in half beneath you |
+| **THE TV** | 3-5 | **20** in the Ceiling | a hand's width from the set on the woven marble wall, and it is showing you |
 
 | | pillars | the bay's own hazard | falling | the power-ups | the spare life |
 |---|---|---|---|---|---|
@@ -336,6 +338,7 @@ only stops you, Backyard-style.
 | THE FLOOR | white chair legs from above, black stool legs from below | the mop, past **10** | crumbs, past **4**, which bounce like the Couch's popcorn | hot sauce and lime juice, falling as drops | a fallen leaf |
 | THE BAR | stacks of wooden spirit boxes and white footed planters | the humidifier's mist, past **10** | wine corks, past **5**: one hop, then they lie still | a vinyl record, which is the **spin** | a pinecone |
 | THE CEILING | angled drywall soffits and skylight wells | the pole, past **14** | lint and dust, past **5** | a spicy feather and a spin feather | noodles, stuck to the ceiling |
+| THE TV | columns of the woven marble, capped with the white frame | the set itself: its faults, past **10** | dead pixels, past **6**, the Mantle's | all four, ON the screen: a hot pepper, a lime, a spin record and a gold apple | a succulent, on the screen too |
 
 **THE SQUEEZE BOTTLES** are clear plastic with the ketchup showing through, and
 every one is squeezed on a clock keyed to where it is on the screen, the way
@@ -367,6 +370,26 @@ first, prods the ceiling three times as if it is looking for something, and
 goes back down. It is a wall across the whole screen while it is up - but it
 is only ever up in the right half, and it sinks as it comes toward you, so
 hanging back to the left always gets you past it. The spin bounces off it.
+
+**THE TV** is the one bay where the picture is the hazard. It opens on the set
+switched off, the room reflected in the glass, and comes on the way an old tube
+did - a dot, a line, the picture blooming out of it with a rainbow wobble - onto
+a test card. From the first flap it is CHANNEL-SURFING THE GAME ITSELF: the
+earlier bays as chunky 4:3 reruns, each in an old set's look (black and white,
+sepia, a seventies tube, green phosphor, CGA, a worn tape), and the channel
+number is the bay's code, so CH 11 is the Coop and CH 34 the Ceiling. At **8**
+it finds CH 35, which is this bay, live: a feedback tunnel of the room and of
+you, a frame late. The power-ups are broadcasts - they tune in out of a blob of
+static and bounce up and down the picture like a screensaver - and you catch
+them by flying through them, as anywhere else; a VOLUME bar says what you got.
+From **10** the set develops FAULTS - snow, the vertical hold slipping, a
+tracking tear, a ghost, the right of the picture collapsing, a channel surf -
+and every one is named on the screen a second before it happens. At first they
+stay inside the glass. At **16 they spill out**: from then on a fault happens to
+the whole room and to you alike (a slip slips both, a tear tears both, so
+nothing is ever drawn somewhere it is not), the doodad turns to pixel art for
+the rest of the run, and from **20** the picture can go to mosaic. Die, and the
+tube collapses to a line and a dot and goes dark.
 
 ### The spin
 
@@ -667,6 +690,7 @@ js/
   floor.js            DINING ROOM / THE FLOOR: chair and stool legs, crumbs, the mop
   bar.js              DINING ROOM / THE BAR: spirit boxes, planters, corks, the humidifier
   ceiling.js          DINING ROOM / THE CEILING: soffits, lint, feathers, the pole
+  tv.js               DINING ROOM / THE TV: the woven wall, the set, its reruns and its faults
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
   ui.js               boards, buttons, panels, padlocks, the on-screen pads
@@ -702,7 +726,7 @@ so they stay smooth against the pixelated world.
 
 * **A new level** - write an art module implementing the level contract, add its
   script tag to `index.html` (**after** the core, screen and doodad files and
-  **before** `js/levels.js`, where the fourteen existing levels sit) and drop a level
+  **before** `js/levels.js`, where the fifteen existing levels sit) and drop a level
   object into a room's `levels` array. There are five worked examples; `js/coop.js`
   is the smallest and `js/garden.js` the one to read second, and between them they
   cover every member. The contract is:
@@ -728,7 +752,19 @@ so they stay smooth against the pixelated world.
   belongs to the room rather than to one thing in it (the Bar's humidifier
   clock); `drawOverlay(ctx, obstacles, run)` is the last thing on the room layer,
   in front of everything that falls but behind the doodad (the Bar's fog, the
-  Floor's mop). A level keeps its per-run state in `run.ledger`, which is new
+  Floor's mop). Four more are for a level that treats the whole PICTURE, the
+  TV's: `drawBackdrop` is also handed the obstacle list and `run`, so a backdrop
+  can paint things into itself before the pillars go over them;
+  `stepScreen(dt, state, run)` runs in every state but pause - GET READY, the
+  tumble and the results included - for a set that comes on and goes off around
+  a run (a `cry` it writes outside play is played straight away);
+  `postBg(ctx, run, state)` is the last word on the room layer and
+  `postChars(ctx, run, state)` the last on the doodad's, for whole-frame
+  treatments that must land on both alike (a mosaic, a vertical-hold slip, the
+  colour going); and `drawFront(ctx, run, state)` is the first thing on the HUD
+  layer, over the doodad and under every number the game puts up (a channel
+  readout, snow on the doodad himself). A level keeps its per-run state in
+  `run.ledger`, which is new
   every run, and talks back to the engine through a few of its keys: `warn`,
   `cry`, `shake`, `deed`, `pay`, `knock`, `holdDrops`, and `drift` and `wall`, which
   pull the doodad left and stand a harmless wall at the edge of the room (the

@@ -67,7 +67,16 @@ var Audio3 = (function () {
     filter.frequency.exponentialRampToValueAtTime(Math.max(60, (o.freq || 900) * 0.25), t0 + o.dur);
     filter.Q.value = o.q || 1.2;
     var gain = ctx.createGain();
-    gain.gain.setValueAtTime(o.vol === undefined ? 0.3 : o.vol, t0);
+    var nv = o.vol === undefined ? 0.3 : o.vol;
+    /* `attack`, seconds: a burst that SWELLS rather than strikes - static
+       coming up on a television. Left out, it strikes, as every burst
+       before it did. */
+    if (o.attack) {
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(nv, t0 + o.attack);
+    } else {
+      gain.gain.setValueAtTime(nv, t0);
+    }
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
     src.connect(filter); filter.connect(gain); gain.connect(master);
     src.start(t0);
@@ -305,7 +314,35 @@ var Audio3 = (function () {
     whirr:   function () { tone({ from: 70, to: 210, dur: 0.7, type: 'sawtooth', vol: 0.07 });
                            noise({ freq: 600, dur: 0.8, vol: 0.06, q: 0.7 }); },
     /* a soft landing - lint, a feather: barely there */
-    pat:     function () { noise({ freq: 900, dur: 0.05, vol: 0.04, q: 0.8 }); }
+    pat:     function () { noise({ freq: 900, dur: 0.05, vol: 0.04, q: 0.8 }); },
+
+    /* ---- the TV ---- */
+    /* AN OLD SET COMING ON: the relay's thunk, a crackle of charge on the
+       glass, the degauss coil's low boing and the thin whine of the
+       flyback climbing in behind it - pitched at 7-8kHz and quiet, because
+       the real one is at 15.7kHz and half the people playing could not
+       hear it anyway */
+    tvOn:    function () { tone({ from: 72, to: 40, dur: 0.16, type: 'triangle', vol: 0.2 });
+                           noise({ freq: 3400, dur: 0.14, vol: 0.08, q: 0.9 });
+                           tone({ from: 62, to: 48, dur: 0.55, type: 'sawtooth', vol: 0.07, delay: 0.06 });
+                           tone({ from: 7200, to: 8400, dur: 0.7, type: 'sine', vol: 0.018, delay: 0.1 }); },
+    /* and going off: the picture collapsing to a dot is a falling zap */
+    tvOff:   function () { tone({ from: 1900, to: 110, dur: 0.36, type: 'sine', vol: 0.08 });
+                           noise({ freq: 2400, dur: 0.16, vol: 0.05, q: 0.8 });
+                           tone({ from: 80, dur: 0.05, type: 'triangle', vol: 0.12, delay: 0.32 }); },
+    /* a channel knob going round one click, and a blip of nothing between
+       the stations */
+    chan:    function () { noise({ freq: 3200, dur: 0.025, vol: 0.12, q: 3 });
+                           tone({ from: 140, dur: 0.03, type: 'square', vol: 0.06 });
+                           noise({ freq: 4200, dur: 0.18, vol: 0.06, q: 0.5, delay: 0.03 }); },
+    /* the snow coming up: a swell of static, not a burst */
+    snow:    function () { noise({ freq: 5200, dur: 1.2, vol: 0.075, q: 0.3, attack: 0.45 });
+                           noise({ freq: 1900, dur: 0.9, vol: 0.04, q: 0.5, attack: 0.3, delay: 0.1 }); },
+    /* a set hunting for a picture: three slurs of a tuning warble */
+    tune:    function () { tone({ from: 600, to: 920, dur: 0.12, type: 'sine', vol: 0.06 });
+                           tone({ from: 920, to: 700, dur: 0.12, type: 'sine', vol: 0.06, delay: 0.12 });
+                           tone({ from: 700, to: 1240, dur: 0.16, type: 'sine', vol: 0.06, delay: 0.24 });
+                           noise({ freq: 3000, dur: 0.4, vol: 0.025, q: 0.6 }); }
   };
 
   /* ---------------------------------------------------------- samples

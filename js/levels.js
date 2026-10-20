@@ -1,9 +1,9 @@
 /* ------------------------------------------------------------------
    Land of Doodads - rooms and levels
 
-   Fourteen built bays in three rooms, run in the order they are earned
+   Fifteen built bays in three rooms, run in the order they are earned
    in, each one gated on the one before it: the BACKYARD's five, the
-   LIVING ROOM's five, and the DINING ROOM's four.
+   LIVING ROOM's five, and the DINING ROOM's five.
 
    ONE locked placeholder is left, and it stands to the RIGHT of the
    last real room. The one that used to sit to the LEFT of the Backyard
@@ -844,6 +844,44 @@ var Levels = (function () {
     }
   };
 
+  var TV_BAY = {
+    id: 'tv',
+    name: 'THE TV',
+    code: '3-5',
+    unlock: { room: 'diningroom', level: 'ceiling', score: 20 },
+    blurb: ['THE SET IS ON. SO ARE YOU.', 'TRY NOT TO LOSE THE PICTURE.'],
+    art: TV,
+    tune: {
+      /* THE BAR'S PACE, a shade quicker. What is hard in here is the
+         reception, not the speed, so the Ceiling stays the fastest bay in
+         the room and nothing about the pillars is new: the faults are the
+         extra obstacle, and they are the art's (js/tv.js). */
+      speedStart: 116, speedMax: 178, speedRamp: 0.85,
+      gapStart: 104, gapMin: 82, gapRamp: 0.31,
+      spacingStart: 226, spacingMin: 182, spacingRamp: 0.45,
+      gapDrift: 54,
+      /* no spike slot at all: the owner's extra obstacle is the set
+         misbehaving, and it does that on its own clock */
+      spikeScore: 1e9, spikeChance: 0, spikeChanceMax: 0,
+      /* DEAD PIXELS, "the same as the Mantle": its score, its density and
+         its reach, falling out of the bottom of the top rail */
+      dropScore: 6,
+      dropEvery: 2.3, dropEveryMin: 1.05, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      /* ALL FIVE POWER-UPS, the owner's list, each a shade rarer than in a
+         bay that sheds only one or two of them. They are BROADCAST - on the
+         picture, bouncing - and caught by flying through them, exactly as
+         anywhere else. The +5 is the engine's roll (goldChance); the art
+         reads ob.gold live and only rolls one when a crow asks. */
+      spicyChance: 0.06, sourChance: 0.06, goldChance: 0.035, whirlChance: 0.06,
+      boonChance: 0.032, boonGap: 10,
+      /* the set's faults begin here, inside the glass; they spill out
+         into the room six points later, on the art's own warning */
+      lateScore: 10
+    }
+  };
+
   var LOCKED_LEVEL = { id: 'locked', name: '? ? ?', code: '', locked: true,
                        blurb: ['SOMETHING IS BEING BUILT', 'OUT HERE. NOT YET.'] };
 
@@ -880,7 +918,7 @@ var Levels = (function () {
     /* the Living Room's last bay is its key, as the Construction Zone is
        the Living Room's, and the room and THE TABLE open on one plank */
     unlock: { room: 'livingroom', level: 'fort', score: 20 },
-    levels: [TABLE, FLOOR_BAY, BAR_BAY, CEILING_BAY],
+    levels: [TABLE, FLOOR_BAY, BAR_BAY, CEILING_BAY, TV_BAY],
     startLevel: 0
   };
 
@@ -1146,6 +1184,7 @@ var Levels = (function () {
     floor: FLOOR_BAY,
     bar: BAR_BAY,
     ceiling: CEILING_BAY,
+    tv: TV_BAY,
     reachedOn: reachedOn, noteScore: noteScore,
     roomOpen: roomOpen, gateMet: gateMet, roomById: roomById,
     levelsOf: levelsOf, keyFor: keyFor,

@@ -4439,6 +4439,22 @@ var PlayScene = (function () {
     updateDust(dt);
     updateStreaks(dt);
 
+    /* THE LEVEL'S OWN PRESENTATION CLOCK, in every state but pause - which
+       returned above, so a paused frame is a frozen frame here as it is
+       everywhere else. stepWorld is the room's step and only ever runs
+       during a run; this is for what a level does AROUND a run: a set that
+       comes on while GET READY is up, goes off when the doodad comes down,
+       and comes on again for RETRY. It may write run.ledger.cry, and
+       outside 'play' nothing else would ever read it - drainLedger is a
+       play-only call - so the cry is spent here for those states. In
+       'play' it is left for drainLedger, a few lines on in this frame, so
+       a cry and a warn written on the same frame are still one noise. A
+       level without the hook costs one property read. */
+    if (art.stepScreen) {
+      art.stepScreen(dt, state, run);
+      if (state !== 'play' && ledger.cry) { Audio3.play(ledger.cry); ledger.cry = null; }
+    }
+
     if (state === 'ready') {
       readyPulse += dt;
       scroll += speed * 0.34 * dt;
@@ -4973,7 +4989,11 @@ var PlayScene = (function () {
   /* -------------------------------------------------------- drawing */
 
   function drawBg(ctx) {
-    art.drawBackdrop(ctx, scroll);
+    /* the list and the run ride along for a backdrop that has things IN it
+       - a television whose picture carries the power-ups, painted before a
+       pillar is laid over them. Every other backdrop declares two
+       parameters and never sees the extra two. */
+    art.drawBackdrop(ctx, scroll, obstacles, run);
     art.drawCeiling(ctx, scroll);
 
     var i, ty;
@@ -5034,6 +5054,17 @@ var PlayScene = (function () {
     if (shrivel > 0.02) drawSourAura(ctx);
     if (twirl > 0.02) drawWhirlAura(ctx);
     if (auraGlow > 0.02 && state === 'play') drawAlphaAura(ctx);
+
+    /* AND THEN THE LEVEL MAY DO SOMETHING TO ALL OF IT. The last word on
+       the room layer, after every light the engine laid: a whole-picture
+       treatment - a set losing its colour, its vertical hold, its focus -
+       that has to land on the pillars and the auras as well as on the
+       wall. Before the touch pads (game.js paints those after this
+       returns), so the controls are never what goes wrong. `state` comes
+       with it because the treatment differs across GET READY, the run and
+       the tumble, and nothing else on this side tells a draw which it is
+       in. The art resets the shake transform itself if it needs to. */
+    if (art.postBg) art.postBg(ctx, run, state);
   }
 
   /* The spin, in the room: a purple light round the doodad and three
@@ -5163,7 +5194,19 @@ var PlayScene = (function () {
     }
   }
 
+  /* The smooth layer, and then whatever the level does to it. A wrapper,
+     because drawDoodads below has five ways out and the treatment has to
+     land after every one of them: a doodad being pulled down a hole, one
+     under the water and one blinking through a grace are all still IN the
+     picture the level is treating. Nothing else is different - the level
+     sees the canvas at device resolution, with the scale and the shake on
+     it (ctx.canvas.width / VW is device pixels per virtual pixel). */
   function drawChars(ctx) {
+    drawDoodads(ctx);
+    if (art.postChars) art.postChars(ctx, run, state);
+  }
+
+  function drawDoodads(ctx) {
     /* THE LEVEL'S ACTORS, on this smooth layer, before anything else and
        before every early return below: the pull, the dive and the grace
        blink are all about the doodad, and an actor that vanished whenever
@@ -5287,6 +5330,14 @@ var PlayScene = (function () {
 
   function drawFg(ctx) {
     hot.length = 0;
+    /* THE LEVEL'S FRONT, first on this layer: over the doodad and under
+       every flash, banner and number the engine puts up. For a level whose
+       world has its OWN writing on the glass - a set's channel number and
+       volume bars - and for anything that must lie over the doodad himself,
+       like snow on a picture he is part of. Under the HUD on purpose: the
+       score, the gauges and the warnings are the game talking, and nothing
+       a level paints may get in their way. */
+    if (art.drawFront) art.drawFront(ctx, run, state);
     if (flash > 0) { ctx.fillStyle = '#f7e6c0'; ctx.fillRect(0, 0, VW, VH); }
     if (saveFlash > 0) {
       /* a wash, not a white-out: the run carries straight on and the player
