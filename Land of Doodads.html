@@ -42101,11 +42101,12 @@ var TV = (function () {
     c.globalAlpha = 1;
   }
 
-  /* a sprite blown up by a whole number, nearest neighbour */
+  /* a sprite blown up, nearest neighbour, to whole pixels either way */
   function scaled(src, k) {
-    var t = makeCanvas(src.width * k, src.height * k);
+    var w = Math.round(src.width * k), h = Math.round(src.height * k);
+    var t = makeCanvas(w, h);
     t.ctx.imageSmoothingEnabled = false;
-    t.ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, src.width * k, src.height * k);
+    t.ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, w, h);
     return t;
   }
 
@@ -42615,14 +42616,20 @@ var TV = (function () {
 
     var rec = need(Bar, 'rec', 'Bar');
     T.pu = {
-      hot:  twin(scaled(need(Garden, 'pepper', 'Garden').canvas, 2)),
-      sour: twin(scaled(need(Canopy, 'lime', 'Canopy').canvas, 2)),
-      gold: twin(scaled(need(Deck, 'golden', 'Deck').canvas, 2)),
-      spin: [twin(scaled(rec[0].canvas, 2)), twin(scaled(rec[1].canvas, 2)),
-             twin(scaled(rec[2].canvas, 2)), twin(scaled(rec[3].canvas, 2))],
-      pot:  scaled(need(Garden, 'pot', 'Garden').canvas, 2),
-      life: twin(scaled(need(Garden, 'rosette', 'Garden').canvas, 2))
+      hot:  twin(scaled(need(Garden, 'pepper', 'Garden').canvas, PU_SCALE)),
+      sour: twin(scaled(need(Canopy, 'lime', 'Canopy').canvas, PU_SCALE)),
+      gold: twin(scaled(need(Deck, 'golden', 'Deck').canvas, PU_SCALE)),
+      spin: [twin(scaled(rec[0].canvas, PU_SCALE)), twin(scaled(rec[1].canvas, PU_SCALE)),
+             twin(scaled(rec[2].canvas, PU_SCALE)), twin(scaled(rec[3].canvas, PU_SCALE))],
+      pot:  scaled(need(Garden, 'pot', 'Garden').canvas, PU_SCALE),
+      life: twin(scaled(need(Garden, 'rosette', 'Garden').canvas, PU_SCALE))
     };
+    /* the bounce turns each thing round half its own height short of the
+       rails, so the half-heights come off the sprites as baked - the
+       record off its face-on frame, the succulent off its rosette */
+    HALF = { hot: T.pu.hot.img.h >> 1, sour: T.pu.sour.img.h >> 1,
+             gold: T.pu.gold.img.h >> 1, spin: T.pu.spin[0].img.h >> 1,
+             life: T.pu.life.img.h >> 1 };
     measureCaps();
   }
 
@@ -43109,6 +43116,14 @@ var TV = (function () {
      every rerun takes its own, measured at build (capOf, below). */
   var CAP = '#9c9c9c';
   var BOX_AGE = 0.45;           /* a broadcast thing tunes in for 0.45s and has no box */
+  /* HOW BIG THE BROADCAST IS: the power-ups are the very sprites the
+     player caught in their own bays, drawn a quarter bigger - "just a
+     little bit bigger than their usual size", the owner's words, after the
+     first cut doubled them and made the bay much easier. Nearest
+     neighbour, so a quarter of the rows and columns come out doubled,
+     which on a television is what a picture slightly too big for its
+     tube looks like. The glow and the tune-in static scale with it. */
+  var PU_SCALE = 1.25;
 
   /* THE COOP'S CARD - the level select's generic cover in the Coop's
      colours, which is what the first card of the first room shows */
@@ -43464,8 +43479,9 @@ var TV = (function () {
     gold: ['255,226,122', '230,192,74', '168,131,42'],
     life: ['147,216,189', '95,174,154', '47,107,98']
   };
-  /* half-sizes for the bounce, in the sprite's own drawn pixels */
-  var HALF = { hot: 13, sour: 11, gold: 11, spin: 14, life: 12 };
+  /* half-sizes for the bounce, in the sprite's own drawn pixels; build()
+     measures them off the baked sprites */
+  var HALF = null;
 
   function spinFrame(ob) { return Math.floor(wrap(ob.spin, TAU) / TAU * 4) % 4; }
 
@@ -43480,7 +43496,7 @@ var TV = (function () {
     var k = kindOf(ob), at = centreOf(ob), x = at[0], y = at[1] - oy;
     var age = ob.age || 0, a0 = c.globalAlpha, sp, tw;
     if (!ob.held && age < BOX_AGE) {
-      var s = Math.round(6 + 18 * (age / BOX_AGE));
+      var s = Math.round((3 + 9 * (age / BOX_AGE)) * PU_SCALE);
       var h = hash((ob.id || 1) * 97 + view.frame);
       c.globalCompositeOperation = 'lighter';
       c.globalAlpha = a0 * 0.85;
@@ -43497,7 +43513,7 @@ var TV = (function () {
     var lace = !resolving && !ob.held && (view.frame & 1) ? 1 : 0;
     var gc = GLOW[k] || GLOW.life;
     var pulse = 0.72 + 0.28 * Math.sin(view.clock * 2.6 + (ob.phase || 0));
-    var r = Math.round(16 + 6 * pulse);
+    var r = Math.round((8 + 3 * pulse) * PU_SCALE);
     var g = c.createRadialGradient(x, y, 1, x, y, r);
     g.addColorStop(0, 'rgba(' + gc[0] + ',' + (0.46 * pulse).toFixed(3) + ')');
     g.addColorStop(0.55, 'rgba(' + gc[1] + ',' + (0.22 * pulse).toFixed(3) + ')');
@@ -43508,9 +43524,10 @@ var TV = (function () {
     if (k === 'life') {
       /* the pot stays where it was planted unless it is a crow's gift;
          the rosette goes where Gerald's hunger pulls it */
-      if (!ob.held) c.drawImage(T.pu.pot.canvas, Math.round(ob.x) - 8 + jit, Math.round(ob.y) + bob(ob) - oy - 16 + lace);
       tw = T.pu.life;
-      sp = [tw.img.canvas, x - 20, y - 16];
+      var lw = tw.img.w >> 1, lt = Math.round(8 * PU_SCALE);
+      if (!ob.held) c.drawImage(T.pu.pot.canvas, Math.round(ob.x) + 12 - lw + jit, Math.round(ob.y) + bob(ob) - oy - lt + lace);
+      sp = [tw.img.canvas, x - lw, y - lt];
     } else {
       tw = k === 'spin' ? T.pu.spin[spinFrame(ob)] : T.pu[k];
       sp = [tw.img.canvas, x - (tw.img.w >> 1), y - (tw.img.h >> 1)];
@@ -44102,10 +44119,11 @@ var TV = (function () {
       g.addColorStop(1, 'rgba(95,143,34,0)');
       ctx.fillStyle = g; ctx.fillRect(lx - 13, ly - 13, 26, 26);
       ctx.globalAlpha = 0.55;
-      ctx.drawImage(T.pu.sour.red.canvas, lx - 10, ly - 11);
-      ctx.drawImage(T.pu.sour.blue.canvas, lx - 8, ly - 11);
+      var lm = T.pu.sour.img, lhx = lm.w >> 1, lhy = lm.h >> 1;
+      ctx.drawImage(T.pu.sour.red.canvas, lx - lhx - 1, ly - lhy);
+      ctx.drawImage(T.pu.sour.blue.canvas, lx - lhx + 1, ly - lhy);
       ctx.globalAlpha = 1;
-      ctx.drawImage(T.pu.sour.img.canvas, lx - 9, ly - 11);
+      ctx.drawImage(lm.canvas, lx - lhx, ly - lhy);
     }
     ctx.drawImage(T.scan.canvas, 0, 0, w, ph, x, py, w, ph);
 
@@ -44269,7 +44287,14 @@ var TV = (function () {
      Every lethal pixel has a box and nothing harmless has one, and NO
      BOX EVER READS A FAULT: a slipped, torn or ghosted frame moves the
      doodad with it, so the boxes stay where the world is. */
-  var BOXES = { hot: [9, 12], sour: [9, 10], gold: [10, 10], spin: [14, 14], life: [12, 11] };
+  /* HALF-SIZES, and a little kinder than each thing's own bay - about a
+     fifth wider and taller than the box it has there (the Garden's pepper
+     10x12, the Canopy's lime 10x12, the Deck's gold apple 10x10, the Bar's
+     record 16x16, the Garden's succulent 18x19), because it is drawn a
+     quarter bigger and it is a thing to be caught. The first cut drew
+     everything twice its size with boxes to match and the owner sent it
+     back as making the bay much easier. */
+  var BOXES = { hot: [6, 8], sour: [6, 7], gold: [6, 6], spin: [10, 10], life: [11, 11] };
 
   function rectsFor(ob, out) {
     if (ob.type === 'pillar') {
