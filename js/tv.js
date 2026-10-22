@@ -134,6 +134,9 @@ var TV = (function () {
     reflFrameIn: '#3a3c40',
     reflSpark:   '#4e5258',
 
+    /* Buster's channel: a VCR's blue screen */
+    vcrBlue:     '#1a35b0',
+
     /* the matte white frame (frame_corner) */
     railLit:     '#f4f6f5',
     rail:        '#e3e6e5',
@@ -874,6 +877,9 @@ var TV = (function () {
     [34, '3-4', 'THE CEILING', Ceiling, 'sepia']
   ];
   var LIVE_CH = 35;
+  /* the channel nobody tunes to: the VCR's own, which the set flips to only
+     while somebody is on air on it (see makeMeet). 0, shown as VIDEO */
+  var VIDEO_CH = 0;
 
   function rerunOf(ch) {
     for (var i = 0; i < RERUNS.length; i++) if (RERUNS[i][0] === ch) return RERUNS[i];
@@ -888,6 +894,7 @@ var TV = (function () {
 
   function caption(ch) {
     if (ch === LIVE_CH) return '3-5 THE TV';
+    if (ch === VIDEO_CH) return 'PLEASE BE KIND - REWIND';
     var r = rerunOf(ch);
     return r ? r[1] + ' ' + r[2] : '';
   }
@@ -1093,6 +1100,9 @@ var TV = (function () {
 
   function startFault(S, run, name, dur, forced) {
     var F = S.fault;
+    /* whoever is on air on the VIDEO channel is lost to it: the picture
+       breaking up is the end of him for this run (the engine's spook) */
+    if (onAir()) run.ledger.spook = true;
     F.name = name; F.stage = 'run'; F.t = 0; F.n = 0;
     F.dur = forced ? dur : durFor(name, ladder(S, run) >= DEEP_AT);
     F.y0 = 40 + Math.floor(S.rng() * 161);
@@ -1167,7 +1177,7 @@ var TV = (function () {
     else S.playT += dt;
 
     /* THE CHANNEL. A forced one wins; a surf owns the dial while it runs */
-    var want = forcedOn(S, 'chan') ? S.forced.chan.v : baseFor(sc);
+    var want = forcedOn(S, 'chan') ? S.forced.chan.v : (onAir() ? VIDEO_CH : baseFor(sc));
     if (want !== S.base) {
       S.base = want;
       if (!S.surf) tuneTo(S, run, want, BURST);
@@ -1260,7 +1270,7 @@ var TV = (function () {
     var now = {}, i, ob, k;
     for (i = 0; i < obstacles.length; i++) {
       ob = obstacles[i];
-      if (ob.gone) continue;
+      if (ob.gone || ob.meet) continue;
       if (ob.type === 'drop' && !(ob.broken > 0)) {
         k = kindOf(ob);
         if (k === 'pixel') continue;
@@ -1494,6 +1504,17 @@ var TV = (function () {
   /* the programme into the picture: the card, a rerun or the feed */
   function programme(S, pc) {
     var ch = S.chan;
+    if (ch === VIDEO_CH) {
+      /* a tape's blue screen, a tracking line rolling up it, and whoever
+         is on it drawn over it by compose */
+      pc.fillStyle = P.vcrBlue; pc.fillRect(0, 0, VW, PIC_H);
+      pc.fillStyle = 'rgba(255,255,255,0.18)';
+      var tl = Math.floor(wrap(-view.clock * 52, PIC_H));
+      pc.fillRect(0, tl, VW, 2);
+      pc.fillStyle = 'rgba(255,255,255,0.06)';
+      pc.fillRect(0, (tl + 7) % PIC_H, VW, 5);
+      return;
+    }
     if (ch === 3) {
       pc.drawImage(T.card.canvas, 0, 0);
       pc.fillStyle = 'rgba(255,255,255,0.35)';
@@ -1868,6 +1889,7 @@ var TV = (function () {
       for (i = 0; i < obstacles.length; i++) {
         ob = obstacles[i];
         if (ob.held || ob.gone) continue;
+        if (ob.meet) { if (!ob.met) drawOnAir(pc, ob, CEIL); continue; }
         if ((ob.type === 'drop' && !(ob.broken > 0) && kindOf(ob) !== 'pixel') ||
             (ob.type === 'boon' && !ob.taken)) drawBroadcast(pc, ob, CEIL);
       }
@@ -2252,7 +2274,7 @@ var TV = (function () {
         ctx.fillStyle = P.live; ctx.fillRect(406, 47, 6, 6);
       }
     } else if (S.osd > 0) {
-      osd(ctx, 'CH ' + (S.chan < 10 ? '0' : '') + S.chan, 466, 44, 2, 'right');
+      osd(ctx, S.chan === VIDEO_CH ? 'VIDEO' : 'CH ' + (S.chan < 10 ? '0' : '') + S.chan, 466, 44, 2, 'right');
     }
     if (S.third > 0 && S.chan !== 3) osd(ctx, caption(S.chan), 14, 228, 1, 'left');
     /* play and pause, the way the set says them */
@@ -2453,6 +2475,70 @@ var TV = (function () {
              burst: [P.lifePale, P.lifeJade, '#e08a9a', '#5aa84a'] };
   }
 
+  /* SOMEBODY ON AIR - the TV's hider, for whoever the roster has put here
+     (Buster). The engine asks for him once a run on the plank tune.meetAt
+     rolls, sets ob.meet after this returns, and catches him on its own
+     collide path when he is flown through, as a broadcast power-up is. He
+     is a broadcast and so is drawn by THIS file, in the picture
+     (selfDrawn), tuning in out of static like the rest. While he is on the
+     screen the set is on his channel, VIDEO; a fault that starts while he
+     is there scrambles him (startFault raises ledger.spook, the engine's
+     spook takes him), and every fault is told a second before it starts,
+     so the race is visible. `shy` is what lets the spook reach him. */
+  function makeMeet(x, run) {
+    return { type: 'boon', x: x, y: 96 + rand(0, 72), w: 26, taken: false,
+             phase: rand(0, TAU), dx: 0, dy: 0, id: ++uid,
+             shy: true, selfDrawn: true };
+  }
+
+  /* is he on the screen right now? read off the list the world step last
+     saw, so the screen step and the fault start agree on one answer */
+  function onAir() {
+    var obs = view.obs;
+    if (!obs) return false;
+    for (var i = 0; i < obs.length; i++) {
+      var ob = obs[i];
+      if (ob.meet && !ob.met && !ob.gone && ob.x < VW - 6 && ob.x > -30) return true;
+    }
+    return false;
+  }
+
+  /* HIM, in the picture: the same tune-in out of static as a power-up,
+     then his own sprite at broadcast size with the tube's ghosting either
+     side and the phosphor glow behind him. Drawn where centreOf says, which
+     is where rectsFor boxes him. */
+  function drawOnAir(c, ob, oy) {
+    var at = centreOf(ob), x = at[0], y = at[1] - oy, age = ob.age || 0, a0 = c.globalAlpha;
+    if (age < BOX_AGE) {
+      var s = Math.round((3 + 11 * (age / BOX_AGE)) * PU_SCALE);
+      var h = hash((ob.id || 1) * 97 + view.frame);
+      c.globalCompositeOperation = 'lighter';
+      c.globalAlpha = a0 * 0.9;
+      c.drawImage(T.snowA.canvas, h % (VW - 24), (h >>> 9) % (PIC_H - 24), s, s,
+                  x - (s >> 1), y - (s >> 1), s, s);
+      c.globalCompositeOperation = 'source-over';
+      c.globalAlpha = a0;
+      return;
+    }
+    var pulse = 0.72 + 0.28 * Math.sin(view.clock * 2.6 + (ob.phase || 0));
+    var r = Math.round(16 * PU_SCALE);
+    var g = c.createRadialGradient(x, y, 1, x, y, r + 6);
+    g.addColorStop(0, 'rgba(160,196,255,' + (0.40 * pulse).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(0,88,255,0)');
+    c.fillStyle = g;
+    c.fillRect(x - r - 6, y - r - 6, (r + 6) * 2, (r + 6) * 2);
+    var id = ob.meet.id, body = Math.round(12 * PU_SCALE), blink = (view.frame >> 4) % 9 === 0;
+    /* smoothed for these three draws only: a 338px sprite point-sampled
+       down to 30 is noise, which the engine's hider draw warns about too */
+    c.imageSmoothingEnabled = true;
+    c.globalAlpha = a0 * 0.35;
+    Doodads.draw(c, id, x - 2, y, body, 0, blink);
+    Doodads.draw(c, id, x + 2, y, body, 0, blink);
+    c.globalAlpha = a0;
+    Doodads.draw(c, id, x, y + ((view.frame & 1) ? 1 : 0), body, 0, blink);
+    c.imageSmoothingEnabled = false;
+  }
+
   /* --------------------------------------------------------- stepDrop
 
      A DEAD PIXEL falls: the Mantle's four lines. ANYTHING BROADCAST never
@@ -2540,7 +2626,7 @@ var TV = (function () {
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
-    makeLitter: makeLitter, makeBoon: makeBoon,
+    makeLitter: makeLitter, makeBoon: makeBoon, makeMeet: makeMeet,
     stepDrop: stepDrop, stepWorld: stepWorld, stepScreen: stepScreen,
     postBg: postBg, postChars: postChars, drawFront: drawFront,
     rectsFor: rectsFor,

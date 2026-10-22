@@ -50,6 +50,7 @@ DOODADS = {
                 "fall_hot": "HotwFallSpicy", "fly_hot": "HotwFlySpicy"},
     "alpha": {"fall": "AlphFall", "fly": "AlphFly"},
     "crow": {"fall": "CrowFall", "fly": "CrowFly"},
+    "buster": {"fall": "BustFall", "fly": "BustFly"},
 }
 
 # A doodad painted with a HALO - Hot Wing's smoke, and his flames in the
@@ -68,7 +69,11 @@ FLOOR = {"hotwing": 8}
 # left and right edges of every row in the given slice of the box (as
 # fractions of its height, chosen below the tail and the comb) are points on
 # the circle, and a least-squares fit gives its centre and radius.
-BODY_FIT = {"alpha": (0.75, 0.98)}
+BODY_FIT = {"alpha": (0.75, 0.98),
+            # Buster: his dome sits on top, ear pods stick out of his sides
+            # and hover rings hang below, so the clean arc is the band of
+            # sphere between the dome and the pods
+            "buster": (0.15, 0.34)}
 
 
 def fit_body(alpha, rows):

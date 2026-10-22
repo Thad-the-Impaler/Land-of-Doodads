@@ -861,7 +861,7 @@ var Doodads = (function () {
       ordnance: { every: 10, gap: 72, follow: 160 },
       /* DONE, like Roller: the heat and the spin at the same instant. The
          engine reports 'hot-and-spun' by name and never learns what it buys.
-         Only the Ceiling sheds both, and it is in the Dining Room. */
+         The Ceiling and the TV shed both, and both are in the Dining Room. */
       unlockDeed: 'hot-and-spun',
       deedRoom: 'diningroom',
       /* violet, off his eyes. His body is near-black and a near-black accent
@@ -869,6 +869,48 @@ var Doodads = (function () {
          #5b4de0, and this sits a clear 30 degrees round from it. */
       accent: '#8b3fd9', accentDark: '#45156e', accentLight: '#c99bf5',
       sprite: { w: 384, h: 345, pivotX: 211.5, pivotY: 172.5, bodyR: 172.5, footOffset: 1.00 },
+      title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'buster',
+      name: 'BUSTER',                                      /* 6 ch, 105px at scale 3 */
+      tagline: 'BE KIND, REWIND',                          /* 15 ch, 103px at spacing 2 */
+      about: ['A ROBOT FROM THE VIDEO SHOP.',                /* 28 ch, 167px */
+              'NEVER RETURNED. NEVER LATE.'],               /* 27 ch, 161px */
+      lockedAbout: ['SOMEBODY IS ON THE TV WHO SHOULD NOT BE.',  /* 40 ch, 239px */
+                    'CATCH HIM BEFORE THE PICTURE BREAKS UP.'],  /* 39 ch, 233px */
+      /* THE TAPE - the one ability that runs the LEVEL backwards, and the
+         owner's own design ("Please rewind your tape!"), with its loopholes
+         closed by his four picks of 2026-10-22. Holding LEFT, after a 0.3s
+         CLUNK (so it is never a last-instant escape), plays the last `span`
+         seconds of the level backwards at `rate` x: pillars back the way
+         they came, drops back up to the ceiling, splats unsplatting. It is
+         a recording, so it is exactly what happened; letting go plays the
+         same tape forward until he has caught up, then the level is live
+         again. Buster himself is never rewound, nor are his power-up clocks,
+         and nothing he caught comes back. A pillar pays once each way - the
+         forward pass as ever, the first time it is rewound past him too -
+         so going back pays the way going forward does and see-sawing pays
+         nothing. js/scene_play.js, "the tape", is the whole of it. */
+      ability: 'REWIND',
+      abilityLive: true,
+      abilityAbout: ['HOLD \u25C0 AND THE LEVEL REWINDS.',     /* 31 ch, 185px */
+                     'THE LAST 30 SECONDS. NO FURTHER.'],        /* 32 ch, 191px */
+      abilityWarn: ['\u25C0\u25C0 PLEASE REWIND \u25C0\u25C0', 'HOLD \u25C0 TO PLAY THE LEVEL BACKWARDS'],
+      rewind: { span: 30, rate: 1.5, clunk: 0.3 },
+      /* FOUND, on THE TV: he comes on air once a run on a channel nobody
+         tunes to, and is caught by flying through his picture like a
+         broadcast power-up - unless a fault scrambles him first (js/tv.js,
+         makeMeet; his window is the TV's tune.meetAt / meetSpan). */
+      unlockMeet: 'tv',
+      /* DEEP BLUE, the owner's ask (2026-10-22) over the phosphor green it
+         was built with - the blue of a VCR's blank screen. Billy's blue is a
+         soft sky, #4f8fd0 with a pale #9fc8ee name, so this one stays deep
+         and saturated all the way up: the light shade is the one his name
+         is written in on the card, and a pale blue there would read as
+         Billy's. */
+      accent: '#0058ff', accentDark: '#00287a', accentLight: '#3d84ff',
+      sprite: { w: 338, h: 384, pivotX: 168.8, pivotY: 170.6, bodyR: 160.9, footOffset: 1.00 },
       title: { role: 'perch', r: 19 }
     }
   ];
@@ -1330,8 +1372,8 @@ var Doodads = (function () {
      say different things: meets() asks whether the price was paid, this asks
      whether there was one. POULTRY CATCHER counts the doodads that are
      priced AND met, so a kind this test did not know about would make its
-     doodad free - it would never be counted toward the badge, and fourteen
-     of seventeen would be as high as the badge could ever read. */
+     doodad free - it would never be counted toward the badge, and fifteen
+     of eighteen would be as high as the badge could ever read. */
   function priced(d) {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
     return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
@@ -1448,19 +1490,19 @@ var Doodads = (function () {
      The hints name no bay, for the secrecy rule: the bays that shed both
      halves of a deed are in rooms a locked card must not give away.
        hot-and-sour  the Whiteboard off its lid, the Fort out of its Cupmen's
-                     guns (a red pellet and a green one) and the Floor's
-                     crumbs: THREE BAYS SHED BOTH. It said TWO until
-                     2026-10-18, which stopped being true when the Floor was
-                     built with both a hot and a sour drop.
-       hot-and-spun  only the Ceiling sheds a heat AND a spin (the Bar spins
-                     but sheds no heat): ONE BAY SHEDS BOTH.
+                     guns (a red pellet and a green one), the Floor's crumbs
+                     and the TV's broadcasts: FOUR BAYS SHED BOTH. It said
+                     TWO until 2026-10-18 (the Floor) and THREE until
+                     2026-10-22 (the TV). Count again when a bay is added.
+       hot-and-spun  the Ceiling and the TV shed a heat AND a spin (the Bar
+                     spins but sheds no heat): TWO BAYS SHED BOTH.
      Widths at spacing 2 (7n-2): the longest shut form is Crow's, 50 ch and
      348px. Plates are spacing 1 in a 92px pitch. */
   var DEEDS = {
     'hot-and-sour': { price: 'BE HOT AND SOUR AT ONCE',      plate: 'HOT + SOUR',   /* 10 ch, 59px */
-                      hint: 'THREE BAYS SHED BOTH' },                               /* 20 ch, 119px */
+                      hint: 'FOUR BAYS SHED BOTH' },                                /* 19 ch, 113px */
     'hot-and-spun': { price: 'BE HOT AND SPINNING AT ONCE',  plate: 'HOT + SPIN',   /* 10 ch, 59px */
-                      hint: 'ONE BAY SHEDS BOTH' }                                  /* 18 ch, 107px */
+                      hint: 'TWO BAYS SHED BOTH' }                                  /* 18 ch, 107px */
   };
 
   function requirement(d) {

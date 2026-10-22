@@ -883,7 +883,12 @@ var Levels = (function () {
       boonChance: 0.024, boonGap: 12,
       /* the set's faults begin here, inside the glass; they spill out
          into the room six points later, on the art's own warning */
-      lateScore: 10
+      lateScore: 10,
+      /* Somebody comes on air once a run, on a channel the set never tunes
+         to otherwise: between the twelfth plank and the twenty-second, so
+         always after the faults have begun and catching him is a race with
+         them. Who it is is the roster's business (Doodads.meetable). */
+      meetAt: 12, meetSpan: 10
     }
   };
 

@@ -409,6 +409,8 @@ var PlayScene = (function () {
   /* Crow's escorts, or null; a tenth pillar's request for them; and the kinds
      of gift this level may hand them - see "the ordnance" */
   var escort = null, ordnanceDue = false, giftKinds = [];
+  /* Buster's tape, or null for everybody else - see "the tape" */
+  var tape = null;
   var streakPop = 0, streakX = 0, streakY = 0, streakText = '';
   var flickCool = 0;           /* seconds until the tail is back under him */
   /* What the mid-flight banner is currently shouting about, and what is
@@ -602,6 +604,7 @@ var PlayScene = (function () {
     auraGlow = 0;
     escort = null; ordnanceDue = false;
     giftKinds = doodad.ordnance ? ordnanceKinds() : [];
+    tapeReset();
     /* THE ONE ROLL OF THE RUN. tune.meetAt is the first plank he may be
        behind and tune.meetSpan is how many more the dice may add, so the
        Couch's 5 and 15 are a uniform 5..20 (randInt is inclusive at both
@@ -2722,6 +2725,292 @@ var PlayScene = (function () {
     }
   }
 
+  /* ---------------------------------------------------------- the tape
+
+     BUSTER'S REWIND, and the owner's design: "whenever he moves backwards,
+     the level starts moving backwards ... the level is the same, it just
+     goes backwards". So it is a RECORDING. While the level is live, every
+     frame's obstacles are written onto a tape - each one's numbers (where
+     it is, how it is turned, how broken, how old) and the scroll - and the
+     tape keeps the last `rewind.span` seconds, the owner's 30. Holding LEFT
+     plays the tape backwards: pillars back the way they came, drops back up
+     to where they fell from, splats unsplatting, pellets back into guns.
+     Letting go plays the SAME tape forward until it is level with where it
+     was rewound from, and from that frame the level is live again.
+
+     WHAT IS NOT ON THE TAPE is Buster. He flies, flaps, catches and dies on
+     the played-back world exactly as on the live one; his power-up clocks
+     keep running; the bay's own machinery (a mop, a set's faults, a mist)
+     holds still while the tape plays, and nothing spawns.
+
+     THE LOOPHOLES, closed by the owner's picks of 2026-10-22:
+       a panic button - LEFT has to be held for `rewind.clunk` (0.3s) before
+         the tape engages, a VCR's clunk, during which the world carries on
+         forward; so it is something decided, not tapped at the last frame;
+       point farming - a pillar pays once forward (as ever) and ONCE more the
+         first time it is rewound back over him (ob.paidBack); replayed
+         forward or rewound again it pays nothing, so going back pays the way
+         going forward does and see-sawing earns nothing;
+       gift farming - whatever he takes OUT of the world (a catch, a save's
+         clearing, a drop smashed in the heat) is marked tapeGone and never
+         plays again, backwards or forwards. The level's own exits (scrolled
+         off, splat over, retired by its art) are tapeNatural and do;
+       the start - the tape ends `span` seconds back (or where the run
+         began) and stops there until LEFT is let go. */
+
+  /* bookkeeping a playback must never put back: the pay flags, who has
+     been met or seen, and the tape's own marks */
+  var TAPE_SKIP = { scored: 1, paidBack: 1, met: 1, seen: 1, taken: 1, tapeGone: 1,
+                    tapeNatural: 1, tapeStamp: 1, held: 1, away: 1, dived: 1,
+                    skim: 1, skimTop: 1, auraK: 1, id: 1 };
+  var TAPE_ACC = 6;              /* how fast the tape changes speed, per second */
+  var tapeFrameNo = 0;
+
+  function tapeReset() {
+    tape = doodad.rewind ? { frames: [], last: [], mode: 'live', liveT: 0, playT: 0,
+                             rate: 1, clunk: 0, fx: 0, paid: 0, atStart: false,
+                             whirrT: 0, osdT: 0, applied: [] } : null;
+  }
+
+  function tapeSnap(ob) {
+    var out = {};
+    for (var k in ob) {
+      if (!Object.prototype.hasOwnProperty.call(ob, k) || TAPE_SKIP[k]) continue;
+      var v = ob[k];
+      if (typeof v === 'number' || typeof v === 'boolean') out[k] = v;
+    }
+    return out;
+  }
+
+  /* LEFT held (and not RIGHT) is the request; the clunk, the rewind, and
+     letting go are worked out here, before the frame decides whether the
+     world steps. Never inside a stay, a dive, a pull or the toss home. */
+  function tapeControl(dt) {
+    var T = tape, R = doodad.rewind;
+    var back = Input.down('left') && !Input.down('right') &&
+               !warp && !(warpIn > 0) && !(warpOut > 0) && !(diving > 0) && !(knockT > 0);
+    if (T.mode === 'rew') {
+      if (!back) { T.mode = 'play'; Audio3.play('select'); }
+    } else if (back) {
+      if (T.clunk === 0) Audio3.play('tock');
+      T.clunk += dt;
+      if (T.clunk >= R.clunk) { T.mode = 'rew'; T.clunk = 0; T.whirrT = 0; }
+    } else T.clunk = 0;
+    T.rate = approach(T.rate, T.mode === 'rew' ? -R.rate : 1, TAPE_ACC * dt);
+    if (T.mode === 'rew') {
+      T.whirrT -= dt;
+      if (T.whirrT <= 0) { Audio3.play('whirr'); T.whirrT = 0.62; }
+    }
+    /* how much of the VHS look is up: the clunk builds it, the rewind is all
+       of it, the play-back is a little of it, live is none */
+    var want = T.mode === 'rew' ? 1 : (T.mode === 'play' ? 0.35 : 0.45 * (T.clunk / R.clunk));
+    T.fx = damp(T.fx, want, 0.002, dt);
+    if (T.osdT > 0) T.osdT -= dt;
+  }
+
+  /* the last frame at or before time t */
+  function tapeFrameAt(t) {
+    var f = tape.frames, lo = 0, hi = f.length - 1;
+    if (t <= f[0].t) return f[0];
+    while (lo < hi) {
+      var mid = (lo + hi + 1) >> 1;
+      if (f[mid].t <= t) lo = mid; else hi = mid - 1;
+    }
+    return f[lo];
+  }
+
+  function tapeApply(fr) {
+    obstacles.length = 0;
+    for (var i = 0; i < fr.objs.length; i++) {
+      var ob = fr.objs[i][0];
+      if (ob.tapeGone) continue;
+      var sn = fr.objs[i][1];
+      for (var k in sn) ob[k] = sn[k];
+      obstacles.push(ob);
+    }
+    scroll = fr.scroll;
+  }
+
+  /* one frame of playback; returns 'live' on the frame the tape catches up */
+  function tapePlay(dt) {
+    var T = tape;
+    if (!T.frames.length) { T.mode = 'live'; T.rate = 1; return 'live'; }
+    T.playT = Math.min(T.liveT, T.playT + T.rate * dt);
+    var first = T.frames[0].t;
+    T.atStart = T.playT <= first;
+    if (T.atStart) { T.playT = first; if (T.rate < 0) T.rate = 0; }
+    if (T.mode === 'play' && T.rate > 0 && T.playT >= T.liveT) {
+      T.playT = T.liveT;
+      tapeApply(T.frames[T.frames.length - 1]);
+      T.mode = 'live'; T.rate = 1;
+      return 'live';
+    }
+    tapeApply(tapeFrameAt(T.playT));
+    if (T.rate < 0) payBack();
+    T.applied = obstacles.slice();
+    return 'play';
+  }
+
+  /* A PILLAR REWOUND BACK OVER HIM PAYS, once - the mirror of the forward
+     pass in moveObstacles, at the same edge, worth what that pass is worth
+     in the heat. `pace` is not touched: the level's distance did not grow. */
+  function payBack() {
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'pillar' || !ob.scored || ob.paidBack || ob.x + ob.w < player.x) continue;
+      ob.paidBack = true;
+      var base = spicy > 0 ? SPICY_MULT : 1;
+      score += base;
+      tape.paid += base;
+      scorePop = spicy > 0 ? 0.42 : 0.32;
+      Audio3.play(spicy > 0 ? 'scoreHot' : 'score');
+      checkPassed();
+      checkUnlocks();
+    }
+  }
+
+  /* after collide: in playback, whatever he took out this frame is gone
+     for good; live, the frame goes onto the tape */
+  function tapeAfter(dt, playback) {
+    var T = tape, i, ob;
+    if (playback) {
+      for (i = 0; i < T.applied.length; i++) {
+        ob = T.applied[i];
+        if (obstacles.indexOf(ob) < 0) ob.tapeGone = true;
+      }
+      return;
+    }
+    tapeFrameNo++;
+    for (i = 0; i < obstacles.length; i++) obstacles[i].tapeStamp = tapeFrameNo;
+    for (i = 0; i < T.last.length; i++) {
+      ob = T.last[i];
+      if (ob.tapeStamp !== tapeFrameNo && !ob.tapeNatural) ob.tapeGone = true;
+    }
+    T.liveT += dt;
+    var objs = new Array(obstacles.length);
+    for (i = 0; i < obstacles.length; i++) objs[i] = [obstacles[i], tapeSnap(obstacles[i])];
+    T.frames.push({ t: T.liveT, scroll: scroll, objs: objs });
+    T.last = obstacles.slice();
+    T.playT = T.liveT;
+    var cut = T.liveT - doodad.rewind.span, n = 0;
+    while (n < T.frames.length - 1 && T.frames[n].t < cut) n++;
+    if (n) T.frames.splice(0, n);
+  }
+
+  /* THE VHS LOOK. The picture is cut into bands three rows deep and each
+     band slid sideways by a wave that rolls up the screen, harder in a
+     TRACKING band that drifts through it - and BOTH picture layers are slid
+     by the same amount for the same row, the room here and the doodad's
+     layer from drawFg, so whatever is lethal is drawn where its box is,
+     row by row, which is the TV's rule for its faults. The HUD and the
+     touch pads stand still on top. */
+  var vhsScratch = null;
+  function vhsOffset(row, k) {
+    var wave = Math.sin(row * 0.11 + t * 13) * 2.2 + Math.sin(row * 0.031 - t * 5) * 1.6;
+    var band = ((t * 46) % (VH + 60)) - 30;
+    var tr = Math.abs(row - (VH - band)) < 9 ? (hashRow(row) - 0.5) * 10 : 0;
+    return Math.round((wave + tr) * k);
+  }
+  function hashRow(row) {
+    var h = (row * 374761393 + Math.floor(t * 30) * 668265263) | 0;
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  function vhsWarp(ctx) {
+    var c = ctx.canvas, sc = c.width / VW, k = tape.fx;
+    if (!vhsScratch) vhsScratch = document.createElement('canvas');
+    if (vhsScratch.width !== c.width || vhsScratch.height !== c.height) {
+      vhsScratch.width = c.width; vhsScratch.height = c.height;
+    }
+    var sx = vhsScratch.getContext('2d');
+    sx.setTransform(1, 0, 0, 1, 0, 0);
+    sx.clearRect(0, 0, c.width, c.height);
+    sx.drawImage(c, 0, 0);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, c.width, c.height);
+    for (var row = 0; row < VH; row += 3) {
+      var off = vhsOffset(row, k) * sc, y = row * sc, h = 3 * sc;
+      ctx.drawImage(vhsScratch, 0, y, c.width, h, off, y, c.width, h);
+    }
+    ctx.restore();
+  }
+
+  /* WHAT IS COMING BACK. Rewinding, the pillars return out of the LEFT
+     edge, behind him, which no live run ever asks anyone to read. But the
+     tape is a recording, so what is coming is known: every pillar that is
+     on the tape LOOK seconds further back and not yet on the screen gets its
+     gap drawn as a bracket on the left edge, in the readout's green,
+     brightening as it nears - the same warning a live run gives by showing
+     the next plank off to the right. Drawn on the steady layer, so the
+     rewind's wave never moves it off the gap it marks. */
+  var LOOK = 1.4;
+  /* the gaps coming back, as [top, bottom, nearness 0..1] - one list for
+     the brackets and for inspect(), so a test reads what a player sees */
+  function comingBack() {
+    var T = tape, out = [];
+    if (!T || T.mode !== 'rew' || !T.frames.length) return out;
+    var fr = tapeFrameAt(Math.max(T.frames[0].t, T.playT - LOOK));
+    for (var i = 0; i < fr.objs.length; i++) {
+      var ob = fr.objs[i][0], sn = fr.objs[i][1];
+      if (ob.type !== 'pillar' || ob.tapeGone || obstacles.indexOf(ob) >= 0) continue;
+      if (!(sn.x > -ob.w - 40)) continue;
+      /* how near, by how far onto the screen it will have come by then:
+         the further in it will be in LOOK seconds, the sooner it arrives */
+      out.push([sn.gapY, sn.gapY + sn.gapH, clamp((sn.x + ob.w + 40) / 160, 0.25, 1)]);
+    }
+    return out;
+  }
+  function drawComingBack(ctx) {
+    var list = comingBack(), ga = ctx.globalAlpha;
+    for (var i = 0; i < list.length; i++) {
+      var top = list[i][0], bot = list[i][1], near = list[i][2];
+      ctx.globalAlpha = ga * (0.35 + 0.55 * near) * (Math.floor(t * 10) % 2 ? 1 : 0.8);
+      ctx.fillStyle = UI.C.shadow;
+      ctx.fillRect(1, top - 1, 9, 3); ctx.fillRect(1, bot - 1, 9, 3); ctx.fillRect(1, top - 1, 3, bot - top + 3);
+      ctx.fillStyle = '#7dff9a';
+      ctx.fillRect(0, top - 2, 9, 2); ctx.fillRect(0, bot, 9, 2); ctx.fillRect(0, top - 2, 2, bot - top + 4);
+    }
+    ctx.globalAlpha = ga;
+  }
+
+  /* and on the steady HUD layer: snow lines, the tracking band's static,
+     and the VCR's own readout, which is the whole explanation */
+  function drawTape(ctx) {
+    var T = tape, k = T.fx, i;
+    var ga = ctx.globalAlpha;
+    for (i = 0; i < 7; i++) {
+      var r = hashRow(i * 97 + 13);
+      if (r > 0.25 + 0.6 * (1 - k)) continue;
+      var y = CEIL + Math.floor(hashRow(i * 31 + 7) * (FLOOR - CEIL));
+      ctx.globalAlpha = ga * (0.18 + 0.3 * k) * hashRow(i + 3);
+      ctx.fillStyle = i & 1 ? '#ffffff' : '#9fb4c8';
+      ctx.fillRect(0, y, VW, 1);
+    }
+    var band = ((t * 46) % (VH + 60)) - 30;
+    ctx.globalAlpha = ga * 0.22 * k;
+    for (i = 0; i < 18; i++) {
+      ctx.fillStyle = hashRow(i * 11 + 5) > 0.5 ? '#e8eef4' : '#5a6470';
+      ctx.fillRect(Math.floor(hashRow(i * 7 + 1) * VW), Math.round(VH - band + (i % 9) - 4),
+                   2 + Math.floor(hashRow(i * 5 + 2) * 18), 1);
+    }
+    ctx.globalAlpha = ga;
+    if (T.mode === 'rew') drawComingBack(ctx);
+    /* the readout: top left, under the spare lives, in the set's green */
+    var label = null, back = T.liveT - T.playT;
+    if (T.mode === 'rew') label = T.atStart ? '◀◀ TAPE START' : '◀◀ REW';
+    else if (T.mode === 'play') label = '▶ PLAY';
+    else if (T.clunk > 0 && Math.floor(t * 8) % 2) label = '◀◀';
+    if (label) {
+      UI.text(ctx, label, 9, 24, { colour: '#7dff9a', shadow: UI.C.shadow });
+      if (back > 0.05) {
+        var secs = Math.round(back);
+        UI.text(ctx, '-0:' + (secs < 10 ? '0' : '') + secs, 9, 34, { colour: '#c8ffd4', shadow: UI.C.shadow });
+      }
+    }
+  }
+
   /* emberTrail's twin, and deliberately the other way up: the heat trails
      embers back behind the doodad, the lime fizzes up off it, so at a glance
      the two are never the same power-up even when both are running. */
@@ -2976,6 +3265,10 @@ var PlayScene = (function () {
      pays its five - see the pace declaration's list of writes. */
   function drainLedger() {
     if (ledger.deed) { bank(Achievements.note(ledger.deed, level)); ledger.deed = null; }
+    /* ledger.spook: the level says the world has just scared off whoever
+       is hiding in it - the TV's picture breaking up while somebody is on
+       air. spookMeet's own rules decide who that reaches (shy, and seen). */
+    if (ledger.spook) { ledger.spook = false; spookMeet(); }
     var cry = null;
     if (ledger.cry) { cry = ledger.cry; ledger.cry = null; }
     if (ledger.warn) {
@@ -3543,6 +3836,12 @@ var PlayScene = (function () {
     var want = 0;
     if (Input.down('left')) want -= 1;
     if (Input.down('right')) want += 1;
+    /* WHILE THE TAPE REWINDS, LEFT IS THE TAPE'S and not his: he holds the
+       x he had, rather than sliding to the wall where every pillar coming
+       back out of the left edge would be on him in a tenth of a second.
+       During the clunk it is still his, which is how he backs off a little
+       before the tape takes over. */
+    if (tape && tape.mode === 'rew' && want < 0) want = 0;
     /* The same two constants for every doodad in the game, times `fling`.
        They were scaled per doodad for one round (BOUNCY, x1.5 on both) and
        the owner sent it back: a faster nudge was true to its word and could
@@ -4450,7 +4749,9 @@ var PlayScene = (function () {
        'play' it is left for drainLedger, a few lines on in this frame, so
        a cry and a warn written on the same frame are still one noise. A
        level without the hook costs one property read. */
-    if (art.stepScreen) {
+    /* not while Buster's tape is playing back: the bay's machinery holds
+       still while the level runs backwards and forwards over what it did */
+    if (art.stepScreen && !(tape && tape.mode !== 'live')) {
       art.stepScreen(dt, state, run);
       if (state !== 'play' && ledger.cry) { Audio3.play(ledger.cry); ledger.cry = null; }
     }
@@ -4593,6 +4894,12 @@ var PlayScene = (function () {
          target list, and a `var` here would hide it for all of update().) */
       var hurry = doodad.squall ? doodad.squall.speed : SPICY_SPEED;
       speed = d.speed * (spicy > 0 ? 1 + (hurry - 1) * (1 - (doodad.calm || 0)) : 1);
+      /* BUSTER'S TAPE decides, here, whether the world steps at all this
+         frame: in playback it is put where the tape says instead, and the
+         scroll, the spawners, the steps and the ledger all hold still */
+      var playback = false;
+      if (tape) { tapeControl(dt); playback = tape.mode !== 'live' && tapePlay(dt) !== 'live'; }
+      if (!playback) {
       scroll += speed * dt;
       spawnCursor -= speed * dt;
       moveObstacles(dt, speed);
@@ -4608,6 +4915,7 @@ var PlayScene = (function () {
          staleness every step already accepts. A level without the hook
          costs one property read. */
       if (art.stepWorld) art.stepWorld(dt, obstacles, run);
+      }
       /* What the steps asked for while they walked: the born queue let in
          and the ledger read. HERE, straight after the walk and BEFORE the
          pull's return below, so a thing born on the frame the hole takes
@@ -4615,8 +4923,10 @@ var PlayScene = (function () {
          everything else) rather than left in the queue for a world it does
          not belong to. A level that writes neither costs one length test
          and four falsy reads. */
-      if (born.length) admitBorn();
-      drainLedger();
+      if (!playback) {
+        if (born.length) admitBorn();
+        drainLedger();
+      }
 
       /* THE PULL INTO THE HOLE. Everything below this is skipped for its
          0.42s: no late arm, no spawning, no player, no hunger, no collide.
@@ -4692,8 +5002,10 @@ var PlayScene = (function () {
               speed: speed, px: player.x, py: player.y,
               pvy: player.vy, hr: hitR(), under: diving > 0, grace: invuln > 0,
               ledger: ledger, born: born };
-      spawnAhead();
-      spawnDrops(dt, d);
+      if (!playback) {
+        spawnAhead();
+        spawnDrops(dt, d);
+      }
       /* where he was before he moved, for the bop's "from above" */
       prevY = player.y;
       updatePlayer(dt);
@@ -4704,6 +5016,7 @@ var PlayScene = (function () {
       updateMeet();
       updateAura(dt);
       collide();
+      if (tape && state === 'play') tapeAfter(dt, playback);
       emberTrail(dt);
       sourTrail(dt);
       whirlTrail(dt);
@@ -4792,7 +5105,7 @@ var PlayScene = (function () {
          finished - flown off the screen, fallen over, been called away - is
          marked ob.gone and taken out HERE, by the walk that owns the list,
          before it is scrolled, stepped or tested again. */
-      if (ob.gone) { obstacles.splice(i, 1); continue; }
+      if (ob.gone) { ob.tapeNatural = true; obstacles.splice(i, 1); continue; }
       /* A GIFT IN A CROW'S TALONS goes where the crow goes and nowhere else:
          no scroll, no fall, no landing, no cull. updateOrdnance puts it under
          its crow every frame and retires it (ob.gone) when the crow leaves. */
@@ -4809,7 +5122,7 @@ var PlayScene = (function () {
       if (ob.type === 'drop') {
         if (ob.broken > 0) {
           ob.broken -= dt;
-          if (ob.broken <= 0) { obstacles.splice(i, 1); continue; }
+          if (ob.broken <= 0) { ob.tapeNatural = true; obstacles.splice(i, 1); continue; }
         } else if (art.stepDrop) {
           /* The level moves its own drop. Everything a falling thing does
              in the Backyard is four lines - gravity, position, spin, and
@@ -4959,7 +5272,7 @@ var PlayScene = (function () {
            walk, because sending them admits two gifts into this list */
         if (doodad.ordnance && passedN % doodad.ordnance.every === 0 && !escort) ordnanceDue = true;
       }
-      if (ob.x + (ob.w || 40) < -70) obstacles.splice(i, 1);
+      if (ob.x + (ob.w || 40) < -70) { ob.tapeNatural = true; obstacles.splice(i, 1); }
     }
   }
 
@@ -5065,6 +5378,9 @@ var PlayScene = (function () {
        the tumble, and nothing else on this side tells a draw which it is
        in. The art resets the shake transform itself if it needs to. */
     if (art.postBg) art.postBg(ctx, run, state);
+    /* and Buster's rewind bends the room; drawFg bends the doodad layer by
+       exactly the same rows, so nothing is ever drawn away from its box */
+    if (tape && tape.fx > 0.02) vhsWarp(ctx);
   }
 
   /* The spin, in the room: a purple light round the doodad and three
@@ -5330,6 +5646,7 @@ var PlayScene = (function () {
 
   function drawFg(ctx) {
     hot.length = 0;
+    if (tape && tape.fx > 0.02) vhsWarp(Screen.ctxCh);
     /* THE LEVEL'S FRONT, first on this layer: over the doodad and under
        every flash, banner and number the engine puts up. For a level whose
        world has its OWN writing on the glass - a set's channel number and
@@ -5439,6 +5756,7 @@ var PlayScene = (function () {
          which is why they have their own clamped points and never share one */
       if (fledPop > 0) drawFled(ctx);
       if (streakPop > 0) drawStreak(ctx);
+      if (tape && tape.fx > 0.02 && state === 'play') drawTape(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
       else if (hazardWarn > 0) drawHazardWarning(ctx);
@@ -6211,6 +6529,9 @@ var PlayScene = (function () {
                                     hotChain: hotChain, streakOwed: streak ? streak.d.id : null,
                                     streakAssist: !!(streak && streak.assist), auraGlow: auraGlow,
                                     giftKinds: giftKinds.slice(),
+                                    tape: tape ? { mode: tape.mode, rate: +tape.rate.toFixed(2), back: +(tape.liveT - tape.playT).toFixed(2),
+                                                   frames: tape.frames.length, paid: tape.paid, clunk: +tape.clunk.toFixed(2),
+                                                   atStart: tape.atStart, fx: +tape.fx.toFixed(2), coming: comingBack() } : null,
                                     escort: escort ? { phase: escort.phase, kinds: escort.crows.map(function (c) { return c.kind; }),
                                                        ys: escort.crows.map(function (c) { return Math.round(c.y); }),
                                                        holding: escort.crows.map(function (c) { return !!c.gift; }) } : null,

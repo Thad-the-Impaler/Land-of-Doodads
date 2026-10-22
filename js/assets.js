@@ -54,6 +54,8 @@ var Assets = (function () {
     alpha_fly:     'Assets/sprites/alpha_fly.png',
     crow_fall:     'Assets/sprites/crow_fall.png',
     crow_fly:      'Assets/sprites/crow_fly.png',
+    buster_fall:   'Assets/sprites/buster_fall.png',
+    buster_fly:    'Assets/sprites/buster_fly.png',
     /* THE FORT'S CUPMEN, and the guns they hold, a cup then its gun, in
        the order they arrive in a run. These are not doodads and do not come
        in pairs: one painting each, trimmed by the FOES pass in
