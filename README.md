@@ -698,6 +698,7 @@ js/
   achievements.js     the achievements and how each is counted
   scene_title.js      the animated coop and the doodads living in it
   scene_porch.js      the second title screen: every bay as a row on the porch
+  scene_stands.js     the third: a grandstand of every level's furniture, a seat for 30
   scene_levelselect.js  room carousel then level carousel
   scene_charselect.js doodad stalls
   scene_play.js       the run itself, plus initials entry and results

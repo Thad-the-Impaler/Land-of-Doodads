@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------
    Land of Doodads - title screen
-   The first title screen; the dispatcher at the foot of this file chooses between this and the porch (js/scene_porch.js).
+   The first title screen; the dispatcher at the foot of this file chooses between this, the porch (js/scene_porch.js) and the stands (js/scene_stands.js).
    A slow pan through the coop with everyone the player has earned
    living in it. Each doodad carries a `title` role in js/doodads.js:
    a percher hops between the perches as they drift past, a flyer
@@ -913,12 +913,18 @@ var CoopTitle = (function () {
 })();
 
 /* WHICH TITLE SCREEN. The Coop until ten priced doodads are open, the porch
-   from then on. One constant, evaluated on every enter(): unlocks change
-   only inside PlayScene, so the next visit re-picks. */
+   from then on, and the stands from fifteen. Evaluated on every enter():
+   unlocks change only inside PlayScene, so the next visit re-picks. The
+   three free starters never count, so fifteen is every doodad that has a
+   price today. */
 var PORCH_AT = 10;
+var STANDS_AT = 15;
 var TitleScene = (function () {
   var impl = null;
-  function pick() { return Doodads.pricedOpen() >= PORCH_AT ? PorchScene : CoopTitle; }
+  function pick() {
+    var n = Doodads.pricedOpen();
+    return n >= STANDS_AT ? StandsScene : (n >= PORCH_AT ? PorchScene : CoopTitle);
+  }
   function enter(p) { impl = pick(); impl.enter(p); }
   function refresh() {
     if (pick() !== impl) Game.go(TitleScene, {});
