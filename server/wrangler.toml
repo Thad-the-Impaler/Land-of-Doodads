@@ -1,0 +1,20 @@
+# Land of Doodads - the scores server, on Cloudflare's free plan.
+# Deploy from this folder with:  npx wrangler@4.147.0 deploy
+
+name = "land-of-doodads-scores"
+main = "worker.js"
+compatibility_date = "2026-09-30"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "doodads-scores"
+database_id = "2e1a7b97-bea0-4632-9575-0931a556d4c2"
+
+# Thirty scores a minute from any one address. A whole game's worth of
+# levels sent at once on first launch is fifteen; someone posting faster
+# than they could possibly be playing is not.
+[[ratelimits]]
+name = "POSTS"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

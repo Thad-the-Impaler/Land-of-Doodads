@@ -248,6 +248,10 @@ var Game = (function () {
         else loadFade = 0;
       };
       requestAnimationFrame(fade);
+      /* any bests the server has not been told about - a run that ended
+         offline, or a save older than everyone's board - go up once the
+         title is on screen, where nothing is waiting on them */
+      setTimeout(World.syncAll, 3000);
     });
   }
 

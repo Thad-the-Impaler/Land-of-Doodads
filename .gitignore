@@ -10,3 +10,7 @@
 # remembers to add a line here.
 Assets/Concept/*
 !Assets/Concept/level select layout.jpg
+
+# Wrangler's scratch space beside the scores server: build output and, when
+# it is run locally, a whole test database. Nothing in it is source.
+server/.wrangler/

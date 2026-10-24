@@ -1,8 +1,10 @@
 /* ------------------------------------------------------------------
    Land of Doodads - high scores
-   The top ten for each playable level, a little doodad beside every
-   entry, and each doodad's personal best along the bottom. X resets a
-   level's table back to the doodads' own starting scores.
+   Two tables for each playable level, a tab apiece. MY SCORES is this
+   browser's arcade top ten, a little doodad beside every entry and
+   each doodad's personal best along the bottom; X resets it back to
+   the doodads' own starting scores. EVERYONE is every player's best,
+   from js/world.js, with where this browser stands along the bottom.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -13,9 +15,13 @@ var ScoresScene = (function () {
   var index = 0;
   var slide = 0;
   var confirming = false;
+  /* 0 this browser's tables, 1 everyone's. Not reset on enter: whoever
+     went to look at the world's board last time wants it again. */
+  var tab = 0;
 
   var PX = 70, PW = 340, PY = 48, PH = 190;
   var ROW0 = 66, ROWH = 17;
+  var FROM_X = 236;            /* the country column, on everyone's board only */
 
   /* The rectangles this screen drew, refilled inside drawFg and handed to
      Input by Game.render. The pair of triangles that used to sit either side
@@ -43,6 +49,9 @@ var ScoresScene = (function () {
     }
     slide = 0;
     confirming = false;
+    /* a best that could not be sent when its run ended goes now, so the
+       board this screen is about to ask for has it on */
+    World.syncAll();
   }
 
   function update(dt) {
@@ -74,6 +83,13 @@ var ScoresScene = (function () {
        paging code below, so only BACK needs a word here */
     var tg = Input.tapped();
     if (tg && tg.id === 'back') { Audio3.play('back'); Game.go(TitleScene, { menu: 1 }); return; }
+    if (tg && tg.id === 'tab') {
+      if (tg.i !== tab) { tab = tg.i; Audio3.play('move'); }
+      return;
+    }
+    /* ▲ ▼ had nothing to do on this screen, and the tabs sit one above the
+       other in what they mean if not on the screen: mine, then everyone */
+    if (Input.nav('up') || Input.nav('down')) { tab = 1 - tab; Audio3.play('move'); }
 
     if (Input.nav('left') || Input.nav('right')) {
       if (list.length < 2) { Audio3.play('deny'); Screen.shake(1.2, 0.16); }
@@ -84,7 +100,11 @@ var ScoresScene = (function () {
         Audio3.play('move');
       }
     }
-    if (Input.hit('erase')) { confirming = true; Audio3.play('pause'); }
+    /* everyone's board is not this browser's to reset */
+    if (Input.hit('erase')) {
+      if (tab === 0) { confirming = true; Audio3.play('pause'); }
+      else { Audio3.play('deny'); Screen.shake(1.2, 0.16); }
+    }
     if (Input.hit('back') || Input.hit('confirm')) { Audio3.play('back'); Game.go(TitleScene, { menu: 1 }); }
   }
 
@@ -92,43 +112,70 @@ var ScoresScene = (function () {
 
   function rowY(i) { return ROW0 + i * ROWH; }
 
+  /* the rows on show: this browser's table, or whatever everyone's board
+     has come back with so far (nothing, the first moment it is asked) */
+  function rowsFor(c) {
+    return tab === 1 ? World.board(c.room, c.level).rows : Scores.table(c.room, c.level);
+  }
+
   function drawBg(ctx) {
     Coop.drawMenuBackdrop(ctx, scroll);
 
     var c = current();
     if (!c) return;
-    var x = PX + Math.round(slide), rows = Scores.table(c.room, c.level);
+    var x = PX + Math.round(slide), rows = rowsFor(c);
 
     UI.panel(ctx, x, PY, PW, PH, { fill: '#1b120a', edge: UI.C.inkFaint, corner: UI.C.gold });
     UI.text(ctx, 'RANK', x + 10, PY + 6, { colour: UI.C.inkFaint });
     UI.text(ctx, 'NAME', x + 48, PY + 6, { colour: UI.C.inkFaint });
     UI.text(ctx, 'DOODAD', x + 96, PY + 6, { colour: UI.C.inkFaint });
+    if (tab === 1) UI.text(ctx, 'FROM', x + FROM_X, PY + 6, { colour: UI.C.inkFaint });
     UI.text(ctx, 'SCORE', x + PW - 12, PY + 6, { align: 'right', colour: UI.C.inkFaint });
     UI.rule(ctx, x + 8, PY + 15, PW - 16, UI.C.inkFaint);
+
+    /* an empty board of everyone's says why it is empty, rather than ten
+       rows of dashes that would read the same whether the world has not
+       played this level yet or this browser cannot reach it */
+    if (tab === 1 && !rows.length) { drawWorldEmpty(ctx, x, World.board(c.room, c.level)); return; }
 
     for (var i = 0; i < Scores.SIZE; i++) {
       var y = rowY(i), e = rows[i];
       var colour = Scores.rankColour(i);
-      if (i % 2 === 0) { ctx.fillStyle = '#22170d'; ctx.fillRect(x + 3, y - 2, PW - 6, ROWH - 1); }
+      /* this browser's own row on everyone's board, lit the way the results
+         board lights the run that has just gone on */
+      var ink = e && e.me ? UI.C.gold : colour;
+      if (e && e.me) { ctx.fillStyle = '#4a3017'; ctx.fillRect(x + 3, y - 2, PW - 6, ROWH - 1); }
+      else if (i % 2 === 0) { ctx.fillStyle = '#22170d'; ctx.fillRect(x + 3, y - 2, PW - 6, ROWH - 1); }
       UI.text(ctx, Scores.ordinal(i), x + 10, y + 4, { colour: e ? colour : UI.C.inkFaint });
       if (!e) {
         UI.text(ctx, '- - -', x + 48, y + 4, { colour: UI.C.inkFaint });
         UI.text(ctx, '-', x + PW - 12, y + 4, { align: 'right', colour: UI.C.inkFaint });
         continue;
       }
-      UI.text(ctx, e.name.replace(/ /g, '_'), x + 48, y, { scale: 2, colour: colour, shadow: UI.C.shadow });
+      UI.text(ctx, e.name.replace(/ /g, '_'), x + 48, y, { scale: 2, colour: ink, shadow: UI.C.shadow });
       var d = e.doodad && Doodads.get(e.doodad);
       UI.text(ctx, d ? d.name : '?', x + 108, y + 4, { colour: d ? d.accentLight : UI.C.inkFaint });
-      UI.text(ctx, String(e.score), x + PW - 12, y, { align: 'right', scale: 2, colour: colour, shadow: UI.C.shadow });
+      if (e.country) UI.text(ctx, e.country, x + FROM_X, y + 4, { colour: UI.C.inkDim });
+      UI.text(ctx, String(e.score), x + PW - 12, y, { align: 'right', scale: 2, colour: ink, shadow: UI.C.shadow });
       if (i === 0) UI.text(ctx, '★', x + 38, y + 4, { colour: UI.C.gold });
     }
+  }
+
+  function drawWorldEmpty(ctx, x, w) {
+    var cx = x + PW / 2, cy = PY + PH / 2;
+    var big = w.status === 'loading' ? 'ASKING EVERYONE...'
+            : w.status === 'offline' ? 'OFFLINE' : 'NO SCORES YET';
+    var small = w.status === 'loading' ? ''
+              : w.status === 'offline' ? 'EVERYONE\'S SCORES NEED THE INTERNET' : 'THE FIRST RUN HERE TAKES 1ST';
+    UI.text(ctx, big, cx, cy - 12, { align: 'center', scale: 2, colour: UI.C.ink, shadow: UI.C.shadow });
+    if (small) UI.text(ctx, small, cx, cy + 8, { align: 'center', colour: UI.C.inkDim });
   }
 
   /* the doodads themselves stay smooth, so they ride the sharp layer */
   function drawChars(ctx) {
     var c = current();
     if (!c) return;
-    var x = PX + Math.round(slide), rows = Scores.table(c.room, c.level);
+    var x = PX + Math.round(slide), rows = rowsFor(c);
     for (var i = 0; i < rows.length; i++) {
       var d = rows[i].doodad && Doodads.get(rows[i].doodad);
       if (!d) continue;
@@ -139,6 +186,26 @@ var ScoresScene = (function () {
          others: a row of these is a row of doodads, not a row of icons */
       Doodads.draw(ctx, d.id, x + 99, rowY(i) + 6 + bob, 5.2 * (d.size || 1), 0, flap);
     }
+  }
+
+  /* The foot of everyone's board, where MY SCORES keeps its row of bests:
+     where this browser's best on the level stands among everybody's. The
+     top ten is ten people; this line is the one about you. */
+  function drawYou(ctx, c) {
+    var by = UI.touch() ? VH - 12 : VH - 24;
+    var w = World.board(c.room, c.level);
+    var line = '', ink = UI.C.inkDim;
+    if (w.status === 'ok' && w.you) {
+      line = 'YOU: ' + Scores.ordinal(w.you.rank - 1) + ' OF ' + World.count(Math.max(w.total, w.you.rank)) +
+             '    YOUR BEST ' + w.you.score;
+      ink = UI.C.gold;
+    } else if (w.status === 'ok' && w.total) {
+      /* an empty board has already said so in the middle of the panel */
+      line = World.count(w.total) + (w.total === 1 ? ' PLAYER' : ' PLAYERS') + '    YOU ARE NOT ON IT YET';
+    } else if (w.status === 'offline') {
+      line = 'YOUR BESTS GO UP NEXT TIME YOU ARE ONLINE';
+    }
+    if (line) UI.text(ctx, line, VW / 2, by, { align: 'center', colour: ink });
   }
 
   function drawFg(ctx) {
@@ -153,7 +220,12 @@ var ScoresScene = (function () {
     ctx.fillStyle = UI.C.inkFaint;
     ctx.fillRect(0, VH - strip, VW, 1);
 
-    UI.heading(ctx, 'HIGH SCORES', VW / 2, 8, 2, { colour: UI.C.gold });
+    /* The heading is the switch: two boards, the one on show lit, so the
+       top of the screen says which table this is and is also the way to
+       the other one. */
+    var TW = 124;
+    UI.button(ctx, hot, VW / 2 - TW - 3, 3, TW, 24, { id: 'tab', i: 0, label: 'MY SCORES', lit: tab === 0 });
+    UI.button(ctx, hot, VW / 2 + 3, 3, TW, 24, { id: 'tab', i: 1, label: 'EVERYONE', lit: tab === 1 });
 
     /* The way back, and the two that page the table. Only drawn once
        something is pointing, the same rule the pads follow; a keyboard has
@@ -168,7 +240,7 @@ var ScoresScene = (function () {
 
     if (c) {
       var label = c.room.name + '  ·  ' + c.level.name;
-      UI.text(ctx, label, VW / 2, 30, { align: 'center', colour: UI.C.ink });
+      UI.text(ctx, label, VW / 2, 33, { align: 'center', colour: UI.C.ink });
 
       /* The one screen in the game where both arrow vocabularies could show
          at once: the two paging buttons above are drawn the moment anything
@@ -178,9 +250,13 @@ var ScoresScene = (function () {
       if (!Input.pointing()) {
         var half = Font.measure(label, 1) / 2;
         var live = list.length > 1 ? UI.C.gold : UI.C.inkFaint;
-        UI.chevron(ctx, VW / 2 - half - 10, 33, -1, 4, live);
-        UI.chevron(ctx, VW / 2 + half + 10, 33, 1, 4, live);
+        UI.chevron(ctx, VW / 2 - half - 10, 36, -1, 4, live);
+        UI.chevron(ctx, VW / 2 + half + 10, 36, 1, 4, live);
       }
+    }
+
+    if (c && tab === 1) drawYou(ctx, c);
+    else if (c) {
 
       /* Each doodad's own best on this level, plus a count of the ones
          still boarded up. Only the earned ones are named: the row was
@@ -255,8 +331,13 @@ var ScoresScene = (function () {
        looking at two paging boards it can click while being told about
        arrow keys. The achievements screen, which pages the same way, has
        said it properly since it was written. */
-    UI.footer(ctx, '◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
-                   'CLICK ◀ ▶ FOR LEVEL    X RESET TABLE    ESC BACK');
+    if (tab === 0) {
+      UI.footer(ctx, '▲ ▼ EVERYONE    ◀ ▶ LEVEL    X RESET TABLE    ESC BACK',
+                     'CLICK ◀ ▶ FOR LEVEL    X RESET TABLE    ESC BACK');
+    } else {
+      UI.footer(ctx, '▲ ▼ MY SCORES    ◀ ▶ LEVEL    ESC BACK',
+                     'CLICK ◀ ▶ FOR LEVEL    ESC BACK');
+    }
 
     if (confirming && c) {
       UI.scrim(ctx, 10);

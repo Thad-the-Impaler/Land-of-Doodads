@@ -204,6 +204,7 @@ var PlayScene = (function () {
   var initials = ['A', 'A', 'A'], cursor = 0;
   var savedRow = -1;           /* row just written to the table, for highlighting */
   var pbNew = false;           /* beat this doodad's own best on this level */
+  var worldNote = null;        /* this run on everyone's board, filled in as the server answers */
   var target = null, passedName = '', passedTimer = 0;
   var flash = 0, deadTimer = 0, scorePop = 0;
   var menuIndex = 0;
@@ -579,7 +580,7 @@ var PlayScene = (function () {
     obstacles.length = 0; particles.length = 0;
     score = 0; pace = 0; flash = 0; deadTimer = 0; scorePop = 0;
     board = Scores.table(roomRef, level).slice();
-    rank = -1; entryPending = false; savedRow = -1; pbNew = false;
+    rank = -1; entryPending = false; savedRow = -1; pbNew = false; worldNote = null;
     dropArmed = false; dropTimer = 0; hazardWarn = 0; warnLines = null;
     spicyGap = 0; goldGap = 0; sourGap = 0; whirlGap = 0;
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
@@ -4198,6 +4199,10 @@ var PlayScene = (function () {
     rank = Scores.rankFor(roomRef, level, score);
     entryPending = rank >= 0;
     if (entryPending) { initials = Scores.lastInitials().split(''); cursor = 0; }
+    /* a run that makes this table waits for its initials before it goes to
+       everyone's; one that does not goes now, under the last ones saved.
+       World.sync sends nothing unless this level's best has gone up. */
+    else worldNote = World.sync(roomRef, level, { name: Scores.lastInitials(), score: score, time: runTime });
   }
 
   /* ------------------------------------------------------- unlocking
@@ -4348,6 +4353,7 @@ var PlayScene = (function () {
     var name = initials.join('');
     if (!name.trim()) name = 'AAA';
     savedRow = Scores.submit(roomRef, level, name, score, doodad.id);
+    worldNote = World.sync(roomRef, level, { name: name, score: score, time: runTime });
     Input.setTextMode(false);
     Input.setTouchMode('menu');
     state = 'dead';
@@ -6481,6 +6487,23 @@ var PlayScene = (function () {
       var dd = e.doodad && Doodads.get(e.doodad);
       UI.text(ctx, dd ? dd.name : '?', x + 68, ry, { colour: dd ? dd.accentLight : UI.C.inkFaint });
       UI.text(ctx, String(e.score), x + w - 8, ry, { align: 'right', colour: ink });
+    }
+
+    /* and where the run stands on everyone's board, in the 20px the ten
+       rows leave at the foot of the panel. Only a run that raised this
+       level's best is sent, so most runs say nothing here. */
+    var wn = worldNote;
+    if (wn && !entering) {
+      var wline = wn.status === 'ok' ? 'EVERYONE: ' + Scores.ordinal(wn.rank - 1) + ' OF ' + World.count(wn.total)
+                : wn.status === 'sending' ? 'SENDING TO EVERYONE...'
+                : wn.status === 'offline' ? 'OFFLINE - SENDS LATER' : '';
+      var first = wn.status === 'ok' && wn.rank === 1;
+      if (wline) {
+        UI.text(ctx, wline, x + w / 2, y + h - 15, {
+          align: 'center', shadow: UI.C.shadow,
+          colour: wn.status !== 'ok' ? UI.C.inkFaint : (first && Math.floor(t * 4) % 2 ? UI.C.ink : UI.C.gold)
+        });
+      }
     }
   }
 

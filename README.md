@@ -642,15 +642,23 @@ is something to chase from the first run.
   beside it shows where you will land as you type. Enter saves; Escape saves
   too, so a score is never lost by accident. Your last initials are offered
   next time.
-* **High Scores** on the title screen shows the full table for each level,
-  with each doodad's personal best along the bottom. Personal bests also show
-  on the doodad select screen.
-* `X` on the High Scores screen resets that level's table back to the
-  doodads' starting scores. Personal bests are kept.
+* **High Scores** on the title screen has two tabs. **MY SCORES** is the full
+  table for each level, with each doodad's personal best along the bottom.
+  **EVERYONE** is every player's best on that level, from anywhere, with
+  where yours stands along the bottom (`YOU: 312TH OF 4,881`). Up and down
+  switch tabs; personal bests also show on the doodad select screen.
+* **Set a new best on a level** and it goes up to everyone's board when the
+  run ends, and the game-over screen shows where it landed. Offline, it waits
+  and goes up next time.
+* `X` on the High Scores screen resets that level's MY SCORES table back to
+  the doodads' starting scores. Personal bests are kept, and everyone's board
+  is not yours to reset.
 
-Everything - scores, personal bests and which doodads you have earned - is
-stored in the browser's local storage, so it all belongs to the browser it was
-set in. None of it is shared between players or computers.
+Your tables, personal bests and which doodads you have earned are stored in
+the browser's local storage, so they belong to the browser they were set in.
+Only each level's best goes anywhere else: to a small server on Cloudflare's
+free plan, with your initials, your doodad and a two-letter country. How it
+works, and how to remove a fake score, is in `server/README.md`.
 
 ## What is in here
 
@@ -662,6 +670,8 @@ tools/trim_sprites.py prepares character frames from the source artwork,
                       and (its FOES pass) the Cupmen and their guns at one
                       shared scale, so a gun keeps its size against its cup
 tools/build_single_file.py  bundles everything into Land of Doodads.html
+server/               everyone's high scores: the Cloudflare Worker and its
+                      database (see server/README.md)
 Assets/sprites/       game-ready character frames and the Cupmen (trimmed from
                       Assets/Doodads (Characters))
 js/
@@ -693,6 +703,7 @@ js/
   tv.js               DINING ROOM / THE TV: the woven wall, the set, its reruns and its faults
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
+  world.js            everyone's board: sending bests, fetching the top ten
   ui.js               boards, buttons, panels, padlocks, the on-screen pads
   badges.js           the achievement badges, baked once
   achievements.js     the achievements and how each is counted
