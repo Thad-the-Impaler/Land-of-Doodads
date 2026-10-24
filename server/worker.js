@@ -5,9 +5,10 @@
 
      GET  /top?level=backyard.coop&player=...
           the level's ten best runs, and where `player`'s best stands
-     POST /runs   { level, player, runs: [{ run, name, doodad, score, time }] }
+     POST /runs   { level, player, device, runs: [{ run, name, doodad, score, time }] }
           up to a dozen runs on one level - a run that has been sent
-          before is the same run, not another one
+          before is the same run, not another one. `device` is what the
+          game was flown on; every run a browser sends was flown in it.
 
    The game sends its POST as text/plain on purpose. A JSON content type
    makes the browser ask permission first with an OPTIONS request, and
@@ -22,6 +23,19 @@ const PLAYER = /^[a-z0-9]{16,32}$/;
 const RUN = /^[a-z0-9]{1,20}$/;      /* when the run was saved, or 'pb' */
 const DOODAD = /^[a-z0-9-]{0,24}$/;  /* empty for runs older than the doodads */
 const NAME = /^[A-Z0-9 ]{3}$/;
+const DEVICE = /^(phone|tablet|computer)$/;
+
+/* What a run was flown on, when the game does not say - a copy from before
+   it did. Guessed from the browser's own description of itself, which
+   cannot tell an iPad from a Mac (iPadOS asks for the desktop site), so
+   the game's own answer always wins over this one. */
+function deviceFrom(request) {
+  const ua = request.headers.get('User-Agent') || '';
+  if (/iPad|Tablet|Kindle|Silk|PlayBook/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
+  if (/iPhone|iPod|Android|Mobile|Windows Phone|BlackBerry/i.test(ua) ||
+      request.headers.get('Sec-CH-UA-Mobile') === '?1') return 'phone';
+  return 'computer';
+}
 
 /* A browser game cannot be made cheat-proof - whoever is playing can open
    the developer tools and send any number they like - so these are not a
@@ -87,7 +101,7 @@ async function top(url, env) {
 
   const [board, players, mine] = await env.DB.batch([
     env.DB.prepare(
-      'SELECT player, name, doodad, score, country FROM runs WHERE level = ?1 ORDER BY score DESC, id ASC LIMIT ?2'
+      'SELECT player, name, doodad, score, country, device FROM runs WHERE level = ?1 ORDER BY score DESC, id ASC LIMIT ?2'
     ).bind(level, TOP),
     playersOf(env, level),
     bestOf(env, level, player)
@@ -97,7 +111,8 @@ async function top(url, env) {
      be written under somebody's name, so the board says only which rows
      are yours */
   const rows = board.results.map(function (r) {
-    return { name: r.name, doodad: r.doodad, score: r.score, country: r.country, me: r.player === player };
+    return { name: r.name, doodad: r.doodad, score: r.score, country: r.country, device: r.device,
+             me: r.player === player };
   });
 
   let you = null;
@@ -126,7 +141,7 @@ function checkRun(r) {
   return { run: run, name: name, doodad: doodad, score: score };
 }
 
-async function keep(request, env, level, player, runs) {
+async function keep(request, env, level, player, device, runs) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   if (env.POSTS) {
     const gate = await env.POSTS.limit({ key: ip });
@@ -146,10 +161,11 @@ async function keep(request, env, level, player, runs) {
      follows that player's best */
   const writes = runs.map(function (r) {
     return env.DB.prepare(
-      'INSERT INTO runs (level, player, run, name, doodad, score, country, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) ' +
+      'INSERT INTO runs (level, player, run, name, doodad, score, country, device, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9) ' +
       'ON CONFLICT (level, player, run) DO UPDATE SET name = excluded.name, doodad = excluded.doodad, ' +
-      'score = excluded.score, country = excluded.country, at = excluded.at WHERE excluded.score > runs.score'
-    ).bind(level, player, r.run, r.name, r.doodad, r.score, country, now);
+      'score = excluded.score, country = excluded.country, device = excluded.device, at = excluded.at ' +
+      'WHERE excluded.score > runs.score'
+    ).bind(level, player, r.run, r.name, r.doodad, r.score, country, device, now);
   });
   if (!known) {
     writes.push(env.DB.prepare(
@@ -203,7 +219,8 @@ async function submit(request, env) {
     if (runs.some(function (x) { return x.run === v.run; })) return reply({ error: 'twice' }, 400);
     runs.push(v);
   }
-  const out = await keep(request, env, level, player, runs);
+  const device = DEVICE.test(b.device) ? b.device : deviceFrom(request);
+  const out = await keep(request, env, level, player, device, runs);
   return out.error ? reply({ error: out.error }, out.status) : reply(out);
 }
 

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS runs (
   doodad  TEXT    NOT NULL DEFAULT '',        -- who flew it; '' for runs older than the doodads
   score   INTEGER NOT NULL,
   country TEXT    NOT NULL DEFAULT '',        -- two letters, from Cloudflare
+  device  TEXT    NOT NULL DEFAULT '',        -- 'phone', 'tablet' or 'computer'
   at      INTEGER NOT NULL,                   -- ms since 1970, when the server got it
   UNIQUE (level, player, run)
 );

@@ -646,7 +646,8 @@ is something to chase from the first run.
   table for each level, with each doodad's personal best along the bottom.
   **EVERYONE** is the ten best runs anybody has flown on that level, from
   anywhere - arcade style, so one player can hold several places - with
-  where your best stands along the bottom (`YOUR BEST: 2ND    37 PLAYERS`).
+  the device each was flown on (PHONE, TABLET or COMPUTER) and where your
+  best stands along the bottom (`YOUR BEST: 2ND    37 PLAYERS`).
   Up and down switch tabs; personal bests also show on the doodad select
   screen.
 * **Make your own table** and the run goes up to everyone's board as soon as

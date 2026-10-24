@@ -49,6 +49,21 @@ var World = (function () {
     return me;
   }
 
+  /* What this browser is running on, for the DEVICE column - and every run
+     it sends was flown here, since a table never leaves its browser. Asked
+     of the browser rather than of the pointer, because a laptop with a
+     touch screen is still a computer. An iPad asks for the desktop site and
+     calls itself a Mac, so a "Mac" with a touch screen is a tablet; the
+     server cannot see that, which is why the game says it. */
+  function device() {
+    var ua = navigator.userAgent || '', touches = navigator.maxTouchPoints || 0;
+    if (/iPad|Tablet|Kindle|Silk|PlayBook/i.test(ua) || (/Macintosh/.test(ua) && touches > 1) ||
+        (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
+    if (/iPhone|iPod|Android|Mobile|Windows Phone|BlackBerry/i.test(ua) ||
+        (navigator.userAgentData && navigator.userAgentData.mobile)) return 'phone';
+    return 'computer';
+  }
+
   /* One request, and one answer: the parsed reply, or null for anything
      that did not come back - no connection, a timeout, a page that is not
      JSON. The POST goes as plain text, which is what a string body is by
@@ -78,6 +93,7 @@ var World = (function () {
       out.push({ name: r.name.slice(0, 3), score: r.score | 0,
                  doodad: typeof r.doodad === 'string' ? r.doodad : null,
                  country: /^[A-Z]{2}$/.test(r.country) ? r.country : '',
+                 device: /^(phone|tablet|computer)$/.test(r.device) ? r.device : '',
                  me: r.me === true });
     }
     return out;
@@ -188,7 +204,7 @@ var World = (function () {
     if (!runs.length) return null;
 
     var mine = -1;
-    var body = { level: k, player: player(), runs: runs.map(function (r, i) {
+    var body = { level: k, player: player(), device: device(), runs: runs.map(function (r, i) {
       var o = { run: r.run, name: r.name, doodad: r.doodad, score: r.score };
       if (run && r.when === run.when) {
         mine = i;

@@ -22,7 +22,12 @@ var ScoresScene = (function () {
 
   var PX = 70, PW = 340, PY = 48, PH = 190;
   var ROW0 = 66, ROWH = 17;
-  var FROM_X = 236;            /* the country column, on everyone's board only */
+  /* Everyone's board only: what each run was flown on, and where. DEVICE
+     starts clear of the longest doodad name, ALPHA ROOSTAH, which ends at
+     185. COMPUTER is 47px, and at 8px apart COMPUTER US read as one phrase,
+     so FROM sits as far right as a four-figure score (from 281) allows. */
+  var DEVICE_X = 194, FROM_X = 258;
+  var DEVICE_LABEL = { phone: 'PHONE', tablet: 'TABLET', computer: 'COMPUTER' };
 
   /* The rectangles this screen drew, refilled inside drawFg and handed to
      Input by Game.render. The pair of triangles that used to sit either side
@@ -130,7 +135,10 @@ var ScoresScene = (function () {
     UI.text(ctx, 'RANK', x + 10, PY + 6, { colour: UI.C.inkFaint });
     UI.text(ctx, 'NAME', x + 48, PY + 6, { colour: UI.C.inkFaint });
     UI.text(ctx, 'DOODAD', x + 96, PY + 6, { colour: UI.C.inkFaint });
-    if (tab === 1) UI.text(ctx, 'FROM', x + FROM_X, PY + 6, { colour: UI.C.inkFaint });
+    if (tab === 1) {
+      UI.text(ctx, 'DEVICE', x + DEVICE_X, PY + 6, { colour: UI.C.inkFaint });
+      UI.text(ctx, 'FROM', x + FROM_X, PY + 6, { colour: UI.C.inkFaint });
+    }
     UI.text(ctx, 'SCORE', x + PW - 12, PY + 6, { align: 'right', colour: UI.C.inkFaint });
     UI.rule(ctx, x + 8, PY + 15, PW - 16, UI.C.inkFaint);
 
@@ -156,6 +164,7 @@ var ScoresScene = (function () {
       UI.text(ctx, e.name.replace(/ /g, '_'), x + 48, y, { scale: 2, colour: ink, shadow: UI.C.shadow });
       var d = e.doodad && Doodads.get(e.doodad);
       UI.text(ctx, d ? d.name : '?', x + 108, y + 4, { colour: d ? d.accentLight : UI.C.inkFaint });
+      if (e.device) UI.text(ctx, DEVICE_LABEL[e.device], x + DEVICE_X, y + 4, { colour: UI.C.inkDim });
       if (e.country) UI.text(ctx, e.country, x + FROM_X, y + 4, { colour: UI.C.inkDim });
       UI.text(ctx, String(e.score), x + PW - 12, y, { align: 'right', scale: 2, colour: ink, shadow: UI.C.shadow });
       if (i === 0) UI.text(ctx, '★', x + 38, y + 4, { colour: UI.C.gold });

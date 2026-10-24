@@ -51,7 +51,9 @@ DELETE above handles the rest.
 ## What it keeps about people
 
 Three letters, a doodad, a score, the time, a two-letter country (Cloudflare's
-guess from the connection), and a random id the game makes once per browser.
+guess from the connection), the kind of device (phone, tablet or computer - the
+game says which; an older copy is guessed from the browser's description of
+itself), and a random id the game makes once per browser.
 No IP addresses, names or emails.
 
 ## Free plan limits
