@@ -644,19 +644,22 @@ is something to chase from the first run.
   next time.
 * **High Scores** on the title screen has two tabs. **MY SCORES** is the full
   table for each level, with each doodad's personal best along the bottom.
-  **EVERYONE** is every player's best on that level, from anywhere, with
-  where yours stands along the bottom (`YOU: 312TH OF 4,881`). Up and down
-  switch tabs; personal bests also show on the doodad select screen.
-* **Set a new best on a level** and it goes up to everyone's board when the
-  run ends, and the game-over screen shows where it landed. Offline, it waits
-  and goes up next time.
+  **EVERYONE** is the ten best runs anybody has flown on that level, from
+  anywhere - arcade style, so one player can hold several places - with
+  where your best stands along the bottom (`YOUR BEST: 2ND    37 PLAYERS`).
+  Up and down switch tabs; personal bests also show on the doodad select
+  screen.
+* **Make your own table** and the run goes up to everyone's board as soon as
+  its initials are saved, and the game-over screen shows where it landed
+  (`EVERYONE: 3RD`). Offline, it waits and goes up next time. The first time
+  an older save goes online, its whole table goes up with it.
 * `X` on the High Scores screen resets that level's MY SCORES table back to
   the doodads' starting scores. Personal bests are kept, and everyone's board
   is not yours to reset.
 
 Your tables, personal bests and which doodads you have earned are stored in
 the browser's local storage, so they belong to the browser they were set in.
-Only each level's best goes anywhere else: to a small server on Cloudflare's
+Only the runs on your tables go anywhere else: to a small server on Cloudflare's
 free plan, with your initials, your doodad and a two-letter country. How it
 works, and how to remove a fake score, is in `server/README.md`.
 

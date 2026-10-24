@@ -4199,10 +4199,6 @@ var PlayScene = (function () {
     rank = Scores.rankFor(roomRef, level, score);
     entryPending = rank >= 0;
     if (entryPending) { initials = Scores.lastInitials().split(''); cursor = 0; }
-    /* a run that makes this table waits for its initials before it goes to
-       everyone's; one that does not goes now, under the last ones saved.
-       World.sync sends nothing unless this level's best has gone up. */
-    else worldNote = World.sync(roomRef, level, { name: Scores.lastInitials(), score: score, time: runTime });
   }
 
   /* ------------------------------------------------------- unlocking
@@ -4353,7 +4349,11 @@ var PlayScene = (function () {
     var name = initials.join('');
     if (!name.trim()) name = 'AAA';
     savedRow = Scores.submit(roomRef, level, name, score, doodad.id);
-    worldNote = World.sync(roomRef, level, { name: name, score: score, time: runTime });
+    /* A run that makes this table goes to everyone's, the moment it has
+       its initials; one that misses it cannot make theirs, since every run
+       on this table is on theirs too. It is named by when it was saved. */
+    var saved = Scores.table(roomRef, level)[savedRow];
+    worldNote = saved ? World.sync(roomRef, level, { when: saved.when, time: runTime }) : null;
     Input.setTextMode(false);
     Input.setTouchMode('menu');
     state = 'dead';
@@ -6489,19 +6489,21 @@ var PlayScene = (function () {
       UI.text(ctx, String(e.score), x + w - 8, ry, { align: 'right', colour: ink });
     }
 
-    /* and where the run stands on everyone's board, in the 20px the ten
-       rows leave at the foot of the panel. Only a run that raised this
-       level's best is sent, so most runs say nothing here. */
+    /* and where the run stands among every run on everyone's board, in
+       the 20px the ten rows leave at the foot of the panel. Only a run that
+       made this table is sent, so a run that missed it says nothing here.
+       A place in everyone's top ten is lit gold, and first flashes. */
     var wn = worldNote;
     if (wn && !entering) {
-      var wline = wn.status === 'ok' ? 'EVERYONE: ' + Scores.ordinal(wn.rank - 1) + ' OF ' + World.count(wn.total)
+      var wline = wn.status === 'ok' ? 'EVERYONE: ' + Scores.ordinal(wn.rank - 1)
                 : wn.status === 'sending' ? 'SENDING TO EVERYONE...'
                 : wn.status === 'offline' ? 'OFFLINE - SENDS LATER' : '';
-      var first = wn.status === 'ok' && wn.rank === 1;
+      var topTen = wn.status === 'ok' && wn.rank <= Scores.SIZE;
+      var first = topTen && wn.rank === 1;
       if (wline) {
         UI.text(ctx, wline, x + w / 2, y + h - 15, {
           align: 'center', shadow: UI.C.shadow,
-          colour: wn.status !== 'ok' ? UI.C.inkFaint : (first && Math.floor(t * 4) % 2 ? UI.C.ink : UI.C.gold)
+          colour: !topTen ? UI.C.inkDim : (first && Math.floor(t * 4) % 2 ? UI.C.ink : UI.C.gold)
         });
       }
     }

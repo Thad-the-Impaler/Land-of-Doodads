@@ -1,9 +1,10 @@
 /* ------------------------------------------------------------------
    Land of Doodads - everyone's high scores
    The tables in js/scores.js live in this browser and nowhere else.
-   This is the other board: every player's best on every level, kept
+   This is the other board: every run that made anybody's table, kept
    by a small server (server/worker.js) so that a run on one side of
-   the world is measured against a run on the other.
+   the world is measured against a run on the other. Arcade style - the
+   same initials can hold the whole top ten if they earned it.
 
    NOTHING HERE MAY EVER HOLD THE GAME UP. Every call is fire and
    forget, a draw loop only reads what has already come back, and a
@@ -115,12 +116,21 @@ var World = (function () {
 
   /* --------------------------------------------------------- sending
 
-     What gets sent for a level is its best in THIS browser - the best any
-     doodad has flown it, read off the personal bests js/scores.js already
-     keeps - whenever that is better than what the server was last told.
-     So there is one rule for a run that has just ended and for a save
-     that is older than the server: the first time a browser that already
-     holds a 40 on the Coop goes online, the 40 goes up with it. */
+     Everyone's board is arcade style, so what goes up is this browser's
+     own table: every run on it the server has not had yet, oldest first.
+     Nothing else needs to. Every run on this table is on everyone's board
+     too, so a run this table turns away is beaten ten times over there.
+     The first time a save older than the board goes online, its whole
+     table goes up with it.
+
+     A run is known by the moment it was saved to the table - its `when` -
+     which is also how the server tells one run sent twice from two runs.
+     'world.upto.<level>' holds the newest `when` the server has taken. */
+  function uptoKey(k) { return 'world.upto.' + k; }
+  function pbKey(k) { return 'world.pb.' + k; }
+
+  /* the level's best in this browser - the best any doodad has flown it -
+     read off the personal bests js/scores.js already keeps */
   function localBest(room, level) {
     var best = 0, who = null;
     Doodads.list.forEach(function (d) {
@@ -130,45 +140,84 @@ var World = (function () {
     return { score: best, doodad: who };
   }
 
-  function sentKey(k) { return 'world.sent.' + k; }
+  /* What this level owes the server. The server takes a batch whole or
+     not at all, so anything it would refuse - a name from an old save that
+     is not three letters, a score past its ceiling - is left out here
+     rather than sinking the rest of the table with it. */
+  function owed(room, level) {
+    var k = key(room, level);
+    var upto = +Save.get(uptoKey(k), 0) || 0;
+    var table = Scores.table(room, level);
+    var out = [];
+    table.forEach(function (e) {
+      /* the doodads' own starting entries are saved at 0 and never go up */
+      if (!(e.when > upto) || !/^\d{1,20}$/.test(String(e.when))) return;
+      var name = String(e.name || '').toUpperCase();
+      if (!/^[A-Z0-9 ]{3}$/.test(name) || !(e.score >= 1 && e.score <= 100000)) return;
+      out.push({ when: e.when, run: String(e.when), name: name, score: e.score,
+                 doodad: /^[a-z0-9-]{1,24}$/.test(e.doodad) ? e.doodad : '' });
+    });
+    out.sort(function (a, b) { return a.when - b.when; });
 
-  /* Send the level's best if the server has not got it, and hand back an
-     object that fills itself in as the answer arrives:
-       { status: 'sending' | 'ok' | 'offline' | 'refused', rank, total }
-     or null when there was nothing new to send. `run` is the run that has
-     just ended - { name, score, time } - and is what lends the send its
-     initials and, when the run IS the best being sent, its time in the air,
-     which the server holds the score up against. */
+    /* A best that is no longer on the table - reset off it with X - still
+       counts. It goes as the one run called 'pb', which the server only
+       ever moves up. */
+    var lb = localBest(room, level);
+    var onTable = table.some(function (e) { return e.score >= lb.score; });
+    if (lb.score > 0 && lb.score <= 100000 && !onTable && lb.score > (Save.get(pbKey(k), 0) | 0)) {
+      var initials = Scores.lastInitials();
+      out.push({ when: 0, run: 'pb', score: lb.score, doodad: lb.doodad, pb: true,
+                 name: /^[A-Z0-9 ]{3}$/.test(initials) ? initials : 'AAA' });
+    }
+    return out;
+  }
+
+  /* Send whatever this level owes, and hand back an object that fills
+     itself in as the answer arrives:
+       { status: 'sending' | 'ok' | 'offline' | 'refused', rank }
+     `run` is the run that has just been saved to the table - { when, time }
+     - and the note is about that run: null when it is not among what was
+     sent. Its time in the air goes with it, which the server holds its
+     score up against. */
   function sync(room, level, run) {
     var k = key(room, level);
-    var lb = localBest(room, level);
-    var sent = Save.get(sentKey(k), 0) | 0;
-    if (!lb.doodad || lb.score <= sent) return null;
-    /* one send per level at a time; a better run that lands while one is
-       out is picked up when that one comes back */
-    if (sending[k]) { sending[k].again = run || sending[k].again || true; return sending[k].note; }
+    /* one send per level at a time; a run saved while one is out is picked
+       up when that one comes back */
+    if (sending[k]) { sending[k].again = run || sending[k].again || true; return null; }
+    var runs = owed(room, level);
+    if (!runs.length) return null;
 
-    var body = { level: k, player: player(), name: (run && run.name) || Scores.lastInitials(),
-                 doodad: lb.doodad, score: lb.score };
-    if (run && run.score === lb.score && typeof run.time === 'number') {
-      body.time = Math.round(run.time * 10) / 10;
-    }
-    var note = { status: 'sending', rank: 0, total: 0, score: lb.score };
-    var job = sending[k] = { note: note, again: null };
+    var mine = -1;
+    var body = { level: k, player: player(), runs: runs.map(function (r, i) {
+      var o = { run: r.run, name: r.name, doodad: r.doodad, score: r.score };
+      if (run && r.when === run.when) {
+        mine = i;
+        if (typeof run.time === 'number') o.time = Math.round(run.time * 10) / 10;
+      }
+      return o;
+    }) };
+    var note = mine >= 0 ? { status: 'sending', rank: 0 } : null;
+    var job = sending[k] = { again: null };
 
-    request('POST', '/score', body, function (res) {
+    request('POST', '/runs', body, function (res) {
       delete sending[k];
-      if (res && res.ok && res.body && typeof res.body.rank === 'number') {
-        Save.set(sentKey(k), Math.max(lb.score, res.body.best | 0));
-        note.status = 'ok';
-        note.rank = res.body.rank | 0;
-        note.total = Math.max(res.body.total | 0, note.rank);
+      var taken = function () {
+        var newest = +Save.get(uptoKey(k), 0) || 0;
+        runs.forEach(function (r) {
+          if (r.when > newest) newest = r.when;
+          if (r.pb) Save.set(pbKey(k), r.score);
+        });
+        Save.set(uptoKey(k), newest);
+      };
+      if (res && res.ok && res.body && Array.isArray(res.body.ranks)) {
+        taken();
+        if (note) { note.status = 'ok'; note.rank = res.body.ranks[mine] | 0; }
         if (boards[k]) boards[k].at = -1e9;      /* the board has changed under it */
       } else if (res && (res.status === 400 || res.status === 422)) {
         /* turned down, and asking again would only be turned down again */
-        Save.set(sentKey(k), lb.score);
-        note.status = 'refused';
-      } else {
+        taken();
+        if (note) note.status = 'refused';
+      } else if (note) {
         note.status = 'offline';                  /* kept; it goes next time */
       }
       if (job.again) sync(room, level, job.again === true ? null : job.again);
@@ -190,7 +239,7 @@ var World = (function () {
     })();
   }
 
-  /* 4881 -> '4,881', for the "312TH OF 4,881" lines */
+  /* 4881 -> '4,881', for the "4,881 PLAYERS" line */
   function count(n) {
     return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }

@@ -3,8 +3,9 @@
    Two tables for each playable level, a tab apiece. MY SCORES is this
    browser's arcade top ten, a little doodad beside every entry and
    each doodad's personal best along the bottom; X resets it back to
-   the doodads' own starting scores. EVERYONE is every player's best,
-   from js/world.js, with where this browser stands along the bottom.
+   the doodads' own starting scores. EVERYONE is the ten best runs
+   anybody has flown, from js/world.js - arcade style, so one player can
+   hold several - with where this browser's best stands along the bottom.
 ------------------------------------------------------------------ */
 'use strict';
 
@@ -189,15 +190,16 @@ var ScoresScene = (function () {
   }
 
   /* The foot of everyone's board, where MY SCORES keeps its row of bests:
-     where this browser's best on the level stands among everybody's. The
-     top ten is ten people; this line is the one about you. */
+     where this browser's best run on the level stands among every run, and
+     how many players have flown it. The top ten is ten runs; this line is
+     the one about you. */
   function drawYou(ctx, c) {
     var by = UI.touch() ? VH - 12 : VH - 24;
     var w = World.board(c.room, c.level);
     var line = '', ink = UI.C.inkDim;
     if (w.status === 'ok' && w.you) {
-      line = 'YOU: ' + Scores.ordinal(w.you.rank - 1) + ' OF ' + World.count(Math.max(w.total, w.you.rank)) +
-             '    YOUR BEST ' + w.you.score;
+      line = 'YOUR BEST: ' + Scores.ordinal(w.you.rank - 1) + '    ' +
+             World.count(w.total) + (w.total === 1 ? ' PLAYER' : ' PLAYERS');
       ink = UI.C.gold;
     } else if (w.status === 'ok' && w.total) {
       /* an empty board has already said so in the middle of the panel */

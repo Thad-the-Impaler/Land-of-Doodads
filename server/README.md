@@ -18,7 +18,7 @@ npx wrangler@4.147.0 deploy
 ## Looking at the board
 
 ```bash
-npx wrangler@4.147.0 d1 execute doodads-scores --remote --command "SELECT level, name, doodad, score, country, datetime(at/1000,'unixepoch') AS at FROM scores ORDER BY level, score DESC LIMIT 50"
+npx wrangler@4.147.0 d1 execute doodads-scores --remote --command "SELECT level, name, doodad, score, country, datetime(at/1000,'unixepoch') AS at FROM runs ORDER BY level, score DESC LIMIT 50"
 ```
 
 Or in the dashboard: **Storage & databases → D1 → doodads-scores → Console**.
@@ -28,15 +28,17 @@ Or in the dashboard: **Storage & databases → D1 → doodads-scores → Console
 Find it with the query above, then delete it by level and score:
 
 ```bash
-npx wrangler@4.147.0 d1 execute doodads-scores --remote --command "DELETE FROM scores WHERE level = 'backyard.coop' AND score = 99999"
+npx wrangler@4.147.0 d1 execute doodads-scores --remote --command "DELETE FROM runs WHERE level = 'backyard.coop' AND score = 99999"
 ```
 
 The player counts in the `levels` table are left alone. They count everyone
-who has ever posted to a level, which is what "312TH OF 4,881" means.
+who has ever posted to a level, which is the "37 PLAYERS" on the board.
 
 ## What it checks, and what it cannot
 
-- One row per player per level: their best. A worse run writes nothing.
+- Arcade style: every run that made a player's own table, so one player can
+  hold several places. A run is named by when it was saved, so sending it
+  twice still makes it one run.
 - A score must be a whole number from 1 to 100,000, and no more than
   30 + 25 points for every second flown.
 - Thirty posts a minute from any one address.
@@ -54,7 +56,7 @@ No IP addresses, names or emails.
 
 ## Free plan limits
 
-100,000 requests a day (each finished run that sets a new best is one; each
+100,000 requests a day (each run that makes a player's own table is one; each
 level looked at on the EVERYONE tab is one a minute at most), 5 million rows
 read and 100,000 written a day, 5 GB stored. Past a daily limit the board
 says OFFLINE until midnight UTC; nothing is lost.
