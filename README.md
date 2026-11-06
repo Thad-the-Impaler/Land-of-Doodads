@@ -404,6 +404,103 @@ Ceiling's pole counts as a pillar for this. Nothing else changes: the spin is
 only a picture, so flying feels exactly the same, and the floor, a killing lid
 and everything that falls still end the run.
 
+## The Kitchen
+
+The fourth room, through the doorway from the Dining Room into the kitchen the
+Table has been looking at all along, and a secret until **20** in the TV opens
+it and its first bay together. Five bays, all after dark under the cans and the
+island's amber pendants (the fridge lights itself, the cabinets take the
+room's light through their open doors, and in the shut dishwasher the only
+light is the camera's), and **the lid kills in all five** - a ceiling, the
+underside of the uppers, the fridge's liner, a cabinet's top board, the
+dishwasher's upper rack - so the gaps never close past 81. The last
+is the room's finale: we followed the dishes through the kitchen, and the
+dishwasher is where they are cleaned so the cycle can start again.
+
+| | | opens on | |
+|---|---|---|---|
+| **THE ISLAND** | 4-1 | **20** in the TV | chin on the island's quartz, the whole kitchen across it, and the cooktop is on the move |
+| **THE COUNTER** | 4-2 | **20** in the Island | the back counter under the uppers, and every machine on it is plugged in |
+| **THE FRIDGE** | 4-3 | **20** in the Counter | inside the top compartment with the door swung shut; it is very cold in here |
+| **THE CABINETS** | 4-4 | **20** in the Fridge | along the top shelf of the glass-front uppers, past the coffee gear and the good glasses - mind the good mugs |
+| **THE DISHWASHER** | 4-5 | **20** in the Cabinets | sealed in the tub with the door shut, and the cycle has started |
+
+| | pillars | the bay's own hazard | falling | the power-ups | the spare life |
+|---|---|---|---|---|---|
+| THE ISLAND | stacks of the red enamel Dutch oven, and the range hood's steel chimney with its glass canopy | the cooktop, past **7**: it comes past set into the quartz and throws a column of fire up at you | pans, past **4**: skillets, saucepans and non-stick, tumbling | clear home-style hot sauce; watermelon in lime juice (sour); a gold pan is +5 | a Glutathione sachet |
+| THE COUNTER | stacks of end-grain cutting boards, and the glass-front uppers with their bar pulls | the six machines, past **6**, one at a time, each with its own move | knives, past **4**, point first | a Tabasco-style bottle; mixer beaters (the **spin**) | two spent espresso pucks |
+| THE FRIDGE | frosted stacks of tubs, steel lunch boxes and foil trays, from both ends | the mist, past **8**, and the cold snap, past **12** | frozen eggs (the Coop's eggs, frozen ice-blue), past **5** | a frozen kimchi jar; frozen lime juice (sour); a frozen beef patty is +5 | a scoop of ice cream, in one of four flavours |
+| THE CABINETS | nested ribbed tumblers and tulip glasses under a white dish, and the black mugs nested mouth-down from the cabinet's top | the let-go, past **6**: a stack of mugs rocks, chinks and drops, and its gap moves up under the shelf | glasses, past **4**, tumbling and breaking where they land | the Verve tumbler with its flame crest (the heat); the pineapple glass (sour); the orange origami fox (the **spin**); the wooden robot in gold is +5 (crows' gift) | the Smiski, glowing |
+| THE DISHWASHER | the black square plates with the gold ring (a bowl or the pan among them), and nested tumblers hanging from the upper rack | the program, past **3**: the spray arms' jets throw you up and down, and the dishes come flying from in front | loose cutlery, past **4**; from the first WASH, tumblers, the glass tub, plates, bowls and the pan fly in from the right | an upturned hot sauce; a lime half (sour); a mixer beater (the **spin**); a spotless glass is +5 | a dishwasher tablet |
+
+**THE COOKTOP** is the black glass set into the island, and it only comes past
+now and then - about once every ten seconds at first, every six later. As it
+comes in its rings glow and click and a dotted line climbs to exactly how high
+the fire will go; then the ring under you throws a column of fire up off the
+glass for half a second. Go over it. Anything that falls into a live column is
+thrown back up: a pan goes up and back over your head, a power-up goes up and
+forward, so a hot sauce dropped into the fire can be caught on the way up. Past
+**14** a cooktop can light two rings at once.
+
+**THE MACHINES** come past on the counter one at a time - the wall behind keeps
+only the counter's other things, so a machine is never in front of its own twin
+- each with its own warning the first time and its own move every time: the
+espresso machine's wand hisses and blows a plume of steam up behind it; the
+panini press lifts its lid and clamps it shut on anything flying low; the
+Instant Pot whistles and puts a wall of steam up to just under the lid; the air
+fryer counts down, slams its baskets out and blows you backwards; the microwave
+on its shelf dings, opens its door and showers sparks; the ice cream maker pops
+its lid and flings three rock-hard scoops in an arc. Every move is keyed to
+where the machine is on the screen, so the same machine always goes off in the
+same place.
+
+**THE MIST** in the Fridge is a cold haze that is always there, and from **8**
+banks of it roll through - thinner than the Bar's fog, but enough that the next
+stack is a shape before it is a stack. The lid and the shelf's edge are never
+fogged, and every frozen egg throws a crisp spot on the trim.
+
+### The ice
+
+From **12** in the Fridge, every twenty seconds or so the temperature drops. The
+readout in the corner counts down to zero, the mist drains toward you, a ring of
+ice closes in for a second and a half, and then you are **frozen solid**: a
+block of ice round you, much heavier than a baby on your back - every flap lifts
+you 30 pixels instead of 48 and you fall faster - until you have passed **three
+more pillars**. It cracks at each one and breaks at the third. A death or a
+spare life breaks it too. **The heat keeps the cold off**: catch the kimchi and
+a cold snap that arrives while you are hot fizzles into steam.
+
+### The let-go
+
+From **6** in the Cabinets, a hanging stack of mugs ahead of you may **let go**.
+It rocks, chinks and comes away from the cabinet's top with a crack of light
+along it, then the whole stack drops through its own gap and lands on the stack
+below - and **the gap moves**: as big as it was (the mugs nest a little tighter
+as they land, so a hair bigger), but up under the top, which kills. Each stack
+picks its own moment - as it comes in, or after it has been on screen a while -
+and rocks for longer or shorter, but it always chinks first and always lands
+far enough ahead to climb to. Climb on the chink, not on the landing. At first
+only short stacks let go; from **14** any stack may, tall ones too and more
+often, and from **24** two in a row. **The heat does not stop it**: while you
+are hot the window is tighter, and never two in a row.
+
+### The program
+
+**THE PROGRAM** runs the Dishwasher. From **3** the pump primes, and the readout
+at the top names each part as it starts - PRE-RINSE, WASH, RINSE, DRY, CLEAN.
+At the end of CLEAN it beeps three times and starts again heavier: HEAVY, then
+POTS+PANS. In WASH the spray arm under the lower rack turns and its jets throw
+you up toward the upper rack's wires; in RINSE the arm under the upper rack
+throws you down toward the lower one; in the HEAVY RINSE, about a minute in,
+both at once. **A jet never kills by itself** - it carries you, and the way out
+is to fly out of it, not to flap. What the jets knock loose comes **flying at
+you from in front**, out of a splash at the right edge half a second first, and
+bursts on any stack in its way. The detergent bursts into suds in every WASH,
+DRY fills the tub with steam while the fan pulls you back, and CLEAN drains the
+pool with a glug. Water beads on the lens too, and inside every bead the tub is
+upside down - but a bead only ever turns over empty tub, never anything that
+can hurt you.
+
 ## Abilities
 
 Every doodad has one, and **every one of them is passive**. An earlier version
@@ -416,7 +513,7 @@ doodads are the same doodad with a different coat of paint.
 | doodad | ability | what it does |
 |---|---|---|
 | COOKIE | **NERVE** | a plank threaded close scores **double** |
-| PEPPER | **WATCHFUL** | she sees the gap coming and where the sky will land |
+| PEPPER | **WATCHFUL** | a `!` over whatever is about to hit her, a white dotted line laid on the room under what falls, hops or flies showing where it will really go - a falling thing's all the way down to a bracket on the floor where it lands - and a star in the gift's colour where the next one is due |
 | GERALD | **HUNGER** | power-ups within 110 pixels drift to him |
 | MAXIMUS | **TROT** | the ground cannot end him |
 | BILLY | **PAPER-LIGHT** | he falls slow and flies soft |
@@ -438,13 +535,13 @@ the opposite of a thread, so it must not read as the tightest one possible.
 
 ### Pepper's watchfulness
 
-Two sight lines nobody else gets. Anything **falling** is drawn a dotted column
-down to a bracket on the ground, so its landing spot is known the moment it
-lets go - and the bracket goes hot for a spicy one. And the gap of the next
-plank *still off the right of the screen* is held against the edge as a bracket,
-brightening as it closes, so she can be at the right height before it arrives.
-It eases out rather than blinking off in the stretch where the furthest plank is
-already on screen and there is nothing left to foresee.
+Three marks, and each is one idea.
+
+A **`!`** over anything loose that is going to hit her - an egg on its way down, a kernel mid-hop, a tuft of lint drifting her way, a Cupman's pellet - riding with it, from a little over a second out. The mark is honest: the level's own physics are run ahead on a copy of the thing, dice and all, and it lights only when that real path reaches where she is now. Move, and it goes out. Nothing for a thing that will miss her, nothing for a gift, nothing for a plain drop the heat would cook anyway.
+
+A **white dotted line** under everything loose near her, laid on the room itself: it stands still against the scenery and scrolls with it, and the thing travels along it and eats it as it goes, the way her first dashes did. It is the thing's real route - the same forecast as the `!`, drawn. An egg's or a knife's drops straight down to where it lands, and a small bracket on the floor marks the spot; a kernel's or a crumb's runs down to its first touchdown and, once it is hopping, hops along the cushion for the next second and a half; lint's wanders down and a feather's sways; a Cupman's pellet's runs its flight line and a silver one bends after her; a scoop's arcs out of its machine. Up to three at once, the nearest first (and up to two gifts' lines besides, in the gift's colour). A line ends where its thing comes down, bursts or leaves the room. A falling thing's runs all the way down to its bracket on the floor, whichever side of her that is and whether or not it is about to hit her, just as her first dashes did; a hopping thing's and a pellet's run on until they are a little way behind her, and a pellet's stops just short of her while its `!` is up. A line stops sooner only where its thing would meet another loose thing, or be knocked sideways - off a plank's side or cap, out of a stove's blast - because beyond a collision nothing is promised.
+
+And **a gift, announced in its colour** before it exists - red for spicy, green for sour, blue for a spare life, yellow for a bonus, purple for a spin: Pepper's own legend, the same on every bay whatever the room paints its pepper. A star in that colour on the lid, over the spot the next drop will let go of (up on the lid's own band when the score would otherwise be under it, so it never covers the digits), with a dotted line in the same colour hanging under it along the fall it will take, for up to about a second before it lets go (on the Couch and the Floor, where the drops come thick, often less: the next one is decided the moment the last one falls); a star at the right edge, at the height of a spare life still off screen; a star on a Cupman's gun when the pellet he has loaded is a red, a green or a gold. Once the gift is in the air its own line is drawn in its colour too, so the heads-up runs on until it is caught, and a soft blip marks the moment a star first appears. The next drop is decided up to 1.1 seconds early for everybody, with the same dice in the same order, so the odds and the rhythm are the ones every level was tuned on; the one thing that notices is the streak's helping hand, which counts a hot drop as on its way from the moment it is decided and so may wait those few moments longer to send its own. Only Pepper is told.
 
 ### Gerald's hunger
 
@@ -705,6 +802,12 @@ js/
   bar.js              DINING ROOM / THE BAR: spirit boxes, planters, corks, the humidifier
   ceiling.js          DINING ROOM / THE CEILING: soffits, lint, feathers, the pole
   tv.js               DINING ROOM / THE TV: the woven wall, the set, its reruns and its faults
+  kitchen.js          KITCHEN: the house's quartz (and its marble painter), splash, steel and the playfield
+  island.js           KITCHEN / THE ISLAND: Dutch ovens, the hood, pans, the cooktop's fire
+  counter.js          KITCHEN / THE COUNTER: cutting boards, uppers, knives, six machines
+  fridge.js           KITCHEN / THE FRIDGE: frosted stacks, frozen eggs, the mist, the cold snap
+  cabinets.js         KITCHEN / THE CABINETS: the top shelf's coffee gear and glasses, mug stacks, the let-go
+  dishwasher.js       KITCHEN / THE DISHWASHER: plate stacks, the spray arms' jets, flying dishes, the program
   levels.js           rooms and levels
   scores.js           top ten tables, personal bests, initials
   world.js            everyone's board: sending bests, fetching the top ten
@@ -742,7 +845,7 @@ so they stay smooth against the pixelated world.
 
 * **A new level** - write an art module implementing the level contract, add its
   script tag to `index.html` (**after** the core, screen and doodad files and
-  **before** `js/levels.js`, where the fifteen existing levels sit) and drop a level
+  **before** `js/levels.js`, where the twenty existing levels sit) and drop a level
   object into a room's `levels` array. There are five worked examples; `js/coop.js`
   is the smallest and `js/garden.js` the one to read second, and between them they
   cover every member. The contract is:

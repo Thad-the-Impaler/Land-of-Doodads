@@ -3304,9 +3304,12 @@ var Couch = (function () {
 
      Set ob.bounced and the engine throws two particles of cushion fluff
      and ticks 'bop' for you, rate limited, because no art module calls
-     Audio3. Set ob.landed and Pepper's sight line stops being drawn to
-     it, because a thing already on the cushion has nothing left to
-     foresee.
+     Audio3. ob.landed is this bay's own note that a kernel has reached
+     the cushion; nothing in the engine reads it any more. Pepper used
+     to stop watching a landed kernel - she watches its hops now, which
+     are as settled as its fall: the dice they roll are the kernel's own
+     (stepOwn in the engine), so a hop that will reach her is tagged like
+     any other thing that will.
 
      This one NEVER returns true. Nothing in this bay lands for good.
 

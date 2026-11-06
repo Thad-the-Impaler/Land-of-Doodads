@@ -935,7 +935,7 @@ var Cupmen = (function () {
     /* `bop` makes his flagged head strip a bop surface (foeRects), and
        `burst` is the colour of the stomp's particles: his own plastic and
        the white of his rim */
-    return {
+    var ob = {
       type: 'spike', foe: true, kind: kind, side: 'floor', bop: true,
       x: centre - half, w: half * 2, y: FLOOR,
       reach: rk.reach, off: off, dir: dir, face: dir,
@@ -948,6 +948,8 @@ var Cupmen = (function () {
       since: 9,
       burst: [P[rk.body], P.eyeWhite]
     };
+    load(ob);
+    return ob;
   }
 
   /* THE KING. 76 wide (his drawn width, the widest of his boxes and
@@ -1086,23 +1088,51 @@ var Cupmen = (function () {
     return red ? 'red' : 'yellow';
   }
 
+  /* WHAT HE WILL FIRE NEXT, DECIDED AS SOON AS HE HAS FIRED - the same dice
+     in the same order fire() always rolled them, only a shot sooner. It
+     changes nothing anyone can see except Pepper: a cupman whose next pellet
+     is a gift says so in `gift` (the engine's word for it - 'spicy', 'sour'
+     or 'gold') and she sees a star on his gun before he has even begun to
+     aim. A Sentinel's second and third pellets are still rolled as they go:
+     the first of a burst is the one that is decided early.
+     A SENTINEL NEVER SAYS SO, though his first pellet is rolled here like
+     everyone's. What he fires is a burst of three down one locked line, and
+     a star on that gun would be read as "fly into it" when two thirds of
+     what comes out of it is still undecided and mostly yellow. His dice are
+     rolled exactly as before; only the word is withheld. The King's guns
+     fire yellow and have nothing to say. */
+  function load(ob) {
+    var k;
+    if (ob.kind === 'green') k = 'green';
+    else if (ob.kind === 'crimson') k = redOr(ob, 5);
+    else if (ob.kind === 'silver') k = redOr(ob, 6);
+    else if (ob.kind === 'gold') k = chance(0.25) ? 'gold' : 'silver';
+    else k = 'yellow';                   /* the King's guns: yellow only */
+    ob.next = k;
+    ob.gift = ob.kind === 'silver' ? null
+            : (k === 'red' ? 'spicy' : (k === 'green' ? 'sour' : (k === 'gold' ? 'gold' : null)));
+  }
+
   function fire(ob, run, obstacles) {
     var a = ob.aimA, rk = RANK[ob.kind], k;
+    if (!ob.next) load(ob);
     if (ob.kind === 'green') {
       if (!room(obstacles, run, 2)) return false;
       shoot(ob, run, 'green', a - 0.14, speedOf('green', run, ob), rk.cry);
       shoot(ob, run, 'green', a + 0.14, speedOf('green', run, ob), rk.cry);
     } else {
       if (!room(obstacles, run, 1)) return false;
-      if (ob.kind === 'crimson') k = redOr(ob, 5);
-      else if (ob.kind === 'silver') { k = redOr(ob, 6); ob.volley = 2; ob.volleyT = VOLLEY_DT; }
-      else if (ob.kind === 'gold') k = chance(0.25) ? 'gold' : 'silver';
-      else k = 'yellow';                 /* the King's guns: yellow only */
+      k = ob.next;
+      if (ob.kind === 'silver') { ob.volley = 2; ob.volleyT = VOLLEY_DT; }
       shoot(ob, run, k, a, speedOf(k, run, ob), rk.cry);
     }
     ob.flashT = 0.12;
     ob.shots++;
     ob.since = 0;
+    /* a Sentinel's burst rolls its own as it goes, so his next first
+       pellet is decided when the burst is over (cycle) */
+    if (ob.kind === 'silver') { ob.next = null; ob.gift = null; }
+    else load(ob);
     return true;
   }
 
@@ -1112,7 +1142,7 @@ var Cupmen = (function () {
   function cycle(ob, dt, obstacles, run, fair, want, lineOk) {
     var rk = RANK[ob.kind];
     if (ob.volley > 0) {
-      if (!lineOk) { ob.volley = 0; return; }
+      if (!lineOk) { ob.volley = 0; load(ob); return; }
       ob.volleyT -= dt;
       if (ob.volleyT <= 0) {
         ob.volleyT = VOLLEY_DT;
@@ -1122,6 +1152,7 @@ var Cupmen = (function () {
           shoot(ob, run, vk, ob.aimA, speedOf(vk, run, ob), rk.cry);
           ob.flashT = 0.12;
         }
+        if (ob.volley <= 0) load(ob);
       }
       return;
     }
@@ -1310,6 +1341,9 @@ var Cupmen = (function () {
     ob.mode = walking && !engaged ? 'march' : (engaged ? 'aim' : 'watch');
 
     muzzleOf(ob, MZ);
+    /* where Pepper's star goes when his next pellet is a gift: the muzzle,
+       written every frame he is stepped so it follows the gun as he aims */
+    ob.giftX = MZ[2]; ob.giftY = MZ[3];
     if (!engaged) {
       /* the gun comes down to the carry on the side he faces, on the same
          spring as the aim; the telegraph and any burst are dropped and
@@ -1523,6 +1557,7 @@ var Cupmen = (function () {
       ob.mode = 'down';
       ob.downT = DOWN_T;
       ob.tele = 0; ob.volley = 0; ob.aimLock = false; ob.flashT = 0;
+      ob.gift = null;                  /* what he was going to fire goes over with him */
       run.ledger.pay = (run.ledger.pay || 0) + 1;
       return;
     }

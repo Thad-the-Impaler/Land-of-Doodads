@@ -157,12 +157,32 @@ var Doodads = (function () {
       tagline: 'HOLDS A GRUDGE',
       about: ['OILY GREEN SHINE, SHORT TEMPER.', 'ALWAYS WATCHING THE DOOR.'],
       /* always watching the door, so she is the one who sees what is
-         coming: the gap of the plank still off the right of the screen,
-         and the column anything falling is going to come down. `watch`
-         is a flag - the sight lines are PlayScene's business. */
+         coming - three marks, each one idea: a `!` riding over anything
+         loose whose real path, run ahead on a copy with the level's own
+         dice, reaches where she is now; a faint white dotted line under
+         everything loose near her, her original dashes laid on the room and
+         scrolling with it, now following where each thing will really go -
+         an egg's column to its foot, a kernel's hops, lint's drift, a
+         pellet's flight - from the same forecast; and a star in the gift's
+         own colour (red the heat, green the lime, yellow the bonus, purple
+         the spin, blue a spare life) where a gift is about to appear before
+         it exists - on the lid over the next drop when that drop is a gift,
+         with its fall hanging under it, at the right edge for a spare life
+         still off screen, on a Cupman's gun when his loaded pellet is a
+         red, a green or a gold - and the gift's line in that colour until
+         it is caught.
+         Reworked 2026-11-02 at the owner's ask, after a busier forecast was
+         sent back as too much to follow; again 2026-11-04, when he kept the
+         `!` as it was and asked for gift heads-ups that say what the gift
+         is, and for her original dotted lines back, made true; and once
+         more that same day, when the first true lines came drawn across the
+         screen and he asked for the original's again - laid on the room and
+         scrolling with it, as they had been before - only following each
+         thing's true route. `watch` is a flag - the sight lines are
+         PlayScene's business. */
       ability: 'WATCHFUL',
       abilityLive: true,
-      abilityAbout: ['SHE SEES THE NEXT GAP COMING', 'AND WHERE THE SKY WILL FALL.'],
+      abilityAbout: ['SHE SEES WHERE THINGS WILL GO', 'AND WHAT THE NEXT GIFT WILL BE.'],
       watch: true,
       accent: '#3f6b52', accentDark: '#1d3325', accentLight: '#7fb28d',
       sprite: { w: 384, h: 349, pivotX: 228.4, pivotY: 193.7, bodyR: 155.3, footOffset: 1.00 },
@@ -1490,19 +1510,28 @@ var Doodads = (function () {
      The hints name no bay, for the secrecy rule: the bays that shed both
      halves of a deed are in rooms a locked card must not give away.
        hot-and-sour  the Whiteboard off its lid, the Fort out of its Cupmen's
-                     guns (a red pellet and a green one), the Floor's crumbs
-                     and the TV's broadcasts: FOUR BAYS SHED BOTH. It said
-                     TWO until 2026-10-18 (the Floor) and THREE until
-                     2026-10-22 (the TV). Count again when a bay is added.
-       hot-and-spun  the Ceiling and the TV shed a heat AND a spin (the Bar
-                     spins but sheds no heat): TWO BAYS SHED BOTH.
+                     guns (a red pellet and a green one), the Floor's crumbs,
+                     the TV's broadcasts, the Island's hot sauce and limed
+                     watermelon, the Fridge's kimchi and lime juice, the
+                     Cabinets' Verve tumbler and pineapple glass and the
+                     Dishwasher's hot sauce and lime: EIGHT BAYS SHED BOTH.
+                     It said TWO until 2026-10-18 (the Floor), THREE until
+                     2026-10-22 (the TV), FOUR until 2026-10-31 (the Kitchen)
+                     and SIX until 2026-11-05 (its last two bays). Count again
+                     when a bay is added.
+       hot-and-spun  the Ceiling, the TV, the Counter (Tabasco and mixer
+                     heads), the Cabinets (the Verve and the origami fox)
+                     and the Dishwasher (hot sauce and a beater) shed a heat
+                     AND a spin (the Bar spins but sheds no heat): FIVE BAYS
+                     SHED BOTH. It said TWO until 2026-10-31 and THREE until
+                     2026-11-05.
      Widths at spacing 2 (7n-2): the longest shut form is Crow's, 50 ch and
      348px. Plates are spacing 1 in a 92px pitch. */
   var DEEDS = {
     'hot-and-sour': { price: 'BE HOT AND SOUR AT ONCE',      plate: 'HOT + SOUR',   /* 10 ch, 59px */
-                      hint: 'FOUR BAYS SHED BOTH' },                                /* 19 ch, 113px */
+                      hint: 'EIGHT BAYS SHED BOTH' },                               /* 20 ch, 119px */
     'hot-and-spun': { price: 'BE HOT AND SPINNING AT ONCE',  plate: 'HOT + SPIN',   /* 10 ch, 59px */
-                      hint: 'TWO BAYS SHED BOTH' }                                  /* 18 ch, 107px */
+                      hint: 'FIVE BAYS SHED BOTH' }                                 /* 19 ch, 113px */
   };
 
   function requirement(d) {

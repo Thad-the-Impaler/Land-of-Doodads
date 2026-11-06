@@ -211,6 +211,16 @@ var PlayScene = (function () {
   var dropArmed = false;        /* the rafters have started shedding */
   var warnLines = null;        /* whose heads-up is on screen, from art.WARN */
   var dropTimer = 0, hazardWarn = 0, spicyGap = 0, goldGap = 0, sourGap = 0, whirlGap = 0;
+  /* THE NEXT DROP, made SHED_LEAD seconds before it lets go and held off the
+     list until then - see spawnDrops. `shedLive` is whether the spawner ran
+     its timer this frame, i.e. whether that drop is really on its way.
+     SHED_LEAD is one number for everybody: it is when every doodad's next
+     drop is decided, and Pepper's star on the lid is lit for exactly that
+     long. 0.8..1.3 is the sane band - shorter and the star is gone before
+     she can turn toward it, longer and the gift lets go somewhere the star
+     was a long time ago in a room that has scrolled on. */
+  var nextDrop = null, shedLive = false;
+  var SHED_LEAD = 1.1;
   var spicy = 0;               /* seconds of heat left */
   var heat = 0;                /* the same thing eased, for the visuals */
   var spicyFlash = 0, spicyBanner = 0;
@@ -443,7 +453,6 @@ var PlayScene = (function () {
      names a metal nobody saw. The art says so with ob.name; the Backyard's
      three levels say nothing and get the word they always had. */
   var goldName = 'GOLD';
-  var watchY0 = 0, watchY1 = 0, watchA = 0;   /* the gap she can see coming */
   var trotting = 0;            /* seconds of floor under a doodad that can */
 
   /* ------------------------------------------------- THE HOLE IN THE FLOOR
@@ -582,6 +591,7 @@ var PlayScene = (function () {
     board = Scores.table(roomRef, level).slice();
     rank = -1; entryPending = false; savedRow = -1; pbNew = false; worldNote = null;
     dropArmed = false; dropTimer = 0; hazardWarn = 0; warnLines = null;
+    nextDrop = null; shedLive = false;
     spicyGap = 0; goldGap = 0; sourGap = 0; whirlGap = 0;
     spicy = 0; heat = 0; spicyFlash = 0; spicyBanner = 0;
     sour = 0; shrivel = 0; sourFlash = 0; sourBanner = 0;
@@ -600,6 +610,8 @@ var PlayScene = (function () {
     planksUp = 0; flickCool = 0;
     /* a RETRY puts him back in the ceiling: a rescue is all of one run */
     passedN = 0; rider = null;
+    /* and thaws him: the ice is all of one run too */
+    ice = null; iceFlash = 0;
     hotChain = 0; streakPop = 0;
     streak = Doodads.streakable();
     auraGlow = 0;
@@ -646,7 +658,8 @@ var PlayScene = (function () {
     cryAt = -1; foeArmed = false; pendingWarn = null;
     run = { score: 0, time: 0, late: false, scroll: 0,
             speed: tune.speedStart, px: X_START, py: (CEIL + FLOOR) / 2,
-            pvy: 0, hr: HIT_R, under: false, grace: false, ledger: ledger, born: born };
+            pvy: 0, hr: HIT_R, under: false, grace: false, frozen: 0, hot: false,
+            ledger: ledger, born: born };
     ringing = 0; stunTime = 0; ringAmp = 0; buzzTimer = 0;
     /* the stage itself, which is a DOM transform and so is not reset by
        zeroing any of the above: RETRY during a ring must not start the
@@ -656,7 +669,9 @@ var PlayScene = (function () {
     bopAt = -1;
     hungry = 0; nearestPull = 0;
     nervePop = 0; goldPop = 0; trotting = 0;
-    watchY0 = watchY1 = watchA = 0;
+    watchMs = 0; watchTags.length = 0; watchStars.length = 0;
+    watchClock = 0; sightSeen = false; sightDt = 1 / 60; watchTick = 0;
+    paths.length = 0; watchDots.length = 0; watchFeet.length = 0; starCryAt = -9;
     target = nextTarget(); passedTimer = 0;
     Input.setTextMode(false);
     menuIndex = 0;
@@ -756,6 +771,7 @@ var PlayScene = (function () {
        the one gap the player has to get down into is a death in the middle
        of a gift. `dropTimer` is simply frozen by this return and resumes
        where it was, which is right - the magnets never left. */
+    shedLive = false;
     if (warp || warpIn > 0 || dropHold > 0) return;
     /* and nothing falls while the art has asked for a quiet sky - see the
        ledger's note at the head of this file. A frozen timer, as above. */
@@ -776,10 +792,27 @@ var PlayScene = (function () {
        drop, so the level's own rhythm is untouched. See streakHelp. */
     if (streakHelp()) { spicyGap = 4; shed(true, false, false, false); }
 
+    shedLive = true;
     dropTimer -= dt;
+    /* THE NEXT ONE IS DECIDED AND MADE SHED_LEAD SECONDS EARLY, and held off
+       the list until its time - for everybody, so the odds, the spacing and
+       the rhythm are the ones every level was tuned on whoever is flying.
+       Only Pepper does anything with it: if it is a gift she sees a star
+       on the lid where it will let go, a second early (starList). A frozen
+       timer above freezes it with the timer and hides her star - `shedLive`
+       stays false - and it was always going to fall, and it still will. */
+    if (!nextDrop && dropTimer <= SHED_LEAD) nextDrop = rollDrop();
     if (dropTimer > 0) return;
     dropTimer = d.dropEvery * rand(0.78, 1.28);
+    var due = nextDrop || rollDrop();
+    nextDrop = null;
+    letGo(due);
+  }
 
+  /* WHAT THE NEXT DROP IS: plain, hot, gold, sour or a spin. The dice and
+     the spacing are exactly the ones spawnDrops always rolled, in the same
+     order; they are rolled a little earlier, that is all. */
+  function rollDrop() {
     /* never two spicy eggs close together, however the dice fall. A
        per-doodad multiplier on these rolls was built once (CRAVINGS, x1.5)
        and sent back because it could not be seen; `addict` is the owner's
@@ -815,14 +848,19 @@ var PlayScene = (function () {
     var spun = !spicy && !gold && !lime && whirlGap <= 0 &&
                tune.whirlChance > 0 && chance(tune.whirlChance);
     if (spun) whirlGap = 4;
-    shed(spicy, gold, lime, spun);
+    return makeShed(spicy, gold, lime, spun);
   }
 
   /* ONE DROP OFF THE LID, already decided: plain, hot, gold, sour or a spin.
      Pulled out of spawnDrops so the streak's help can shed a hot one
      through exactly the path every other drop takes - the same maker, the
      same slower fall for a gift, the same puff and the same sizzle. */
-  function shed(spicy, gold, lime, spun) {
+  function shed(spicy, gold, lime, spun) { letGo(makeShed(spicy, gold, lime, spun)); }
+
+  /* made, and not yet let go: what comes back is the drop with the two
+     things its letting-go needs riding beside it, off the drop itself so
+     neither the art nor the rewind tape ever sees them */
+  function makeShed(spicy, gold, lime, spun) {
     var x = VW - rand(tune.dropAheadMin, tune.dropAheadMax);
     var fall = rand(tune.dropFallMin, tune.dropFallMax);
     /* anything that is there to be CAUGHT drifts down slower, so it has a
@@ -843,15 +881,39 @@ var PlayScene = (function () {
        takes gold and the heat before it, so a gold record would be caught
        as five points and the spin it was painted as would never come */
     if (spun && !ob.gold && !ob.spicy) ob.whirl = true;
-    admit(ob);
+    return { ob: ob, x: x, spicy: spicy };
+  }
+
+  /* WHERE A DROP COMES IN. Everything ever shed came off the lid, so the
+     puff that says "something has let go" was always born on the lid's
+     row, over the x it let go of. A drop may now say otherwise: `ob.entry`
+     is [x, y], the screen point it comes INTO the room at - the
+     Dishwasher's flying dishes come in from the right edge at their own
+     height, out of the spray, and a puff on the lid 200px from where the
+     thing actually appeared would point the eye at the wrong place. With
+     it the four specks are born there and blown inward, off the edge and
+     into the room; the sound is the same knock. Pepper's star for a gift
+     reads the same field (starList). A drop without `entry` takes the
+     branch every drop has always taken, rolling the same dice in the same
+     order, so nothing that sheds off a lid moves by a pixel. */
+  function letGo(due) {
+    var x = due.x, en = due.ob.entry;
+    admit(due.ob);
 
     for (var i = 0; i < 4; i++) {
+      if (Array.isArray(en)) {
+        particles.push({ x: clamp(en[0], 2, VW - 2) + rand(-4, 4), y: en[1] + rand(-3, 3),
+                         vx: rand(-40, -10) - speed * 0.3, vy: rand(-4, 18),
+                         life: rand(0.2, 0.45), g: 90,
+                         col: chance(0.5) ? FX.puffHi : FX.puff });
+        continue;
+      }
       particles.push({ x: x + rand(-4, 4), y: CEIL + rand(0, 3),
                        vx: rand(-20, 20) - speed * 0.3, vy: rand(-4, 18),
                        life: rand(0.2, 0.45), g: 90,
                        col: chance(0.5) ? FX.puffHi : FX.puff });
     }
-    Audio3.play(spicy ? 'sizzle' : 'crack');
+    Audio3.play(due.spicy ? 'sizzle' : 'crack');
   }
 
   /* an egg that made it all the way down - or, for a drop the level says has
@@ -1384,6 +1446,101 @@ var PlayScene = (function () {
     return !!rider && rider.phase === 'ride' && (state === 'play' || state === 'paused');
   }
 
+  /* ------------------------------------------------------------ the ice
+
+     THE FRIDGE'S COLD SNAP, and the second thing that weighs a doodad down.
+     The owner's words: "the temperature drops and the cold air concentrates
+     around the player, freezing them in ice; this causes them to be weighed
+     down (much more so than with Baby Burrito, but still playable) until
+     they can break the ice by successfully completing three more pillars".
+
+     THE LEVEL SAYS WHEN, THE ENGINE SAYS WHAT, exactly the rider's split:
+     the art runs its own cold-snap clock and its telegraph, and when the
+     cold has closed in it writes run.ledger.freeze once. drainLedger hands
+     that to freezeUp(), which is the only way in, and which says no - and
+     says nothing - while the heat burns (the art reads run.hot and shows
+     its own fizzle), inside a save's grace, when he is frozen already or
+     when the run is not live. tune.iceFor is how many pillars it holds him
+     for; a level without it can never freeze anybody, so no bay before the
+     Fridge can reach any of this.
+
+     PILLARS PASSED, whichever way, for the rider's reason: a hot run must
+     not hurry the ice. One crack a pillar, and the third breaks it.
+
+     A death breaks it (he tumbles out of it) and so does a save (a save is
+     the world's trouble taken away, and the ice is the world's trouble).
+
+     THE WEIGHT: gravity x1.6 and the top fall speed x1.3, the flap left
+     alone, Baby's grammar turned up - a beat lifts 338^2 / (2 x 1888) = 30px
+     instead of 48 (Baby's 37), and he comes down at 709 rather than 545.
+     Both stack with a rider: a frozen doodad carrying a baby is heavier
+     still, which is the truth of it. At the 1/30 frame clamp the step is
+     709 / 30 + 0.5 x 1888 / 900 = 24.7px; the floor and the lid are line
+     tests, and nothing else is ever that close to a hitbox.
+
+     Its colours live here for the reason the lime's do: ice reads the same
+     in any bay that ever freezes anyone. */
+  var ICE_GRAV = 1.6, ICE_FALL = 1.3;
+  var ICE_HI = '#f4fdff', ICE_PALE = '#d4f1fb', ICE_MID = '#a9def2',
+      ICE_DEEP = '#5fa9cc', ICE_EDGE = '#2f6f96';
+  var ICE_GLOW = '196,236,250';
+  /* null, or { left, of, t, cracks, jolt, seed } - pillars still to pass,
+     how many it began with, seconds frozen, cracks showing, the shudder of
+     the last crack, and a seed for the frost on its faces */
+  var ice = null;
+  var iceFlash = 0;
+
+  function frozen() {
+    return !!ice && (state === 'play' || state === 'paused');
+  }
+
+  function freezeUp() {
+    if (state !== 'play' || ice || !(tune.iceFor > 0)) return;
+    if (spicy > 0 || invuln > 0) return;
+    ice = { left: tune.iceFor, of: tune.iceFor, t: 0, cracks: 0, jolt: 0, seed: randInt(1, 1e6) };
+    iceFlash = 0.14;
+    Audio3.play('freeze');
+    Screen.shake(3, 0.3);
+    /* frost blown off him as it takes: a ring of white thrown outward and
+       slowed, so the cold reads as having arrived FROM the room */
+    for (var i = 0; i < 18; i++) {
+      var a = i / 18 * TAU;
+      particles.push({ x: player.x + Math.cos(a) * 16, y: player.y + Math.sin(a) * 16,
+                       vx: Math.cos(a) * rand(30, 70), vy: Math.sin(a) * rand(30, 70) - 10,
+                       life: rand(0.3, 0.6), g: 40, col: chance(0.5) ? ICE_HI : ICE_MID });
+    }
+  }
+
+  /* a pillar passed while frozen: one crack, and the last one lets go */
+  function iceCrack() {
+    if (!ice || state !== 'play') return;
+    ice.left--;
+    ice.cracks++;
+    ice.jolt = 0.22;
+    if (ice.left <= 0) { shatterIce(true); return; }
+    Audio3.play('icecrack');
+    for (var i = 0; i < 5; i++) {
+      particles.push({ x: player.x + rand(-10, 10), y: player.y + rand(-10, 10),
+                       vx: rand(-40, 40) - speed * 0.15, vy: rand(-60, -10),
+                       life: rand(0.2, 0.4), g: 380, col: chance(0.5) ? ICE_HI : ICE_PALE });
+    }
+  }
+
+  /* THE ICE GOING: free (the third pillar), or broken by a death or a save.
+     Either way it is shards thrown off him, and only the earned way gets
+     the bright run and the flash */
+  function shatterIce(earned) {
+    if (!ice) return;
+    ice = null;
+    if (earned) { Audio3.play('shatter'); iceFlash = 0.1; Screen.shake(2.5, 0.25); }
+    for (var i = 0; i < (earned ? 22 : 12); i++) {
+      particles.push({ x: player.x + rand(-12, 12), y: player.y + rand(-12, 12),
+                       vx: rand(-110, 110) - speed * 0.2, vy: rand(-150, -20),
+                       life: rand(0.35, 0.8), g: 520,
+                       col: chance(0.4) ? ICE_HI : (chance(0.5) ? ICE_PALE : ICE_MID) });
+    }
+  }
+
   /* where the back is: up and behind the middle of him, turned with him,
      so a dive noses the baby down with it and the spin takes him round */
   function riderAnchor() {
@@ -1579,110 +1736,1651 @@ var PlayScene = (function () {
             { align: 'center', colour: rider.who.accentLight, shadow: UI.C.shadow });
   }
 
+  /* THE ICE, SEEN. A block round him on the pixel layer, OVER the smooth
+     doodad so he reads as inside it: a translucent cube a few pixels
+     bigger than his drawn body all round, its top and left faces catching
+     the light and its bottom and right going deep, frost speckled on it
+     off its own seed, two glints, and one jagged crack per pillar passed
+     running in from an edge. It never turns - he tilts inside it, the ice
+     does not - and it shudders for a moment on each crack. Nothing about
+     it is boxed: the hitbox is his, and a block that killed at its corners
+     would be a bigger doodad, which is not what the owner asked for. */
+  var ICE_CRACKS = [
+    [[-1, -1], [-0.45, -0.3], [-0.55, 0.05], [-0.1, 0.2]],
+    [[1, -0.6], [0.5, -0.35], [0.35, 0.15], [0.6, 0.45], [0.2, 0.7]],
+    [[-0.2, 1], [-0.1, 0.55], [0.25, 0.4], [0.05, -0.05]]
+  ];
+
+  function drawIce(ctx) {
+    if (state !== 'play' && state !== 'paused') return;
+    var h = Math.round(bodyR() + 5);
+    var j = ice.jolt > 0 ? (Math.floor(ice.t * 60) % 2 ? 1 : -1) : 0;
+    var x0 = Math.round(player.x) - h + j, y0 = Math.round(player.y) - h, s = 2 * h;
+    var a = ctx.globalAlpha, i, k;
+    /* the body of it: pale, mostly clear */
+    ctx.globalAlpha = a * 0.34;
+    ctx.fillStyle = ICE_MID;
+    ctx.fillRect(x0 + 1, y0 + 1, s - 2, s - 2);
+    ctx.globalAlpha = a * 0.28;
+    ctx.fillStyle = ICE_HI;
+    ctx.fillRect(x0 + 2, y0 + 2, Math.round(s * 0.45), Math.round(s * 0.3));
+    /* the faces: lit top and left, deep bottom and right, chamfered corners */
+    ctx.globalAlpha = a * 0.9;
+    ctx.fillStyle = ICE_HI;
+    ctx.fillRect(x0 + 2, y0, s - 4, 1);
+    ctx.fillRect(x0, y0 + 2, 1, s - 4);
+    ctx.fillStyle = ICE_PALE;
+    ctx.fillRect(x0 + 1, y0 + 1, 1, 1);
+    ctx.fillStyle = ICE_DEEP;
+    ctx.fillRect(x0 + 2, y0 + s - 1, s - 4, 1);
+    ctx.fillRect(x0 + s - 1, y0 + 2, 1, s - 4);
+    ctx.fillRect(x0 + s - 2, y0 + s - 2, 1, 1);
+    ctx.globalAlpha = a * 0.55;
+    ctx.fillStyle = ICE_EDGE;
+    ctx.fillRect(x0 + 3, y0 + s, s - 6, 1);
+    ctx.fillRect(x0 + s, y0 + 3, 1, s - 6);
+    /* frost speckle, off the block's own seed so it holds still - a
+       mulberry32 stream reseeded every frame, because the engine names no
+       level's helpers and a paused frame drawn twice must look the same */
+    ctx.globalAlpha = a * 0.8;
+    ctx.fillStyle = ICE_HI;
+    var rng = mulberry32(ice.seed);
+    for (i = 0; i < 9; i++) {
+      ctx.fillRect(x0 + 2 + Math.floor(rng() * (s - 4)), y0 + 2 + Math.floor(rng() * (s - 4)), 1, 1);
+    }
+    /* the glints: two short diagonals up on the lit corner */
+    ctx.globalAlpha = a;
+    for (k = 0; k < 4; k++) ctx.fillRect(x0 + 4 + k, y0 + 7 - k, 1, 1);
+    for (k = 0; k < 2; k++) ctx.fillRect(x0 + 9 + k, y0 + 5 - k, 1, 1);
+    /* the cracks, one a pillar, white on a dark hairline */
+    for (i = 0; i < Math.min(ice.cracks, ICE_CRACKS.length); i++) {
+      var c = ICE_CRACKS[i];
+      for (k = 0; k + 1 < c.length; k++) {
+        iceLine(ctx, x0 + h + c[k][0] * (h - 1), y0 + h + c[k][1] * (h - 1),
+                x0 + h + c[k + 1][0] * (h - 1), y0 + h + c[k + 1][1] * (h - 1));
+      }
+    }
+    ctx.globalAlpha = a;
+  }
+
+  function iceLine(ctx, ax, ay, bx, by) {
+    var n = Math.max(1, Math.round(Math.max(Math.abs(bx - ax), Math.abs(by - ay))));
+    for (var i = 0; i <= n; i++) {
+      var px = Math.round(lerp(ax, bx, i / n)), py = Math.round(lerp(ay, by, i / n));
+      ctx.fillStyle = ICE_EDGE;
+      ctx.fillRect(px + 1, py + 1, 1, 1);
+      ctx.fillStyle = ICE_HI;
+      ctx.fillRect(px, py, 1, 1);
+    }
+  }
+
+  /* a cold light round the block, on the room layer behind him, as the
+     lime's and the spin's are */
+  function drawIceGlow(ctx) {
+    if (state !== 'play' && state !== 'paused') return;
+    var r = 30 + 3 * Math.sin(t * 5);
+    var g = ctx.createRadialGradient(player.x, player.y, 2, player.x, player.y, r);
+    g.addColorStop(0, 'rgba(' + ICE_GLOW + ',0.30)');
+    g.addColorStop(0.6, 'rgba(' + ICE_GLOW + ',0.12)');
+    g.addColorStop(1, 'rgba(' + ICE_GLOW + ',0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(player.x - r, player.y - r, r * 2, r * 2);
+  }
+
+  /* the line under the score while he is frozen, in the rider's slot and
+     on the rider's terms */
+  function drawIceLine(ctx, y) {
+    if (state === 'dead' || state === 'entry') return;
+    UI.text(ctx, 'FROZEN: ' + ice.left + (ice.left === 1 ? ' PILLAR' : ' PILLARS') + ' TO BREAK OUT',
+            VW / 2, y, { align: 'center', colour: ICE_MID, shadow: UI.C.shadow });
+  }
+
   /* ---------------------------------------------------------- watchful
 
-     What she can see that nobody else can: the gap of the plank still off
-     the right of the screen, and the column anything falling is coming
-     down. Both are drawn as thin lines on the room layer, under the
-     doodad, so they read as sight rather than as scenery. */
+     SHE SEES IT COMING. Three marks, and each one says one thing:
 
-  var WATCH_LINE = '#cfe9dd', WATCH_HI = '#f2fff8';
+       a `!` over a hazard that is going to hit her. It rides on the thing
+         itself every frame, and it is lit only when the thing's REAL
+         future comes within TAG_LIT px of where she is now: the level's
+         own stepDrop, run ahead on a copy of the room with the thing's own
+         dice (foresee). Move out of the way and it goes out.
+       a white dotted line under everything loose near her, LAID ON THE
+         ROOM: the thing's real route through the room from where it is
+         now - the same forecast, drawn - standing still against the
+         scenery and scrolling with it, while the thing travels along it
+         and eats it as it goes. An egg's runs straight down to a small
+         bracket on the floor where it will land; a kernel's runs down to
+         where it first comes down and, once it is hopping, hops along the
+         cushion; lint's wanders down, a feather's sways, a pellet's runs
+         its flight line and a silver one's bends after her. It ends where
+         its thing comes down, bursts or leaves - a falling thing's runs to
+         its foot whichever side of her that is, and whether or not it is
+         going to hit her, as the original's column did - or where the
+         forecast has it meet something it would bounce off or be kicked
+         sideways by (THE CUT, below); a hopping thing's and a pellet's
+         stop 24px behind her, and a pellet's stops short of her while its
+         `!` is up. It goes, as the original's did, once its thing is
+         behind her.
+       a star in a gift's own colour where a gift is about to appear,
+         before it exists - on the lid where the next drop will let go, when
+         that drop is a gift (it is decided SHED_LEAD seconds early, for
+         everybody: see spawnDrops), with the fall it will take already
+         hanging under it as a dotted line in the same colour; at the right
+         edge at the height of a spare life still off screen; on a Cupman's
+         gun when the pellet he has loaded is a gift. Once a gift is in the
+         air its own line goes on in its colour until it is caught, so the
+         heads-up runs from the star to her beak. The colour IS the news:
+         red the heat, green the lime, yellow the bonus, purple the spin,
+         blue a spare life - her own legend, the same on every bay.
 
-  /* the nearest plank that has not reached the screen yet */
-  function nextOffscreen() {
-    var best = null;
-    for (var i = 0; i < obstacles.length; i++) {
-      var ob = obstacles[i];
-      if (ob.type !== 'pillar' || ob.x <= VW - 2) continue;
-      if (!best || ob.x < best.x) best = ob;
-    }
-    return best;
+     HOW SHE CAME TO THIS. Her first rework (2026-11-01) drew the forecast
+     as strings of ringed beads across the room, five at once, with a
+     bracket closing on her own column, a foot for each, a door at the right
+     edge for the next gap and a sparkle for every gift: every mark true to
+     the pixel, and sent back as hard to follow and as often in the way as
+     helpful. The second (2026-11-02) drew only a `!` and a small mint star.
+     The owner kept the `!` exactly as it is, found the star barely
+     noticeable, and asked (2026-11-04) for two things more: a heads-up that
+     says WHAT the gift will be, by colour, and her ORIGINAL dotted lines
+     back - the faint white dashes she first had under every falling thing,
+     which he had sent back only because they always ran straight down
+     whatever the thing really did. The first true lines (that same day)
+     were laid on the SCREEN: each dot was where the thing would be on the
+     screen at a fixed moment, a bead every thirtieth of a second, so an
+     egg falling straight down drew a diagonal sweeping left across the
+     screen while the room scrolled under it, and a Couch full of popcorn
+     shimmered. He sent them back the same day: "I would prefer stationary
+     paths like the ones they had before, moving with the screen, and still
+     accurately showing their route", with no glitching when the drops come
+     thick. So the lines are the original's again, in the original's frame -
+     the room's - and each one follows its thing's true route through it.
+
+     WHY THE LINES LOOK THE WAY THEY DO. The original's dashes exactly: 1 x
+     2 px, its white at its alpha, one every LINE_PITCH px, nothing round
+     them, and its bracket on the floor where a thing comes down - the old
+     dashes were never in anyone's way, the ringed beads were. Three at
+     once at most, the nearest first (a gift's own coloured line besides).
+     On the ROOM layer, so she, the `!`, the stars and the score are all
+     over them and a line can never cover any of them.
+
+     IN THE ROOM'S FRAME. The forecast steps its copy of the room exactly
+     as moveObstacles steps the real one, scroll and all, and adds back what
+     the copy has scrolled (S), so every sample it keeps is a point in the
+     ROOM, measured from where the room stood at the pass (scroll0). A point
+     is drawn at that, less what the room has scrolled since - so it slides
+     left with the scenery, rounded the way the drops are rounded, and a
+     dash and the kernel sitting on it move by the same pixel on the same
+     frame. Between passes nothing is worked out again: the same points are
+     slid on.
+
+     AND BY DISTANCE, NEVER BY TIME. The dashes are laid along the route by
+     how far the thing has travelled, on a ruler fixed to where it was born:
+     every drop carries an odometer (ob.ruler, kept in updateWatch) that reads
+     0 at the floor's rung straight under its birth, and a dash goes
+     wherever the ruler reads a multiple of LINE_PITCH. A straight fall's
+     dashes therefore sit on FLOOR - 4, FLOOR - 8 ... - the very rows the
+     original stepped up from the ground, for the same reason it gave: a
+     dotted line anchored to something that moves re-phases every frame and
+     crawls. This is what holds a busy Couch still. The game's step is the
+     real frame time and a real frame clock wobbles, so WHEN a kernel
+     bounces shifts by up to a frame from one forecast to the next - but
+     WHERE it bounces hardly at all, a pixel of drift at most. A dash laid
+     by distance moves no more than the route under it; the screen-frame
+     beads, laid by time, moved every later dot by a frame's travel (2-3 px)
+     on one frame in ten on the Couch.
+
+     THE CUT. A route is drawn only as far as the forecast's first meeting
+     with something the thing would bounce off - within LINE_TOUCH of
+     another drop, LINE_MEET of a hider, or a sideways kick in one step
+     (LINE_KICK: a plank's side or cap, a stove's blast). What a collision
+     does is chaotic (a tenth of a pixel either way and a kernel goes off
+     the other way), so the forecast changes its mind about one from pass
+     to pass, and a line drawn past it bent about with every change; beyond
+     a collision nothing is promised, and the line simply stops there. And
+     a cut HOLDS (layPath): no later forecast draws the line past it until
+     the thing gets there, so a tail beyond a near miss does not blink on
+     and off. A falling thing's line stops where it first comes down, at
+     its foot: its hops are drawn once it is hopping. None of this ends the
+     forecast while the `!` is still judging - the copy is stepped as it
+     always was through the whole of TAG_T (cutSteps), so the `!` sees the
+     same room it always saw.
+
+     WHEN A ROUTE REALLY CHANGES - a kernel clicks another, grazes a cap or
+     meets the koala, the mop pulls a crumb, a silver pellet re-aims, she
+     catches a pepper and the room's pace bends a pellet's route - the next
+     pass lays the new route and the dashes after the change move to it
+     (the ones before it stay where they were: they are laid from the
+     thing's side). No crossfade, and no holding on to a route known to be
+     wrong - only to where it was last known to end: the line is the
+     forecast, and the cut keeps the part of it most prone to changing its
+     mind off the screen.
+
+     What she sees is what will happen if she does nothing: everything is
+     foreseen against her standing where she is now - a pellet that curves
+     after her included - and a meeting the heat would cook is no hit
+     (foresee). */
+
+  var WATCH_INK  = '#1d3325';   /* her accentDark: the outline both marks share,
+                                   so the two read as one hand's marks */
+  var WATCH_HI   = '#f2fff8';   /* the ! itself, and the glint at a star's heart
+                                   and tips: sight-white, never a gift's colour,
+                                   and the one colour that stands off every wall
+                                   in the game */
+  /* (WATCH_STAR, her mint, was the old star's heart. A star is in its gift's
+     colour now, and her own green beside the lime's would be the one pair a
+     player could misread.) */
+  var WATCH_A    = 0.9;         /* alpha of both marks: solid enough to read on
+                                   the brightest plaster, a hair short of a sticker */
+  var TAG_T      = 1.2;         /* seconds ahead a hazard is run. Long enough to
+                                   steer away from, short enough that a tag is
+                                   never a promise about a room that has moved on.
+                                   Never above 2.0: the further out, the more a
+                                   tag reads as a lie the moment she moves. Built
+                                   at 1.5, where the Ceiling's slow lint kept a
+                                   ! up on 0.71 of frames, most of them on tufts
+                                   a flap would carry her clear of; 1.2 took that
+                                   to 0.59 and still warned of every hit
+                                   (headless, 8 seeds x 40s, 2026-11-02) */
+                                /* (the step a hazard is run in is sightDt now -
+                                   the real frame step, smoothed, see SIGHT_EASE
+                                   - so read TAG_DT below as sightDt) */
+  var TAG_CHECK  = 6;           /* nearest hazards forecast per pass - the cost
+                                   of a pass is this times TAG_T / TAG_DT steps */
+  var TAG_MAX    = 3;           /* ! on screen at once: more is a curtain */
+  var TAG_LIT    = 20;          /* px from her centre that lights a tag: HIT_R 11,
+                                   plus a small thing's half-width, plus a margin */
+  var TAG_CLEAR  = 30;          /* px that clears it again. The gap between the
+                                   two is the hysteresis that stops a tag
+                                   flickering on a thing that grazes the edge */
+  var TAG_HOLD   = 0.35;        /* seconds a lit tag stays lit at least, so a
+                                   single good flap does not wink it out */
+  var TAG_FADE   = 0.15;        /* seconds it fades out: going out, not vanishing */
+  var TAG_POP    = 0.10;        /* seconds it sits 2px high when it appears - the
+                                   only flourish, and the only one it needs */
+  var TAG_NEAR   = 18;          /* px from her centre inside which a lit thing
+                                   loses its ! - HIT_R 11, a small thing's
+                                   half-width and a hair: it is touching her by
+                                   then, not coming, and the block would stand
+                                   over her own head and read as her alarm */
+  var STAR_WINK  = 0.15;        /* seconds per twinkle phase of the star */
+  var STAR_GUNS  = 2;           /* gun stars at once, nearest Cupman first */
+  var STAR_MAX   = 3;           /* stars at once, all told: the lid's, the edge's,
+                                   then the guns' with what is left */
+  var STAR_LIFT  = 11;          /* px a gun's star sits above his muzzle. A star
+                                   ON the muzzle sits on the barrel and drowns
+                                   in its flash; 8 cleared both for the old 7px
+                                   star, and the 13px one needs 3 more */
+  var STAR_APART = 20;          /* px within which a Cupman's gun puts out the
+                                   right edge's star: beside his gun it reads
+                                   as his, the promise of a gift pellet */
+  var STAR_POP   = 0.10;        /* seconds a new star sits 2px high - the `!`'s
+                                   pop, so the two marks share one entrance */
+  var STAR_CRY   = 'ready';     /* the soft blip when a star first appears for a
+                                   gift (the 0.05s triangle, the quietest sound
+                                   in the game). '' silences it - the one-word
+                                   revert if it is not wanted */
+  var STAR_CRY_GAP = 0.6;       /* seconds between two blips at least, so a fort
+                                   full of loaded guns is not a chime */
+  var STAR_CLEAR = 9;           /* px round the lid's star where no dot is drawn:
+                                   the line hangs UNDER it, not through it */
+  var STAR_HUD_Y = 15;          /* where the lid's star goes, at the same x, when
+                                   the score is in the way: UP, onto the lid
+                                   itself, right over the spot the gift will
+                                   let go of. Stars are drawn over the HUD (so
+                                   nothing hides a `!`), and on the Counter,
+                                   where the lid lets go 140 to 250px in from
+                                   the edge, a quarter of the lid's stars sat
+                                   on the digits. Down was tried first and is
+                                   all taken: the score pops to size 4 at every
+                                   plank and pushes the chase line to rows
+                                   66-73, the heat's and the lime's gauges own
+                                   rows 79-98 while they count down, and the
+                                   banners start at 94. Up, the score reaches
+                                   no higher than row 23 (popped, outlined and
+                                   waving with the heat), the lives sit in the
+                                   far corner, and the star's rows are 7-21,
+                                   its 2px entrance included. Its line hangs
+                                   from it down behind the digits */
+  var STAR_HUD_PAD = 12;        /* px either side of the popped score that move
+                                   the lid's star down: the size-4 digits'
+                                   outline (4), the star's half-width (6) and
+                                   2 more, one of air and one for rounding */
+
+  /* HER LEGEND, the same on every bay. Not the gifts' own paint, because
+     that changes with the room - the heat is orange on most bays and GREEN
+     on the Canopy - and a colour that means two things means nothing. The
+     owner's five words, used as given; blue for a spare life rather than
+     its own jade, because jade sits between her mint and the lime and is
+     the one colour a player could misread. */
+  var GIFT_COL = { spicy: '#ff4b3b',    /* red: the heat */
+                   sour:  '#86f04c',    /* green: the lime - a saturated green,
+                                           not her mint */
+                   gold:  '#ffd942',    /* yellow: the +5 */
+                   whirl: '#cf7bff',    /* purple: the spin */
+                   life:  '#5ab4ff' };  /* blue: a spare life */
+
+  var LINE_T     = 1.5;         /* seconds of hops or flight shown ahead of a
+                                   thing already hopping, or a pellet. One hop
+                                   is 1.0 to 1.6s, so about a hop and a half
+                                   shows, and a kernel hopping nearly in place
+                                   retraces its one arc at most twice - 4px
+                                   dashes on an arc 20 to 46px high, which
+                                   reads as one arc and not a scribble. Built
+                                   at 2.0, where the Couch was three and four
+                                   hop chains at once and her sight cost a
+                                   phone four times what the `!` alone had;
+                                   1.2 saves nothing measurable. Above TAG_T,
+                                   always: no line's copy is let go before the
+                                   `!`'s window is over (cutSteps), so the `!`
+                                   sees the very room it saw before there were
+                                   lines in the room's frame */
+  var LINE_FALL  = 4.5;         /* seconds a FALLING thing is run to find where
+                                   it comes down - its line goes the whole way,
+                                   lid to foot, as the original's did. A Coop
+                                   egg takes 3.5s and the Ceiling's lint about
+                                   3.6; nothing in the game takes longer. (At
+                                   LINE_T, the screen-frame lines cut a Coop egg
+                                   to a 40px stub with no foot.) */
+  var LINE_PITCH = 4;           /* px of route between one dash and the next: the
+                                   original's 4. On a straight fall that is the
+                                   original's rows exactly; on an arc it is 4px
+                                   along the arc. 3 is denser and still the
+                                   same family; 5 starts to read as beads */
+  var LINE_TOUCH = 8;           /* px: a route is drawn only up to where the
+                                   forecast has its thing this close to another
+                                   loose drop - a kernel touches a kernel at 7
+                                   (the Couch's PAIR_D), and 1 more. Beyond the
+                                   meeting nothing is promised: the click is
+                                   decided by a tenth of a pixel, the forecast
+                                   changes its mind about it from pass to pass,
+                                   and a line drawn past it bent with every
+                                   change - the whole of what was left of the
+                                   Couch's shimmer once the dashes were laid by
+                                   distance (dashes still frame to frame
+                                   96.9-98.5% before the cut, 99.9-100 with it,
+                                   the kick and the hold, under a wobbling
+                                   60Hz clock, 2026-11-04). 10
+                                   cuts earlier and calmer, 6 lets more of the
+                                   chaos through. Only where the level moves its
+                                   own drops: under the engine's plain gravity
+                                   nothing falling touches anything */
+  var LINE_MEET  = 20;          /* px across: the same, for a hider standing in
+                                   the thing's way (the Couch's koala, whom the
+                                   popcorn clicks off - its own gate is 20) */
+  var LINE_KICK  = 12;          /* px/s: and the same where the level KICKS the
+                                   thing sideways in one step, up off the floor
+                                   - off a plank's side or cap, out of a
+                                   stove's blast. Whether a falling crumb
+                                   grazes a stool's leg is decided by a tenth
+                                   of a pixel exactly as a click is, and on the
+                                   Floor, where the mop draws every crumb
+                                   sideways into the stools, a route drawn past
+                                   a graze swung by up to 20px from one
+                                   forecast to the next. A kick off a plank
+                                   sets the sideways speed to 18px/s at least;
+                                   nothing smooth in the game changes it by
+                                   more than 7.3 in a step (the mop's suction,
+                                   at the slowest frame the game allows), and
+                                   the levels that sway a thing (lint, a
+                                   feather, the TV's bands) move it, not its
+                                   speed. Like the others, only where the level
+                                   moves its own drops */
+  var LINE_MAX   = 3;           /* hazard lines at once, the nearest first. The
+                                   original drew four; with the paths no longer
+                                   straight, four on the Couch was a hop chain
+                                   per kernel in the room, and at the real odds
+                                   it averaged more than three lines a frame
+                                   there. Three takes that to 2.4 and leaves
+                                   every other bay as it was (none of them
+                                   averages near three hazards at once) */
+  var LINE_GIFTS = 2;           /* gift lines at once; a gift waiting on the lid
+                                   takes the first */
+  /* (LINE_BEAD and LINE_DOT_PX went with the screen-frame lines: a dot was
+     a moment on her clock, a bead every 1/30s, thinned to about 5px apart
+     by the thing's speed. Spaced by TIME, every dot after a bounce moved
+     whenever the bounce's timing did, and a wobbling frame clock moves it
+     by up to a frame on every forecast. The dashes are spaced by distance
+     now - LINE_PITCH - and nothing about them hangs off a clock.) */
+  var LINE_COL   = '#cfe9dd';   /* the original's white dashes, exactly */
+  var LINE_A     = 0.4;         /* and their alpha, exactly */
+  var LINE_GIFT_A = 0.6;        /* a gift's line is the heads-up, so a touch
+                                   brighter than a hazard's */
+  var LINE_SHADE_K = 0;         /* a pixel of ink beside each dash (and a row
+                                   under each foot), as a part of its alpha: a
+                                   drop shadow, not a ring. 0, because the
+                                   owner asked for the original's dashes and
+                                   the original had none. THE KNOB IS KEPT for
+                                   the pale walls: the white is lost on the
+                                   Island's marble and the Whiteboard's board
+                                   exactly as the original's was (the foot
+                                   still reads on the marble, and the wall
+                                   part of the column does). The screen-frame
+                                   lines ran at 0.75 (0.3 under a white dash),
+                                   and that is the number to try if he asks */
+  var LINE_FADE  = 0.4;         /* seconds over which the far end fades in, so a
+                                   line never pops at its horizon */
+  var LINE_GAP   = 8;           /* px kept clear round the thing at least (half
+                                   its width and 2 more, if that is wider), so
+                                   the line never sits on the egg */
+  var LINE_PAST  = 24;          /* px past her column the forecast lets a thing
+                                   go, the way it is going - the `!`'s own 24.
+                                   A pellet's line ends there, and a hopping
+                                   thing's, whether or not it meets her on
+                                   the way; a falling thing's runs on to its
+                                   foot, drawn only (ON PAST HER, foresee) */
+  var FOOT_A     = 0.75;        /* the landing bracket's alpha: the original's */
+  var FOOT_UP    = 24;          /* px over the floor a thing that LANDS can come
+                                   to rest at and still be on the floor, and
+                                   get its foot: the tallest thing that stands
+                                   on the floor once down, the Counter's 43px
+                                   knife on its point, has its middle 22.5px up
+                                   (and a step's fall more, by where in a frame
+                                   it got there). At 12 the foot under a knife
+                                   came and went with that last step - about
+                                   once a second on the Counter. Everything
+                                   else comes to rest within 4px of the floor,
+                                   and nothing lands on a shelf or a lid (that
+                                   is a 'pop' - a burst, a stick - and has no
+                                   foot), measured on every bay 2026-11-05 */
+  var WATCH_EVERY = 1 / 30;     /* seconds between forecasts: every second frame
+                                   at 60Hz, as before, every fourth at 120 */
+  var WATCH_NEAR = 40;          /* px: a neighbour in the forecast (a loose
+                                   thing with no line and no verdict owed) is
+                                   run only while it is within this of
+                                   something that has one, and is taken out of
+                                   the copy the first step it is not. A kernel
+                                   touches a kernel at 7px. Tried at 16, 24 and
+                                   40 against running every one: 40 lost
+                                   nothing - paths as true to the real thing,
+                                   dots as still, the same `!` (Couch and
+                                   Floor, 8 seeds, 2026-11-04) - and it saves
+                                   a quarter of the Couch's forecast steps */
+  var SIGHT_MIN  = 1 / 144;     /* the frame step she foresees in is the real */
+  var SIGHT_MAX  = 1 / 30;      /* one, clamped to what the game allows and */
+  var SIGHT_EASE = 0.1;         /* smoothed by this much a frame, so a bounce in
+                                   the forecast lands on the step the real one
+                                   will, on a 60Hz phone and a 120Hz one alike */
+
+  var watchMs = 0;              /* what her sight cost this frame, in ms, for inspect() */
+  var watchTags = [];           /* live drops wearing a !, nearest first */
+  var watchStars = [];          /* { x, y, at: 'lid' | 'edge' | 'gun', kind, col, born } */
+  var starPool = [];            /* the star records, reused so a frame makes no garbage */
+  var watchDots = [], dotPool = [];    /* { x, y, rx, ry, pend, col, a, kind, b, ob }: the dashes to draw */
+  var watchFeet = [], footPool = [];   /* { x, rx, col, a, kind, ob }: the landing brackets */
+  /* the forecast's paths, one record per line: { ob, pre, kind, col, xs, ys,
+     t0, ta, dt, scroll0, odo0, hops, tmax, cut, cutWhy, end, live, right,
+     footX, footT, shown, dxs, dys, dts, dbs } - sample i of xs/ys is the
+     ROOM point (x measured from where the room stood at the pass, scroll0)
+     the thing will be at t0 + ta + i * dt on watchClock; samples past `cut`
+     are forecast but not drawn; dxs/dys/dts/dbs are the dashes laid along
+     the drawn part (layPath): room point, when the thing gets there, and
+     the ruler mark it sits on */
+  var paths = [], pathPool = [];
+  var sightDt = 1 / 60;         /* the real frame step, smoothed: the forecast's step */
+  var sightSeen = false;        /* has sightDt been given a first frame this run */
+  var watchClock = 0;           /* seconds of play she has watched: what says how
+                                   far along its line a thing has got (the
+                                   dashes it has eaten) - never where a dash is */
+  var watchTick = 0;            /* frames until the next forecast */
+  var starCryAt = -9;           /* scene clock of the last blip */
+  /* the forecast's scratch, kept between passes for the same reason */
+  var tagPick = [], tagGhosts = [], tagSlot = [], gunPick = [];
+  var tagLive = [], tagSeen = [], tagHitT = [], tagRight = [];
+  var giftPick = [], ghostPath = [], touchIdx = [], meetIdx = [], actIdx = [];
+  var contC = [], contT = [], contP = [];   /* the copies run on past her: copy, twin, path */
+  var cutSteps = 0;             /* a cut line's copy is run at least this many steps:
+                                   the `!`'s window and one more (foresee) */
+  var sightPx = 0, sightPy = 0; /* where she is at the pass, for traceStep */
+
+  /* WHAT CAN WEAR A `!`: a loose thing that can still hurt her. Not a gift
+     (isPowerUp - she is never told to dodge a present), not a thing that
+     has burst, been carried off by a crow or retired by its level. A SHOT
+     counts anywhere on screen, behind her too, because a pellet fired by a
+     Cupman she has already passed comes at her from behind; anything else
+     counts from just behind her column on out past the right edge, where
+     the next drops are already falling. A kernel that has reached the
+     cushion and is still hopping counts like any other: its hops are as
+     settled as its fall. The things the arts move in stepWorld - the pole,
+     the mop, the ketchup, the cooktop, the machines - are not drops and are
+     never tagged; they have the room's own warnings. */
+  function tagCandidate(ob) {
+    if (ob.type !== 'drop' || ob.broken > 0 || ob.held || ob.gone || isPowerUp(ob)) return false;
+    if (ob.shot) return ob.x > -16 && ob.x < VW + 40;
+    return ob.x > player.x - 12 && ob.x < VW + 40;
   }
 
-  /* The marker brightens as the plank closes on the edge, and eases out
-     rather than blinking off in the stretch where the furthest plank is
-     already on screen and there is nothing left to foresee. */
+  /* WHAT GETS A COLOURED LINE: a gift in the air, on tagCandidate's terms -
+     a pellet anywhere on screen, anything else from just behind her on out
+     past the right edge - and never one that has burst, is in a crow's
+     talons or has been retired. */
+  function giftCandidate(ob) {
+    if (ob.type !== 'drop' || ob.broken > 0 || ob.held || ob.gone || !isPowerUp(ob)) return false;
+    if (ob.shot) return ob.x > -16 && ob.x < VW + 40;
+    return ob.x > player.x - 12 && ob.x < VW + 40;
+  }
+
+  /* what kind of gift a thing is, in collide()'s order (the heat, the gold,
+     the lime, the spin - the first it has is what catching it does), 'life'
+     for a spare life, '' for anything else; and that kind's colour in her
+     legend, white for '' */
+  function kindOf(ob) {
+    if (ob.type === 'boon') return 'life';
+    return ob.spicy ? 'spicy' : ob.gold ? 'gold' : ob.sour ? 'sour' : ob.whirl ? 'whirl' : '';
+  }
+  function kindCol(kind) { return GIFT_COL[kind] || LINE_COL; }
+
+  /* A COPY OF THE ROOM, for a forecast to step. Shallow copies are enough:
+     no stepDrop mutates an array or object hanging off a drop, it only
+     replaces them (audited 2026-11-01, every bay). `run` gets its own born
+     queue, which is thrown away, and its own LEDGER, copied one level deep,
+     because the steps that count write into objects hanging off it (the
+     Counter's stats, the Floor's mop). Nothing a forecast does reaches the
+     real game. */
+  function copyOf(ob) {
+    var c = {};
+    for (var k in ob) if (Object.prototype.hasOwnProperty.call(ob, k)) c[k] = ob[k];
+    return c;
+  }
+
+  function ledgerCopy(L) {
+    var c = {};
+    for (var k in L) {
+      if (!Object.prototype.hasOwnProperty.call(L, k)) continue;
+      var v = L[k];
+      c[k] = Array.isArray(v) ? v.slice() : (v && typeof v === 'object' ? copyOf(v) : v);
+    }
+    return c;
+  }
+
+  /* a fresh path record off the pool: a pass makes at most a handful, and
+     the records and their sample arrays are reused pass after pass.
+
+     How far it runs is decided here, by what the thing is doing now. A
+     thing already HOPPING (ob.landed) or a PELLET is run LINE_T ahead and
+     its line fades in at the far end. A thing still FALLING is run until
+     it comes down, up to LINE_FALL. A line that is cut, or comes down,
+     sooner is run on through the `!`'s window and no further (traceStep),
+     so through that window every copy is stepped exactly as it always was.
+
+     odo0 is where the thing's odometer stands now: the ruler the dashes are
+     laid on (layPath). A thing with no reading yet - the gift still on the
+     lid - starts where its odometer WILL start the frame it is born, so
+     its dashes do not move when it lets go. */
+  function newPath(ob, pre) {
+    var p = pathPool[paths.length] ||
+            (pathPool[paths.length] = { xs: [], ys: [], dxs: [], dys: [], dts: [], dbs: [] });
+    p.ob = ob; p.pre = pre;
+    p.kind = kindOf(ob); p.col = kindCol(p.kind);
+    p.xs.length = 0; p.ys.length = 0;
+    p.dxs.length = 0; p.dys.length = 0; p.dts.length = 0; p.dbs.length = 0;
+    p.t0 = watchClock; p.ta = 0; p.dt = sightDt;
+    p.scroll0 = scroll;
+    p.odo0 = ob.ruler ? ob.ruler.s : ob.y - (FLOOR - 4);
+    p.hops = !!ob.landed;
+    p.tmax = (p.hops || ob.shot) ? LINE_T : LINE_FALL;
+    p.kmax = Math.ceil(p.tmax / p.dt);      /* the same, in the forecast's steps */
+    p.cut = 0; p.cutWhy = ''; p.shx = 0;
+    p.end = ''; p.live = true; p.cont = false; p.contK = 0; p.right = true; p.footX = NaN; p.footT = 0; p.shown = false;
+    p.herI = -1; p.nearI = 0; p.nearD2 = Infinity; p.litN = 0;
+    paths.push(p);
+    return p;
+  }
+
+  /* THE PELLET'S STOP. A pellet whose forecast reaches her stops short of
+     her - once it has reached her it is out of her story - but only while
+     its `!` is up (lineList), so its line's end changes when the `!` does
+     and not before. Drawn at the raw forecast, as a falling thing's column
+     was, the end went from short of her to 24px past her and back as she
+     flapped, seven times a minute on the Fort, where the `!` it agreed with
+     kept still (it is held on at least TAG_HOLD, and comes off only once
+     the forecast is clear by TAG_CLEAR). So every pellet's route is run on
+     through her to where one that misses her is let go of (THROUGH HER,
+     below), and traceStep notes where along it the pellet first comes
+     within TAG_LIT of her (herI) - or, if it never does, where it comes
+     nearest (nearI) - and layPath how many dashes come before that (litN):
+     the line while its `!` is up. The two meet as the forecast's nearest
+     approach crosses TAG_LIT, so a `!` held on over a pellet that will now
+     just miss her does not make its line jump. As the `!` judges, it is
+     measured on the screen, against her standing where she is. */
+
+  /* ONE STEP OF A LINE, after its copy has taken it: the sample written
+     down, in the room (S, and shx - see THE BOUNCE'S PHASE), and the line's
+     own ends looked for. `end` is what the step already ended it with, if
+     anything; the line's end is returned. `twin` is the copy a thing run on
+     past her leaves behind in the room, which it must not be cut against.
+
+     THE CUT, where the level moves its own drops: the first sample at which
+     the forecast has this thing within LINE_TOUCH of another loose drop
+     still in the copy, within LINE_MEET across of a hider still in play, or
+     kicked sideways (LINE_KICK), is the last one drawn. The x test first,
+     because it throws out nearly everything. Once cut - or once a falling
+     thing is down - the line has nothing left to show, so its copy is run
+     no further than here, or than one step past the `!`'s whole window
+     (cutSteps), whichever is later: through that window it is stepped
+     exactly as it always was, so the room every verdict is reached in is
+     the room it always was, and after it nobody is owed anything. (Run on
+     to LINE_T as before, a cut line cost the Couch a fifth more steps for
+     nothing anyone could see.) A copy run on past her (twin set) is read
+     by nothing in the room, so it stops the step its line does.
+
+     WHERE IT COMES DOWN: the step it comes off the floor - its y down there
+     and the level's bounce flag up, so a kick off a cap or the koala is not
+     taken for a landing. One foot per line, the first, and never past a
+     cut. For a kernel already hopping that is its NEXT touchdown, and the
+     foot hops on with each bounce. For a thing still falling it is where
+     its line stops: its hops are drawn once it is hopping, from the
+     cushion. (A thing that lands without a bounce flag - the Bar's cork,
+     coming to rest - gets its foot from 'land'.)
+
+     THE BOUNCE'S PHASE. A thing comes off the floor on the frame after it
+     reaches it, so where in the room it bounces depends on where in a frame
+     it got there: up to a whole frame's travel after the moment it
+     touched. A real frame clock wobbles, so from one forecast to the next
+     that guess moves, and every dash after the bounce moved with it. So the
+     route is drawn bouncing where it touched (the part of this step it took
+     to reach the floor, bf, from how far it fell against how far it was
+     going to) plus HALF a step's travel - the bounce the real thing makes
+     on average, whatever its frames do - and everything after the bounce
+     is moved the same (shx). The copy itself bounces where it bounces: this
+     is the drawing only. For popcorn, 56px/s across at most, it is under a
+     pixel either way; it is there for anything quicker. */
+  function traceStep(p, c, twin, k, dt, S, end, hop, y0, vx0, vy0) {
+    var i, c2, tx, ty, bf, bs, bi, cut0 = p.cut;
+    p.xs.push(c.x + S + p.shx); p.ys.push(c.y);
+    if (c.shot && p.herI < 0) {              /* THE PELLET'S STOP, above */
+      tx = c.x - sightPx; ty = c.y - sightPy; bs = tx * tx + ty * ty;
+      if (bs < TAG_LIT * TAG_LIT) p.herI = p.xs.length - 1;
+      else if (bs < p.nearD2) { p.nearD2 = bs; p.nearI = p.xs.length - 1; }
+    }
+    if (!p.cut && art.stepDrop && !c.shot) {
+      for (i = 0; i < touchIdx.length; i++) {
+        c2 = tagGhosts[touchIdx[i]];
+        tx = c2.x - c.x;
+        if (tx > LINE_TOUCH || tx < -LINE_TOUCH || c2 === c || c2 === twin) continue;
+        ty = c2.y - c.y;
+        if (ty > LINE_TOUCH || ty < -LINE_TOUCH || c2.broken > 0 || c2.gone) continue;
+        if (tx * tx + ty * ty < LINE_TOUCH * LINE_TOUCH) {
+          p.cut = p.xs.length - 1; p.cutWhy = 'touch'; break;
+        }
+      }
+      for (i = 0; i < meetIdx.length && !p.cut; i++) {
+        c2 = tagGhosts[meetIdx[i]];
+        if (!c2.met && c2.x - c.x < LINE_MEET && c.x - c2.x < LINE_MEET) {
+          p.cut = p.xs.length - 1; p.cutWhy = 'touch';
+        }
+      }
+      tx = (c.vx || 0) - vx0;
+      if (!p.cut && c.y < FLOOR - 5 && (tx > LINE_KICK || tx < -LINE_KICK)) {
+        p.cut = p.xs.length - 1; p.cutWhy = 'kick';
+      }
+    }
+    /* A HOPPING THING ALREADY A LITTLE BEHIND HER COLUMN at the pass (in
+       the last 12px tagCandidate allows) is let go by the `!`'s rule for
+       that side - 'past' only once it is 24px out in FRONT of her, which is
+       how a pellet fired from behind her is let go of - so a kernel there,
+       drifting left with the room, never ended, and its hops ran on to the
+       horizon: a line twice as long for the few frames before it left the
+       candidates. Its drawing stops LINE_PAST behind her column, as it does
+       for one on her right. So does a hopping thing's run on THROUGH HER
+       (twin set), so a kernel's hops end in the same place behind her
+       whether it is going to bounce off her or miss her by a pixel. (A
+       thing still falling runs on to its foot on either side: ON PAST HER,
+       foresee.) */
+    if (!p.cut && p.hops && (!p.right || twin) && !c.shot && c.x < sightPx - LINE_PAST) {
+      p.cut = p.xs.length - 1; p.cutWhy = 'past';
+    }
+    if (p.cut && !cut0) {
+      p.kmax = twin ? Math.min(p.kmax, k) : Math.max(cutSteps, Math.min(p.kmax, k));
+      p.tmax = p.kmax * dt;
+    }
+    if (hop && !c.gone && c.y >= FLOOR - 5) {
+      bf = vy0 > 0 ? clamp((c.y - y0) / (vy0 * dt), 0, 1) : 0.5;
+      bi = p.xs.length - 1;
+      bs = bi > 0 ? (p.xs[bi] - p.xs[bi - 1]) * (bf - 0.5) : 0;
+      p.xs[bi] += bs; p.shx += bs;
+      if (isNaN(p.footX) && !p.cut) { p.footX = p.xs[bi]; p.footT = k * dt; }
+      if (!p.hops) {
+        if (!p.cut) { p.cut = p.xs.length - 1; p.cutWhy = 'down'; }
+        p.kmax = twin ? Math.min(p.kmax, k) : Math.max(cutSteps, Math.min(p.kmax, k));
+        p.tmax = p.kmax * dt;
+      }
+    }
+    /* the lid's gift is known only until something is rolled for it */
+    if (!end && p.pre && (hop || c.dice !== 0)) end = 'bounce';
+    /* and a line is run to its own horizon - counted in whole steps the
+       way the forecast always counted LINE_T, so a line ends on the very
+       step it always did */
+    if (!end && k >= p.kmax) end = 'horizon';
+    /* a foot where it comes down - on the floor only (FOOT_UP): a thing
+       that "lands" up on a shelf or a lid has no floor bracket to mark */
+    if (end === 'land' && c.y >= FLOOR - FOOT_UP && isNaN(p.footX) && !p.cut) {
+      p.footX = c.x + S + p.shx; p.footT = k * dt;
+    }
+    return end;
+  }
+
+  /* THROUGH HER. A thing whose forecast reaches her - 'hit', the `!`'s own
+     verdict, or 'reach', a gift she would catch or a drop the heat would
+     smash - goes on being DRAWN through her, on a copy run on past her
+     exactly as one that misses her is (ON PAST HER, foresee); the copy in
+     the room stops there as it always did, so the room the `!` judges in
+     is untouched. Cut short of her instead, as the screen-frame lines
+     were, an egg's column ended in mid-air at her height with no foot -
+     and since a flap is the difference between a hit and a miss, the
+     bottom of the column and its foot went and came back as she flew,
+     twenty to sixty times a minute on the falling bays (2026-11-05), and
+     an egg falling onto her head had no line at all. The original never
+     cut its column; nor does this. A pellet's line is run on too, but is
+     DRAWN short of her while its `!` is up (THE PELLET'S STOP, above).
+     Returns 1 if a copy was set running on. */
+  function throughHer(p, c, k, dt, S, end, hop, y0, vx0, vy0, why) {
+    end = traceStep(p, c, null, k, dt, S, end, hop, y0, vx0, vy0);
+    if (!end && !p.cut) { runOn(p, c, k); return 1; }
+    p.end = end || why;
+    return 0;
+  }
+
+  /* a second copy of the thing, run on from here by itself, drawing only */
+  function runOn(p, c, k) {
+    contC.push(copyOf(c)); contT.push(c); contP.push(p);
+    p.cont = true; p.contK = k;
+  }
+
+  /* the gifts that get a line: the ones in front of her column first, then
+     the nearest. A gift already behind her column is on its way out (its
+     line has 24px left to run), and it must not hold one of the two slots
+     for the few frames it takes to leave while a new one in front waits */
+  function byFrontNear(a, b) {
+    var px = player.x;
+    return ((a.x < px ? 1 : 0) - (b.x < px ? 1 : 0)) || (Math.abs(a.x - px) - Math.abs(b.x - px));
+  }
+
+  /* THE FORECAST, one pass for all three marks. The room is copied and run
+     ahead, stepped exactly the way moveObstacles steps the real one -
+     walked backwards, scrolled, aged, and handed to the level's stepDrop on
+     each thing's OWN dice (Dice.own: the copy rolls the very numbers the
+     real one will, because every falling thing rolls its own stream - see
+     stepOwn). It is stepped in sightDt, the real frame step, so a bounce
+     lands on the frame the real one will at 60Hz and at 120. The planks,
+     boons and the rest are only scrolled, which is all a kernel needs of a
+     plank to bounce off it; every other loose thing in front of her is run
+     too, where the level moves its own, for as long as it is near enough
+     to bump into something being forecast (see NOR IS ANYTHING ELSE below).
+
+     WILL IT HIT HER? The nearest TAG_CHECK hazards are each given a verdict
+     on the live drop: bangSeen 2 if the future comes within TAG_LIT of
+     where she is now inside TAG_T (and bangAt, the seconds until it does),
+     1 if only within TAG_CLEAR, 0 if neither. A thing stops being judged
+     once it lands, retires, leaves the room, or is 24px past her the way it
+     is going - it has missed. That is the `!`, and it is judged exactly as
+     it was before there were lines.
+
+     WHERE WILL IT GO? The nearest LINE_MAX of those hazards, up to
+     LINE_GIFTS gifts in the air, and the gift waiting on the lid also have
+     their path written down, a sample a step, IN THE ROOM'S FRAME: the
+     copy is scrolled like the room, and S, what it has scrolled since the
+     pass, is added back to each sample, so a sample is where in the room
+     the thing will be (measured from where the room stood at the pass,
+     scroll0) and not where on the screen. It is written until p.tmax (see
+     newPath) or until it ends: 'land' (on the floor - a foot is drawn
+     there), 'pop' (bursts on something), 'past', 'off', 'gone', 'bounce'
+     (see below) or 'horizon'. Reaching HER is not an end of the line:
+     'hit' (the `!`'s own verdict) and 'reach' (a gift she would catch, a
+     plain drop the heat would smash, a hazard past TAG_T) end the copy in
+     the room, as they always did, and the line runs on THROUGH HER.
+
+     WHAT IS DRAWN OF IT, which is not always all of it. The line stops
+     (p.cut, the last sample drawn) where the thing first comes down - its
+     y on the floor, off a bounce or a landing: a foot goes there - if it
+     is still falling now, and where the forecast first has it meet another
+     loose thing on a bay that moves its own drops: within LINE_TOUCH of a
+     drop, LINE_MEET across of a hider. Past a collision nothing is
+     promised (see THE CUT at the head of this section). A cut ends the
+     DRAWING; the copy goes on being stepped exactly as it would have been
+     for as long as any verdict is owed - TAG_T and a step - so the room the
+     `!` judges in, every neighbour, every prune, every verdict, is the room
+     it always judged in.
+
+     ON PAST HER. A thing passing 24px behind her is let go by the `!`
+     ('past'), and by the copy, exactly as it always was; so is one scrolled
+     off the left edge ('off'). But a line laid on the room has no reason to
+     stop there: an egg falling well ahead of her takes three seconds to
+     land and is behind her for the last of them, and its line is the whole
+     column, lid to foot, as the original's was - cut where it passes her,
+     it hung in mid-air. So at that end a line that is not yet cut goes on,
+     DRAWN ONLY: a second copy of the thing is run on from there on its own
+     (its dice and all), apart from the room's copy, read by nothing in it
+     and writing only into a run of its own, to wherever its line would end
+     anyway. The room the `!` judges in is untouched. Not a pellet: one
+     that has missed her is gone from her story. And the same copy carries
+     on a line whose thing would reach her (THROUGH HER) - a pellet's to
+     where one that misses is let go of, a kernel's hops to LINE_PAST
+     behind her, anything falling to its foot.
+
+     THE GIFT ON THE LID is made SHED_LEAD seconds before it lets go, but
+     it has no dice until admit() rolls them off the shared stream as it
+     goes. So its copy joins the room the step its timer runs out, at the
+     end of the list as admit() puts it, with dice of 0, and its path is
+     kept only as long as nothing has been rolled for it - to its first
+     bounce or its first roll of the dice, whichever is sooner. Everything
+     before that is the same for any dice; after it, nothing is known yet.
+
+     THE HEAT. While she is hot, collide() smashes any plain drop she
+     touches, pellets included, so a meeting before the heat runs out is no
+     hit and does not light a tag. The pace is worked out step by step the
+     way update() works it - the ramp still climbing, and the 1.55 the heat
+     adds dropping off the step it ends - because that is the biggest thing
+     that would otherwise throw every forecast sideways at once.
+
+     Every WATCH_EVERY seconds - every second frame at 60Hz, every fourth at
+     120 - so a pass's cost is spread the same at either rate: the loose
+     things in front of her for LINE_T, or a falling one to where it comes
+     down (on the Couch, the busiest, about 135 drop steps a frame: 0.09ms
+     a frame on a 2026 Mac at the gift-heavy test odds, and 0.075 at the
+     real ones, where the `!` alone cost 0.055), plus one shallow copy of
+     the room, and nothing at all while nothing loose is near. Between
+     passes the last verdicts stand, the hysteresis in updateWatch rides
+     over the gap, and the same room points are slid on with the room. */
+  function foresee() {
+    var px = player.x, py = player.y, dt = sightDt, spd = speed;
+    var i, j, k, w, ob, c, n, nk, live, lines, down, dx, dy, d2, p, vw, vp, hop, end, near;
+    /* S: what the copy of the room has scrolled since the pass, added back
+       to every sample so it is a point in the room; y0, vx0, vy0: where a
+       thing was and how it was going before its step (traceStep's kick and
+       bounce); conts, gr2: the copies running on past her and their run */
+    var S = 0, tx, c2, a, y0 = 0, vx0 = 0, vy0 = 0, conts = 0, nc = 0, gr2 = null;
+
+    paths.length = 0;
+    touchIdx.length = 0; meetIdx.length = 0; actIdx.length = 0;
+    contC.length = 0; contT.length = 0; contP.length = 0;
+
+    tagPick.length = 0;
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (tagCandidate(ob)) tagPick.push(ob);
+      else if (ob.bangSeen) ob.bangSeen = 0;
+    }
+    if (tagPick.length > 1) {
+      tagPick.sort(function (a, b) { return Math.abs(a.x - px) - Math.abs(b.x - px); });
+    }
+    /* the ones not kept this pass have no verdict, which is a 0, not a
+       leftover 2 from when they were nearer */
+    for (i = TAG_CHECK; i < tagPick.length; i++) tagPick[i].bangSeen = 0;
+    if (tagPick.length > TAG_CHECK) tagPick.length = TAG_CHECK;
+    nk = tagPick.length;
+
+    /* the gift on the lid, if the spawner's clock is really running */
+    var pend = null, pendT = 0, pendP = null;
+    if (nextDrop && shedLive && isPowerUp(nextDrop.ob)) {
+      pend = copyOf(nextDrop.ob);
+      pend.dice = 0;
+      pendT = dropTimer;
+    }
+    /* and the gifts in the air, nearest first, one fewer if the lid has one */
+    giftPick.length = 0;
+    for (i = 0; i < obstacles.length; i++) {
+      if (giftCandidate(obstacles[i])) giftPick.push(obstacles[i]);
+    }
+    if (giftPick.length > 1) giftPick.sort(byFrontNear);
+    if (giftPick.length > LINE_GIFTS - (pend ? 1 : 0)) giftPick.length = LINE_GIFTS - (pend ? 1 : 0);
+    if (!nk && !giftPick.length && !pend) return;
+
+    for (w = 0; w < nk; w++) {
+      tagLive[w] = false; tagSeen[w] = 0; tagHitT[w] = -1;
+      tagRight[w] = tagPick[w].x >= px;
+    }
+    lines = 0;
+    tagGhosts.length = 0; tagSlot.length = 0; ghostPath.length = 0;
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (ob.held || ob.gone || (ob.type === 'drop' && ob.broken > 0)) continue;
+      w = tagPick.indexOf(ob);
+      var drawn = w >= 0 ? w < LINE_MAX : giftPick.indexOf(ob) >= 0;
+      /* a drop already well behind her can touch nothing she is watching -
+         though a pellet fired at her from a Cupman she has passed is still
+         run for its LINE, with no verdict, as before there were lines */
+      var far = ob.type === 'drop' && ob.x < px - 60;
+      if (far && !drawn) continue;
+      if (far) w = -1;
+      c = copyOf(ob);
+      if (w >= 0) tagLive[w] = true;
+      tagGhosts.push(c);
+      tagSlot.push(w);
+      /* what a line can meet (THE CUT): the loose drops - not a pellet,
+         which passes through everything but her - and a hider */
+      if (c.type === 'drop' && !c.shot) touchIdx.push(tagGhosts.length - 1);
+      else if (c.type === 'boon' && c.meet) meetIdx.push(tagGhosts.length - 1);
+      if (w >= 0 || drawn) actIdx.push(tagGhosts.length - 1);
+      p = null;
+      if (drawn) {
+        p = newPath(ob, false);
+        p.xs.push(ob.x); p.ys.push(ob.y);
+        p.right = ob.x >= px;
+        lines++;
+      }
+      ghostPath.push(p);
+    }
+    if (pend) { pendP = newPath(nextDrop.ob, true); lines++; }
+
+    var gr = copyOf(run);
+    gr.ledger = ledgerCopy(ledger);
+    gr.born = [];
+    gr.speed = spd; gr.px = px; gr.py = py;
+
+    var base0 = Math.min(tune.speedMax, tune.speedStart + tune.speedRamp * runTime);
+    var hotMul = spicy > 0 && base0 > 0 ? speed / base0 : 1;
+    var LIT2 = TAG_LIT * TAG_LIT, CLEAR2 = TAG_CLEAR * TAG_CLEAR;
+    /* as far as anything is ever run (a gift still on the lid is run
+       LINE_FALL from when it lets go); each line stops itself at its own
+       tmax, and the loop stops when nothing is left running */
+    var steps = Math.ceil((LINE_FALL + (pend ? Math.max(0, pendT) : 0)) / dt), tagSteps = Math.ceil(TAG_T / dt);
+    cutSteps = tagSteps + 1; sightPx = px; sightPy = py;
+    n = tagGhosts.length;
+    live = 0;
+    for (w = 0; w < nk; w++) if (tagLive[w]) live++;
+
+    Dice.roll = Dice.own;
+    try {
+      for (k = 1; k <= steps && (live > 0 || lines > 0 || conts > 0); k++) {
+        /* past TAG_T no verdict is owed: what is still being run is run
+           for its line alone */
+        if (k > tagSteps && live > 0) {
+          for (w = 0; w < nk; w++) tagLive[w] = false;
+          live = 0;
+        }
+        gr.time += dt;
+        spd = Math.min(tune.speedMax, tune.speedStart + tune.speedRamp * (runTime + k * dt)) *
+              (spicy - k * dt > 0 ? hotMul : 1);
+        gr.speed = spd;
+        /* the very pace the copy is scrolled by this step, so S is what the
+           real room will have scrolled by then, the ramp and the heat's end
+           included */
+        S += spd * dt;
+        var cool = spicy - k * dt <= 0;
+        nc = contC.length;                  /* the ones running on before this step */
+        for (j = n - 1; j >= 0; j--) {
+          c = tagGhosts[j];
+          c.age = (c.age || 0) + dt;
+          c.x -= spd * dt;
+          w = tagSlot[j]; p = ghostPath[j];
+          vw = w >= 0 && tagLive[w];          /* still owes a verdict */
+          vp = p !== null && p.live;          /* still drawing a line */
+          if (!vw && !vp) {
+            /* NOR IS ANYTHING ELSE LOOSE LEFT HANGING. Every other drop in
+               the copy is run too, on its own dice, for as long as anything
+               is being forecast: a kernel bounces off its neighbours, and a
+               neighbour frozen in mid-hop is a kernel that is not there -
+               on the Couch that was one dot in a hundred shifting from pass
+               to pass. Only where the level moves its own drops (under the
+               engine's plain gravity nothing falling touches anything), and
+               only until it is as far behind her as the copy reaches - 60px,
+               the rule above - for the same reason: nothing she is watching
+               is back there. That last is half the cost of it. */
+            if (!art.stepDrop || c.type !== 'drop' || c.broken > 0 || c.gone || c.x < px - 60) continue;
+            /* (the lid's gift, past what is known of it, is left where it
+               is: run on made-up dice it would only be somewhere else) */
+            if (p !== null && p.pre) continue;
+            /* AND ONLY WHILE IT IS NEAR SOMETHING BEING FORECAST - within
+               WATCH_NEAR of a thing still drawing a line or owed a verdict,
+               or of the spot the lid's gift will let go of. A neighbour
+               that is not near any of them can only matter by coming back
+               to one, and over the second or so a forecast runs, measured
+               on every seed, none did: so it is taken out of the copy (not
+               left hanging, which is a kernel in mid-air that is not
+               really there) and never stepped again this pass. On the
+               Couch this is a quarter of all the forecast's steps. */
+            near = pend !== null && Math.abs(pend.x - c.x) < WATCH_NEAR;
+            /* (only the copies that can be owed a verdict or drawing a line
+               are looked at - actIdx, the same answer without walking the
+               whole room for every neighbour every step) */
+            for (a = 0; a < actIdx.length && !near; a++) {
+              i = actIdx[a];
+              if (((tagSlot[i] >= 0 && tagLive[tagSlot[i]]) || (ghostPath[i] !== null && ghostPath[i].live)) &&
+                  Math.abs(tagGhosts[i].x - c.x) < WATCH_NEAR) near = true;
+            }
+            if (!near) { c.broken = 1; continue; }
+            Dice.ob = c;
+            if (art.stepDrop(c, dt, tagGhosts, gr)) c.broken = 1;
+            c.bounced = false;
+            continue;
+          }
+          Dice.ob = c;
+          y0 = c.y; vx0 = c.vx || 0; vy0 = c.vy;   /* for the kick and the bounce: read, never written */
+          if (art.stepDrop) down = art.stepDrop(c, dt, tagGhosts, gr);
+          else {
+            c.vy += art.DROP_GRAV * dt;
+            c.y += c.vy * dt;
+            c.spin += c.spinRate * dt;
+            down = c.y >= FLOOR - 4;
+          }
+          hop = c.bounced;
+          c.bounced = false;
+          dx = c.x - px; dy = c.y - py;
+          d2 = dx * dx + dy * dy;
+          if (vw && cool) {
+            if (d2 < CLEAR2 && tagSeen[w] < 1) tagSeen[w] = 1;
+            if (d2 < LIT2) {
+              tagSeen[w] = 2; tagHitT[w] = k * dt;
+              tagLive[w] = false; live--;
+              if (vp) {
+                /* THROUGH HER: the copy in the room stops here as it always
+                   did, and the line goes on, drawn only */
+                p.live = false; lines--;
+                end = down ? (c.pop ? 'pop' : 'land') : c.gone ? 'gone' : '';
+                conts += throughHer(p, c, k, dt, S, end, hop, y0, vx0, vy0, 'hit');
+              }
+              continue;
+            }
+          }
+          end = down ? (c.pop ? 'pop' : 'land')
+              : c.gone ? 'gone'
+              : ((w >= 0 ? tagRight[w] : p.right) ? c.x < px - LINE_PAST : c.x > px + LINE_PAST) ? 'past'
+              : (c.x < -20 || c.x > VW + 80 || c.y > VH + 20 || c.y < -40) ? 'off' : '';
+          if (vw && end) { tagLive[w] = false; live--; }
+          if (down) c.broken = 1;             /* landDrop's mark, for the rest */
+          if (!vp) continue;
+          if (!end && d2 < LIT2) {
+            p.live = false; lines--;
+            conts += throughHer(p, c, k, dt, S, '', hop, y0, vx0, vy0, 'reach');
+            continue;
+          }
+          end = traceStep(p, c, null, k, dt, S, end, hop, y0, vx0, vy0);
+          if (end) {
+            p.live = false; lines--;
+            /* AND ON, DRAWN ONLY (ON PAST HER, above) */
+            if (!c.shot && !p.hops && !p.cut && k < p.kmax &&
+                (end === 'past' || (end === 'off' && c.x < -20 && c.y <= VH + 20 && c.y >= -40))) {
+              runOn(p, c, k); conts++;
+            } else p.end = end;
+          }
+        }
+        /* the copies running on past her, each on its own, after the rest
+           of the room has taken this step - read by nothing, and reading
+           the room exactly as its twin would, but for the twin itself
+           (hidden from it for the call, so a thing never clicks off its
+           own ghost), and writing only into a run of their own. One made
+           this step has taken this step already, as its twin */
+        for (j = 0; j < nc; j++) {
+          p = contP[j];
+          if (!p.cont) continue;
+          c = contC[j];
+          c.age = (c.age || 0) + dt;
+          c.x -= spd * dt;
+          Dice.ob = c;
+          y0 = c.y; vx0 = c.vx || 0; vy0 = c.vy;
+          if (art.stepDrop) {
+            if (!gr2) { gr2 = copyOf(gr); gr2.ledger = ledgerCopy(gr.ledger); gr2.born = []; }
+            gr2.time = gr.time; gr2.speed = gr.speed;
+            c2 = contT[j]; tx = c2.broken; c2.broken = 1;
+            down = art.stepDrop(c, dt, tagGhosts, gr2);
+            c2.broken = tx;
+          } else {
+            c.vy += art.DROP_GRAV * dt;
+            c.y += c.vy * dt;
+            c.spin += c.spinRate * dt;
+            down = c.y >= FLOOR - 4;
+          }
+          hop = c.bounced;
+          c.bounced = false;
+          /* (and nothing about her ends it: its line runs on through her
+             as the original's column did - a pellet's to where one that
+             misses her is let go of, 24px past her, or off the edge) */
+          end = down ? (c.pop ? 'pop' : 'land')
+              : c.gone ? 'gone'
+              : c.shot && (p.right ? c.x < px - LINE_PAST : c.x > px + LINE_PAST) ? 'past'
+              : (c.x > VW + 80 || c.y > VH + 20 || c.y < -40 || (c.shot && c.x < -20)) ? 'off' : '';
+          end = traceStep(p, c, contT[j], k, dt, S, end, hop, y0, vx0, vy0);
+          if (end) { p.end = end; p.cont = false; conts--; }
+        }
+        /* let go at the end of the frame its timer runs out, as admit()
+           does after the walk - so it is first stepped on the next. The
+           timer is run down by the same subtraction spawnDrops makes, not
+           worked out as k * dt: the first drop's 1.2 runs out on a step
+           exactly, and two ways of reaching zero disagree there by a frame */
+        if (pend) pendT -= dt;
+        if (pend && pendT <= 0) {
+          tagGhosts.push(pend); tagSlot.push(-1); ghostPath.push(pendP);
+          n++;
+          touchIdx.push(n - 1); actIdx.push(n - 1);
+          pendP.ta = k * dt;
+          /* its fall is timed from here, not from the pass: a feather let
+             go a second from now still takes its three seconds to land */
+          pendP.kmax = k + Math.ceil(LINE_FALL / dt); pendP.tmax = pendP.kmax * dt;
+          pendP.xs.push(pend.x + S); pendP.ys.push(pend.y);
+          pendP.right = pend.x >= px;
+          pend = null;
+        }
+      }
+    } finally {
+      Dice.roll = Math.random; Dice.ob = null;
+    }
+    for (i = 0; i < paths.length; i++) {
+      if (paths[i].live || paths[i].cont) { paths[i].live = false; paths[i].cont = false; paths[i].end = 'horizon'; }
+      layPath(paths[i]);
+    }
+
+    for (w = 0; w < nk; w++) {
+      tagPick[w].bangSeen = tagSeen[w];
+      tagPick[w].bangAt = tagHitT[w];
+    }
+  }
+
+  /* LAY THE DASHES, once a pass, along the drawn part of a path (samples 0
+     to the cut): walk it adding up the distance travelled IN THE ROOM,
+     starting from the thing's odometer, and put a dash wherever that
+     reading passes a multiple of LINE_PITCH, on the segment where it does.
+     The ruler reads 0 at the floor's rung straight under the thing's birth
+     (see the odometer in updateWatch), so a straight fall's dashes land on
+     FLOOR - 4, FLOOR - 8 ... - the original's rows - and every other
+     route gets one every 4px of its travel, wherever the pass happened to
+     start it. Each dash is a room point (from scroll0), the moment the
+     thing gets there (so lineList can leave out the ones it has eaten) and
+     its mark on the ruler (b: the same dash pass after pass).
+
+     A CUT HOLDS. Where a forecast cut a line at a meeting ('touch') or a
+     kick, the reading there is kept on the thing (ob.ruler.cut), and no later
+     forecast draws its line past it until the thing itself gets there
+     (within LINE_GAP, where the gap round it would hide the dash anyway).
+     A meeting is the one place a forecast changes its mind - a click on
+     one pass, a near miss on the next, a click again - and drawn as it
+     came, the tail beyond it blinked on and off. Held, the line only ever
+     gets shorter until the thing reaches the meeting, and then it shows
+     what comes after. A foot beyond a held cut goes with it. A BURST
+     holds the same way ('pop', anything but a pellet): whether a knife's
+     point is caught by a board's cap, whose top it must reach inside an
+     8px window, or slips past it onto the machine below is decided by
+     where in a frame it gets there, and on a wobbling 60Hz clock the
+     forecast said one, then the other - the bottom 20px of its column
+     came and went, three times a minute on the Counter (2026-11-05).
+
+     AND A THING PUT DOWN AS IT LANDS is drawn coming down the way it fell:
+     the Counter lays a knife on its point the frame it lands, a few px to
+     the side, and that last step - how far it had to go depending on
+     where in a frame it got there - drew a slanted last dash that moved
+     from one forecast to the next. Its foot is still where it is put. (A
+     forecast made a step before it lands has no step before the last to
+     go on, so the thing's own last step across the room stands in: the
+     knife's last two dashes slanted by its 2 to 3px on that one pass.)
+
+     AND A ROUTE THAT ENDS AT ITS FOOT ENDS ON THE FLOOR'S FIRST RUNG,
+     FLOOR - 4, the top of the bracket - where the original's column always
+     ended. The forecast's last sample is wherever the landing step left
+     the thing, which is up to a step's fall past where it touched (an egg
+     at 300px/s at 60Hz: 5px), so by where in a frame it got there a dash
+     came and went on the floor line under the foot; nothing is drawn below
+     the rung. A knife stands on its point, its middle 13 to 22px up, so
+     its column stopped short of its foot by that much and by that last
+     step - two dashes coming and going with the foot; it is run on
+     straight down to the rung (`tail`, one more segment, as it fell). */
+  function layPath(p) {
+    var ob = p.ob, n = p.cut ? p.cut + 1 : p.xs.length, i, x0, y0, x1, y1, f, s0, s1, m;
+    var hold = Infinity, held = false, fi = -1, sFoot = 0, footSeen = false, put = false;
+    var rung = FLOOR - 4, floorEnd = false, tail = 0, dy, dx0 = 0, lim;
+    p.dxs.length = 0; p.dys.length = 0; p.dts.length = 0; p.dbs.length = 0;
+    if (n > p.xs.length) n = p.xs.length;
+    if (ob.ruler) {
+      if (ob.ruler.cut > p.odo0 + LINE_GAP) hold = ob.ruler.cut;
+      else ob.ruler.cut = -Infinity;
+    }
+    if (!isNaN(p.footX)) fi = Math.round((p.footT - p.ta) / p.dt);
+    if (!p.cut && (p.end === 'land' || p.end === 'pop') && n >= 2) {
+      dx0 = n >= 3 ? p.xs[n - 2] - p.xs[n - 3] : (ob.ruler && !p.pre ? ob.ruler.dx : 0);
+      f = (p.xs[n - 1] - p.xs[n - 2]) - dx0;
+      put = f > 1 || f < -1;
+    }
+    if (fi >= 0 && fi === n - 1) {
+      floorEnd = true;
+      if (p.ys[n - 1] < rung) tail = 1;
+    }
+    s1 = p.odo0; x1 = p.xs[0]; y1 = p.ys[0];
+    for (i = 0; i + 1 < n + tail && !held; i++) {
+      if (i + 1 < n) {
+        x0 = p.xs[i]; y0 = p.ys[i]; x1 = p.xs[i + 1]; y1 = p.ys[i + 1];
+        if (put && i + 2 === n) x1 = x0 + dx0;
+      } else {
+        x0 = x1; y0 = y1; y1 = rung;          /* the tail: straight down */
+      }
+      s0 = s1;
+      s1 = s0 + Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+      if (i + 1 === fi) { sFoot = s1; footSeen = true; }
+      if (s1 <= s0) continue;
+      /* the last segment of a route that ends on the rung takes a dash a
+         hair past its end: a straight fall's ruler reads 0 there, give or
+         take the rounding of a few hundred sums, and the dash on the rung
+         (the original's lowest, between the bracket's arms) came and went
+         with that rounding - four times a second on the Counter */
+      lim = floorEnd && i + 2 === n + tail ? s1 + 0.01 : s1;
+      for (m = Math.floor(s0 / LINE_PITCH) + 1; m * LINE_PITCH <= lim; m++) {
+        if (m * LINE_PITCH > hold) { held = true; break; }
+        f = (m * LINE_PITCH - s0) / (s1 - s0);
+        dy = y0 + (y1 - y0) * f;
+        if (floorEnd && dy > rung + 0.01) continue;
+        p.dxs.push(x0 + (x1 - x0) * f); p.dys.push(dy);
+        p.dts.push(p.ta + (i + f) * p.dt); p.dbs.push(m);
+      }
+    }
+    if (held) {
+      p.cutWhy = 'held';
+      if (fi >= 0 && (!footSeen || sFoot > hold)) p.footX = NaN;
+    } else if ((p.cutWhy === 'touch' || p.cutWhy === 'kick' || (p.end === 'pop' && !p.cut && !ob.shot)) && ob.ruler) {
+      ob.ruler.cut = s1;
+    }
+    /* a pellet's dashes up to its stop (THE PELLET'S STOP): those laid
+       before the sample at which it first comes within TAG_LIT of her,
+       or up to the one where it comes nearest */
+    if (ob.shot) {
+      m = p.herI >= 0 ? p.herI - 1 : p.nearI;
+      for (i = 0; i < p.dts.length && (p.dts[i] - p.ta) / p.dt <= m + 1e-6; i++) {}
+      p.litN = i;
+    }
+  }
+
+  /* THE TAGS, every frame, over every drop: the forecast's verdicts (which
+     may be a frame old) turned into a mark that goes on promptly and comes
+     off unhurriedly. On at a 2; held at least TAG_HOLD; off only once the
+     forecast says 0 - a 1, inside TAG_CLEAR, keeps it - and then faded.
+     A thing that scrolls out behind her fades the same way. A thing that
+     is no longer there to warn of - burst, carried off, retired - loses
+     its tag that frame, unfaded: a `!` fading out over a splat would be
+     warning of the splat. The fields live on the drop and leave with it.
+
+     And before them her clock and her step: watchClock, which says how far
+     along its line each thing has got, and sightDt, the real frame step
+     smoothed, which the forecast runs in - so a 120Hz screen gets a
+     forecast stepped at 120Hz and a phone that drops to 50 one stepped at
+     50. And the odometers (below). */
   function updateWatch(dt) {
-    if (!doodad.watch) return;
-    var p = nextOffscreen(), want = 0;
-    if (p) {
-      watchY0 = p.gapY;
-      watchY1 = p.gapY + p.gapH;
-      want = 0.35 + 0.55 * clamp(1 - (p.x - VW) / 120, 0, 1);
+    /* the play branch calls this after updatePlayer, which can end the run
+       on the same frame: a sight nobody will draw is not worth a forecast */
+    if (!doodad.watch || state !== 'play') return;
+    var t0 = performance.now(), i, ob, rx, ex, ey, R;
+    watchClock += dt;
+
+    /* AN ODOMETER ON EVERY DROP: how far it has travelled through the room
+       since it was born, the ruler its line's dashes are laid on (layPath).
+       It starts the first frame she sees the drop - always the frame it is
+       born, unstepped, since spawnDrops and admitBorn both run before this
+       - at the drop's height over the floor's first rung, negative and
+       counting up, so it reads 0 at FLOOR - 4 straight under its birth;
+       and every frame it adds the step the drop has just taken in the room
+       (its x on the screen plus the room's scroll). Distance and not time,
+       because distance does not care how the frames fell. One record on
+       the drop, ob.ruler: s, the reading; x and y, where in the room it
+       was last frame; bx, where in the room it was born, which a line laid
+       before it let go hangs from until the next forecast; dx, its last
+       step across the room (A THING PUT DOWN, layPath); cut, where its
+       line was last cut (A CUT HOLDS, layPath). One field and not five, so
+       the copies the forecast makes of every drop stay as cheap as they
+       were. Her record, written only while she plays, and it leaves with
+       the drop (a copy shares it and never writes it). */
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (ob.type !== 'drop') continue;
+      rx = ob.x + scroll;
+      R = ob.ruler;
+      if (!R) ob.ruler = { s: ob.y - (FLOOR - 4), x: rx, y: ob.y, bx: rx, dx: 0, cut: -Infinity };
+      else {
+        ex = rx - R.x; ey = ob.y - R.y;
+        R.s += Math.sqrt(ex * ex + ey * ey);
+        R.x = rx; R.y = ob.y; R.dx = ex;
+      }
     }
-    watchA = damp(watchA, want, 0.0009, dt);
+
+    var step = clamp(dt, SIGHT_MIN, SIGHT_MAX);
+    if (!sightSeen) { sightDt = step; sightSeen = true; }
+    else sightDt += (step - sightDt) * SIGHT_EASE;
+    if (watchTick <= 0) {
+      foresee();
+      watchTick = Math.max(1, Math.round(WATCH_EVERY / sightDt));
+    }
+    watchTick--;
+
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (ob.type !== 'drop') continue;
+      if (ob.bang) { ob.bangT += dt; if (ob.bangHold > 0) ob.bangHold -= dt; }
+      if (ob.bangFade > 0) ob.bangFade -= dt;
+      if (ob.broken > 0 || ob.held || ob.gone) {
+        if (ob.bang || ob.bangFade > 0) { ob.bang = 0; ob.bangFade = 0; }
+        continue;
+      }
+      if (!tagCandidate(ob)) {
+        if (ob.bang) { ob.bang = 0; ob.bangFade = TAG_FADE; }
+        continue;
+      }
+      if (!ob.bang && ob.bangSeen === 2) {
+        ob.bang = 1; ob.bangT = 0; ob.bangHold = TAG_HOLD; ob.bangFade = 0;
+      } else if (ob.bang && ob.bangHold <= 0 && !ob.bangSeen) {
+        ob.bang = 0; ob.bangFade = TAG_FADE;
+      }
+    }
+    tagList();
+    starList();
+    lineList();
+    /* the whole of her sight this frame, forecast or not, so the mean of
+       this over a run is what she costs a phone per frame */
+    watchMs = performance.now() - t0;
   }
 
-  /* The drops worth a line: the ones still ahead of her, nearest first,
-     and never more than a handful. A guide on something already behind
-     her is no use, and a level in the middle of a downpour would
-     otherwise curtain off the room it is meant to be showing. */
-  var WATCH_MAX = 4;
-
-  function watchList() {
-    var out = [];
+  /* the drops wearing a `!` this frame, nearest her first, never more than
+     TAG_MAX - a downpour must not curtain off the room it is warning about.
+     Not one already within TAG_NEAR of her: it has arrived, and its `!`
+     would sit on her head. Only the mark is left off; the tag's state is
+     untouched, so a thing that grazes her and moves off again is marked
+     exactly as it was until the forecast lets it go. */
+  function tagList() {
+    var px = player.x, py = player.y, N2 = TAG_NEAR * TAG_NEAR, dx, dy;
+    watchTags.length = 0;
     for (var i = 0; i < obstacles.length; i++) {
       var ob = obstacles[i];
-      if (ob.type !== 'drop' || ob.broken > 0) continue;
-      /* Pepper's line marks where the sky WILL land. A drop that has already
-         touched the floor and is still live - a kernel rolling about in the
-         bottom of the room - has landed, so there is nothing left to
-         foresee, and a line drawn to it is a line drawn to the floor. The
-         art sets ob.landed; the engine only reads it. */
-      if (ob.landed) continue;
-      /* Nor is there a line for a SHOT. It is not falling - it is crossing
-         the room sideways - so "where it will land" has no answer, and a
-         line dropped from it to the floor would mark a spot it will never
-         reach. Her ability is about the sky coming down. */
-      if (ob.shot) continue;
-      if (ob.x < player.x - 24) continue;
-      out.push(ob);
+      if (ob.type !== 'drop' || !(ob.bang || ob.bangFade > 0)) continue;
+      dx = ob.x - px; dy = ob.y - py;
+      if (dx * dx + dy * dy < N2) continue;
+      watchTags.push(ob);
     }
-    out.sort(function (a, b) { return a.x - b.x; });
-    return out.length > WATCH_MAX ? out.slice(0, WATCH_MAX) : out;
+    if (watchTags.length > 1) {
+      watchTags.sort(function (a, b) { return Math.abs(a.x - px) - Math.abs(b.x - px); });
+    }
+    if (watchTags.length > TAG_MAX) watchTags.length = TAG_MAX;
   }
 
-  function drawWatch(ctx) {
-    var ga = ctx.globalAlpha, i, y;
+  /* a star this frame. `src` is the thing it speaks for - the drop on the
+     lid, the Cupman, the spare life - and `key` which heads-up of that
+     thing's it is (a Cupman's is the pellet he has loaded since his last
+     shot). Both its entrance and its blip hang off the source: a star that
+     comes back after a gap pops again; a source blips once per heads-up,
+     and never two blips inside STAR_CRY_GAP. */
+  function addStar(x, y, at, kind, src, key) {
+    var s = starPool[watchStars.length] || (starPool[watchStars.length] = {});
+    s.x = x; s.y = y; s.at = at; s.kind = kind; s.col = kindCol(kind);
+    if (src.starLast === undefined || t - src.starLast > 0.1 || src.starKey !== key) src.starAt = t;
+    src.starLast = t; src.starKey = key;
+    s.born = src.starAt;
+    if (src.starCried !== key) {
+      src.starCried = key;
+      if (STAR_CRY && t - starCryAt >= STAR_CRY_GAP) { starCryAt = t; Audio3.play(STAR_CRY); }
+    }
+    watchStars.push(s);
+  }
 
-    /* where the sky is going to land */
-    var coming = watchList();
-    for (i = 0; i < coming.length; i++) {
-      var ob = coming[i];
-      var x = Math.round(ob.x);
-      ctx.globalAlpha = ga * 0.4;
-      ctx.fillStyle = WATCH_LINE;
-      /* stepped up from the ground, not down from the drop: anchoring the
-         dots to something that moves re-phases them every frame and the
-         whole line crawls, which is the same trap as dithering anything
-         that moves */
-      var stop = Math.round(ob.y) + 7;
-      for (y = FLOOR - 4; y > stop; y -= 4) ctx.fillRect(x, y, 1, 2);
-      ctx.globalAlpha = ga * 0.75;
-      /* the foot of the line says what is coming down it, so she can tell a
-         thing to catch from a thing to dodge before it is close enough to
-         make out */
-      ctx.fillStyle = ob.spicy ? FX.hotHi
-                    : (ob.gold ? UI.C.gold : (ob.sour ? SOUR_HI : (ob.whirl ? WHIRL_HI : WATCH_HI)));
-      ctx.fillRect(x - 3, FLOOR - 2, 7, 1);
-      ctx.fillRect(x - 3, FLOOR - 4, 1, 2);
-      ctx.fillRect(x + 3, FLOOR - 4, 1, 2);
+  /* WHERE A GIFT IS ABOUT TO BE, before it is, and WHAT it will be - the
+     star is in its kind's colour. Three places and no more:
+
+       the LID, over the x the next drop will let go of, from the moment it
+         is decided (SHED_LEAD seconds early) until the frame letGo admits
+         it - only when it is a gift, so a plain drop shows nothing and the
+         absence is itself the heads-up. Hidden while a hold has the timer
+         frozen (shedLive is false) and back when it runs again. The
+         streak's extra hot drop is not decided early and gets no star.
+       the RIGHT EDGE, at the height of a spare life the room has built but
+         not yet scrolled in - never the koala or a hole (isPowerUp says so).
+       a CUPMAN'S GUN, when what he has loaded is a gift: just over his
+         muzzle, which follows his aim. Only cupmen.js ever sets `gift`, and
+         giftX/giftY are that muzzle (written for every Cupman, loaded or
+         not). The edge's star gives way to ANY gun within STAR_APART of
+         it - a Cupman just walking in at the very edge - because a star
+         beside a gun reads as that gun's, and would promise a gift he has
+         not loaded; the spare life is on screen a moment later anyway. */
+  function starList() {
+    var i, ob, px = player.x, ex = VW - 8, ey = 0, guns, lx;
+    watchStars.length = 0;
+
+    /* the lid's star keeps its x whatever happens - the x is what it says -
+       and goes up to STAR_HUD_Y only when the score would be under it:
+       within the digits' width and STAR_HUD_PAD more at their popped size,
+       measured the way drawFg lays them out. Always the popped size, so a
+       star does not hop up and down with every plank the score counts */
+    if (nextDrop && shedLive && isPowerUp(nextDrop.ob)) {
+      ob = nextDrop.ob;
+      /* A GIFT THAT COMES IN FROM THE SIDE (ob.entry, see letGo) has its
+         star where it will come in - at the edge, at its own height - not
+         on the lid over an x it will never be at. It is held inside the
+         lane (CEIL + 8 .. FLOOR - 8), so it never needs the score's
+         avoidance: that is for a star on the lid's own row under the
+         digits. No bay throws a gift in from the side today, so this is
+         the lid star for every gift there is - written anyway, so the
+         first one that does is already right. */
+      if (Array.isArray(ob.entry)) {
+        addStar(clamp(Math.round(ob.entry[0]), 7, VW - 7),
+                clamp(Math.round(ob.entry[1]), CEIL + 8, FLOOR - 8),
+                'lid', kindOf(ob), ob, 1);
+      } else {
+        lx = clamp(Math.round(ob.x), 7, VW - 7);
+        addStar(lx, Math.abs(lx - VW / 2) < Font.measure(String(score), 4) / 2 + STAR_HUD_PAD
+                    ? STAR_HUD_Y : CEIL + 8,
+                'lid', kindOf(ob), ob, 1);
+      }
     }
 
-    /* and the gap after this one, held against the right edge */
-    if (watchA > 0.03 && watchY1 > watchY0) {
-      var ex = VW - 4;
-      var top = Math.round(watchY0), bot = Math.round(watchY1);
-      ctx.globalAlpha = ga * watchA;
-      ctx.fillStyle = WATCH_LINE;
-      for (y = top + 3; y < bot - 3; y += 4) ctx.fillRect(ex, y, 1, 2);
-      ctx.fillStyle = WATCH_HI;
-      ctx.fillRect(ex - 3, top, 5, 1);
-      ctx.fillRect(ex - 3, bot - 1, 5, 1);
-      ctx.fillRect(ex - 3, top, 1, 3);
-      ctx.fillRect(ex - 3, bot - 3, 1, 3);
+    /* the spare life first, so the guns know how many stars are left */
+    var boon = null;
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (ob.type !== 'boon' || !isPowerUp(ob) || grabX(ob) <= VW - 2) continue;
+      if (!boon || grabX(ob) < grabX(boon)) boon = ob;
+    }
+    if (boon) {
+      ey = Math.round(clamp(grabY(boon), CEIL + 8, FLOOR - 8));
+      for (i = 0; i < obstacles.length; i++) {
+        ob = obstacles[i];
+        if (ob.giftX === undefined || ob.gone) continue;
+        if (Math.abs(ob.giftX - ex) < STAR_APART && Math.abs(ob.giftY - ey) < STAR_APART) {
+          boon = null; break;
+        }
+      }
+    }
+
+    /* the armed guns, in front of her first, and only the first STAR_GUNS -
+       fewer if the lid and the edge already have theirs: a troop of
+       Cupmen all loaded with gifts must not be a constellation */
+    guns = Math.min(STAR_GUNS, STAR_MAX - watchStars.length - (boon ? 1 : 0));
+    gunPick.length = 0;
+    for (i = 0; i < obstacles.length; i++) {
+      ob = obstacles[i];
+      if (!ob.gift || ob.giftX === undefined || ob.gone) continue;
+      if (ob.giftX <= 4 || ob.giftX >= VW - 4) continue;
+      gunPick.push(ob);
+    }
+    /* the ones she is flying toward first, then the nearest: a Cupman she
+       has passed is scrolling off behind her, and with the lid and the
+       edge taken the one slot went to him while one in front of her fired
+       a gift unannounced (the Fort at 120Hz) */
+    if (gunPick.length > 1) {
+      gunPick.sort(function (a, b) {
+        return ((a.giftX < px - 12 ? 1 : 0) - (b.giftX < px - 12 ? 1 : 0)) ||
+               (Math.abs(a.giftX - px) - Math.abs(b.giftX - px));
+      });
+    }
+    for (i = 0; i < gunPick.length && i < guns; i++) {
+      ob = gunPick[i];
+      addStar(Math.round(ob.giftX), Math.max(CEIL + 8, Math.round(ob.giftY) - STAR_LIFT),
+              'gun', ob.gift, ob, (ob.shots || 0) + 1);
+    }
+
+    if (boon) addStar(ex, ey, 'edge', 'life', boon, 1);
+  }
+
+  function addDot(x, y, rx, ry, pend, col, a, kind, b, ob) {
+    var d = dotPool[watchDots.length] || (dotPool[watchDots.length] = {});
+    d.x = x; d.y = y; d.rx = rx; d.ry = ry; d.pend = pend;
+    d.col = col; d.a = a; d.kind = kind; d.b = b; d.ob = ob;
+    watchDots.push(d);
+  }
+
+  /* THE DASHES, every frame, off the last forecast: each one laid by
+     layPath, slid by what the room has scrolled since that pass - so it
+     stands still on the scenery and goes left with it - and rounded as
+     the drops are (Math.round of the screen x), so a dash and the thing
+     travelling along it step by the same pixel on the same frame. Left
+     out: the ones the thing has already reached (it eats its line), those
+     within LINE_GAP of the thing itself, those within STAR_CLEAR of the
+     lid's star. A line that stops at a moment rather than a place - a
+     kernel already hopping, or a pellet, run LINE_T ahead - fades in over
+     LINE_FADE at its far end so it never pops there; a line that stops at
+     a place (a touchdown, a landing, a burst, a cut, her) is solid to it.
+     A line whose thing has gone - burst, caught, carried off, retired -
+     goes with it.
+
+     THE GIFT STILL ON THE LID has no place in the room yet, so its line
+     hangs from the star in the SCREEN's frame: every dash where it is
+     relative to the spot the gift lets go of, which is the star's spot.
+     The frame it lets go, its line hangs from the very point in the room it
+     was born at (ob.ruler.bx) until the next forecast lays it afresh from there
+     on the same ruler - so the dashes do not move at the seam. */
+  function lineList() {
+    var now = watchClock, i, j, p, ob, cx, cy, gap, gap2, base, offX, el, tt, x, y, ex, ey, a;
+    var pend, fade, ft, nd;
+    var lid = null, nd = nextDrop, SC2 = STAR_CLEAR * STAR_CLEAR;
+    watchDots.length = 0; watchFeet.length = 0;
+    for (i = 0; i < watchStars.length; i++) if (watchStars[i].at === 'lid') lid = watchStars[i];
+
+    for (i = 0; i < paths.length; i++) {
+      p = paths[i]; ob = p.ob; p.shown = false;
+      pend = !!(p.pre && nd && nd.ob === ob);
+      if (pend) {
+        /* still waiting on the lid: hangs under its star, hidden with it */
+        if (!shedLive || !lid) continue;
+        cx = lid.x; cy = lid.y; gap2 = SC2;
+        offX = ob.x - p.xs[0];
+      } else {
+        if (ob.broken > 0 || ob.gone || ob.held || obstacles.indexOf(ob) < 0) continue;
+        cx = ob.x; cy = ob.y;
+        gap = Math.max(LINE_GAP, (ob.w || 0) / 2 + 2); gap2 = gap * gap;
+        offX = p.pre && ob.ruler ? ob.ruler.bx - scroll - p.xs[0] : p.scroll0 - scroll;
+      }
+      p.shown = true;
+      el = now - p.t0;
+      base = p.kind ? LINE_GIFT_A : LINE_A;
+      fade = p.end === 'horizon' && !p.cut && (p.hops || ob.shot);
+      /* a pellet with its `!` up stops short of her (THE PELLET'S STOP) */
+      nd = !pend && ob.shot && ob.bang ? p.litN : p.dxs.length;
+      for (j = 0; j < nd; j++) {
+        tt = p.dts[j];
+        if (tt <= el) continue;
+        x = p.dxs[j] + offX; y = p.dys[j];
+        ex = x - cx; ey = y - cy;
+        if (ex * ex + ey * ey < gap2) continue;
+        if (lid) { ex = x - lid.x; ey = y - lid.y; if (ex * ex + ey * ey < SC2) continue; }
+        a = fade ? base * clamp((p.tmax + el - tt) / LINE_FADE, 0, 1) : base;
+        if (a < 0.02) continue;
+        addDot(Math.round(x), Math.round(y), x + scroll, y, pend, p.col, a, p.kind, p.dbs[j], ob);
+      }
+      /* the original's foot, where the thing comes down, until it has */
+      if (!isNaN(p.footX) && p.footT > el && nd === p.dxs.length) {
+        ft = footPool[watchFeet.length] || (footPool[watchFeet.length] = {});
+        ft.x = Math.round(p.footX + offX); ft.rx = p.footX + offX + scroll;
+        ft.col = p.kind ? p.col : WATCH_HI; ft.a = FOOT_A; ft.kind = p.kind; ft.ob = ob;
+        watchFeet.push(ft);
+      }
+    }
+  }
+
+  /* THE `!`: a white exclamation in a solid block of her ink, sitting just
+     above the thing - the block ends 10px above its centre, about 4px over
+     an 11px biscuit and 7px over a 3px pellet. It pops 2px high for its
+     first TAG_POP and is otherwise perfectly still on the thing: it never
+     flashes and never pulses, because the only motion it should show is
+     the thing's own.
+
+     It is held on the SCREEN, not under the lid: a thing just let go of is
+     a few pixels below the lid, and its mark goes up into the lid band
+     above it, where it is drawn over the lid's own art like everything
+     else she draws. Held under the lid instead, it came down on top of
+     the very biscuit, knife or kernel it was warning of - two marks in
+     five on the Counter - covering the thing in the moment it gives the
+     most warning of. */
+  function drawTag(ctx, ob, ga) {
+    var cx = clamp(Math.round(ob.x), 3, VW - 3);
+    var top = Math.round(ob.y) - 19;
+    if (ob.bang && ob.bangT < TAG_POP) top -= 2;
+    top = Math.max(top, 1);
+    var a = WATCH_A * (ob.bang ? 1 : clamp(ob.bangFade / TAG_FADE, 0, 1));
+    ctx.globalAlpha = ga * a;
+    ctx.fillStyle = WATCH_INK;
+    ctx.fillRect(cx - 2, top, 5, 9);
+    ctx.fillStyle = WATCH_HI;
+    ctx.fillRect(cx - 1, top + 1, 3, 4);     /* the bar */
+    ctx.fillRect(cx - 1, top + 6, 3, 2);     /* the dot; row top+5 is the gap */
+  }
+
+  /* THE STAR: a four-point twinkle in its gift's colour - 3px arms on a
+     5px halo of her ink, with a white glint at the heart and at each tip -
+     swapping between a 13px and a 9px cross every STAR_WINK on the scene's
+     clock: the one thing in her sight that moves of its own accord,
+     because a gift that is not there yet has no motion of its own to show.
+
+     It was 7px and white with a heart of her green, and the owner found it
+     barely noticeable; on every bay it was a speck to hunt for, and it did
+     not say what was coming. Now it is nearly twice the size, the colour
+     says the kind, and the solid ink halo is what carries it off the pale
+     walls (the Counter's stone, the Ceiling's plaster) as the `!`'s block
+     carries the `!`. */
+  function drawStar(ctx, x, y, col, ga, big) {
+    var h = big ? 6 : 4;                         /* half-length of an arm */
+    ctx.globalAlpha = ga * WATCH_A;
+    ctx.fillStyle = WATCH_INK;                   /* the halo */
+    ctx.fillRect(x - 2, y - h, 5, 2 * h + 1);
+    ctx.fillRect(x - h, y - 2, 2 * h + 1, 5);
+    ctx.fillStyle = col;                         /* the arms */
+    ctx.fillRect(x - 1, y - h + 1, 3, 2 * h - 1);
+    ctx.fillRect(x - h + 1, y - 1, 2 * h - 1, 3);
+    ctx.fillStyle = WATCH_HI;                    /* the glint: heart and tips */
+    ctx.fillRect(x, y, 1, 1);
+    ctx.fillRect(x, y - h + 1, 1, 1); ctx.fillRect(x, y + h - 1, 1, 1);
+    ctx.fillRect(x - h + 1, y, 1, 1); ctx.fillRect(x + h - 1, y, 1, 1);
+  }
+
+  /* Both lists were made in updateWatch, so what is drawn is exactly what
+     a headless test reads off inspect(). Stars under tags: a hazard's
+     warning is the one that must never be covered. */
+  function drawWatch(ctx) {
+    var ga = ctx.globalAlpha, i, s, big = Math.floor(t / STAR_WINK) % 2 === 0;
+    for (i = 0; i < watchStars.length; i++) {
+      s = watchStars[i];
+      drawStar(ctx, s.x, t - s.born < STAR_POP ? s.y - 2 : s.y, s.col, ga, big);
+    }
+    for (i = 0; i < watchTags.length; i++) {
+      if (!watchTags[i].gone) drawTag(ctx, watchTags[i], ga);
     }
     ctx.globalAlpha = ga;
+  }
+
+  /* THE LINES, on the room layer (drawBg calls this after the level's
+     overlay and before the heat): each dash the original's, 1 x 2 px
+     from its point down; then the landing brackets, the original's foot.
+     A pixel of ink beside each (a row under each foot) only if
+     LINE_SHADE_K is turned up. Everything was decided in lineList. The
+     context's alpha AND fill are handed back as they were found: a pass
+     drawn after this one that fills with whatever was last set (the Bar
+     lays a faint wash that way) must not come out tinted by her dashes. */
+  function drawLines(ctx) {
+    var ga = ctx.globalAlpha, fs = ctx.fillStyle, i, d;
+    for (i = 0; i < watchDots.length; i++) {
+      d = watchDots[i];
+      if (LINE_SHADE_K > 0) {
+        ctx.globalAlpha = ga * d.a * LINE_SHADE_K;
+        ctx.fillStyle = WATCH_INK;
+        ctx.fillRect(d.x + 1, d.y, 1, 2);
+      }
+      ctx.globalAlpha = ga * d.a;
+      ctx.fillStyle = d.col;
+      ctx.fillRect(d.x, d.y, 1, 2);
+    }
+    for (i = 0; i < watchFeet.length; i++) {
+      d = watchFeet[i];
+      if (LINE_SHADE_K > 0) {
+        ctx.globalAlpha = ga * d.a * LINE_SHADE_K;
+        ctx.fillStyle = WATCH_INK;
+        ctx.fillRect(d.x - 3, FLOOR - 1, 7, 1);
+      }
+      ctx.globalAlpha = ga * d.a;
+      ctx.fillStyle = d.col;
+      ctx.fillRect(d.x - 3, FLOOR - 2, 7, 1);
+      ctx.fillRect(d.x - 3, FLOOR - 4, 1, 2);
+      ctx.fillRect(d.x + 3, FLOOR - 4, 1, 2);
+    }
+    ctx.globalAlpha = ga;
+    ctx.fillStyle = fs;
   }
 
   /* ----------------------------------------------------------- the flick
@@ -1933,6 +3631,8 @@ var PlayScene = (function () {
     invuln = SAVE_GRACE;
     saveFlash = 0.13;
     saveBanner = 1.5;
+    /* the world's trouble taken away, and the ice is the world's trouble */
+    shatterIce(false);
     lifePop = 0.45;
     Audio3.play('save');
     Screen.shake(5, 0.4);
@@ -2426,6 +4126,15 @@ var PlayScene = (function () {
   function streakHelp() {
     if (!streak || !streak.assist || hotChain < 1) return false;
     if (spicy <= 0 || spicy > STREAK_SEND || !(tune.spicyChance > 0)) return false;
+    /* one made and waiting on the lid is already on its way. This is the
+       one line where deciding the next drop early (for Pepper's lid star,
+       see spawnDrops) reaches anybody else's run: a hot drop now counts as
+       on its way from the moment it is decided, not from the moment it
+       falls, so the streak's help can be held back by up to SHED_LEAD
+       seconds. Without it the help and an already-decided hot drop could
+       fall back to back, which the help never did before; and the odds
+       measured the same with it as without (headless, 2026-11-02). */
+    if (nextDrop && nextDrop.ob.spicy) return false;
     for (var i = 0; i < obstacles.length; i++) {
       var o = obstacles[i];
       if (o.type === 'drop' && o.spicy && !o.broken && !o.gone) return false;
@@ -2441,8 +4150,8 @@ var PlayScene = (function () {
      down (gy0, gb0) - and over `aura.ease` seconds each cap eases back
      `aura.push` px, the top one up and the bottom one down. Every art module
      draws and collides a plank off ob.gapY/ob.gapH as they are on the frame
-     (rectsFor, the cap draws, the hider's peek, Pepper's sight line, the
-     Cupmen's line of sight), so moving those two moves the plank everywhere
+     (rectsFor, the cap draws, the hider's peek, the Cupmen's line of
+     sight), so moving those two moves the plank everywhere
      at once, and nothing else has to know.
 
      IT ONLY EVER WIDENS, and only AHEAD of him: a plank is touched while it
@@ -2795,7 +4504,18 @@ var PlayScene = (function () {
     } else if (back) {
       if (T.clunk === 0) Audio3.play('tock');
       T.clunk += dt;
-      if (T.clunk >= R.clunk) { T.mode = 'rew'; T.clunk = 0; T.whirrT = 0; }
+      if (T.clunk >= R.clunk) {
+        T.mode = 'rew'; T.clunk = 0; T.whirrT = 0;
+        /* THE ROOM LETS GO OF HIM. ledger.drift and ledger.wall are STATES
+           the art rewrites every frame from stepWorld, and stepWorld is
+           frozen for the whole playback - so a fryer blowing (or the mop
+           pulling) at the instant the tape engaged would otherwise go on
+           pushing him through every rewound second. The art writes them
+           fresh on the first live frame after. The push (jetPush) is the
+           same kind of key and is let go of for the same reason: a jet
+           frozen under him would carry him up through the whole rewind. */
+        ledger.drift = 0; ledger.wall = 0; ledger.jetVy = 0;
+      }
     } else T.clunk = 0;
     T.rate = approach(T.rate, T.mode === 'rew' ? -R.rate : 1, TAPE_ACC * dt);
     if (T.mode === 'rew') {
@@ -3226,9 +4946,14 @@ var PlayScene = (function () {
      and `ob.age` is a number every time anything is allowed to look. */
   function admit(ob) {
     if (ob.age === undefined) ob.age = 0;
+    /* a falling thing brings its own dice - see Dice in js/core.js and
+       stepOwn below - so what it will do was settled when it was made */
+    if (ob.type === 'drop' && ob.dice === undefined) ob.dice = newDice();
     obstacles.push(ob);
     return ob;
   }
+
+  function newDice() { return (Math.random() * 4294967296) | 0; }
 
   /* THE BORN QUEUE, LET IN. A step may not admit - it is inside a walk over
      the list - so it pushes into run.born and this runs once the walk has
@@ -3270,6 +4995,9 @@ var PlayScene = (function () {
        is hiding in it - the TV's picture breaking up while somebody is on
        air. spookMeet's own rules decide who that reaches (shy, and seen). */
     if (ledger.spook) { ledger.spook = false; spookMeet(); }
+    /* ledger.freeze: the cold has closed in on him - see "the ice". The
+       engine decides whether it takes; the art has already shown it coming */
+    if (ledger.freeze) { ledger.freeze = false; freezeUp(); }
     var cry = null;
     if (ledger.cry) { cry = ledger.cry; ledger.cry = null; }
     if (ledger.warn) {
@@ -3485,14 +5213,18 @@ var PlayScene = (function () {
 
   /* and the RIDER's weight on top of whatever the doodad's own flight is -
      heavy() is false for everyone with nobody on their back, so for them
-     both lines are what they were. The flap is not touched; see RIDE_GRAV. */
+     both lines are what they were. The flap is not touched; see RIDE_GRAV.
+     The ICE is the same grammar, heavier (ICE_GRAV), and frozen() is false
+     in every bay but the Fridge and in there whenever he is not iced up. */
   function grav() {
     var g = doodad.light ? GRAVITY * doodad.light.gravity : GRAVITY;
     if (heavy()) g *= RIDE_GRAV;
+    if (frozen()) g *= ICE_GRAV;
     return down() < 0 ? -g * doodad.helium : g;
   }
   function maxFall() {
     var f = doodad.light ? MAX_FALL * doodad.light.fall : MAX_FALL;
+    if (frozen()) f *= ICE_FALL;
     return heavy() ? f * RIDE_FALL : f;
   }
   function flapV()   { return (doodad.light ? FLAP * doodad.light.flap : FLAP) * down(); }
@@ -3832,6 +5564,41 @@ var PlayScene = (function () {
     }
   }
 
+  /* THE ROOM'S PUSH - the third STATE key, beside the pull and the wall,
+     and the first that moves him UP or DOWN. The Dishwasher's spray arms
+     throw columns of water at the lid and at the rack, and a doodad who
+     flies into one is carried by it rather than killed by it.
+
+       ledger.jetVy  the vertical speed the water is carrying him at, in
+                     px/s down the screen: negative lifts him (a jet from
+                     the floor arm), positive bears him down (a jet from
+                     the arm under the upper rack), 0 or undefined when no
+                     jet has him.
+
+     APPROACHED, NOT IMPULSED. His vy is walked toward jetVy at JET_ACC a
+     second, after gravity and after his own flap, every frame he is in
+     the water - the steering's shape, turned on its side. A steady lift
+     reads as water: from a fall of +300 he is rising inside a fifth of a
+     second, and a flap's -338 inside a jet is pulled back to the jet's
+     -150 in under a tenth, so flapping in a jet does not help and
+     LEAVING it does, which is the thing the player has to learn. An
+     impulse would read as a bop - a hit off something solid - and would
+     stack with the flap into a launch.
+
+     Like drift and wall it is a state the art rewrites every frame from
+     stepWorld, so the frame he leaves the column it is 0 again; the tape
+     zeroes it with the other two when a rewind engages (tapeControl). Not
+     during the toss home, which owns his flight outright, and not under
+     the floor (the dive's branch has returned before this is reached).
+     A level that never writes the key never meets the branch: undefined
+     is falsy, and nothing else in the engine reads it. */
+  var JET_ACC = 2400;
+  function jetPush(dt) {
+    if (ledger.jetVy && !(knockT > 0) && !(diving > 0)) {
+      player.vy = approach(player.vy, ledger.jetVy, JET_ACC * dt);
+    }
+  }
+
   function updatePlayer(dt) {
     /* horizontal nudging */
     var want = 0;
@@ -4014,9 +5781,14 @@ var PlayScene = (function () {
       player.y += player.vy * dt;
       /* wings up while he climbs, so the hold reads as flying and not as hanging */
       if (lift < 0) player.flapTimer = Math.max(player.flapTimer, 0.05);
+      /* and water is water: a jet carries a doodad in the hold as it
+         carries anyone, after his own steering (THE ROOM'S PUSH) */
+      jetPush(dt);
     } else {
       player.y += player.vy * dt + 0.5 * g * dt * dt;
       player.vy = clamp(player.vy + g * dt, -maxFall(), maxFall());
+      /* THE ROOM'S PUSH, after gravity and the flap: see jetPush */
+      jetPush(dt);
     }
     player.flapTimer -= dt;
     if (player.spring > 0) player.spring = Math.max(0, player.spring - dt * 4);
@@ -4136,6 +5908,9 @@ var PlayScene = (function () {
        to bring it to */
     if (escort && escort.phase !== 'off') disperse();
     state = 'dying';
+    /* he tumbles out of the ice - read while state was still 'play' would
+       not matter, shatterIce does not ask */
+    shatterIce(false);
     spicy = 0;                 /* the run is over; let the coop cool off */
     hotChain = 0;
     /* and the spin lets go: the tumble is player.spin's, and whirlAngle
@@ -4706,6 +6481,11 @@ var PlayScene = (function () {
     if (goldPop > 0) goldPop -= dt;
     if (fledPop > 0) fledPop -= dt;
     if (streakPop > 0) streakPop -= dt;
+    if (iceFlash > 0) iceFlash -= dt;
+    if (ice && state === 'play') {
+      ice.t += dt;
+      if (ice.jolt > 0) ice.jolt = Math.max(0, ice.jolt - dt);
+    }
     /* the rider runs in every state but pause, as the timers above do: he
        has to finish a tumble the run has already ended */
     if (rider) updateRider(dt);
@@ -5007,6 +6787,7 @@ var PlayScene = (function () {
       run = { score: pace, time: runTime, late: late, scroll: scroll,
               speed: speed, px: player.x, py: player.y,
               pvy: player.vy, hr: hitR(), under: diving > 0, grace: invuln > 0,
+              frozen: ice ? ice.left : 0, hot: spicy > 0,
               ledger: ledger, born: born };
       if (!playback) {
         spawnAhead();
@@ -5104,6 +6885,19 @@ var PlayScene = (function () {
     if (t - bopAt > 0.09) { bopAt = t; Audio3.play('bop'); }
   }
 
+  /* THE LEVEL'S STEP, ON THE DROP'S OWN DICE. Every rand, chance or choose a
+     stepDrop makes while it moves this drop comes off the drop's own stream
+     (ob.dice - see Dice in js/core.js) rather than off Math.random, so a
+     kernel's next bounce was settled the moment it was made, and Pepper's
+     copy of it, stepped ahead on the same stream, rolls the same numbers.
+     The level never knows: it calls rand() exactly as it always has. */
+  function stepOwn(ob, dt, list, r) {
+    if (ob.dice === undefined) ob.dice = newDice();
+    Dice.ob = ob; Dice.roll = Dice.own;
+    try { return art.stepDrop(ob, dt, list, r); }
+    finally { Dice.roll = Math.random; Dice.ob = null; }
+  }
+
   function moveObstacles(dt, spd) {
     for (var i = obstacles.length - 1; i >= 0; i--) {
       var ob = obstacles[i];
@@ -5145,7 +6939,7 @@ var PlayScene = (function () {
              or, with ob.pop raised, a burst where it struck (landDrop).
              The fourth argument is `run`, on the stepBoon contract below;
              a step that does not want it simply declares three. */
-          if (art.stepDrop(ob, dt, obstacles, run)) landDrop(ob);
+          if (stepOwn(ob, dt, obstacles, run)) landDrop(ob);
           /* a flag the level sets when its drop has just come off something -
              see bounced() for why the noise is on this side of the line */
           if (ob.bounced) bounced(ob);
@@ -5274,6 +7068,8 @@ var PlayScene = (function () {
            the particles and the banner queue and never this list, so it is
            safe inside the walk - checkUnlocks above does as much. */
         if (tune.rescueAt) checkRescue();
+        /* and the ice takes a crack, for the same reason: a pillar passed */
+        if (ice) iceCrack();
         /* Crow's crew, every tenth pillar - asked for here, sent after the
            walk, because sending them admits two gifts into this list */
         if (doodad.ordnance && passedN % doodad.ordnance.every === 0 && !escort) ordnanceDue = true;
@@ -5363,15 +7159,16 @@ var PlayScene = (function () {
        shows must hold still when nothing is stepping it. */
     if (art.drawOverlay) art.drawOverlay(ctx, obstacles, run);
 
-    /* only while she is flying: the sight lines go out with her. AFTER the
-       overlay on purpose - she sees what is coming, and a fog that hid
-       where the sky is going to land would be taking her ability away
-       in exactly the bay where it is worth most. */
-    if (doodad.watch && state === 'play') drawWatch(ctx);
+    /* PEPPER'S LINES, and only her lines: they belong to the room - under
+       her, under the score, over the level's fog and machines as her old
+       dashes were, and under the heat's and the lime's tints like anything
+       else in it. Her tags and stars are NOT drawn here: see drawFg. */
+    if (doodad.watch && state === 'play') drawLines(ctx);
 
     if (heat > 0.02) drawHeat(ctx);
     if (shrivel > 0.02) drawSourAura(ctx);
     if (twirl > 0.02) drawWhirlAura(ctx);
+    if (ice) drawIceGlow(ctx);
     if (auraGlow > 0.02 && state === 'play') drawAlphaAura(ctx);
 
     /* AND THEN THE LEVEL MAY DO SOMETHING TO ALL OF IT. The last word on
@@ -5660,8 +7457,16 @@ var PlayScene = (function () {
        like snow on a picture he is part of. Under the HUD on purpose: the
        score, the gauges and the warnings are the game talking, and nothing
        a level paints may get in their way. */
+    if (ice) drawIce(ctx);
     if (art.drawFront) art.drawFront(ctx, run, state);
     if (flash > 0) { ctx.fillStyle = '#f7e6c0'; ctx.fillRect(0, 0, VW, VH); }
+    if (iceFlash > 0) {
+      var ia = ctx.globalAlpha;
+      ctx.globalAlpha = ia * clamp(iceFlash / 0.14, 0, 1) * 0.5;
+      ctx.fillStyle = ICE_PALE;
+      ctx.fillRect(0, 0, VW, VH);
+      ctx.globalAlpha = ia;
+    }
     if (saveFlash > 0) {
       /* a wash, not a white-out: the run carries straight on and the player
          has to keep seeing the pillar they just got let off */
@@ -5749,6 +7554,7 @@ var PlayScene = (function () {
       var cy = 34 + s * 7 + 4;
       if (warp && passedTimer <= 0) drawStay(ctx, cy);
       else if (rider && rider.phase === 'ride' && passedTimer <= 0) drawCarry(ctx, cy);
+      else if (ice && passedTimer <= 0) drawIceLine(ctx, cy);
       else drawChase(ctx, cy);
       drawLives(ctx);
       drawSpicy(ctx);
@@ -5766,6 +7572,22 @@ var PlayScene = (function () {
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
       else if (hazardWarn > 0) drawHazardWarning(ctx);
+
+      /* PEPPER'S TAGS AND STARS, only while she is flying, and the very
+         last thing on the glass. They used to go on the room layer, after
+         the level's overlay so no fog could hide them - and then the score
+         was painted over them up here. The big digits and the chase line
+         under them stand in the middle of the lid band, which is exactly
+         where a thing just let go of is, and the thing just let go of is
+         the one her `!` gives the most warning of: a quarter of the frames
+         with a tag on the Coop had it under the digits, and up to a fifth
+         of the lid's stars on the Counter, the Bar and the Fridge. So they
+         are here, over the score, the gauges, the banners, a level's own
+         front (the set's snow) and the doodads themselves, where nothing
+         can cover them. This is the same 480x270 pixel canvas as the room,
+         so the one-pixel glyphs stay crisp; and they are small, so a
+         number with a `!` across a corner of it still reads. */
+      if (doodad.watch && state === 'play') drawWatch(ctx);
     }
 
     if (state === 'ready') drawReady(ctx);
@@ -6561,6 +8383,9 @@ var PlayScene = (function () {
                                                        ys: escort.crows.map(function (c) { return Math.round(c.y); }),
                                                        holding: escort.crows.map(function (c) { return !!c.gift; }) } : null,
                                     heavy: heavy(), grav: doodad ? grav() : 0, maxFall: doodad ? maxFall() : 0,
+                                    /* the Fridge's ice: pillars left and cracks
+                                       showing, or null when he is free */
+                                    ice: ice ? { left: ice.left, of: ice.of, cracks: ice.cracks, t: +ice.t.toFixed(2) } : null,
                                     /* the plank this run rolled for the hider,
                                        so a headless test can read what it has
                                        to fly to rather than guessing, and
@@ -6594,7 +8419,50 @@ var PlayScene = (function () {
                                     capybaras: Doodads.goldTaken('CAPYBARA'),
                                     size: doodad && doodad.size ? doodad.size : 1,
                                     hungry: hungry, pull: doodad ? doodad.pull : 0,
-                                    trotting: trotting, watchA: watchA,
+                                    trotting: trotting,
+                                    /* PEPPER'S SIGHT, off the run: the drops
+                                       wearing a ! (nearest first, at most
+                                       TAG_MAX; each carries bang, bangT,
+                                       bangSeen and bangAt), the stars as
+                                       {x, y, at: lid|edge|gun, kind}, the
+                                       drop decided and waiting on the lid,
+                                       the spawner's clock, what her sight
+                                       cost this frame in ms; and the lines:
+                                       each forecast path (sample i at
+                                       t0 + ta + i * dt on `clock`; xs is
+                                       the ROOM x from where the room stood
+                                       at the pass, so rxs - the drawn part,
+                                       to the cut - is xs + scroll0, the
+                                       room x proper, as `foot` is), the
+                                       dashes laid along it (dxs, dys, dts),
+                                       the dots and feet drawn this frame
+                                       with their room x (rx = x on the
+                                       screen + scroll, unrounded), the
+                                       room's scroll, the step the forecast
+                                       runs in, and the Floor's mop - the
+                                       one thing that moves drops the
+                                       forecast does not step - for the
+                                       stillness probes */
+                                    watch: { tags: watchTags.slice(),
+                                             stars: watchStars.map(function (q) { return { x: q.x, y: q.y, at: q.at, kind: q.kind, born: q.born }; }),
+                                             nextDrop: nextDrop ? nextDrop.ob : null, shedLive: shedLive,
+                                             dropTimer: dropTimer, ms: watchMs,
+                                             lines: paths.map(function (p) {
+                                               var n = p.cut ? Math.min(p.cut + 1, p.xs.length) : p.xs.length;
+                                               return { kind: p.kind, pending: p.pre, ob: p.ob, t0: p.t0, ta: p.ta, dt: p.dt,
+                                                        xs: p.xs.slice(), ys: p.ys.slice(), end: p.end,
+                                                        foot: isNaN(p.footX) ? null : p.footX + p.scroll0, footT: p.footT,
+                                                        shown: p.shown,
+                                                        rxs: p.xs.slice(0, n).map(function (v) { return v + p.scroll0; }),
+                                                        rys: p.ys.slice(0, n), scroll0: p.scroll0, odo0: p.odo0,
+                                                        hops: p.hops, tmax: p.tmax, cut: p.cut, cutWhy: p.cutWhy, contK: p.contK,
+                                                        herI: p.herI, nearI: p.nearI, litN: p.litN,
+                                                        dxs: p.dxs.slice(), dys: p.dys.slice(), dts: p.dts.slice(), dbs: p.dbs.slice() };
+                                             }),
+                                             dots: watchDots.map(function (d) { return { x: d.x, y: d.y, rx: d.rx, ry: d.ry, pend: d.pend, kind: d.kind, a: d.a, b: d.b, ob: d.ob }; }),
+                                             feet: watchFeet.map(function (d) { return { x: d.x, rx: d.rx, kind: d.kind, ob: d.ob }; }),
+                                             sightDt: sightDt, clock: watchClock, scroll: scroll,
+                                             mop: ledger && ledger.mop ? (ledger.mop.on || 0) : 0 },
                                     nervePop: nervePop, nerveGain: nerveGain,
                                     goldPop: goldPop,
                                     ability: doodad ? doodad.ability : null,

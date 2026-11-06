@@ -46,7 +46,9 @@ var Audio3 = (function () {
     if (o.to && o.to !== o.from) osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.to), t0 + o.dur);
     var vol = (o.vol === undefined ? 0.2 : o.vol);
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.006);
+    /* `attack`, seconds, as noise() takes it: a voice that swells (the
+       Dishwasher's pump spinning up). Left out, it strikes. */
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + (o.attack || 0.006));
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
     osc.connect(gain); gain.connect(master);
     osc.start(t0); osc.stop(t0 + o.dur + 0.02);
@@ -342,7 +344,100 @@ var Audio3 = (function () {
     tune:    function () { tone({ from: 600, to: 920, dur: 0.12, type: 'sine', vol: 0.06 });
                            tone({ from: 920, to: 700, dur: 0.12, type: 'sine', vol: 0.06, delay: 0.12 });
                            tone({ from: 700, to: 1240, dur: 0.16, type: 'sine', vol: 0.06, delay: 0.24 });
-                           noise({ freq: 3000, dur: 0.4, vol: 0.025, q: 0.6 }); }
+                           noise({ freq: 3000, dur: 0.4, vol: 0.025, q: 0.6 }); },
+
+    /* ---- the Kitchen ---- */
+    /* a burner or a valve clicking over: two dry ticks, the telegraph a
+       player learns to hear before anything in the kitchen goes off */
+    tick:    function () { tone({ from: 2100, dur: 0.025, type: 'square', vol: 0.06 });
+                           noise({ freq: 3600, dur: 0.02, vol: 0.05, q: 2.4 });
+                           tone({ from: 2100, dur: 0.025, type: 'square', vol: 0.06, delay: 0.11 });
+                           noise({ freq: 3600, dur: 0.02, vol: 0.05, q: 2.4, delay: 0.11 }); },
+    /* a column of fire going up: the low whump of the air being taken,
+       then the roar thinning out above it */
+    ignite:  function () { tone({ from: 70, to: 140, dur: 0.22, type: 'triangle', vol: 0.18 });
+                           noise({ freq: 380, dur: 0.5, vol: 0.20, q: 0.6, attack: 0.04 });
+                           noise({ freq: 1500, dur: 0.6, vol: 0.07, q: 0.5, delay: 0.08 }); },
+    /* a pan landing on stone: a struck partial and its overtone, ringing */
+    clang:   function () { tone({ from: 520, to: 500, dur: 0.30, type: 'triangle', vol: 0.11 });
+                           tone({ from: 1370, to: 1330, dur: 0.22, type: 'triangle', vol: 0.06 });
+                           noise({ freq: 2200, dur: 0.05, vol: 0.08, q: 1.4 }); },
+    /* a knife landing point-first: a dull knock and the blade's short sing */
+    thunk:   function () { tone({ from: 240, to: 150, dur: 0.06, type: 'triangle', vol: 0.15 });
+                           noise({ freq: 900, dur: 0.04, vol: 0.08, q: 1.2 });
+                           tone({ from: 3300, to: 3100, dur: 0.12, type: 'sine', vol: 0.03, delay: 0.02 }); },
+    /* the pressure valve: a thin rising whistle that wavers */
+    whistle: function () { tone({ from: 1650, to: 2050, dur: 0.35, type: 'sine', vol: 0.06 });
+                           tone({ from: 2050, to: 1900, dur: 0.18, type: 'sine', vol: 0.06, delay: 0.35 });
+                           tone({ from: 1900, to: 2250, dur: 0.30, type: 'sine', vol: 0.06, delay: 0.53 });
+                           noise({ freq: 5000, dur: 0.8, vol: 0.02, q: 0.8 }); },
+    /* a strong blast of steam: the hiss's big brother, a hard front */
+    steam:   function () { noise({ freq: 4600, dur: 0.9, vol: 0.12, q: 0.5 });
+                           noise({ freq: 1800, dur: 0.6, vol: 0.07, q: 0.6, delay: 0.05 }); },
+    /* baskets slamming out, a press clamping shut: a heavy thud with a
+       rattle of metal behind it */
+    slam:    function () { noise({ freq: 170, dur: 0.20, vol: 0.30, q: 0.6 });
+                           tone({ from: 95, to: 55, dur: 0.16, type: 'triangle', vol: 0.18 });
+                           noise({ freq: 2400, dur: 0.06, vol: 0.06, q: 1.8, delay: 0.03 }); },
+    /* the microwave's ding: one clean bell, its fifth above */
+    ding:    function () { tone({ from: 1760, to: 1760, dur: 0.7, type: 'sine', vol: 0.09 });
+                           tone({ from: 2640, to: 2640, dur: 0.45, type: 'sine', vol: 0.035 }); },
+    /* sparks: three short dry crackles */
+    zap:     function () { noise({ freq: 6200, dur: 0.05, vol: 0.10, q: 2.6 });
+                           noise({ freq: 5200, dur: 0.04, vol: 0.09, q: 2.6, delay: 0.07 });
+                           noise({ freq: 7000, dur: 0.05, vol: 0.08, q: 2.6, delay: 0.15 });
+                           tone({ from: 120, dur: 0.18, type: 'sawtooth', vol: 0.03 }); },
+    /* a lid popping off */
+    pop:     function () { tone({ from: 380, to: 980, dur: 0.07, type: 'square', vol: 0.11 });
+                           noise({ freq: 1600, dur: 0.05, vol: 0.08, q: 1.2 }); },
+    /* the cold snap coming on: a glassy shimmer that falls, under a breath */
+    chill:   function () { tone({ from: 2800, to: 1200, dur: 1.1, type: 'sine', vol: 0.045 });
+                           tone({ from: 3600, to: 1500, dur: 1.0, type: 'sine', vol: 0.025, delay: 0.08 });
+                           noise({ freq: 6000, dur: 1.2, vol: 0.05, q: 0.4, attack: 0.5 }); },
+    /* frozen solid: a crunch, and the ice settling round him */
+    freeze:  function () { noise({ freq: 2600, dur: 0.28, vol: 0.20, q: 0.7 });
+                           tone({ from: 1300, to: 520, dur: 0.22, type: 'square', vol: 0.05 });
+                           noise({ freq: 5400, dur: 0.5, vol: 0.05, q: 0.6, delay: 0.1 }); },
+    /* the ice cracking, once a pillar */
+    icecrack:function () { noise({ freq: 3200, dur: 0.07, vol: 0.14, q: 2.0 });
+                           tone({ from: 1700, to: 1400, dur: 0.08, type: 'triangle', vol: 0.06 }); },
+    /* and breaking free: a burst of glass and a bright run upward */
+    shatter: function () { noise({ freq: 3900, dur: 0.40, vol: 0.20, q: 0.8 });
+                           tone({ from: 1568, dur: 0.07, type: 'triangle', vol: 0.07, delay: 0.04 });
+                           tone({ from: 2093, dur: 0.07, type: 'triangle', vol: 0.07, delay: 0.10 });
+                           tone({ from: 2637, dur: 0.12, type: 'triangle', vol: 0.07, delay: 0.16 }); },
+    /* ---- 4-4 THE CABINETS (js/cabinets.js). Glass breaks fifty times a
+       minute late in this bay, so 'crush' is short and quiet; 'chink' is
+       the let-go's tell and must cut through it. ---- */
+    /* a ceramic mug rocking on a glass shelf: two short ticks (sent twice a let-go, four ticks) */
+    chink:   function () { tone({ from: 1900, to: 1650, dur: 0.035, type: 'square', vol: 0.085 });
+                           tone({ from: 2100, to: 1800, dur: 0.03, type: 'square', vol: 0.07, delay: 0.09 }); },
+    /* a glass breaking on a glass shelf: a short bright noise and a falling glassy note */
+    crush:   function () { noise({ freq: 3600, dur: 0.13, vol: 0.08, q: 1.3 });
+                           tone({ from: 2600, to: 1700, dur: 0.05, type: 'triangle', vol: 0.04 }); },
+    /* ---- 4-5 THE DISHWASHER (js/dishwasher.js). WASH is the busiest part of
+       the game, so nothing here is above 0.10 and the art rate-limits the
+       spray, the bubbles and the pops on its own program clock. ---- */
+    /* the pump spinning up: a low sawtooth swell with the water's rush under it */
+    thrum:   function () { tone({ from: 46, to: 92, dur: 0.8, type: 'sawtooth', vol: 0.09, attack: 0.3 });
+                           noise({ freq: 240, dur: 0.6, vol: 0.04, q: 0.5 }); },
+    /* a jet starting: a hiss that opens, not a snap */
+    spray:   function () { noise({ freq: 2600, dur: 0.45, vol: 0.07, q: 0.4, attack: 0.12 }); },
+    /* a dish about to fly out of the spray at the edge: a splash and a glassy tick */
+    splashIn:function () { noise({ freq: 1800, dur: 0.10, vol: 0.09, q: 0.9 });
+                           tone({ from: 2100, dur: 0.04, type: 'triangle', vol: 0.05, delay: 0.06 }); },
+    /* the drain at CLEAN: two falling gulps, the second a fifth lower */
+    glug:    function () { tone({ from: 190, to: 85, dur: 0.42, type: 'triangle', vol: 0.10 });
+                           tone({ from: 127, to: 57, dur: 0.42, type: 'triangle', vol: 0.08, delay: 0.32 }); },
+    /* the Bosch's end-of-cycle beep, played three times by three cries 0.5 s apart */
+    beep:    function () { tone({ from: 2093, dur: 0.11, type: 'square', vol: 0.075 }); },
+    /* a soap bubble bursting (quiet; at most one in 0.35 s) */
+    bubble:  function () { tone({ from: 900, to: 1500, dur: 0.03, type: 'sine', vol: 0.035 }); },
+    /* a flying glass bursting on a stack: a short bright tinkle - the ice's
+       'shatter' is a long 0.20 burst and comes ten times a minute in here */
+    tinkle:  function () { noise({ freq: 4200, dur: 0.12, vol: 0.08, q: 1.2 });
+                           tone({ from: 2637, dur: 0.05, type: 'triangle', vol: 0.05 });
+                           tone({ from: 3520, dur: 0.05, type: 'triangle', vol: 0.04, delay: 0.05 }); }
   };
 
   /* ---------------------------------------------------------- samples

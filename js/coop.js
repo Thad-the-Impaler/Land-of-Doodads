@@ -790,6 +790,8 @@ var Coop = (function () {
     postV: postV, postH: postH,
     makePillar: makePillar, makeSpikes: makeSpikes, makeLitter: makeLitter,
     makeDrop: makeDrop,
-    rectsFor: rectsFor
+    rectsFor: rectsFor,
+    /* the egg itself, for THE FRIDGE, which freezes this exact egg */
+    bakeEgg: bakeEgg
   };
 })();

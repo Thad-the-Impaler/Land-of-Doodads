@@ -11,10 +11,31 @@ var TAU = Math.PI * 2;
 
 function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 function lerp(a, b, t) { return a + (b - a) * t; }
-function rand(a, b) { return a + Math.random() * (b - a); }
-function randInt(a, b) { return Math.floor(a + Math.random() * (b - a + 1)); }
-function chance(p) { return Math.random() < p; }
-function choose(list) { return list[(Math.random() * list.length) | 0]; }
+
+/* THE DICE the four helpers below roll. Math.random, except while PlayScene
+   is stepping one falling thing: then `Dice.roll` is that thing's OWN stream
+   (its `dice` field, a mulberry32 state), so a kernel's next bounce was
+   decided the moment it was made and a copy of it stepped ahead rolls the
+   very same numbers. That is what lets Pepper see where things will go.
+   Code that calls Math.random directly is outside this, on purpose: the
+   makers and the scenery have no future to foresee. */
+var Dice = {
+  roll: Math.random,
+  ob: null,
+  /* one step of the stream on Dice.ob.dice - mulberry32's arithmetic, with
+     the state kept on the object so that copying the object copies it */
+  own: function () {
+    var o = Dice.ob, s = o.dice = (o.dice + 0x6D2B79F5) | 0;
+    var t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+};
+
+function rand(a, b) { return a + Dice.roll() * (b - a); }
+function randInt(a, b) { return Math.floor(a + Dice.roll() * (b - a + 1)); }
+function chance(p) { return Dice.roll() < p; }
+function choose(list) { return list[(Dice.roll() * list.length) | 0]; }
 function sign(v) { return v < 0 ? -1 : (v > 0 ? 1 : 0); }
 
 /* frame-rate independent "move toward" */

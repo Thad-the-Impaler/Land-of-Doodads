@@ -238,6 +238,26 @@ var StandsScene = (function () {
     c.restore();
   }
 
+  /* THE KITCHEN'S COUNTER FRONT, shared by its stations: the quartz top
+     with its veins and its lit nose, and the shaker drawers under it with a
+     bar pull each. js/kitchen.js's pigments, so the three agree. */
+  function kitchenBase(c, w, h, r) {
+    var K = Kitchen.P, i, x;
+    px(c, K.cabinet, 0, 5, w, h - 5);
+    for (x = 0; x < w; x += 40) {
+      px(c, K.cabinetLine, x, 5, 1, h - 5);
+      px(c, K.cabinetLit, x + 1, 5, 1, h - 5);
+      px(c, K.pullShade, x + 12, 11, 16, 2);
+      px(c, K.pullLit, x + 12, 10, 16, 1);
+    }
+    px(c, K.cabinetShade, 0, 5, w, 1);
+    px(c, K.cabinetDeep, 0, h - 2, w, 2);
+    px(c, K.quartz, 0, 0, w, 5);
+    px(c, K.quartzHi, 0, 0, w, 1);
+    px(c, K.quartzShade, 0, 4, w, 1);
+    for (i = 0; i < 7; i++) px(c, K.veinPale, Math.floor(r() * (w - 10)), 1 + Math.floor(r() * 3), 4 + Math.floor(r() * 10), 1);
+  }
+
   /* THE PAINTERS. Each one is handed a context whose row 0 is the seat
      line, the station's width and height, the level's own palette and the
      level's module, and paints the one whole object the level brought.
@@ -647,6 +667,123 @@ var StandsScene = (function () {
         px(c, P.rail, w - 13 - Math.round(y * 0.45), -3 - y, 1, 1);
         px(c, P.rail, w - 11 + Math.round(y * 0.45), -3 - y, 1, 1);
       }
+    },
+
+    /* KITCHEN, on top of everything - the house's quartz and its white
+       shaker doors under it for the island and the counter; the fridge,
+       the cabinets and the dishwasher each bring a slab of their own */
+
+    /* the island: the same quartz and drawers, with the black glass of the
+       cooktop set into the top and its four rings on it, the hot sauce and
+       the Glutathione standing by it. The rings' glow and the fire are live. */
+    island: function (c, w, h, P, m) {
+      var K = Kitchen.P, r = mulberry32(2101);
+      kitchenBase(c, w, h, r);
+      px(c, K.blackGlassDeep, 44, 0, 72, 4);
+      px(c, K.blackGlass, 45, 0, 70, 3);
+      px(c, K.blackGlassHi, 45, 0, 70, 1);
+      px(c, K.steelShade, 44, 4, 72, 1);
+      for (var i = 0; i < 4; i++) px(c, K.blackGlassLit, 50 + i * 16, 1, 10, 1);
+      blit(c, m.tiles.bottle && m.tiles.bottle[0], 12, -21);
+      blit(c, m.tiles.sachet, w - 28, -25);
+    },
+
+    /* the back counter: the quartz top over a run of drawers with their
+       nickel bar pulls, the Tabasco and the spent pucks on it. The panini
+       press at the left end is live (it clamps), so it is not baked here. */
+    counter: function (c, w, h, P, m) {
+      var K = Kitchen.P, r = mulberry32(2202), i, x;
+      kitchenBase(c, w, h, r);
+      blit(c, m.tiles.sauce, w - 40, -21);
+      blit(c, m.tiles.pucks, w - 27, -13);
+    },
+
+    /* a slab of the fridge's top shelf, the right way up: the glass with
+       its steel trim, the cold liner under it with the LED's strip, rime
+       along the arris, and the kimchi and an ice cream standing on it */
+    fridge: function (c, w, h, P, m) {
+      var r = mulberry32(2303), i;
+      px(c, P.liner, 0, 0, w, h);
+      px(c, P.linerShade, 0, h - 4, w, 4);
+      Tint.rect(c, 0, 8, w, 3, P.led, 6);
+      px(c, P.trimFace, 0, 0, w, 6);
+      px(c, P.trimLit, 0, 1, w, 1);
+      px(c, P.trimArris, 0, 0, w, 1);
+      px(c, P.trimDeep, 0, 6, w, 1);
+      for (i = 0; i < 24; i++) px(c, P.rime, Math.floor(r() * w), 0, 1 + Math.floor(r() * 3), 1);
+      for (i = 0; i < 10; i++) px(c, P.trimBrush, Math.floor(r() * (w - 12)), 2 + Math.floor(r() * 3), 6 + Math.floor(r() * 8), 1);
+      blit(c, m.tiles.kimchi, 8, -17);
+      blit(c, m.tiles.iceCream, w - 32, -14);
+      blit(c, m.tiles.egg, 26, -10);
+    },
+
+    /* a slab of the glass-front uppers: the top glass shelf seen edge-on
+       (the white line of its top over its green front), the tier under it
+       through the glass with the soft rings the shelf's glasses throw, and
+       the side panels' edges at either end with their pin holes; the
+       Verve, the pineapple glass, the origami fox and the Smiski standing
+       on the glass. The black mug at the right end is live, because it is
+       the one that lets go. */
+    cabinets: function (c, w, h, P, m) {
+      var T2 = m.tiles, i, y;
+      px(c, P.panelMid, 0, 0, w, h);
+      px(c, P.panelMidLo, 0, h - 8, w, 8);
+      var rings = [[14, 11, 14], [40, 14, 12], [62, 10, 16]];
+      var ga = c.globalAlpha;
+      c.globalAlpha = ga * 0.55;
+      for (i = 0; i < rings.length; i++) {
+        var rx = rings[i][0], ry = rings[i][1], rw = rings[i][2];
+        px(c, P.ring, rx + 2, ry + 4, rw - 4, 1);
+        px(c, P.ring, rx, ry + 2, 1, 2);
+        px(c, P.ring, rx + rw - 1, ry + 2, 1, 2);
+      }
+      c.globalAlpha = ga;
+      px(c, P.shelfLine, 0, 0, w, 1);
+      px(c, P.edgeLit, 0, 1, w, 1);
+      px(c, P.edge, 0, 2, w, 1);
+      px(c, P.edgeMid, 0, 3, w, 1);
+      px(c, P.edgeDeep, 0, 4, w, 1);
+      px(c, P.under, 0, 5, w, 1);
+      px(c, P.board, 0, 0, 4, h);
+      px(c, P.boardShade, 3, 0, 1, h);
+      px(c, P.board, w - 4, 0, 4, h);
+      px(c, P.boardShade, w - 4, 0, 1, h);
+      for (y = 8; y < h - 2; y += 6) { px(c, P.boardShade, 1, y, 1, 1); px(c, P.boardShade, w - 2, y, 1, 1); }
+      var stand = function (tl, x) { var k = canvasOf(tl); if (k && k.width) blit(c, k, x, -k.height); };
+      stand(T2.verve, 5);
+      stand(T2.pineapple, 16);
+      stand(T2.foxStill, 30);
+      stand(T2.smiski, 48);
+    },
+
+    /* the dishwasher's upper rack, pulled out and seen from the front:
+       the ribbed tumblers upside down behind its coated wires, the grey
+       BOSCH handle on the front rail, and the hot sauce and the tablet
+       standing on top. The water is live: it drips, and on the trick the
+       arm under the rack throws a jet up through it. */
+    dishwasher: function (c, w, h, P, m) {
+      var x, y;
+      px(c, P.tower, 0, 0, w, h);
+      for (x = 4; x + 12 <= w; x += 15) {
+        px(c, P.glassDeep, x, 5, 12, h - 9);
+        px(c, P.glass, x + 1, 5, 10, h - 10);
+        for (y = 8; y < h - 5; y += 4) px(c, P.glassRib, x + 1, y, 10, 1);
+        px(c, P.glassLit, x + 2, 6, 1, h - 12);
+        px(c, P.glassRim, x, h - 5, 12, 1);
+      }
+      for (x = 2; x < w; x += 6) {
+        px(c, P.wire, x, 0, 1, h - 1);
+        px(c, P.wireShade, x + 1, 4, 1, h - 5);
+      }
+      px(c, P.wireLit, 0, 0, w, 1);
+      px(c, P.wire, 0, 1, w, 2);
+      px(c, P.wireShade, 0, 3, w, 1);
+      px(c, P.wire, 0, h >> 1, w, 1);
+      px(c, P.wire, 0, h - 2, w, 1);
+      px(c, P.wireDeep, 0, h - 1, w, 1);
+      blit(c, m.tiles.handle, (w - 62) >> 1, 6);
+      blit(c, m.tiles.sauce, 5, -21);
+      blit(c, m.tiles.tablet, 19, -12);
     },
 
     /* A LEVEL THE PLAYER HAS NOT EARNED: a dust sheet over whatever it is.
@@ -1258,6 +1395,205 @@ var StandsScene = (function () {
         if (st.live.surf > 0) return false;
         st.live.surf = 1.2; st.live.surfT = 0;
         for (var i = 0; i < st.who.length; i++) turnToward(st.who[i], st.x + TV_SX + TV_SW / 2, 2);
+      }
+    },
+
+    /* the cooktop: a ring glowing now and then, and on the trick a column
+       of fire out of it, the island's own fire colours */
+    island: {
+      init: function (st) { st.live.glow = 0; st.live.glowT = rand(1, 3); st.live.fire = 0; st.live.ring = 1; },
+      idle: function (st, dt) {
+        var L = st.live, FX2 = Island.FX;
+        L.glowT -= dt;
+        if (L.glowT <= 0 && L.fire <= 0) { L.glowT = rand(3, 5); L.glow = 1.2; L.ring = randInt(0, 3); }
+        if (L.glow > 0) L.glow -= dt;
+        if (L.fire > 0) {
+          L.fire -= dt;
+          var x = st.x + 50 + L.ring * 16 + 5;
+          if (Math.random() < dt * 40) spark(x + rand(-3, 3), st.tread - rand(4, 30), rand(-6, 6), rand(-40, -20), 0.4,
+                                             Math.random() < 0.5 ? FX2.hotHi : FX2.hot, 2, 0, 0.9);
+        }
+      },
+      draw: function (st, ctx, ox, oy) {
+        var L = st.live, FX2 = Island.FX, x = ox + 50 + L.ring * 16, ga = ctx.globalAlpha;
+        var k = L.fire > 0 ? 1 : clamp(L.glow / 0.6, 0, 1) * clamp((1.2 - L.glow) / 0.3, 0, 1);
+        if (k > 0) {
+          ctx.globalAlpha = ga * k;
+          px(ctx, FX2.hot, x, oy + 1, 10, 1);
+          px(ctx, FX2.hotHi, x + 2, oy + 1, 6, 1);
+          ctx.globalAlpha = ga;
+        }
+        if (L.fire > 0) {
+          /* the column: hot white at the core, amber round it, ragged on top */
+          var hgt = Math.round(30 * clamp((0.7 - L.fire) / 0.12, 0.2, 1) * (0.9 + 0.1 * Math.sin(t * 40)));
+          px(ctx, FX2.hot, x + 1, oy - hgt, 8, hgt + 1);
+          px(ctx, FX2.hotMid, x + 2, oy - hgt + 2, 6, hgt - 1);
+          px(ctx, FX2.hotHi, x + 4, oy - hgt + 5, 2, hgt - 5);
+          px(ctx, FX2.hot, x + 2 + (Math.floor(t * 20) % 3), oy - hgt - 3, 2, 3);
+        }
+      },
+      event: function (st) {
+        if (st.live.fire > 0) return false;
+        st.live.fire = 0.7; st.live.glow = 0;
+        Audio3.play('ignite');
+        var a = nearestTo(st, st.x + 70);
+        if (a) later(0.1, function () { a.flap(); a.shiverT = 0.5; say(a, '!'); });
+      }
+    },
+
+    /* the panini press at the counter's left end, live because it is the
+       one with the trick: the lid stands up, holds, and clamps shut */
+    counter: {
+      init: function (st) { st.live.lid = 0; st.live.ps = 'idle'; st.live.pt = 0; st.live.puffT = rand(1, 3); },
+      idle: function (st, dt) {
+        var L = st.live;
+        L.pt += dt;
+        if (L.ps === 'up') { L.lid = clamp(L.pt / 0.3, 0, 1); if (L.pt >= 0.9) { L.ps = 'down'; L.pt = 0; } }
+        else if (L.ps === 'down') {
+          L.lid = clamp(1 - L.pt / 0.08, 0, 1);
+          if (L.pt >= 0.08) {
+            L.ps = 'idle'; L.lid = 0;
+            Audio3.play('slam');
+            for (var i = 0; i < 4; i++) spark(st.x + 8 + rand(0, 30), st.tread - 4, rand(-12, 12), rand(-26, -12), 0.7, Counter.P.steamHi, 2, 0, 0.7);
+            var a = nearestTo(st, st.x + 25);
+            if (a) { a.shiverT = 0.5; say(a, '!'); }
+          }
+        }
+        L.puffT -= dt;
+        if (L.puffT <= 0) {
+          L.puffT = rand(2.5, 4.5);
+          spark(st.x + 30 + rand(-3, 3), st.tread - 15, rand(-2, 2), rand(-12, -7), 1.2, Counter.P.steam, 1, 0, 0.6);
+        }
+      },
+      draw: function (st, ctx, ox, oy) {
+        var fr = Counter.tiles.machine && Counter.tiles.machine.press;
+        if (!fr) return;
+        var f = st.live.lid <= 0 ? 0 : (st.live.lid < 0.4 ? 1 : (st.live.lid < 0.8 ? 2 : 3));
+        var k = fr[Math.min(f, fr.length - 1)];
+        /* the sprite's canvas carries the press with its feet on row 48 */
+        blit(ctx, k && k.art, ox + 4, oy - 48);
+      },
+      event: function (st) {
+        if (st.live.ps !== 'idle') return false;
+        st.live.ps = 'up'; st.live.pt = 0;
+        Audio3.play('tick');
+        var a = nearestTo(st, st.x + 25);
+        if (a) later(0.3, function () { turnToward(a, st.x + 25, 1.4); say(a, '?'); });
+      }
+    },
+
+    /* frost falling off the liner above, and now and then the cold snap:
+       a ring of ice closing in on whoever is sitting nearest */
+    fridge: {
+      init: function (st) { st.live.frostT = rand(0.5, 2); st.live.snap = 0; st.live.who = null; },
+      idle: function (st, dt) {
+        var L = st.live, P = Fridge.P;
+        L.frostT -= dt;
+        if (L.frostT <= 0) {
+          L.frostT = rand(0.6, 1.4);
+          spark(st.x + rand(6, st.w - 6), st.tread - 40, rand(-3, 3), rand(5, 10), 3.5, P.iceHi, 1, 0, 0.8);
+        }
+        if (L.snap > 0) {
+          L.snap -= dt;
+          var a = L.who, k = clamp(1 - L.snap / 1.0, 0, 1);
+          if (a && Math.random() < dt * 30) {
+            var th = rand(0, TAU), rr = 30 * (1 - k) + 6;
+            spark(a.x + Math.cos(th) * rr, a.y + Math.sin(th) * rr, -Math.cos(th) * 20, -Math.sin(th) * 20, 0.35,
+                  Math.random() < 0.5 ? P.iceHi : P.ice, 1, 0, 0.9);
+          }
+          if (L.snap <= 0 && a) { a.shiverT = 0.9; say(a, '*'); Audio3.play('icecrack'); }
+        }
+      },
+      event: function (st) {
+        if (st.live.snap > 0) return false;
+        var a = nearestTo(st, st.x + st.w / 2);
+        if (!a) return false;
+        st.live.snap = 1.0; st.live.who = a;
+        Audio3.play('chill');
+      }
+    },
+
+    /* the black mug at the shelf's right end: on the trick it rocks on
+       the glass, chinks twice, and lets go - off the front, down past the
+       stands, and breaks on the step below - then a clean one is put back */
+    cabinets: {
+      init: function (st) { st.live.ms = 'sit'; st.live.mt = 0; st.live.fy = 0; st.live.fv = 0; },
+      idle: function (st, dt) {
+        var L = st.live, P = Cabinets.P, i;
+        L.mt += dt;
+        if (L.ms === 'rock') {
+          if (L.mt >= 0.3 && L.mt - dt < 0.3) Audio3.play('chink');
+          if (L.mt >= 0.55) { L.ms = 'fall'; L.mt = 0; L.fy = 0; L.fv = 0; }
+        } else if (L.ms === 'fall') {
+          L.fv += 700 * dt; L.fy += L.fv * dt;
+          if (L.fy >= st.h) {
+            L.ms = 'gone'; L.mt = 0;
+            Audio3.play('crush');
+            for (i = 0; i < 8; i++) spark(st.x + 84 + rand(-5, 5), st.tread + st.h - 1, rand(-30, 30), rand(-40, -10), 0.6,
+                                          i % 2 ? P.mugLit : P.glassHi, 1, 160, 1);
+          }
+        } else if (L.ms === 'gone' && L.mt >= 3) { L.ms = 'sit'; L.mt = 0; }
+      },
+      draw: function (st, ctx, ox, oy) {
+        var L = st.live, P = Cabinets.P;
+        if (L.ms === 'gone') return;
+        var dx = L.ms === 'rock' ? Math.round((L.mt > 0.35 ? 3 : 2) * Math.sin(L.mt * 22)) : 0;
+        var x = ox + 80 + dx, y = oy - 10 + Math.round(L.fy);
+        /* a matte black mug, 8 wide and 10 tall, its handle to the right */
+        px(ctx, P.mugLine, x, y, 9, 10);
+        px(ctx, P.mug, x + 1, y + 1, 7, 8);
+        px(ctx, P.mugRim, x + 1, y + 1, 7, 1);
+        px(ctx, P.mugLit, x + 2, y + 2, 1, 6);
+        px(ctx, P.mugLine, x + 9, y + 3, 2, 1);
+        px(ctx, P.mugLine, x + 10, y + 4, 1, 3);
+        px(ctx, P.mugLine, x + 9, y + 7, 2, 1);
+        if (L.ms === 'rock') px(ctx, P.glassHi, x - 1, oy, 11, 1);
+      },
+      event: function (st) {
+        if (st.live.ms !== 'sit') return false;
+        st.live.ms = 'rock'; st.live.mt = 0;
+        Audio3.play('chink');
+        var a = nearestTo(st, st.x + 84);
+        if (a) later(0.6, function () { turnToward(a, st.x + 84, 1.2); a.shiverT = 0.5; say(a, '!'); });
+      }
+    },
+
+    /* the rack dripping off its bottom wires, and now and then a jet up
+       through it from the arm below - at the right-hand seat, so whoever
+       sits there is thrown up off it (a lone sitter has the left) */
+    dishwasher: {
+      init: function (st) { st.live.dripT = rand(0.3, 1.2); st.live.jet = 0; },
+      idle: function (st, dt) {
+        var L = st.live, P = Dishwasher.P;
+        L.dripT -= dt;
+        if (L.dripT <= 0) {
+          L.dripT = rand(0.5, 1.3);
+          spark(st.x + 2 + 6 * randInt(0, Math.floor((st.w - 4) / 6)), st.tread + st.h - 1,
+                0, rand(5, 15), 0.6, P.jet, 1, 160, 0.9);
+        }
+        if (L.jet > 0) {
+          L.jet -= dt;
+          if (Math.random() < dt * 50) spark(st.x + 76 + rand(-3, 3), st.tread - rand(12, 34), rand(-30, 30), rand(-30, 10),
+                                             0.5, Math.random() < 0.5 ? P.spray : P.jetCore, 1, 120, 0.9);
+        }
+      },
+      draw: function (st, ctx, ox, oy) {
+        var L = st.live, P = Dishwasher.P;
+        if (L.jet <= 0) return;
+        /* the column: white at the core, blue at the edges, ragged on top */
+        var hgt = Math.round(34 * clamp((0.7 - L.jet) / 0.1, 0.2, 1) * (0.92 + 0.08 * Math.sin(t * 40)));
+        var x = ox + 73;
+        px(ctx, P.jetEdge, x, oy - hgt, 7, hgt + 1);
+        px(ctx, P.jet, x + 1, oy - hgt + 1, 5, hgt);
+        px(ctx, P.jetCore, x + 2, oy - hgt + 3, 3, hgt - 3);
+        px(ctx, P.spray, x - 1 + (Math.floor(t * 20) % 3) * 3, oy - hgt - 2, 3, 2);
+      },
+      event: function (st) {
+        if (st.live.jet > 0) return false;
+        st.live.jet = 0.7;
+        Audio3.play('spray');
+        var a = nearestTo(st, st.x + 76);
+        if (a) later(0.1, function () { a.flap(); a.shiverT = 0.4; say(a, '!'); });
       }
     }
   };

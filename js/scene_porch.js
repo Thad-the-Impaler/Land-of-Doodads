@@ -194,13 +194,18 @@ var PorchScene = (function () {
        than a row of its own, because another 240 row would make WORLD
        1920 rather than 1680 and put a second cardboard-dark seam on a
        loop that was laid out around one luminance cut. */
-    { room: 'diningroom',                        w: 480, k: 0,   phase: 0 }
+    { room: 'diningroom',                        w: 480, k: 0,   phase: 0 },
     /* And the Dining Room the same way: one 480 row, THE TABLE's calm
        kitchen, after the Living Room's plaster - the same house, one wall
        on - so the porch's one hard cut stays where it was, at the loop
        seam back to the Coop. spareRow() would have found the room without
        this line; it is written out so the order is a decision. WORLD is
        2160 once it is open. */
+    { room: 'kitchen',                           w: 480, k: 0,   phase: 0 }
+    /* And the Kitchen, through the doorway: THE ISLAND's calm evening
+       kitchen, the same house one room on, so the porch's one hard cut
+       still sits at the loop seam back to the Coop. WORLD is 2640 once it
+       is open. */
   ];
 
   /* ----------------------------------------------------- scene state */

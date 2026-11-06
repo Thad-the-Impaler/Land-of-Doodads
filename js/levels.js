@@ -1,9 +1,9 @@
 /* ------------------------------------------------------------------
    Land of Doodads - rooms and levels
 
-   Fifteen built bays in three rooms, run in the order they are earned
+   Twenty built bays in four rooms, run in the order they are earned
    in, each one gated on the one before it: the BACKYARD's five, the
-   LIVING ROOM's five, and the DINING ROOM's five.
+   LIVING ROOM's five, the DINING ROOM's five and the KITCHEN's five.
 
    ONE locked placeholder is left, and it stands to the RIGHT of the
    last real room. The one that used to sit to the LEFT of the Backyard
@@ -892,6 +892,232 @@ var Levels = (function () {
     }
   };
 
+
+  /* ===================================================== THE KITCHEN
+
+     Through the doorway from the Dining Room, into the room the Table has
+     been looking at all along (js/kitchen.js says more). FIVE bays: across
+     the top of the island, along the back counter under the uppers, inside
+     the fridge, inside the glass-front cabinets, and - the room's finale -
+     inside the dishwasher, running. Evening throughout.
+
+     THE LID KILLS IN ALL THREE - "lethal ceilings on all" - so it is one
+     field on the room module again, the Living Room's way, and every bay
+     pays the entry fee the killing lid has always cost: gapMin 80 at the
+     least.
+
+     WHAT EACH ONE ADDS, and where the engine meets it:
+       the stove      - the Island's spikes: a cooktop set in the quartz
+                        that comes past on the ground and throws fire up
+                        at the player, and blasts whatever falls into it
+                        back up (its own stepDrop and stepBoon)
+       the appliances - the Counter's spikes: six machines along the
+                        splash, one move each, taking turns
+       the snap       - the Fridge's late phase: its own clock, and the
+                        engine's ICE (ledger.freeze, tune.iceFor), which
+                        holds the doodad for three pillars
+     Every tune below was measured in autopiloted runs against the Dining
+     Room's bays at the same settings, and each number says why it is what
+     it is; the bays' own files carry the arithmetic. */
+
+  var ISLAND = {
+    id: 'island',
+    name: 'THE ISLAND',
+    code: '4-1',
+    /* no `unlock` of its own: the room's gate is this bay's price */
+    blurb: ['THE STOVE IS ON THE MOVE.', 'MIND THE PANS.'],
+    art: Island,
+    tune: {
+      /* a notch over the Table: the room's first bay teaches the stove, and
+         does not need to be faster as well */
+      speedStart: 114, speedMax: 176, speedRamp: 0.84,
+      /* never under 80 with a killing lid */
+      gapStart: 106, gapMin: 82, gapRamp: 0.30,
+      /* 184 is the spacing js/island.js's escape sums are solved at */
+      spacingStart: 226, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 52,
+      /* THE STOVE, in the spike slot, from 7 once the pans are learned. The
+         owner's "occasionally": with the art's own rule of two clear bays
+         between cooktops, these odds come to one about every 9-10s at first
+         and every 6s from about 35s in (measured). The lengths are published
+         for the record; the cooktop has one size and the art sizes each
+         column off the neighbouring gaps */
+      spikeScore: 7,
+      spikeChance: 0.08, spikeChanceMax: 0.30,
+      spikeCeilMin: 40, spikeCeilMax: 60, spikeFloorMin: 40, spikeFloorMax: 60,
+      /* PANS from 4, at the Table's silverware density */
+      dropScore: 4,
+      dropEvery: 2.2, dropEveryMin: 1.05, dropEveryRamp: 0.03,
+      dropAheadMin: 104, dropAheadMax: 200,
+      dropFallMin: 4, dropFallMax: 30,
+      /* the hot sauce about one drop in fourteen, the limed watermelon one
+         in seventeen; NO goldChance - the gold pan is the art's own roll */
+      spicyChance: 0.07,
+      sourChance: 0.06,
+      /* the Glutathione */
+      boonChance: 0.032, boonGap: 10,
+      /* from 14 a stove can light its left ring too (WARN.late) */
+      lateScore: 14
+    }
+  };
+
+  var COUNTER = {
+    id: 'counter',
+    name: 'THE COUNTER',
+    code: '4-2',
+    unlock: { room: 'kitchen', level: 'island', score: 20 },
+    blurb: ['EVERY MACHINE IS PLUGGED IN.', 'THE KNIVES ARE OUT.'],
+    art: Counter,
+    tune: {
+      /* the Ceiling's pace: every machine's move is telegraphed, so the
+         speed does not have to be what is hard */
+      speedStart: 118, speedMax: 180, speedRamp: 0.86,
+      /* 81 at the least, never 80, under a killing lid */
+      gapStart: 104, gapMin: 81, gapRamp: 0.31,
+      /* 182: the microwave's sparks and the espresso's plume want about
+         140px between two caps */
+      spacingStart: 226, spacingMin: 182, spacingRamp: 0.45,
+      gapDrift: 54,
+      /* THE MACHINES, in the spike slot: one at most a bay, from 6, about
+         one bay in 3.6 at first and one in 1.7 by the end. js/counter.js
+         decides which (a new one first, then round the six) and ignores the
+         lengths, which are published for the record */
+      spikeScore: 6, spikeChance: 0.28, spikeChanceMax: 0.60,
+      spikeCeilMin: 1, spikeCeilMax: 1, spikeFloorMin: 1, spikeFloorMax: 1,
+      /* KNIVES from 4, a shade denser than the Table's silverware, and let
+         go further right so they come down through the space in front of
+         him: at the usual 104..200 they landed ahead and did 4% of hits */
+      dropScore: 4,
+      dropEvery: 1.8, dropEveryMin: 0.9, dropEveryRamp: 0.03,
+      dropAheadMin: 140, dropAheadMax: 250,
+      dropFallMin: 4, dropFallMax: 30,
+      /* the Tabasco and the mixer heads; no sour, no gold (the gold bean is
+         for crows only, js/counter.js GOLD_GIFT) */
+      spicyChance: 0.065, whirlChance: 0.055,
+      boonChance: 0.032, boonGap: 10
+    }
+  };
+
+  var FRIDGE = {
+    id: 'fridge',
+    name: 'THE FRIDGE',
+    code: '4-3',
+    unlock: { room: 'kitchen', level: 'counter', score: 20 },
+    blurb: ['THE DOOR SWUNG SHUT.', 'IT IS VERY COLD IN HERE.'],
+    art: Fridge,
+    tune: {
+      /* a step on the Counter's pace and no more: the ice and the mist are
+         what is harder in here, not the speed */
+      speedStart: 118, speedMax: 182, speedRamp: 0.86,
+      /* 82, the killing lid's floor, and no lower: a frozen beat is 30px */
+      gapStart: 104, gapMin: 82, gapRamp: 0.30,
+      /* 184, so three stacks passed frozen are still a second apart at
+         speedMax */
+      spacingStart: 226, spacingMin: 184, spacingRamp: 0.44,
+      /* 52: a frozen doodad changes height slowly */
+      gapDrift: 52,
+      /* NO SPIKES: the eggs, the mist and the ice are this bay */
+      spikeScore: 1e9, spikeChance: 0, spikeChanceMax: 0,
+      /* FROZEN EGGS from 5. js/fridge.js lets them fall at 150, so they are
+         born 120..230 in and cross his column in the air: at the usual 104..200
+         and a heavier fall only two a minute came within 22px of him, and the
+         eggs were scenery */
+      dropScore: 5,
+      dropEvery: 2.2, dropEveryMin: 1.0, dropEveryRamp: 0.03,
+      dropAheadMin: 120, dropAheadMax: 230,
+      dropFallMin: 4, dropFallMax: 30,
+      /* the kimchi a shade common, because the heat is also the counter to
+         the cold; and NO goldChance - the beef patty is the art's own roll */
+      spicyChance: 0.065, sourChance: 0.07,
+      boonChance: 0.034, boonGap: 10,
+      /* banners at 5 (eggs), 8 (the mist, from the art) and 12: the cold
+         snap, run by the art's own clock from here */
+      lateScore: 12,
+      /* THE ICE: how many pillars a freeze holds him for (the owner's three) */
+      iceFor: 3
+    }
+  };
+
+  var CABINETS = {
+    id: 'cabinets',
+    name: 'THE CABINETS',
+    code: '4-4',
+    unlock: { room: 'kitchen', level: 'fridge', score: 20 },
+    blurb: ['BEHIND THE GLASS DOORS.', 'MIND THE GOOD MUGS.'],
+    art: Cabinets,
+    tune: {
+      /* a hair over the Fridge's pace, at full speed by about 66 s: the
+         let-go and the lid are the difficulty, not the speed */
+      speedStart: 120, speedMax: 186, speedRamp: 1.0,
+      /* 82 under a killing lid and never lower; a let-go moves a gap,
+         never shrinks it */
+      gapStart: 104, gapMin: 82, gapRamp: 0.32,
+      /* 184 at speedMax; not reached inside a minute */
+      spacingStart: 226, spacingMin: 184, spacingRamp: 0.44,
+      /* the Counter's: the climb after a let-go is the art's, the drift
+         between gaps is the engine's */
+      gapDrift: 54,
+      /* NO SPIKES: the let-go is this bay, on the art's own clock from 6 */
+      spikeScore: 1e9, spikeChance: 0, spikeChanceMax: 0,
+      /* GLASSES from 4. js/cabinets.js lets them fall at 190, so they
+         cross his column in the air: at 300 they landed in front of him */
+      dropScore: 4,
+      dropEvery: 2.0, dropEveryMin: 0.85, dropEveryRamp: 0.03,
+      dropAheadMin: 120, dropAheadMax: 230,
+      dropFallMin: 4, dropFallMax: 30,
+      /* the Verve, the pineapple glass and the origami fox; NO goldChance -
+         the wood robot is the crows' only */
+      spicyChance: 0.05, sourChance: 0.05, whirlChance: 0.036,
+      /* the Smiski, about once in 45 stacks */
+      boonChance: 0.028, boonGap: 10,
+      /* from 14 any stack may let go, tall ones too and more often; from
+         24 (the art's DOUBLE_AT) two in a row. The banners are the art's
+         own (letgo, anyNow, twice): there is no WARN.late, so the engine
+         says nothing at 14 before a late let-go has happened */
+      lateScore: 14
+    }
+  };
+
+  var DISHWASHER = {
+    id: 'dishwasher',
+    name: 'THE DISHWASHER',
+    code: '4-5',
+    unlock: { room: 'kitchen', level: 'cabinets', score: 20 },
+    blurb: ['THE DOOR IS SHUT.', 'THE CYCLE HAS STARTED.'],
+    art: Dishwasher,
+    tune: {
+      /* a hair over the Fridge's pace, ramping faster, so the HEAVY RINSE
+         (about 55 s in) is flown at about 170 */
+      speedStart: 118, speedMax: 184, speedRamp: 0.95,
+      /* 82, the killing lid's floor, reached a minute in. gapStart is the
+         touchiest number in the bay: 100 gave 16.2 hits a minute */
+      gapStart: 104, gapMin: 82, gapRamp: 0.37,
+      /* 184: the 104px lower spray arm fits the free span with 14px to
+         each cap */
+      spacingStart: 226, spacingMin: 184, spacingRamp: 0.44,
+      gapDrift: 52,
+      /* THE SPRAY ARMS ride the spike slot from when the pump primes (3);
+         the art refuses the bay after one, so a station in about 43% of
+         bays */
+      spikeScore: 3, spikeChance: 0.9, spikeChanceMax: 0.9,
+      spikeCeilMin: 1, spikeCeilMax: 1, spikeFloorMin: 1, spikeFloorMax: 1,
+      /* loose cutlery from 4; from the first WASH the flying dishes share
+         this one stream */
+      dropScore: 4,
+      dropEvery: 1.6, dropEveryMin: 0.85, dropEveryRamp: 0.035,
+      dropAheadMin: 120, dropAheadMax: 230,
+      dropFallMin: 4, dropFallMax: 30,
+      /* all four gifts - the hot sauce, the lime, the beater, and the
+         SPOTLESS GLASS as the art's own gold roll - each under the TV's
+         0.045 because this stream runs about 35% faster */
+      spicyChance: 0.035, sourChance: 0.035, whirlChance: 0.035,
+      /* the TABLET, about once in forty stacks */
+      boonChance: 0.024, boonGap: 12
+      /* no lateScore: the program (PRE-RINSE .. CLEAN, then HEAVY, then
+         POTS+PANS) is this bay's ladder, on the art's own clock */
+    }
+  };
+
   var LOCKED_LEVEL = { id: 'locked', name: '? ? ?', code: '', locked: true,
                        blurb: ['SOMETHING IS BEING BUILT', 'OUT HERE. NOT YET.'] };
 
@@ -932,10 +1158,20 @@ var Levels = (function () {
     startLevel: 0
   };
 
+  var KITCHEN = {
+    id: 'kitchen', name: 'KITCHEN',
+    /* THE TV is the Dining Room's last bay and so its key, and the room and
+       THE ISLAND open on one plank, as every room has */
+    unlock: { room: 'diningroom', level: 'tv', score: 20 },
+    levels: [ISLAND, COUNTER, FRIDGE, CABINETS, DISHWASHER],
+    startLevel: 0
+  };
+
   var ROOMS = [
     BACKYARD,
     LIVINGROOM,
     DININGROOM,
+    KITCHEN,
     { id: 'locked-b', name: '? ? ?', locked: true, levels: LOCKED_THREE }
   ];
 
@@ -1195,6 +1431,12 @@ var Levels = (function () {
     bar: BAR_BAY,
     ceiling: CEILING_BAY,
     tv: TV_BAY,
+    kitchen: KITCHEN,
+    island: ISLAND,
+    counter: COUNTER,
+    fridge: FRIDGE,
+    cabinets: CABINETS,
+    dishwasher: DISHWASHER,
     reachedOn: reachedOn, noteScore: noteScore,
     roomOpen: roomOpen, gateMet: gateMet, roomById: roomById,
     levelsOf: levelsOf, keyFor: keyFor,
