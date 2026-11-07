@@ -12,9 +12,17 @@ attachment.
 
 Re-run it after changing anything under js/, css/, Assets/sprites/ or
 Assets/sounds/.
+
+It also VERSION-STAMPS index.html first: every script and the stylesheet is
+linked as `js/game.js?v=<fingerprint of that file>`. GitHub Pages tells
+browsers they may keep a file for ten minutes, so without the stamp a player
+who refreshes soon after a push gets the new page running last push's
+scripts. A file that changed gets a new address and is fetched; one that did
+not keeps its old address and stays cached.
 """
 
 import base64
+import hashlib
 import os
 import re
 import sys
@@ -44,6 +52,27 @@ def read(path):
         return fh.read()
 
 
+def fingerprint(path):
+    with open(path, "rb") as fh:
+        return hashlib.sha1(fh.read()).hexdigest()[:10]
+
+
+def stamp_index():
+    """Point every script and stylesheet link in index.html at ?v=<its own
+    fingerprint>, writing the file only if a stamp moved."""
+    html = read("index.html")
+
+    def stamp(m):
+        path = m.group(2).split("?", 1)[0]
+        return '%s"%s?v=%s"' % (m.group(1), path, fingerprint(path))
+
+    out = re.sub(r'(<script src=|<link rel="stylesheet" href=)"([^"]+)"', stamp, html)
+    if out != html:
+        with open("index.html", "w", encoding="utf-8") as fh:
+            fh.write(out)
+    return out
+
+
 def data_uri(path, mime="image/png"):
     with open(path, "rb") as fh:
         return "data:%s;base64,%s" % (mime, base64.b64encode(fh.read()).decode("ascii"))
@@ -53,7 +82,7 @@ def main():
     if not os.path.isfile("index.html"):
         sys.exit("run this from the project root")
 
-    html = read("index.html")
+    html = stamp_index()
 
     # the stylesheet
     css = read("css/style.css")
@@ -90,10 +119,10 @@ def main():
 
     bundle = [inline_assets]
     for src in scripts:
-        code = read(src)
+        code = read(src.split("?", 1)[0])
         if "</script" in code:
             sys.exit("%s contains a literal </script and cannot be inlined" % src)
-        bundle.append("<script>\n/* ---- %s ---- */\n%s</script>" % (src, code))
+        bundle.append("<script>\n/* ---- %s ---- */\n%s</script>" % (src.split("?", 1)[0], code))
 
     first = '<script src="%s"></script>' % scripts[0]
     html = html.replace(first, "\n".join(bundle))

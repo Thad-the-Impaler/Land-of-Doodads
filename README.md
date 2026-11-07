@@ -37,6 +37,11 @@ single file with:
 python3 tools/build_single_file.py
 ```
 
+The same run version-stamps `index.html`: each script and the stylesheet is
+linked with `?v=` and a fingerprint of that file, so the live site's players
+get a changed file on their next refresh instead of up to ten minutes later.
+Run it before every push.
+
 ## Pointing at it
 
 There are two rules, and between them they are the whole thing:

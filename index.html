@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#0b0805">
 <title>Land of Doodads</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%231a120c'/%3E%3Crect x='1' y='2' width='5' height='4' fill='%23c9873c'/%3E%3Crect x='1' y='1' width='3' height='1' fill='%23c9873c'/%3E%3Crect x='2' y='4' width='3' height='1' fill='%237a4a1c'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23000000'/%3E%3Crect x='6' y='3' width='2' height='1' fill='%23f3cc84'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=d40d808e2b">
 </head>
 <body>
   <div id="stage">
@@ -20,18 +20,21 @@
     <canvas id="fgCanvas" width="480" height="270"></canvas>
   </div>
 
-  <script src="js/core.js"></script>
-  <script src="js/font.js"></script>
-  <script src="js/input.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/screen.js"></script>
-  <script src="js/assets.js"></script>
-  <script src="js/doodads.js"></script>
-  <script src="js/coop.js"></script>
-  <script src="js/garden.js"></script>
-  <script src="js/deck.js"></script>
-  <script src="js/canopy.js"></script>
-  <script src="js/construction.js"></script>
+  <!-- the ?v= on every link is a fingerprint of that file, written by
+       tools/build_single_file.py: a changed file gets a new address, so a
+       refresh after a push never runs the last push's scripts -->
+  <script src="js/core.js?v=a6e9af491e"></script>
+  <script src="js/font.js?v=c8d0b6521f"></script>
+  <script src="js/input.js?v=e5ac397e3f"></script>
+  <script src="js/audio.js?v=7fca6d4ac8"></script>
+  <script src="js/screen.js?v=bab6a3d8ef"></script>
+  <script src="js/assets.js?v=d2c5c6f872"></script>
+  <script src="js/doodads.js?v=f30aaa3580"></script>
+  <script src="js/coop.js?v=5fbcb18261"></script>
+  <script src="js/garden.js?v=2c18cf4da0"></script>
+  <script src="js/deck.js?v=b46c12cc50"></script>
+  <script src="js/canopy.js?v=8f57f36ab9"></script>
+  <script src="js/construction.js?v=b822efc41f"></script>
   <!-- the Living Room: the room itself, then its five bays, then levels.js,
        which is where they are named. Load order is the dependency order.
        chalkboard.js is not a bay - it is the second art module the
@@ -42,53 +45,53 @@
        Cupmen and their pellets, and it sits before fort.js because fort.js
        aliases its palette at load while Fort.build() reaches Cupmen.build()
        only at boot. -->
-  <script src="js/livingroom.js"></script>
-  <script src="js/desk.js"></script>
-  <script src="js/couch.js"></script>
-  <script src="js/mantle.js"></script>
-  <script src="js/whiteboard.js"></script>
-  <script src="js/chalkboard.js"></script>
-  <script src="js/cupmen.js"></script>
-  <script src="js/fort.js"></script>
+  <script src="js/livingroom.js?v=e1726d4fc8"></script>
+  <script src="js/desk.js?v=31f9b274c6"></script>
+  <script src="js/couch.js?v=4c4aaf565c"></script>
+  <script src="js/mantle.js?v=b31ef58c8c"></script>
+  <script src="js/whiteboard.js?v=f9d7e8cd6f"></script>
+  <script src="js/chalkboard.js?v=c2a5db50c6"></script>
+  <script src="js/cupmen.js?v=e40f65884a"></script>
+  <script src="js/fort.js?v=2d1e7e97c0"></script>
   <!-- the Dining Room: the room itself, then its five bays, in the same
        dependency order. diningroom.js reads LivingRoom.P at load (it is
        the same house - the same ceiling, the same oak), so it sits after
        livingroom.js; every bay reads DiningRoom at load. tv.js is last
        because its set broadcasts every bay before it: it reads their
        baked sprites and calls their covers. -->
-  <script src="js/diningroom.js"></script>
-  <script src="js/table.js"></script>
-  <script src="js/floor.js"></script>
-  <script src="js/bar.js"></script>
-  <script src="js/ceiling.js"></script>
-  <script src="js/tv.js"></script>
+  <script src="js/diningroom.js?v=e67c93bfb3"></script>
+  <script src="js/table.js?v=71b5c68427"></script>
+  <script src="js/floor.js?v=3491c608b6"></script>
+  <script src="js/bar.js?v=0026003b11"></script>
+  <script src="js/ceiling.js?v=1438e06f29"></script>
+  <script src="js/tv.js?v=2739538aa4"></script>
   <!-- the Kitchen: the room itself, then its five bays. kitchen.js reads
        DiningRoom.P at load (the same house, through the doorway), so it
        sits after the Dining Room; every bay reads Kitchen at load. -->
-  <script src="js/kitchen.js"></script>
-  <script src="js/island.js"></script>
-  <script src="js/counter.js"></script>
-  <script src="js/fridge.js"></script>
-  <script src="js/cabinets.js"></script>
-  <script src="js/dishwasher.js"></script>
-  <script src="js/levels.js"></script>
-  <script src="js/scores.js"></script>
-  <script src="js/world.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="js/kitchen.js?v=ad32ce5c7b"></script>
+  <script src="js/island.js?v=fa58bf9b4f"></script>
+  <script src="js/counter.js?v=55e1f597d2"></script>
+  <script src="js/fridge.js?v=769b11c3cb"></script>
+  <script src="js/cabinets.js?v=b6e2c0326a"></script>
+  <script src="js/dishwasher.js?v=7f049bf1cc"></script>
+  <script src="js/levels.js?v=05afa3b7de"></script>
+  <script src="js/scores.js?v=938e8fb784"></script>
+  <script src="js/world.js?v=1937498283"></script>
+  <script src="js/ui.js?v=fdcdd60a7c"></script>
   <!-- Achievements and their badges. The badges are baked from UI.C and from
        the levels' own tiles, and the roster reads the house high score off
        scores.js as it is built, so both sit after everything they ask a
        question of - badges after ui.js, the roster after scores.js. -->
-  <script src="js/badges.js"></script>
-  <script src="js/achievements.js"></script>
-  <script src="js/scene_title.js"></script>
-  <script src="js/scene_porch.js"></script>
-  <script src="js/scene_stands.js"></script>
-  <script src="js/scene_levelselect.js"></script>
-  <script src="js/scene_charselect.js"></script>
-  <script src="js/scene_play.js"></script>
-  <script src="js/scene_scores.js"></script>
-  <script src="js/scene_achievements.js"></script>
-  <script src="js/game.js"></script>
+  <script src="js/badges.js?v=5263744954"></script>
+  <script src="js/achievements.js?v=4dafc5cad6"></script>
+  <script src="js/scene_title.js?v=de01879c92"></script>
+  <script src="js/scene_porch.js?v=fd336857d8"></script>
+  <script src="js/scene_stands.js?v=64c8133aa6"></script>
+  <script src="js/scene_levelselect.js?v=2cedc0fc5a"></script>
+  <script src="js/scene_charselect.js?v=ea3fc63fb7"></script>
+  <script src="js/scene_play.js?v=405457a498"></script>
+  <script src="js/scene_scores.js?v=7c08d41d03"></script>
+  <script src="js/scene_achievements.js?v=24e5d1b193"></script>
+  <script src="js/game.js?v=be7ddcfed6"></script>
 </body>
 </html>
