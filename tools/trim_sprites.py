@@ -51,6 +51,13 @@ DOODADS = {
     "alpha": {"fall": "AlphFall", "fly": "AlphFly"},
     "crow": {"fall": "CrowFall", "fly": "CrowFly"},
     "buster": {"fall": "BustFall", "fly": "BustFly"},
+    "cobb": {"fall": "CobbFall", "fly": "CobbFly"},
+    # Rocky's flap came in named "RockFall 1": it is the one with the hand
+    # raised and the motion lines, so it is his fly frame
+    "rocky": {"fall": "RockFall", "fly": "RockFall 1"},
+    "hatchling": {"fall": "HatcFall", "fly": "HatcFly"},
+    "pollos": {"fall": "PollFall", "fly": "PollFly"},
+    "pickle": {"fall": "PickFall", "fly": "PickFly"},
 }
 
 # A doodad painted with a HALO - Hot Wing's smoke, and his flames in the

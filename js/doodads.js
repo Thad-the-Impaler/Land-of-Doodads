@@ -8,8 +8,8 @@
    tools/trim_sprites.py to regenerate it; do not hand-edit.
 
    unlockAt is the score the player has to have reached before a doodad
-   can be flown. No unlockAt means it was always there. There are NINE kinds
-   of price, and meets() is the one place all nine are written down:
+   can be flown. No unlockAt means it was always there. There are TEN kinds
+   of price, and meets() is the one place all ten are written down:
      unlockAt     a score reached with anyone, on any level
      unlockBoons  succulents collected, any level, ever
      unlockLimes  limes caught, which only the Canopy grows
@@ -19,7 +19,10 @@
                   toward the same three. `where` is only for the price line.
      unlockMeet   the id of the level he is HIDING in. Not bought: found.
      unlockDeed   the id of a deed the engine reports by name - something
-                  the player DID, rather than something collected.
+                  the player DID, rather than something collected. With
+                  `deedTimes` it has to be done that many times, ever, and
+                  is counted in its own save key ('deeds', by deed) until it
+                  lands in 'met' like any other deed. See noteDeed().
      unlockChase  the id of the level with a hole in its floor. He is
                   swimming behind it, and he is CAUGHT rather than found.
      unlockRescue the id of the level he drops into a run in. He lands on
@@ -30,7 +33,10 @@
                   Once the room `assistAfter` names is open the sky helps:
                   while the streak is unpaid, PlayScene sends the next hot
                   drop in time. See streakable().
-   The last five share one save key ('met', a list of doodad ids), because
+     unlockBrine  { need, room } - pillars passed WHILE SOUR in that room's
+                  bays, ever. A total, like the succulents, so it has a bar;
+                  its own save key ('brine', by room). See noteBrine().
+   The five before it share one save key ('met', a list of doodad ids), because
    they are the same shape of answer: one event that either happened or did
    not, with nothing to total up and nothing to half-finish. A found doodad,
    a deed doodad, a chased one, a rescued one and a streak are one list for
@@ -46,11 +52,14 @@
    because asking for a gesture mid-flight fights the hand already flapping.
    Each ability is a plain field PlayScene reads - `nerve`, `watch`, `pull`,
    `trot`, `light`, `lives`, `flick`, `size`, `bounce`, `carry`, `helium`,
-   `calm`, `pay`, `dive`, `squall`, `fling`, `addict`, `aura`, `ordnance` -
+   `calm`, `pay`, `dive`, `squall`, `fling`, `addict`, `aura`, `ordnance`,
+   and the Kitchen's five, `pop`, `wave`, `imprint`, `bailout`, `repel` -
    so a new one
    is a new field rather than a new branch on an id, and each sits on its own
    axis: points, sight, pickups, survival, handling, room, spring, duration,
-   direction, tempo, route, hold, lane, odds, berth, choice. `aura` is the
+   direction, tempo, route, hold, lane, odds, berth, choice - and then what a
+   smashed drop is worth, what a hot drop IS (a ride, not a heat), who Mom
+   is, the price of a mistake, and where the falling things go. `aura` is the
    only one that changes the LEVEL rather than the doodad: the planks
    themselves give way as he comes at them (Alpha Roostah's, see his
    entry). `ordnance` is Crow's: escorts that bring him two of the level's
@@ -757,8 +766,13 @@ var Doodads = (function () {
       /* Egg yolk, from his filling. His tortilla is a third tan on a rail
          that already has Cookie's, Gerald's and Maximus's; a clear warm
          yellow is held by nobody (Capybara's olive is the nearest, and much
-         greener). */
-      accent: '#d9b22a', accentDark: '#7d6412', accentLight: '#f4dc76',
+         greener). Saturated on 2026-11-06 (was #d9b22a / #7d6412 / #f4dc76)
+         when Pollos's lemon came in beside it: the owner kept Pollos's and
+         moved this one, "a little more saturated yellow". The same hue; the
+         light shade, which is the one the screens print his name in, also
+         came down a little, since at full saturation it was still a pale
+         yellow beside Pollos's pale lemon. */
+      accent: '#f9c50a', accentDark: '#8b6c04', accentLight: '#ffd747',
       sprite: { w: 358, h: 384, pivotX: 178.9, pivotY: 192.0, bodyR: 178.9, footOffset: 1.07 },
       /* a baby: smaller than the rest on the porch, a size the run itself
          never sees (no `size` field - that is Turd's axis, and a hitbox) */
@@ -932,6 +946,209 @@ var Doodads = (function () {
       accent: '#0058ff', accentDark: '#00287a', accentLight: '#3d84ff',
       sprite: { w: 338, h: 384, pivotX: 168.8, pivotY: 170.6, bodyR: 160.9, footOffset: 1.00 },
       title: { role: 'perch', r: 19 }
+    },
+
+    /* ============================================ THE KITCHEN'S FIVE
+
+       Asked for together on 2026-11-05 with nothing but the art: "come up
+       with them yourself ... connected to their themes ... all connected to
+       the Kitchen". One to a bay, as the Dining Room's mostly were: Pollos
+       the Island, Cobb the Counter, Hatchling the Fridge, Rocky the
+       Dishwasher, and Pickle the room as a whole, because the sour he is
+       bought with falls in four of its five bays. Every price and every
+       ability below is a first go, built to be played and sent back. */
+    {
+      id: 'cobb',
+      name: 'COBB',                                        /* 4 ch, 69px at scale 3 */
+      tagline: 'FRESH OUT OF THE MICROWAVE',               /* 26 ch, 180px at spacing 2 */
+      about: ['A CHICK IN A BUCKET OF POPCORN.',            /* 31 ch, 185px */
+              'HALF OF HIM IS BUTTER.'],                    /* 22 ch, 131px */
+      lockedAbout: ['SOMETHING IS POPPING IN A MICROWAVE.',     /* 36 ch, 215px */
+                    'CATCH WHAT COMES OUT OF IT.'],             /* 27 ch, 161px */
+      /* WHAT A SMASHED DROP IS WORTH. Everybody's heat bursts a plain drop
+         flown into; his bursts it into popcorn, and each one pays `pay` -
+         to the score and never to the pace, for the reason `pay` gives in
+         js/scene_play.js: the level must not hurry for his points. It costs
+         what the heat always costs, the room at x1.55, and he only earns it
+         by flying INTO things on purpose while the clock runs down.
+         Two a pop since 2026-11-06, the owner's note after playing it:
+         "just to even things out a little bit". */
+      ability: 'HOT POP',
+      abilityLive: true,
+      abilityAbout: ['WHILE HOT, EVERY DROP HE BURSTS',          /* 31 ch, 185px */
+                     'POPS INTO TWO POINTS.'],                   /* 21 ch, 125px */
+      pop: { pay: 2 },
+      /* FOUND, on THE COUNTER: once a run a microwave on its shelf dings,
+         opens, and throws out popcorn instead of sparks - and him with it,
+         fluttering down through the bay to be caught (js/counter.js,
+         makeMeet; his window is the Counter's tune.meetAt / meetSpan). */
+      unlockMeet: 'counter',
+      /* PLUM, off the print on his bucket. His yellow is Baby Burrito's
+         and Capybara's, the bucket's kraft is Gerald's and Cookie's, and a
+         popcorn white is Billy's near-white problem; nobody on the rail is
+         a purple this red (Crow is violet, Donkey Joe indigo). */
+      accent: '#7d4f7a', accentDark: '#45284a', accentLight: '#b48ab0',
+      sprite: { w: 355, h: 384, pivotX: 189.9, pivotY: 201.1, bodyR: 165.4, footOffset: 1.11 },
+      title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'rocky',
+      name: 'ROCKY',                                       /* 5 ch, 87px at scale 3 */
+      tagline: 'WASHED THE HOT SAUCE OFF',                 /* 24 ch, 166px */
+      about: ['A RACCOON WITH A PLAN.',                      /* 22 ch, 131px */
+              'THE PLAN DID NOT SURVIVE THE RINSE.'],       /* 35 ch, 209px */
+      lockedAbout: ['A MASKED THING IS WASHING ITS DINNER.',    /* 37 ch, 221px */
+                    'GET HOT. THEN GET IT WASHED OFF.'],        /* 32 ch, 191px */
+      /* WHAT A HOT DROP IS, TO HIM - the owner's story: a raccoon who
+         washed the hot sauce off a burrito before he ate it. He never gets
+         hot. A hot drop puts him on a WAVE: the room runs under him at
+         `speed` px/s for `pillars` planks, he is carried along the gap line
+         with his hands off, nothing can touch him, and each plank pays what
+         a hot plank pays - the heat's points without its hurry to survive
+         ("like the spicy run just takes care of itself for him and carries
+         on", 2026-11-06). Seven, because a standard heat passes six to eight
+         (5.7 ten seconds into a run, 8.5 a minute in) and the owner asked
+         for "however many pillars most doodads average on a single spicy";
+         600 is three planks a second, fast enough to be "immediately" and
+         slow enough that each one is seen going by. A second hot drop
+         mid-ride tops the count up the heat's way (+4, never past 11). He
+         is never hot, so no streak, no HOT + anything deed and no fizzled
+         freeze is his to earn. PlayScene's "the wave" is the whole of it. */
+      ability: 'RINSE CYCLE',
+      abilityLive: true,
+      abilityAbout: ['A HOT DROP IS A WAVE THAT CARRIES HIM',    /* 37 ch, 221px */
+                     'SEVEN PILLARS, HANDS OFF, PAID DOUBLE.'],  /* 38 ch, 227px */
+      wave: { pillars: 7, speed: 600 },
+      /* DONE, like Roller and Crow: hot, and then into a spray arm's jet,
+         which only THE DISHWASHER has. The engine reports 'hot-and-rinsed'
+         from jetPush and never learns what it opens; nothing about the
+         Dishwasher changes for anybody. */
+      unlockDeed: 'hot-and-rinsed',
+      deedRoom: 'kitchen',
+      /* SALMON - hot sauce run thin under a tap. His greys are Inari's,
+         Roller's and Teef's; this is far paler than Hot Wing's red and
+         pinker than Saddam's brick. */
+      accent: '#e0707a', accentDark: '#7e2e3a', accentLight: '#f7a9b0',
+      sprite: { w: 384, h: 347, pivotX: 205.7, pivotY: 170.3, bodyR: 170.3, footOffset: 1.00 },
+      title: { role: 'perch', r: 20 }
+    },
+    {
+      id: 'hatchling',
+      name: 'HATCHLING',                                   /* 9 ch, 159px: holds scale 3 */
+      tagline: 'ANY MINUTE NOW',                           /* 14 ch, 96px */
+      about: ['AN EGG. MOSTLY STILL AN EGG.',                /* 28 ch, 167px */
+              'ONE WING OUT. WORKING ON IT.'],              /* 28 ch, 167px */
+      lockedAbout: ['SOMETHING IN HERE IS STILL IN ITS SHELL.', /* 40 ch, 239px */
+                    'GET FROZEN AND BREAK OUT. THREE TIMES.'],  /* 38 ch, 227px */
+      /* IMPRINTED, the owner's pick (2026-11-06): the first timed gift he
+         catches in a run - heat, lime or spin - is MOM, and every other
+         gift after it (the other two kinds, a +5, a spare life) brings
+         `share` of Mom's full time on top of its own: 2.6 s of heat, 2.8 of
+         lime, 2.4 of spin, topping her up under the heat's x1.6 cap if she
+         is running. One of Mom's own kind is just itself. A dose is not a
+         catch - no banner, no streak, no deed, no lime counted; PlayScene's
+         "the imprint" has the flags that keep the HOT + SOUR and HOT + SPIN
+         prices honest. 0.4, so a dose is plainly less than a catch. No
+         `size` field: still an ordinary egg on the rail. */
+      ability: 'IMPRINTED',
+      abilityLive: true,
+      abilityAbout: ['THE FIRST HEAT, LIME OR SPIN IS MOM.',      /* 36 ch, 215px */
+                     'EVERY OTHER GIFT BRINGS A BIT OF MOM.'],   /* 37 ch, 221px */
+      imprint: { share: 0.4 },
+      /* DONE: frozen by the Fridge's cold snap and out the other side -
+         three pillars passed in the ice, the way an egg gets out of a
+         shell. Reported from shatterIce when the ice is EARNED, so a save
+         or a death that breaks it does not count. THREE TIMES, ever, since
+         2026-11-06 (the owner's note: "bump it up to three times"), so it
+         has a bar like a total. */
+      unlockDeed: 'ice-broken',
+      deedTimes: 3,
+      deedRoom: 'kitchen',
+      /* ROBIN'S-EGG, and the Fridge's ice. His cream is Billy's near-white
+         problem and his wing grey is Inari's; this is brighter and bluer
+         than Koa's eucalyptus and greener than Billy's sky. */
+      accent: '#3fb8d2', accentDark: '#1d6b80', accentLight: '#8fe3f2',
+      sprite: { w: 384, h: 382, pivotX: 210.1, pivotY: 191.1, bodyR: 173.9, footOffset: 1.10 },
+      /* still an egg on the porch: a size smaller than everybody */
+      title: { role: 'perch', r: 17 }
+    },
+    {
+      id: 'pollos',
+      name: 'POLLOS',                                      /* 6 ch, 105px at scale 3 */
+      /* WHO HE IS, which the owner left for us to work out on 2026-11-06:
+         the man who runs the chicken place - his yellow manager's shirt,
+         the black tie and the glasses - and fried the way he went, half his
+         face gone in the blast, walking out of it to straighten his tie.
+         Named for nobody on the card; the art says it. */
+      tagline: 'HALF FRIED. FULLY COMPOSED.',              /* 27 ch, 187px at spacing 2 */
+      about: ['FRIED CHICKEN WHO SELLS FRIED CHICKEN.',      /* 38 ch, 227px */
+              'HE HIDES IN PLAIN SIGHT.'],                  /* 24 ch, 143px */
+      lockedAbout: ['SOMEBODY IN HERE WALKS AWAY FROM FIRE.',   /* 38 ch, 227px */
+                    'GET FRIED. THEN STRAIGHTEN YOUR TIE.'],    /* 36 ch, 215px */
+      /* THE PRICE OF A MISTAKE. A hit that would end his run is bought off
+         with points instead: `price` the first time, `grow` times that the
+         next, `max` a run - 10 and then 20, twice. He has to HAVE the
+         points (an early mistake is still a death), any spare life he holds
+         is spent first, and the score comes off where everybody can see it.
+         The level's pace keeps every point, so the room does not ease off
+         because he paid. It is a death bought rather than a death removed:
+         Inari's spare life costs nothing, this costs ten planks' work. And
+         it is his story twice over: he walks away from what should have
+         ended him, and he keeps the books while he does it. */
+      ability: 'BAILOUT',
+      abilityLive: true,
+      abilityAbout: ['A MISTAKE COSTS TEN POINTS, NOT THE RUN.', /* 39 ch, 233px */
+                     'TWICE A RUN. THE SECOND COSTS TWENTY.'],   /* 37 ch, 221px */
+      bailout: { price: 10, grow: 2, max: 2 },
+      /* DONE, and done the way he was: FRIED BY THE ISLAND'S STOVE, AND
+         WALKED AWAY FROM. A pillar of its fire that costs a spare life (a
+         Glutathione, or Inari's own) and leaves the run going. The engine
+         reports 'face-off' from collide() and never learns what it opens;
+         nothing about the stove changes for anybody. Three gold pans until
+         2026-11-06, when the owner asked for a price that knew who he was. */
+      unlockDeed: 'face-off',
+      deedRoom: 'kitchen',
+      /* LEMON, his shirt. Baby Burrito's yolk was moved to a deeper,
+         more saturated gold to sit apart from it (2026-11-06), Capybara's
+         reeds are darker and greener, and his crust browns are taken four
+         times over. */
+      accent: '#e3dc3a', accentDark: '#74700f', accentLight: '#f2ec7e',
+      sprite: { w: 384, h: 355, pivotX: 206.7, pivotY: 177.7, bodyR: 177.3, footOffset: 1.00 },
+      title: { role: 'perch', r: 19 }
+    },
+    {
+      id: 'pickle',
+      name: 'PICKLE',                                      /* 6 ch, 105px at scale 3 */
+      tagline: 'IN A BIT OF A PICKLE',                     /* 20 ch, 138px */
+      about: ['A DILL PICKLE, VERY WORRIED.',                /* 28 ch, 167px */
+              'ALL THOSE TEETH AND NOTHING TO SAY.'],       /* 35 ch, 209px */
+      lockedAbout: ['SOMETHING GREEN IS SOAKING IN HERE.',      /* 35 ch, 209px */
+                    'IT WANTS YOU SOUR FOR A GOOD LONG TIME.'], /* 39 ch, 233px */
+      /* WHERE THE FALLING THINGS GO: nothing wants to touch a pickle. A
+         plain drop inside `reach` px of him is pushed sideways AWAY from him
+         at up to `push` px/s, full strength at his edge and nothing at the
+         rim, so a thing coming down on him leans off its line and the ones
+         that were going to miss miss by more. Gifts are left alone (they
+         are not hazards), and so is everything that is not a drop - a
+         plank, a machine, a jet. It bends, it never removes: a fast drop
+         dead on top of him still arrives. Saddam's tail takes one thing
+         away every 2.5 s; this takes nothing away and touches everything. */
+      ability: 'SOUR FACE',
+      abilityLive: true,
+      abilityAbout: ['NOTHING WANTS TO TOUCH A PICKLE.',         /* 32 ch, 191px */
+                     'FALLING THINGS LEAN AWAY FROM HIM.'],      /* 34 ch, 203px */
+      repel: { reach: 46, push: 160 },
+      /* SOAKED: thirty pillars passed while sour, in any of the Kitchen's
+         bays, over as many runs as it takes - the tenth kind of price, a
+         total with a bar, like the succulents. A lime from the Island, the
+         Fridge, the Cabinets or the Dishwasher lasts about four to six
+         pillars, so it is six or seven limes' worth. */
+      unlockBrine: { need: 30, room: 'kitchen' },
+      /* PICKLE GREEN, bright: Pepper's is a dark bottle green, Capybara's
+         an olive, Koa's a grey teal. */
+      accent: '#5aa033', accentDark: '#2f5a1c', accentLight: '#9bd66a',
+      sprite: { w: 327, h: 384, pivotX: 163.5, pivotY: 192.0, bodyR: 163.5, footOffset: 1.17 },
+      title: { role: 'perch', r: 19 }
     }
   ];
 
@@ -993,6 +1210,8 @@ var Doodads = (function () {
   var boons = null;
   var limes = null;
   var golds = null;                   /* { QUARTER: 3 } - the +5s, by name */
+  var brines = null;                  /* { kitchen: 12 } - pillars passed sour, by room */
+  var deeds = null;                   /* { 'ice-broken': 2 } - a counted deed, by deed */
   var met = null;                     /* ids whose stall is open for good: found, deed, chased, or grandfathered */
   var passkey = null;
 
@@ -1137,6 +1356,104 @@ var Doodads = (function () {
       return d.unlockGold && d.unlockGold.name === name &&
              d.unlockGold.need > before && d.unlockGold.need <= before + 1;
     });
+  }
+
+  /* PILLARS PASSED WHILE SOUR, BY ROOM - { kitchen: 12 }. The tenth kind of
+     price, and a total, so it keeps its own key for the reasons 'succulents',
+     'limes' and 'gold' do: a wiped score table must not take a doodad away,
+     and nothing else in the save could rebuild it. Keyed on the ROOM because
+     the price names one ("in the Kitchen"), and read with goldsTaken()'s
+     suspicion, since it is a JSON blob a player can edit by hand. */
+  function brinesTaken() {
+    if (brines !== null) return brines;
+    var stored = Save.get('brine', null);
+    brines = {};
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+      for (var k in stored) {
+        if (!Object.prototype.hasOwnProperty.call(stored, k)) continue;
+        var n = stored[k];
+        if (typeof n === 'number' && isFinite(n) && n > 0) brines[k] = Math.floor(n);
+      }
+    }
+    return brines;
+  }
+
+  function brineTaken(room) {
+    var all = brinesTaken();
+    return Object.prototype.hasOwnProperty.call(all, room) ? all[room] : 0;
+  }
+
+  /* ONE PILLAR PASSED WHILE SOUR, on the level the engine names. The engine
+     calls this for every such pillar on every bay and never learns whether
+     any of them counts: a bay outside every brine price's room is not
+     written down at all. Returns the doodads it just opened, noteGold's
+     shape. */
+  function noteBrine(levelId) {
+    var p = placeOf(levelId);
+    if (!p) return [];
+    var room = p.room.id, wanted = false, i;
+    for (i = 0; i < LIST.length; i++) if (LIST[i].unlockBrine && LIST[i].unlockBrine.room === room) wanted = true;
+    if (!wanted) return [];
+    var before = brineTaken(room);
+    brines[room] = before + 1;
+    Save.set('brine', brines);
+    return LIST.filter(function (d) {
+      return d.unlockBrine && d.unlockBrine.room === room &&
+             d.unlockBrine.need > before && d.unlockBrine.need <= before + 1;
+    });
+  }
+
+  /* THE SOAK STILL OWED IN THIS LEVEL'S ROOM, if any, as { d, room, need } -
+     streakable()'s twin, asked once a run in start() and again after every
+     count. meets() and not isUnlocked(), for meetable()'s reason: the
+     passkey opens doors and pays no prices. */
+  function brineable(levelId) {
+    var p = placeOf(levelId);
+    if (!p) return null;
+    var best = bestReached();
+    for (var i = 0; i < LIST.length; i++) {
+      var d = LIST[i];
+      if (d.unlockBrine && d.unlockBrine.room === p.room.id && !meets(d, best)) {
+        return { d: d, room: p.room.id, need: d.unlockBrine.need };
+      }
+    }
+    return null;
+  }
+
+  /* HOW MANY TIMES A COUNTED DEED HAS BEEN DONE. Only a deed some doodad
+     wants more than once is ever written down (noteDeed), so for every
+     other deed this is 0 and stays 0. brinesTaken()'s suspicion, for its
+     reason: a JSON blob a player can edit by hand. */
+  function deedsDone() {
+    if (deeds !== null) return deeds;
+    var stored = Save.get('deeds', null);
+    deeds = {};
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+      for (var k in stored) {
+        if (!Object.prototype.hasOwnProperty.call(stored, k)) continue;
+        var n = stored[k];
+        if (typeof n === 'number' && isFinite(n) && n > 0) deeds[k] = Math.floor(n);
+      }
+    }
+    return deeds;
+  }
+
+  function deedCount(name) {
+    var all = deedsDone();
+    return Object.prototype.hasOwnProperty.call(all, name) ? all[name] : 0;
+  }
+
+  /* THE COUNTED DEED STILL OWED, if any, as { d, have, need } - so the
+     engine can say "2 OF 3" on the spot without knowing whose it is.
+     meets(), for brineable()'s reason. */
+  function deedOwed(name) {
+    for (var i = 0; i < LIST.length; i++) {
+      var d = LIST[i];
+      if (d.unlockDeed === name && (d.deedTimes || 1) > 1 && !meets(d)) {
+        return { d: d, have: Math.min(deedCount(name), d.deedTimes), need: d.deedTimes };
+      }
+    }
+    return null;
   }
 
   /* The doodads that have been found rather than earned, and now the ones
@@ -1314,7 +1631,7 @@ var Doodads = (function () {
      never learns what it bought. */
   function noteDeed(name) {
     /* noteMeet's guard, in the shape noteMeet states it: without it an
-       undefined name matches the twelve doodads that carry no unlockDeed
+       undefined name matches every doodad that carries no unlockDeed
        field at all - `undefined === undefined` - and every one of them is
        written into the save as done. Nothing reaches it today, because the
        engine only ever names a deed it has a literal for, which is exactly
@@ -1322,9 +1639,21 @@ var Doodads = (function () {
        added by somebody reading this function rather than its twin. */
     if (!name) return [];
     var list = metIds();
-    var won = LIST.filter(function (d) {
+    var wants = LIST.filter(function (d) {
       return d.unlockDeed === name && list.indexOf(d.id) < 0;
     });
+    if (!wants.length) return wants;
+    /* A COUNTED DEED (Hatchling's three times out of the ice) is written
+       down only while somebody still wants it, and only somebody whose
+       count it now reaches is won; everybody else's deed is done at once,
+       as it always was */
+    var times = 0;
+    if (wants.some(function (d) { return (d.deedTimes || 1) > 1; })) {
+      times = deedCount(name) + 1;
+      deeds[name] = times;
+      Save.set('deeds', deeds);
+    }
+    var won = wants.filter(function (d) { return (d.deedTimes || 1) <= Math.max(times, 1); });
     if (!won.length) return won;
     won.forEach(function (d) { list.push(d.id); });
     Save.set('met', list);
@@ -1366,6 +1695,7 @@ var Doodads = (function () {
     if (d.unlockBoons && boonsTaken() < d.unlockBoons) return false;
     if (d.unlockLimes && limesTaken() < d.unlockLimes) return false;
     if (d.unlockGold && goldTaken(d.unlockGold.name) < d.unlockGold.need) return false;
+    if (d.unlockBrine && brineTaken(d.unlockBrine.room) < d.unlockBrine.need) return false;
     /* one test for the found ones, the deed ones, the chased one, the
        rescued one and the streak together, because they share the one
        list: each is a yes
@@ -1398,7 +1728,8 @@ var Doodads = (function () {
     if (typeof d === 'string') d = BY_ID.hasOwnProperty(d) ? BY_ID[d] : null;
     return !!(d && (d.unlockAt || d.unlockBoons || d.unlockLimes ||
                     d.unlockMeet || d.unlockGold || d.unlockDeed ||
-                    d.unlockChase || d.unlockRescue || d.unlockStreak));
+                    d.unlockChase || d.unlockRescue || d.unlockStreak ||
+                    d.unlockBrine));
   }
 
   /* pass `best` when checking several doodads in one frame. masterKey(),
@@ -1531,7 +1862,24 @@ var Doodads = (function () {
     'hot-and-sour': { price: 'BE HOT AND SOUR AT ONCE',      plate: 'HOT + SOUR',   /* 10 ch, 59px */
                       hint: 'EIGHT BAYS SHED BOTH' },                               /* 20 ch, 119px */
     'hot-and-spun': { price: 'BE HOT AND SPINNING AT ONCE',  plate: 'HOT + SPIN',   /* 10 ch, 59px */
-                      hint: 'FIVE BAYS SHED BOTH' }                                 /* 19 ch, 113px */
+                      hint: 'FIVE BAYS SHED BOTH' },                                /* 19 ch, 113px */
+    /* Rocky's: hot, and then caught in a spray arm's jet - only the
+       Dishwasher has them, hence ONE BAY */
+    'hot-and-rinsed': { price: 'GET HOT. THEN GET SPRAYED',  plate: 'HOT + WET',    /* 25 ch; 9 ch, 53px */
+                        hint: 'ONE BAY HAS SPRAY ARMS' },                           /* 22 ch, 152px */
+    /* Pollos's: a stove's fire taken on a spare life, and the run goes on -
+       only the Island has stoves. The price is 31 ch (215px), shut 54 ch
+       (376px), the longest a card prints and inside its ~460px */
+    'face-off':       { price: 'GET FRIED BY THE STOVE AND LIVE', plate: 'HALF FRIED', /* 10 ch, 59px */
+                        hint: 'ONE BAY HAS A STOVE. BRING A SPARE' },               /* 34 ch, 203px */
+    /* Hatchling's: frozen by a cold snap and out of it the hard way - only
+       the Fridge snaps. Three times, so the price reads BREAK OUT OF THE
+       ICE 3 TIMES (28 ch, 194px; shut 51 ch, 355px - Hot Wing's length) and
+       the plate 3 TIMES ON ICE (14 ch, 83px in its 92px pitch); the hint
+       goes unshown under a bar and is kept for a once-only use */
+    'ice-broken':     { price: 'BREAK OUT OF THE ICE',       plate: 'ON ICE',       /* 20 ch; 6 ch, 35px */
+                        unit: 'BROKEN',
+                        hint: 'ONE BAY IS COLD ENOUGH' }                            /* 22 ch, 152px */
   };
 
   function requirement(d) {
@@ -1587,8 +1935,15 @@ var Doodads = (function () {
        DEEDS table's, keyed by the deed's id, now that there are two. */
     if (d.unlockDeed) {
       var deed = DEEDS[d.unlockDeed] || { price: 'DO SOMETHING REMARKABLE', plate: 'A DEED', hint: '' };
-      return { price: deed.price + notThereYet(d.deedRoom && Levels.roomById(d.deedRoom)),
-               plate: deed.plate, hint: deed.hint, bar: false };
+      var shut = notThereYet(d.deedRoom && Levels.roomById(d.deedRoom));
+      /* done more than once, it is a total after all, so it gets the bar */
+      if ((d.deedTimes || 1) > 1) {
+        var t = d.deedTimes;
+        return { price: deed.price + ' ' + t + ' TIMES' + shut,
+                 unit: deed.unit || 'DONE', plate: t + ' TIMES ' + deed.plate,
+                 have: Math.min(deedCount(d.unlockDeed), t), need: t };
+      }
+      return { price: deed.price + shut, plate: deed.plate, hint: deed.hint, bar: false };
     }
     /* a catch is one event as well, so no bar here either, and the copy is
        written out for the deed's reason: there is exactly one chase and a
@@ -1627,6 +1982,16 @@ var Doodads = (function () {
                plate: n + ' IN A ROW',                                              /* 10 ch, 59px */
                hint: 'DO NOT LET THE HEAT RUN OUT', bar: false };                 /* 27 ch, 161px */
     }
+    /* a total, so it has a bar. The room is named only once its door is
+       open - placeLine's secrecy rule, by room rather than by bay: the open
+       form is 39 ch (271px), the shut form 47 ch (327px). */
+    if (d.unlockBrine) {
+      var b = d.unlockBrine, broom = Levels.roomById(b.room);
+      return { price: 'STAY SOUR FOR ' + b.need + ' PILLARS' +
+                      (broom && Levels.roomOpen(broom) ? ' IN THE ' + broom.name : '. YOU ARE NOT THERE YET'),
+               unit: 'SOAKED', plate: b.need + ' PILLARS SOUR',            /* 15 ch, 89px */
+               have: Math.min(brineTaken(b.room), b.need), need: b.need };
+    }
     if (d.unlockAt) {
       return { price: 'SCORE ' + d.unlockAt + ' TO UNLOCK', unit: 'BEST',
                plate: 'SCORE ' + d.unlockAt,
@@ -1664,6 +2029,9 @@ var Doodads = (function () {
        succulents and the limes; noteGold is what PlayScene calls on a catch,
        and it hands back whatever that catch just opened. */
     goldTaken: goldTaken, noteGold: noteGold,
+    /* Pickle's soak: the engine reports each pillar passed sour, by level */
+    brineTaken: brineTaken, noteBrine: noteBrine, brineable: brineable,
+    deedCount: deedCount, deedOwed: deedOwed,
     /* meetable() takes the level id now - see its comment. chaseable()
        takes one too, and noteMeet() is what answers both of them: a catch
        and a find are one event in one save key. */

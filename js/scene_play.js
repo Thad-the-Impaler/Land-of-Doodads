@@ -423,6 +423,26 @@ var PlayScene = (function () {
   /* Buster's tape, or null for everybody else - see "the tape" */
   var tape = null;
   var streakPop = 0, streakX = 0, streakY = 0, streakText = '';
+
+  /* THE KITCHEN'S FIVE, 2026-11-05 - each one's state for a run, zeroed in
+     start(). `bails` and `bailPrice` are Pollos's bailouts spent and what
+     the next one costs (bailNote the banner's clock); `pops` is what Cobb's
+     popcorn has paid; `rinsedDeed` keeps the Dishwasher's deed to one ask a
+     run; `brine` is the soak still owed in this room, if any
+     (Doodads.brineable, asked once in start(), the streak's way). `cap*` is
+     a small floating caption - the popcorn's point, the bailout's minus, the
+     soak's count, the wave's pay, Mom - the streak's shape with a colour of
+     its own. Rocky's wave and Hatchling's Mom keep their state in their own
+     sections ("the wave", "the imprint"); RINSE_* is the wave's water and
+     RINSE_INK the dark edge that lets it read in a white room. */
+  var bails = 0, bailPrice = 0, bailNote = 0;
+  var pops = 0;
+  var rinsedDeed = false;
+  var brine = null;
+  var capPop = 0, capX = 0, capY = 0, capText = '', capCol = '#fff3d0';
+  var POP_HI = '#fff8dc', POP_MID = '#f6e7a8', POP_DEEP = '#d9b64a';
+  var RINSE_HI = '#eaf9ff', RINSE_MID = '#9fd8ee', RINSE_DEEP = '#3f8fb8', RINSE_INK = '#163a52';
+  var BAIL_INK = '#ff5a4a';
   var flickCool = 0;           /* seconds until the tail is back under him */
   /* What the mid-flight banner is currently shouting about, and what is
      waiting behind it. A score can open a level AND a doodad on the very
@@ -614,6 +634,12 @@ var PlayScene = (function () {
     ice = null; iceFlash = 0;
     hotChain = 0; streakPop = 0;
     streak = Doodads.streakable();
+    bails = 0; bailPrice = doodad.bailout ? doodad.bailout.price : 0; bailNote = 0;
+    pops = 0; rinsedDeed = false;
+    brine = Doodads.brineable(level.id);
+    surf = null; surfK = 0; surfOut = 0; surfFlash = 0; surfBanner = 0; surfSlot = 80;
+    mom = null; momPop = 0; doses = 0; realHot = false; realSour = false; realSpin = false;
+    capPop = 0;
     auraGlow = 0;
     escort = null; ordnanceDue = false;
     giftKinds = doodad.ordnance ? ordnanceKinds() : [];
@@ -693,17 +719,21 @@ var PlayScene = (function () {
     streaks.length = 0;
     /* 14 for the heat; a squall keeps its own count, 36 - a gale, not a
        shimmer. 36 fillRects a frame against 14, nothing beside the particle
-       list, and at 208-356 px/s of room a streak crosses in 0.4-1.15 s. */
-    for (var k = 0; k < (doodad.squall ? doodad.squall.streaks : 14); k++) streaks.push(freshStreak(rand(0, VW)));
+       list, and at 208-356 px/s of room a streak crosses in 0.4-1.15 s.
+       Rocky's wave has SURF_STREAKS of water, under his own draw. */
+    var nStreaks = doodad.squall ? doodad.squall.streaks : (doodad.wave ? SURF_STREAKS : 14);
+    for (var k = 0; k < nStreaks; k++) streaks.push(freshStreak(rand(0, VW)));
   }
 
   /* The wind's lines are longer and quicker than the heat's shimmer; for
      everyone without `squall` the draws are the same five, same ranges. */
   function freshStreak(x) {
-    var sq = doodad.squall;
+    var sq = doodad.squall, wv = doodad.wave;
+    /* the wave's lines are long and SLOW against the room: at 600 px/s of
+       wave, 0.55-0.95 of it crosses the screen in about a second */
     return { x: x, y: rand(CEIL + 4, FLOOR - 4),
-             len: sq ? randInt(18, 56) : randInt(7, 26),
-             spd: sq ? rand(2.0, 3.4) : rand(1.4, 2.6), bright: chance(0.3) };
+             len: sq ? randInt(18, 56) : (wv ? randInt(16, 48) : randInt(7, 26)),
+             spd: sq ? rand(2.0, 3.4) : (wv ? rand(0.55, 0.95) : rand(1.4, 2.6)), bright: chance(0.3) };
   }
 
   /* Spikes - nails in the Coop, mint in the Garden. A level that leaves
@@ -1396,7 +1426,9 @@ var PlayScene = (function () {
            frame of the ease, which is what a landing looks like. */
         gy += MEET_BODY * Doodads.get(ob.meet.id).sprite.footOffset * (1 - ob.squash);
       }
-      Doodads.draw(ctx, ob.meet.id, grabX(ob), gy, MEET_BODY, 0, false, o);
+      /* and his flap frame and a tilt, for a hider whose art flutters him
+         (the Counter's): undefined on everybody else, so 0 and false */
+      Doodads.draw(ctx, ob.meet.id, grabX(ob), gy, MEET_BODY, ob.tilt || 0, !!ob.flap, o);
     }
   }
 
@@ -1496,7 +1528,7 @@ var PlayScene = (function () {
 
   function freezeUp() {
     if (state !== 'play' || ice || !(tune.iceFor > 0)) return;
-    if (spicy > 0 || invuln > 0) return;
+    if (spicy > 0 || invuln > 0 || surf) return;
     ice = { left: tune.iceFor, of: tune.iceFor, t: 0, cracks: 0, jolt: 0, seed: randInt(1, 1e6) };
     iceFlash = 0.14;
     Audio3.play('freeze');
@@ -1533,6 +1565,17 @@ var PlayScene = (function () {
     if (!ice) return;
     ice = null;
     if (earned) { Audio3.play('shatter'); iceFlash = 0.1; Screen.shake(2.5, 0.25); }
+    /* HATCHLING'S DEED: out of the ice the hard way - three pillars passed
+       in it. A save or a death breaks it too, and neither counts. It is
+       wanted three times, so a break that does not finish it says how far
+       along it is, checkBrine's way */
+    if (earned) {
+      if (checkDeed('ice-broken')) bank(Achievements.check());
+      else {
+        var owed = Doodads.deedOwed('ice-broken');
+        if (owed && owed.have > 0) caption('BROKEN OUT ' + owed.have + ' OF ' + owed.need, player.x, player.y - 20, ICE_HI);
+      }
+    }
     for (var i = 0; i < (earned ? 22 : 12); i++) {
       particles.push({ x: player.x + rand(-12, 12), y: player.y + rand(-12, 12),
                        vx: rand(-110, 110) - speed * 0.2, vy: rand(-150, -20),
@@ -3437,6 +3480,120 @@ var PlayScene = (function () {
     }
   }
 
+  /* ------------------------------------------------------ the sour face
+
+     PICKLE'S: nothing wants to touch a pickle. Every plain drop inside
+     `reach` of him is pushed sideways, AWAY from him, at up to `push` px/s -
+     all of it at his edge and none at the rim - after the level has moved
+     it this frame, so the level's own step never has to know. A drop dead
+     above him goes the way the room is already carrying it, behind him.
+     Gifts are not hazards and are left alone (isPowerUp, Saddam's test the
+     other way round), and so is a gift in a crow's talons, a broken drop
+     and a pellet in flight - a shot is aimed, and bending an aimed thing is
+     Saddam's job, not this. It never removes anything: a fast drop square
+     on him still arrives, just less often. The puff of green off each one
+     it leans on is what says it is him doing it. */
+  function updateRepel(dt) {
+    var R = doodad.repel;
+    if (!R || state !== 'play') return;
+    var reach = R.reach + hitR();
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type !== 'drop' || ob.broken > 0 || ob.held || ob.away || ob.shot || isPowerUp(ob)) continue;
+      var dx = ob.x - player.x, dy = ob.y - player.y;
+      var d2 = dx * dx + dy * dy;
+      if (d2 > reach * reach) continue;
+      var k = 1 - Math.sqrt(d2) / reach;
+      var side = dx > 0.5 ? 1 : -1;
+      ob.x += side * R.push * k * dt;
+      /* the sour breath: a puff off his face toward the thing, and one off
+         the thing's near side as it flinches, harder the closer it is */
+      if (chance(dt * 40 * k)) {
+        var ux = dx / (Math.sqrt(d2) || 1), uy = dy / (Math.sqrt(d2) || 1), br = bodyR();
+        particles.push({ x: player.x + ux * br, y: player.y + uy * br,
+                         vx: ux * rand(50, 90) - speed * 0.2, vy: uy * rand(50, 90) - 10,
+                         life: rand(0.18, 0.35), g: -20,
+                         col: chance(0.5) ? SOUR_HI : SOUR_MID });
+        particles.push({ x: ob.x - side * 4, y: ob.y + rand(-3, 3),
+                         vx: side * rand(20, 60) - speed * 0.2, vy: rand(-30, -5),
+                         life: rand(0.2, 0.45), g: -20,
+                         col: chance(0.5) ? SOUR_HI : SOUR_MID });
+      }
+    }
+  }
+
+  /* ------------------------------------------------------ the popcorn
+
+     COBB'S: a drop his heat bursts pays `pay` - to the score and never to
+     the pace, for the reason `pay` gives on the plank: the level must not
+     hurry for his points. Called from collide()'s smash, after smashDrop has
+     made its own mess, so this is the popcorn on top of it and the point. */
+  function popPay(ob) {
+    var p = doodad.pop.pay;
+    score += p; pops += p;
+    scorePop = 0.36;
+    Audio3.play('pop');
+    for (var i = 0; i < 14; i++) {
+      particles.push({ x: ob.x + rand(-4, 4), y: ob.y + rand(-4, 4),
+                       vx: rand(-70, 70) - speed * 0.2, vy: rand(-140, -40),
+                       life: rand(0.35, 0.7), g: 300,
+                       col: chance(0.4) ? POP_HI : (chance(0.5) ? POP_MID : POP_DEEP) });
+    }
+    caption('POP +' + p, ob.x, ob.y - 14, POP_HI);
+    /* the score moved, so both of takeGold's checks, in its order */
+    checkPassed();
+    checkUnlocks();
+  }
+
+  /* ------------------------------------------------------ the soak
+
+     A PILLAR PASSED SOUR while somebody's soak is owed in this room: counted
+     on the save, shown as a count over him, and the stall opened when it is
+     full - checkLimeUnlocks' flourish, under its passkey rule. */
+  function checkBrine() {
+    var won = Doodads.noteBrine(level.id);
+    var have = Doodads.brineTaken(brine.room);
+    brine = Doodads.brineable(level.id);
+    if (!won.length) {
+      if (brine) caption('SOAKED ' + Math.min(have, brine.need) + ' OF ' + brine.need, player.x, player.y - 20, SOUR_HI);
+      return;
+    }
+    if (!Doodads.masterKey()) {
+      for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
+      sourBanner = 0; capPop = 0;
+      Audio3.play('unlock');
+      Screen.shake(2.5, 0.3);
+      for (var k = 0; k < 30; k++) {
+        var a = rand(0, TAU), sp = rand(40, 170);
+        particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+                         life: rand(0.5, 1.2), g: -50,
+                         col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
+      }
+    }
+    bank(Achievements.check());
+  }
+
+  /* THE SMALL CAPTION, the streak's shape: thrown where it happened,
+     clamped on screen the way the gold's shout is, and the newest wins */
+  function caption(text, x, y, col) {
+    capText = text;
+    var half = Math.min(VW / 2, Math.ceil(Font.measure(text, 1) / 2) + 2);
+    capX = clamp(x, half, VW - half);
+    capY = clamp(y, CEIL + 6, FLOOR - 10);
+    capCol = col;
+    capPop = 0.9;
+  }
+
+  function drawCap(ctx) {
+    if (state === 'entry') return;
+    var k = clamp(capPop / 0.6, 0, 1);
+    var ga = ctx.globalAlpha;
+    ctx.globalAlpha = ga * (k > 0.6 ? 1 : k / 0.6);
+    UI.text(ctx, capText, capX, capY - (1 - k) * 15,
+            { align: 'center', colour: capCol, shadow: UI.C.shadow });
+    ctx.globalAlpha = ga;
+  }
+
   /* ----------------------------------------------------- the succulent */
 
   function takeBoon(ob) {
@@ -3486,6 +3643,7 @@ var PlayScene = (function () {
        take twenty more. Anything that can be counted out of the save file
        already is counted out of the save file. */
     bank(Achievements.note('boon', level));
+    momGift(null);
   }
 
   /* Some doodads are bought with succulents rather than with a score, so
@@ -3575,6 +3733,7 @@ var PlayScene = (function () {
        shout; the tally is keyed on the LEVEL, because a bay's gold is
        whatever that bay says it is and the id cannot be renamed by art. */
     bank(Achievements.note('gold', level));
+    momGift(null);
   }
 
   /* checkLimeUnlocks' twin, one axis over: a doodad bought with three of one
@@ -3609,10 +3768,36 @@ var PlayScene = (function () {
      looking - either the run ended, or the world just changed underneath it
      and the rects it is still holding are stale. */
   function hurt(cause) {
-    if (invuln > 0) return false;
+    /* nothing touches him on the wave - see "the wave" */
+    if (invuln > 0 || surf) return false;
     if (lives > 0) { save(cause); return true; }
+    /* POLLOS'S BAILOUT, after the spare lives (a life costs nothing, so it
+       goes first) and only while he can cover it: an early mistake is still
+       a death */
+    var b = doodad.bailout;
+    if (b && bails < b.max && score >= bailPrice) { bail(cause); return true; }
     die(cause);
     return true;
+  }
+
+  /* A MISTAKE BOUGHT OFF. The score pays for it where everybody can see -
+     the digits drop and a red minus slides down off them - and the next one
+     costs `grow` times as much. `pace` keeps every point: the level paced
+     itself on work he did, and paying for a mistake does not undo the
+     work. The rest is a save's to the letter (clearTrouble), the grace and
+     the cleared column included, under its own banner. */
+  function bail(cause) {
+    var b = doodad.bailout, paid = bailPrice;
+    score -= paid;
+    bails++;
+    bailPrice = Math.round(bailPrice * b.grow);
+    bailNote = paid;
+    target = nextTarget();
+    saveBanner = 1.5;
+    caption('-' + paid, VW / 2 + Font.measure(String(score), 3) / 2 + 14, 40, BAIL_INK);
+    Audio3.play('save');
+    Audio3.play('scoreHot');
+    clearTrouble(cause);
   }
 
   /* One mistake bought back. The doodad is deliberately NOT moved out of
@@ -3628,13 +3813,21 @@ var PlayScene = (function () {
        she walked in with is a small lie the screen does not need to tell. */
     spentPotted = pottedLives > 0;
     if (spentPotted) pottedLives--;
-    invuln = SAVE_GRACE;
-    saveFlash = 0.13;
     saveBanner = 1.5;
-    /* the world's trouble taken away, and the ice is the world's trouble */
-    shatterIce(false);
+    bailNote = 0;
     lifePop = 0.45;
     Audio3.play('save');
+    clearTrouble(cause);
+  }
+
+  /* WHAT A SAVE DOES TO THE WORLD, whoever paid for it - a spare life, or
+     Pollos's points: the grace, the flash, the ice gone, the column cleared
+     and the edges lifted. Split out of save() so the two can never drift. */
+  function clearTrouble(cause) {
+    invuln = SAVE_GRACE;
+    saveFlash = 0.13;
+    /* the world's trouble taken away, and the ice is the world's trouble */
+    shatterIce(false);
     Screen.shake(5, 0.4);
 
     for (var i = obstacles.length - 1; i >= 0; i--) {
@@ -3761,7 +3954,7 @@ var PlayScene = (function () {
        one second mean the player wants the later one - the gauges go on
        showing that both power-ups are still running, which is the part
        that is a state rather than an announcement. */
-    spicyBanner = 0; sourBanner = 0; whirlBanner = 0;
+    spicyBanner = 0; sourBanner = 0; whirlBanner = 0; surfBanner = 0;
     stunSay = ob.stun.say || 'OOF!';
     stunSub = ob.stun.sub || '';
     stunFlash = 0.08;
@@ -3860,9 +4053,10 @@ var PlayScene = (function () {
   /* --------------------------------------------------------- the heat */
 
   function grabSpicy(ob) {
-    /* a second one part way through tops the heat up rather than
-       restarting it, so a lucky pair is worth chasing */
-    var wasHot = spicy > 0;
+    /* ROCKY NEVER GETS HOT: a hot drop puts him on a wave instead. Here,
+       at the top of the one way in, so the heat is never lit at all - no
+       flash, no hurry, no streak, no deed. See "the wave". */
+    if (doodad.wave) { grabSurf(ob); return; }
     var sq = doodad.squall;
     /* spicyTime() and not SPICY_TIME, and the local is so that the FULL
        duration and the top-up cap built off it can never disagree: a doodad
@@ -3870,7 +4064,11 @@ var PlayScene = (function () {
        and the x0.6 increment up with him, or the second drop of a pair would
        be capped at a number shorter than the first drop alone gave him. */
     var full = spicyTime();
-    spicy = spicy > 0 ? Math.min(full * 1.6, spicy + full * 0.6) : full;
+    /* a second one part way through tops the heat up rather than
+       restarting it, so a lucky pair is worth chasing - lightHeat() is that
+       rule, and a dose of Hatchling's Mom goes through it too */
+    var wasHot = lightHeat(full, full * 0.6);
+    realHot = true;
     spicyFlash = 0.14;
     spicyBanner = 1.1;
     /* THE SQUALL HEADS-UP, once per run, at the instant it first matters - not on the
@@ -3883,7 +4081,7 @@ var PlayScene = (function () {
       squallWarned = true; warnLines = sq.warn; hazardWarn = 3.5;
     }
     /* the banner slot has one tenant - see stun() */
-    sourBanner = 0; stunBanner = 0; whirlBanner = 0;
+    sourBanner = 0; stunBanner = 0; whirlBanner = 0; surfBanner = 0;
     /* A GAUGE TAKES ITS ROW WHEN IT IS CAUGHT AND KEEPS IT UNTIL IT DIES.
        Both gauges used to work out their y every frame from whether the
        OTHER one was live, so on the Whiteboard the lime and its caption
@@ -3896,8 +4094,9 @@ var PlayScene = (function () {
        The test is `sour > 0` rather than the eased `shrivel`, which is
        what the drawing side reads: shrivel is a frame behind, and two
        drops taken in the SAME frame would otherwise both claim 80 and
-       stay there for the whole seven seconds. */
-    if (!wasHot) spicySlot = freeSlot('spicy');
+       stay there for the whole seven seconds. The claim itself is made in
+       lightHeat(), above, because a dose of Mom lights a heat with no catch
+       and needs a row as much as a catch does. */
     /* THE DEED: both timers running at the same instant. This is the cheapest
        place in the whole file that cannot miss the moment - it is the exact
        line where the heat starts, so there is no frame in which both are up
@@ -3910,10 +4109,13 @@ var PlayScene = (function () {
        down a banner that has not been set yet. The deed is reported BY NAME
        and the engine never learns which doodad it opens, or that anything
        opens at all on most bays. */
-    if (sour > 0) checkDeed('hot-and-sour');
+    /* REAL timers only: a lime or a spin that is only a dose of Hatchling's
+       Mom is not one he caught - see "the imprint". For everybody else
+       realSour is exactly `sour > 0`. */
+    if (sour > 0 && realSour) checkDeed('hot-and-sour');
     /* and Crow's: the heat and the spin at the same instant, reported from
        both ends exactly as the sour one is */
-    if (whirl > 0) checkDeed('hot-and-spun');
+    if (whirl > 0 && realSpin) checkDeed('hot-and-spun');
     Screen.shake(4.5, 0.4);
     Audio3.play('spicy');
     /* and the doodad's own shout on top, if he has one - Hot Wing's */
@@ -3938,6 +4140,7 @@ var PlayScene = (function () {
        cans only) are two rows in a table and not two branches in here - the
        engine never learns that the Construction Zone's hot drop is a can. */
     bank(Achievements.note('spicy', level));
+    momGift('spicy');
   }
 
   /* the wake of embers the doodad leaves while it is lit up */
@@ -3952,26 +4155,205 @@ var PlayScene = (function () {
                         : (chance(0.5) ? FX.hotMid : FX.hot)) });
   }
 
+  /* ---------------------------------------------------------- the wave
+
+     ROCKY'S RINSE CYCLE (`doodad.wave`): a hot drop puts him on a wave that
+     carries him `pillars` planks at `speed` px/s and sets him down again.
+     It is a FAST-FORWARD of the real level and not a teleport: `speed` is
+     the room's speed under him, so scroll, spawnCursor and moveObstacles
+     run the bay's own planks, drops and machines past him at five times
+     the pace, and every plank pays exactly what a hot plank pays.
+
+     He is carried along the GAP LINE with his hands off - the gap centre of
+     the plank ahead, from SURF_FLAT px before its face and flat across it,
+     and a smooth curve to it from the last plank's trailing edge. hurt()
+     says no, collide() walks past everything that is not a gift or a plain
+     drop, and a plain drop on his line is washed, not felt. run.grace is
+     up so nothing aims at him, and `invuln` is NOT used: that is the save's
+     grace, and it blinks.
+
+     The last plank is met at the room's own speed (SURF_OUT_PX), and he is
+     set down at its gap centre under the warp's arrival hold, so control
+     comes back to a doodad at rest with a full spacing to the next plank -
+     the time everybody always has. For SURF_TAIL after that the wave is
+     still running off him: a plain drop that touches him is still washed,
+     nothing but a plank or the room's edges can hurt him, and run.grace
+     stays up - because a thumb that has been off the screen for three
+     seconds cannot dodge what was already falling, or already squeezing,
+     at the moment it got him back. Measured without it: drops killed a
+     pilot in the first 0.3 s of 1 set-down in 4, and the Table's bottle,
+     ridden past before its tell could be read, squirted on 3 in 41. A
+     second hot drop mid-ride tops the
+     count up the heat's way: +0.6 of it, never more than 1.6 left.
+
+     surf  null, or { left, of, passed, t, v, fromY, fromRoom, trail }:
+           planks still to go, the most there were (the gauge's full), planks
+           paid, seconds since the catch, the room's speed under him, where
+           the line starts (a y, and an x in the ROOM frame, scroll + x, so it
+           scrolls with the plank it came off) and the wake's samples. */
+  var SURF_ACC     = 1800;  /* px/s^2 the wave gathers and sheds speed at: 0.27 s from 118 to 600 */
+  var SURF_OUT_PX  = 176;   /* the last plank is slowed for from this far before its trailing edge (< spacingMin 180) */
+  var SURF_FLAT    = 10;    /* px before a plank's face from which he is on its line */
+  var SURF_CLIMB   = 720;   /* px/s at most the line moves him: a catch 160 px off it is on it in 0.22 s */
+  var SURF_WAKE    = 110;   /* px of water laid behind him */
+  var SURF_TAIL    = 0.75;  /* s after the set-down that drops are still washed off him */
+  var SURF_STREAKS = 22;
+  var surf = null, surfK = 0, surfOut = 0;
+  var surfFlash = 0, surfBanner = 0, surfSlot = 80, surfSub = '';
+  var SURF_GAUGE = { panel: '#0b1f2e', edge: '#1f4a66', base: '#2f6f96',
+                     mid: '#5fb0d8', top: RINSE_HI, label: RINSE_MID };
+
+  function grabSurf(ob) {
+    var p = doodad.wave.pillars, was = surf ? surf.left : 0;
+    if (surf) {
+      surf.left = Math.min(Math.round(p * 1.6), surf.left + Math.round(p * 0.6));   /* 7: +4, never past 11 */
+      surf.of = Math.max(surf.of, surf.left);
+      surfSub = '+' + (surf.left - was) + ' PILLARS';
+    } else {
+      surf = { left: p, of: p, passed: 0, t: 0, v: speed,
+               fromY: player.y, fromRoom: scroll + player.x, trail: [] };
+      surfSlot = freeSlot('surf');
+      shatterIce(false);          /* unearned: a ride buys nobody the Fridge's deed */
+      knockT = 0;                 /* a toss home yields to the wave */
+      player.vx = 0; player.vy = 0; player.spring = 0;
+      surfSub = p + ' PILLARS. NO HANDS.';                          /* 20 ch, 119px */
+    }
+    surfFlash = 0.14; surfBanner = 1.1;
+    /* the banner slot has one tenant - see stun() */
+    spicyBanner = 0; sourBanner = 0; stunBanner = 0; whirlBanner = 0;
+    Screen.shake(4.5, 0.4);
+    Audio3.play('wave');
+    for (var i = 0; i < 26; i++) {
+      var a = rand(0, TAU), sp = rand(40, 170);
+      particles.push({ x: ob.x, y: ob.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60,
+                       life: rand(0.35, 0.9), g: 380,
+                       col: chance(0.4) ? RINSE_HI : (chance(0.5) ? RINSE_MID : RINSE_DEEP) });
+    }
+    /* booked as what it was, a hot drop caught: TOLERANCE counts it */
+    bank(Achievements.note('spicy', level));
+  }
+
+  /* the room's speed under him this frame: up to the wave's, and on the
+     last plank back down to the room's own, linear in the distance left */
+  function surfSpeed(base, dt) {
+    var want = doodad.wave.speed;
+    if (surf.left <= 1) {
+      var last = nextPlank();
+      if (last) want = lerp(base, want, clamp((last.x + last.w - player.x) / SURF_OUT_PX, 0, 1));
+    }
+    surf.v = approach(surf.v, want, SURF_ACC * dt);
+    return surf.v;
+  }
+
+  /* the first plank he has not passed */
+  function nextPlank() {
+    var best = null;
+    for (var i = 0; i < obstacles.length; i++) {
+      var ob = obstacles[i];
+      if (ob.type === 'pillar' && !ob.scored && (!best || ob.x < best.x)) best = ob;
+    }
+    return best;
+  }
+
+  /* his whole flight while the wave has him: on the line, nose up, spray
+     off his feet. x is held where it was - the planks come to him. */
+  function surfStep(dt) {
+    surf.t += dt;
+    surf.trail.push({ rx: scroll + player.x, y: player.y });
+    while (surf.trail.length && surf.trail[0].rx < scroll + player.x - SURF_WAKE - 8) surf.trail.shift();
+    player.y = approach(player.y, surfLine(), SURF_CLIMB * dt);
+    player.vy = 0; player.vx = 0; player.spring = 0; player.flapTimer = 0;
+    player.angle = damp(player.angle, -0.2, 0.0004, dt);
+    var br = bodyR();
+    if (chance(dt * 70)) {
+      particles.push({ x: player.x + rand(0, 10), y: player.y + br - 2,
+                       vx: rand(60, 160), vy: rand(-150, -60), life: rand(0.25, 0.5), g: 480,
+                       col: chance(0.6) ? RINSE_HI : RINSE_MID });
+    }
+    if (chance(dt * 50)) {
+      particles.push({ x: player.x - rand(4, 14), y: player.y + br + rand(-4, 2),
+                       vx: rand(-60, -10) - speed * 0.25, vy: rand(-70, -20), life: rand(0.3, 0.6), g: 300,
+                       col: chance(0.5) ? RINSE_HI : RINSE_MID });
+    }
+  }
+
+  /* the line: the gap centre of the plank ahead from SURF_FLAT px before its
+     face, and a smoothstep to it from the last trailing edge (or from where
+     he caught the drop) - flat across every plank. Gap centres sit at least
+     73 px off either edge, so no spike reaches it. */
+  function surfLine() {
+    var ahead = nextPlank();
+    if (!ahead) return surf.fromY;
+    var ay = ahead.gapY + ahead.gapH / 2;
+    var x0 = surf.fromRoom - scroll, x1 = ahead.x - SURF_FLAT;
+    if (player.x >= x1 || x1 <= x0) return ay;
+    var u = (player.x - x0) / (x1 - x0);
+    return lerp(surf.fromY, ay, u * u * (3 - 2 * u));
+  }
+
+  /* a plank the wave carried him past: one fewer to go, the line's start
+     moved to its trailing edge, and a slap of spray */
+  function surfCrest(ob) {
+    surf.left--; surf.passed++;
+    surf.fromY = ob.gapY + ob.gapH / 2;
+    surf.fromRoom = scroll + ob.x + ob.w;
+    Screen.shake(2, 0.18);
+    for (var i = 0; i < 10; i++) {
+      particles.push({ x: player.x + rand(-8, 4), y: player.y + bodyR() + rand(-3, 3),
+                       vx: rand(-40, 40) - speed * 0.3, vy: rand(-130, -40),
+                       life: rand(0.3, 0.6), g: 400, col: chance(0.5) ? RINSE_HI : RINSE_MID });
+    }
+    if (surf.left <= 0) setDown();
+  }
+
+  /* THE SET-DOWN, inside moveObstacles' walk and splicing nothing: the wave
+     runs off behind him and control comes back to a doodad at rest in the
+     gap, under the warp's arrival hold - so he is not already falling
+     through a room that was going past at five times its speed a moment
+     ago. updatePlayer runs after the walk and finds the hold; collide finds
+     him at the plank's own gap centre. */
+  function setDown() {
+    var paid = surf.passed * SPICY_MULT * (doodad.pay || 1);
+    surf = null;
+    surfOut = SURF_TAIL;
+    warpHold = WARP_HOLD;
+    player.vy = 0; player.vx = 0; player.spring = 0;
+    Audio3.play('wash');
+    Screen.shake(3, 0.3);
+    caption('CYCLE DONE +' + paid, player.x, player.y - 22, RINSE_HI);
+    for (var i = 0; i < 30; i++) {
+      particles.push({ x: player.x - rand(0, 10), y: player.y + bodyR(),
+                       vx: rand(-170, -50) - speed * 0.3, vy: rand(-100, 0),
+                       life: rand(0.35, 0.7), g: 380,
+                       col: chance(0.4) ? RINSE_HI : (chance(0.5) ? RINSE_MID : RINSE_DEEP) });
+    }
+  }
+
+  /* a plain drop on his line, washed away rather than felt */
+  function washDrop(ob) {
+    splatter(ob.x, ob.y, false, 10, [RINSE_HI, RINSE_MID]);
+    Audio3.play('splashIn');
+  }
+
   /* --------------------------------------------------------- the lime */
 
   function grabSour(ob) {
-    /* a pair tops the lime up rather than restarting it, as the heat does */
-    var wasSmall = sour > 0;
-    /* through sourTime(), and the local for the reason grabSpicy's gives */
+    /* a pair tops the lime up rather than restarting it, as the heat does -
+       lightSour() is that rule and claims the gauge row, grabSpicy's mirror
+       image, and a dose of Mom goes through it too */
     var full = sourTime();
-    sour = sour > 0 ? Math.min(full * 1.6, sour + full * 0.6) : full;
+    lightSour(full, full * 0.6);
+    realSour = true;
     sourFlash = 0.14;
     sourBanner = 1.1;
     /* the banner slot has one tenant - see stun() */
-    spicyBanner = 0; stunBanner = 0; whirlBanner = 0;
-    /* grabSpicy's mirror image, off the heat instead of off the lime */
-    if (!wasSmall) sourSlot = freeSlot('sour');
+    spicyBanner = 0; stunBanner = 0; whirlBanner = 0; surfBanner = 0;
     /* and the deed's other half - see grabSpicy. Both halves have to exist
        because the two drops can be caught in either order, and whichever
        lands second is the one that makes the pair. Reported the same way,
        and the second report returns an empty list, so holding both again
-       next run shouts nothing. */
-    if (spicy > 0) checkDeed('hot-and-sour');
+       next run shouts nothing. A heat that is only a dose of Mom is not one. */
+    if (spicy > 0 && realHot) checkDeed('hot-and-sour');
     /* smaller and longer than a hit's shake. Screen.shake decays over its
        own time, so this reads as the whole room buzzing rather than as
        something having gone wrong - which is the point of a sour face. */
@@ -3990,6 +4372,7 @@ var PlayScene = (function () {
        set, and an uncounted one is the kind of hole that is only ever found
        by shipping it and then telling players their limes did not count. */
     bank(Achievements.note('sour', level));
+    momGift('sour');
   }
 
   /* checkBoonUnlocks' twin: one doodad is bought with limes rather than
@@ -4040,9 +4423,12 @@ var PlayScene = (function () {
      second check() would re-read all twelve rows for nothing. */
   function checkDeed(name) {
     var won = Doodads.noteDeed(name);
-    if (!won.length || Doodads.masterKey()) return;
+    /* true when the save just learned a doodad, so a caller with no
+       Achievements.note of its own to follow can run the badge check */
+    if (!won.length) return false;
+    if (Doodads.masterKey()) return true;
     for (var i = 0; i < won.length; i++) { unlocked.push(won[i]); announce('doodad', won[i]); }
-    spicyBanner = 0; sourBanner = 0; whirlBanner = 0;
+    spicyBanner = 0; sourBanner = 0; whirlBanner = 0; surfBanner = 0;
     Audio3.play('unlock');
     Screen.shake(2.5, 0.3);
     for (var k = 0; k < 30; k++) {
@@ -4051,6 +4437,7 @@ var PlayScene = (function () {
                        life: rand(0.5, 1.2), g: -50,
                        col: chance(0.45) ? UI.C.gold : (chance(0.5) ? won[0].accentLight : '#fff3d0') });
     }
+    return true;
   }
 
   /* ---------------------------------------------------------- the streak
@@ -4106,7 +4493,7 @@ var PlayScene = (function () {
        way, the banner only when the stall was not already standing open */
     if (!Doodads.masterKey()) {
       for (var n = 0; n < won.length; n++) { unlocked.push(won[n]); announce('doodad', won[n]); }
-      spicyBanner = 0; sourBanner = 0; whirlBanner = 0; streakPop = 0;
+      spicyBanner = 0; sourBanner = 0; whirlBanner = 0; surfBanner = 0; streakPop = 0;
       Audio3.play('unlock');
       Screen.shake(2.5, 0.3);
       for (var k = 0; k < 30; k++) {
@@ -4764,6 +5151,7 @@ var PlayScene = (function () {
       if (self !== 'spicy' && spicy > 0 && spicySlot === y) continue;
       if (self !== 'sour' && sour > 0 && sourSlot === y) continue;
       if (self !== 'whirl' && whirl > 0 && whirlSlot === y) continue;
+      if (self !== 'surf' && surf && surfSlot === y) continue;
       return y;
     }
     return rows[rows.length - 1];
@@ -4773,16 +5161,16 @@ var PlayScene = (function () {
   function whirlTime() { return WHIRL_TIME * (doodad.carry || 1); }
 
   function grabWhirl(ob) {
-    /* a pair tops it up rather than restarting it, as the other two do */
-    var wasSpun = whirl > 0;
+    /* a pair tops it up rather than restarting it, as the other two do,
+       through lightWhirl(), which claims the row and which a dose shares */
     var full = whirlTime();
-    whirl = whirl > 0 ? Math.min(full * 1.6, whirl + full * 0.6) : full;
+    lightWhirl(full, full * 0.6);
+    realSpin = true;
     whirlFlash = 0.14;
     whirlBanner = 1.1;
     /* the banner slot has one tenant - see stun() */
-    spicyBanner = 0; sourBanner = 0; stunBanner = 0;
-    if (!wasSpun) whirlSlot = freeSlot('whirl');
-    if (spicy > 0) checkDeed('hot-and-spun');
+    spicyBanner = 0; sourBanner = 0; stunBanner = 0; surfBanner = 0;
+    if (spicy > 0 && realHot) checkDeed('hot-and-spun');
     Screen.shake(3, 0.45);
     Audio3.play('spin');
     /* a ring thrown off SIDEWAYS, clockwise - tangential velocity rather
@@ -4798,6 +5186,7 @@ var PlayScene = (function () {
     /* No achievement reads 'whirl' today; it is wired for the reason
        grabSour's note gives - the pickups are a set */
     bank(Achievements.note('whirl', level));
+    momGift('whirl');
   }
 
   /* The spin's wake: motes flung off the rim of the turning doodad along
@@ -4812,6 +5201,93 @@ var PlayScene = (function () {
                      vx: -Math.sin(a) * sp - speed * 0.25, vy: Math.cos(a) * sp,
                      life: rand(0.2, 0.45), g: 0,
                      col: chance(0.45) ? WHIRL_HI : (chance(0.5) ? WHIRL_MID : WHIRL_DARK) });
+  }
+
+  /* ------------------------------------------------------- the imprint
+
+     HATCHLING'S MOM (`doodad.imprint`): the first TIMED gift he catches in a
+     run - the heat, the lime or the spin - is Mom, and every other gift he
+     catches after it (the other two kinds, a +5, a spare life) brings
+     `share` of Mom's full time with it: 2.6 s of heat, 2.8 of lime, 2.4 of
+     spin, topping her up under the usual x1.6 cap if she is running. One of
+     Mom's own kind is just itself. A +5 and a spare life can dose but can
+     never BE Mom: they have no time to share.
+
+     A DOSE IS NOT A CATCH: no banner, no streak, no deed, no Achievements
+     note, no lime counted for anybody's price. It IS the thing itself while
+     it runs - a dosed heat doubles, hurries and smashes, a dosed lime counts
+     towards Pickle's soak - because sour is sour.
+
+     THE REAL FLAGS. The two instant-pair deeds (HOT + SOUR, HOT + SPIN) and
+     the Dishwasher's hot jet would be handed out by any cross-kind catch
+     once a dose lights the other timer, so each timer remembers whether a
+     REAL catch is in it: set by grabSpicy/grabSour/grabWhirl, cleared when
+     the timer runs out and at a death. The deed tests ask for the real one.
+     For every doodad without `imprint` a timer is only ever lit by a catch,
+     so realHot is exactly `spicy > 0` and nothing about them moves. */
+  var mom = null, momPop = 0, doses = 0;
+  var realHot = false, realSour = false, realSpin = false;
+  var MOM_HEART = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
+
+  /* THE TIMER AND ITS ROW, and nothing else: the top-up every catch has
+     always used - `fresh` if nothing is running, `more` added under the x1.6
+     cap if something is - and the gauge row claimed on a fresh light.
+     Returns whether it was already running. */
+  function lightHeat(fresh, more) {
+    var was = spicy > 0, full = spicyTime();
+    spicy = was ? Math.min(full * 1.6, spicy + more) : fresh;
+    if (!was) spicySlot = freeSlot('spicy');
+    return was;
+  }
+  function lightSour(fresh, more) {
+    var was = sour > 0, full = sourTime();
+    sour = was ? Math.min(full * 1.6, sour + more) : fresh;
+    if (!was) sourSlot = freeSlot('sour');
+    return was;
+  }
+  function lightWhirl(fresh, more) {
+    var was = whirl > 0, full = whirlTime();
+    whirl = was ? Math.min(full * 1.6, whirl + more) : fresh;
+    if (!was) whirlSlot = freeSlot('whirl');
+    return was;
+  }
+
+  /* every gift he catches ends here: 'spicy', 'sour', 'whirl', or null for
+     a +5 or a spare life */
+  function momGift(kind) {
+    if (!doodad.imprint) return;
+    if (!mom) {
+      if (!kind) return;
+      mom = kind;
+      Audio3.play('chirp');
+      caption('MOM!', player.x, player.y - 22, GIFT_COL[mom]);
+      for (var i = 0; i < 12; i++) {
+        var a = i / 12 * TAU, r = bodyR() + 3;
+        particles.push({ x: player.x + Math.cos(a) * r, y: player.y + Math.sin(a) * r,
+                         vx: Math.cos(a) * 50, vy: Math.sin(a) * 50 - 30,
+                         life: rand(0.4, 0.8), g: -40, col: GIFT_COL[mom] });
+      }
+      return;
+    }
+    if (kind === mom) return;
+    doseMom();
+  }
+
+  /* a bit of Mom: her timer lit or topped up by `share`, half a catch's
+     flash, and her heart thrown white for a beat */
+  function doseMom() {
+    var share = doodad.imprint.share, full;
+    if (mom === 'spicy')     { full = spicyTime(); lightHeat(full * share, full * share);  spicyFlash = 0.07; }
+    else if (mom === 'sour') { full = sourTime();  lightSour(full * share, full * share);  sourFlash = 0.07; }
+    else                     { full = whirlTime(); lightWhirl(full * share, full * share); whirlFlash = 0.07; }
+    doses++;
+    momPop = 0.35;
+    Audio3.play('chirp');
+    caption('A BIT OF MOM', player.x, player.y - 22, GIFT_COL[mom]);
+    for (var i = 0; i < 8; i++) {
+      particles.push({ x: player.x - bodyR() - 3, y: player.y - bodyR() - 3,
+                       vx: rand(20, 70), vy: rand(10, 50), life: 0.3, g: 0, col: GIFT_COL[mom] });
+    }
   }
 
   /* THE BOUNCE. A pillar - or anything carrying ob.deflect - that the
@@ -4930,7 +5406,7 @@ var PlayScene = (function () {
   }
 
   function updateStreaks(dt) {
-    if (heat < 0.02) return;
+    if (heat < 0.02 && surfK < 0.02) return;
     for (var i = 0; i < streaks.length; i++) {
       var s = streaks[i];
       s.x -= speed * s.spd * dt;
@@ -5287,6 +5763,7 @@ var PlayScene = (function () {
      not an exception to it: 0.7 of a doodad with a lime in him is 0.43 of
      one, which is the point of him. */
   function shrink()  { return (doodad && doodad.size ? doodad.size : 1) * (1 - shrivel * (1 - SOUR_SHRINK)); }
+
   function hitR()    { return HIT_R * shrink(); }
   function bodyR()   { return BODY_R * shrink(); }
 
@@ -5596,10 +6073,20 @@ var PlayScene = (function () {
   function jetPush(dt) {
     if (ledger.jetVy && !(knockT > 0) && !(diving > 0)) {
       player.vy = approach(player.vy, ledger.jetVy, JET_ACC * dt);
+      /* ROCKY'S DEED: hot, and in the water. Asked once a run - noteDeed
+         would answer [] every frame after the first anyway, but a jet holds
+         him for many frames and there is no reason to ask on all of them */
+      if (spicy > 0 && realHot && !rinsedDeed && state === 'play') {
+        rinsedDeed = true;
+        if (checkDeed('hot-and-rinsed')) bank(Achievements.check());
+      }
     }
   }
 
   function updatePlayer(dt) {
+    /* THE WAVE HAS HIM: no steering, no gravity, no jet, no lid - the line
+       is his whole flight. See "the wave". */
+    if (surf) { surfStep(dt); return; }
     /* horizontal nudging */
     var want = 0;
     if (Input.down('left')) want -= 1;
@@ -5750,12 +6237,13 @@ var PlayScene = (function () {
       /* A RING OF CHALK DUST THAT THINS AND COLLAPSES as the hold runs out:
          two specks a frame, one of them only in the last quarter second, so
          the tell gets quieter rather than stopping dead. Born on the ring
-         and moving inward, which is the shape of something gathering. */
+         and moving inward, which is the shape of something gathering. The
+         wave's set-down borrows the hold, and its ring is spray. */
       for (var h = 0; h < (warpHold < 0.25 ? 1 : 2); h++) {
         var ha = rand(0, TAU), hc = Math.cos(ha), hs = Math.sin(ha);
         particles.push({ x: player.x + hc * 20, y: player.y + hs * 20,
                          vx: -hc * 30, vy: -hs * 30,
-                         life: 0.2, g: 0, col: FX.motesHi });
+                         life: 0.2, g: 0, col: surfOut > 0 ? RINSE_HI : FX.motesHi });
       }
     } else if (squalling()) {
       /* THE HOLD: no gravity. Wanted vy is -rise, 0 or +rise off the held UP/DOWN
@@ -5913,6 +6401,8 @@ var PlayScene = (function () {
     shatterIce(false);
     spicy = 0;                 /* the run is over; let the coop cool off */
     hotChain = 0;
+    realHot = false; realSpin = false;
+    surf = null;
     /* and the spin lets go: the tumble is player.spin's, and whirlAngle
        only finishes the turn it is on (see update) */
     whirl = 0;
@@ -6183,13 +6673,18 @@ var PlayScene = (function () {
            follows down. And it RETURNS, as hurt() does rather than as the
            splice does: the world is about to change under the rects this
            loop is holding, so the loop has no further business. */
-        if (ob.warp) { if (!ob.taken) takeWarp(ob); return; }
+        /* the wave rides over a hole: it never takes him down one */
+        if (ob.warp) { if (surf) continue; if (!ob.taken) takeWarp(ob); return; }
         if (ob.meet) { if (!ob.met) takeMeet(ob); }
         else takeBoon(ob);
         obstacles.splice(i, 1);
         continue;
       }
       if (ob.type !== 'drop') {
+        /* the wave carries him past everything that is not a drop: planks,
+           spikes, machines, stoves - and for its tail everything but a
+           plank still does not touch him. See "the wave". */
+        if (surf || (surfOut > 0 && ob.type !== 'pillar')) continue;
         /* THE BOP. An obstacle may carry ob.bop, and a rect of it may carry a
            fifth element, [x, y, w, h, 1]: that rect is a thing to be landed
            ON. ONLY A FLAGGED RECT IS A BOP SURFACE, and it is harmless from
@@ -6242,7 +6737,15 @@ var PlayScene = (function () {
           obstacles.splice(i, 1);
           continue;
         }
-        if (hurt('obstacle')) return;
+        /* POLLOS'S DEED: fried by a stove and walked away from it. Asked
+           before hurt(), because it is the spare life about to be spent
+           that makes this a save rather than a death - and not in the
+           grace, which waves the fire straight through him */
+        var fried = ob.stove && lives > 0 && invuln <= 0;
+        if (hurt('obstacle')) {
+          if (fried && state === 'play' && checkDeed('face-off')) bank(Achievements.check());
+          return;
+        }
         continue;
       }
       /* Every gift is taken before the heat gets a chance to smash through,
@@ -6261,7 +6764,8 @@ var PlayScene = (function () {
          bursts it, the spare life, the grace that waves it straight through
          you, or the death. See spookMeet for the rest of the reasoning. */
       spookMeet();
-      if (spicy > 0) { smashDrop(ob); obstacles.splice(i, 1); continue; }
+      if (surf || surfOut > 0) { washDrop(ob); obstacles.splice(i, 1); continue; }
+      if (spicy > 0) { smashDrop(ob); if (doodad.pop) popPay(ob); obstacles.splice(i, 1); continue; }
       if (hurt('drop')) return;
     }
     if (player.y + hr >= FLOOR) hurt('ground');
@@ -6461,6 +6965,10 @@ var PlayScene = (function () {
     if (sourBanner > 0) sourBanner -= dt;
     if (whirlFlash > 0) whirlFlash -= dt;
     if (whirlBanner > 0) whirlBanner -= dt;
+    if (surfFlash > 0) surfFlash -= dt;
+    if (surfBanner > 0) surfBanner -= dt;
+    if (surfOut > 0) surfOut -= dt;
+    if (momPop > 0) momPop -= dt;
     if (stunFlash > 0) stunFlash -= dt;
     if (stunBanner > 0) stunBanner -= dt;
     if (hazardWarn > 0) hazardWarn -= dt;
@@ -6481,6 +6989,7 @@ var PlayScene = (function () {
     if (goldPop > 0) goldPop -= dt;
     if (fledPop > 0) fledPop -= dt;
     if (streakPop > 0) streakPop -= dt;
+    if (capPop > 0) capPop -= dt;
     if (iceFlash > 0) iceFlash -= dt;
     if (ice && state === 'play') {
       ice.t += dt;
@@ -6505,6 +7014,8 @@ var PlayScene = (function () {
     /* and so does the shrivel - which is also the hitbox, so this has to
        happen before collide() and before anything is drawn */
     shrivel = damp(shrivel, sour > 0 ? 1 : 0, 0.0004, dt);
+    /* and the wave's water, for the draw and the streaks */
+    surfK = damp(surfK, surf ? 1 : 0, 0.0004, dt);
     /* the spin's aura eases the same way. The turn itself does not: while
        it runs it goes round at WHIRL_RATE, and when it stops it FINISHES
        THE TURN IT IS ON, quickly at first and slowing into upright, so
@@ -6609,7 +7120,7 @@ var PlayScene = (function () {
            up 48 px, which is exactly what the hold promises not to do. The
            tap still ends a warp's arrival ring, as flap() would have - the
            thumb taking over is the moment the ring has done its job. */
-        if (Input.hit('up') && warpIn <= 0) {
+        if (Input.hit('up') && warpIn <= 0 && !surf) {
           if (diving > 0) breach();
           else if (!squalling()) flap();
           else warpHold = 0;
@@ -6621,7 +7132,7 @@ var PlayScene = (function () {
         spicy -= dt;
         if (spicy <= 0) {
           spicy = 0; Audio3.play('cooldown');
-          hotChain = 0;
+          hotChain = 0; realHot = false;
           /* the hold lets go from REST or from a climb, never from a descent: a vy of
              +150 handed straight to gravity hits the floor 0.2 s sooner than a fall from
              nothing, and the player was told the wind would drop, not that it would
@@ -6631,11 +7142,11 @@ var PlayScene = (function () {
       }
       if (sour > 0) {
         sour -= dt;
-        if (sour <= 0) { sour = 0; Audio3.play('cooldown'); }
+        if (sour <= 0) { sour = 0; realSour = false; Audio3.play('cooldown'); }
       }
       if (whirl > 0) {
         whirl -= dt;
-        if (whirl <= 0) { whirl = 0; Audio3.play('cooldown'); }
+        if (whirl <= 0) { whirl = 0; realSpin = false; Audio3.play('cooldown'); }
       }
       /* the ▲▼ pads follow the hold, here and not below the pull's return, so
          they come and go with the heat even while a hole is taking him */
@@ -6680,6 +7191,8 @@ var PlayScene = (function () {
          target list, and a `var` here would hide it for all of update().) */
       var hurry = doodad.squall ? doodad.squall.speed : SPICY_SPEED;
       speed = d.speed * (spicy > 0 ? 1 + (hurry - 1) * (1 - (doodad.calm || 0)) : 1);
+      /* and on Rocky's wave the room runs at the wave's speed - see "the wave" */
+      if (surf) speed = surfSpeed(d.speed, dt);
       /* BUSTER'S TAPE decides, here, whether the world steps at all this
          frame: in playback it is put where the tape says instead, and the
          scroll, the spawners, the steps and the ledger all hold still */
@@ -6786,7 +7299,7 @@ var PlayScene = (function () {
          objects every frame of the run: see their declaration. */
       run = { score: pace, time: runTime, late: late, scroll: scroll,
               speed: speed, px: player.x, py: player.y,
-              pvy: player.vy, hr: hitR(), under: diving > 0, grace: invuln > 0,
+              pvy: player.vy, hr: hitR(), under: diving > 0, grace: invuln > 0 || !!surf || surfOut > 0,
               frozen: ice ? ice.left : 0, hot: spicy > 0,
               ledger: ledger, born: born };
       if (!playback) {
@@ -6800,6 +7313,7 @@ var PlayScene = (function () {
       updateNerve();
       updateWatch(dt);
       updateFlick();
+      updateRepel(dt);
       updateMeet();
       updateAura(dt);
       collide();
@@ -7029,7 +7543,8 @@ var PlayScene = (function () {
           pace += spicy > 0 ? SPICY_MULT : 1;
           Audio3.play('under');
         } else {
-          var base = spicy > 0 ? SPICY_MULT : 1;
+          /* and a plank the wave carried him past pays as a hot one */
+          var base = (spicy > 0 || surf) ? SPICY_MULT : 1;
           /* a plank threaded close is worth two of itself, and the heat still
              doubles on top of that - nerve and spicy stack, which is exactly
              the run you want to be having */
@@ -7051,8 +7566,8 @@ var PlayScene = (function () {
           var pay = doodad.pay || 1;
           score += worth * pay;
           pace += worth;
-          scorePop = (spicy > 0 || tight) ? 0.42 : 0.32;
-          Audio3.play(spicy > 0 ? 'scoreHot' : 'score');
+          scorePop = (spicy > 0 || tight || surf) ? 0.42 : 0.32;
+          Audio3.play((spicy > 0 || surf) ? 'scoreHot' : 'score');
           if (tight) takeNerve(ob, base * pay);
           checkPassed();
           checkUnlocks();
@@ -7070,6 +7585,10 @@ var PlayScene = (function () {
         if (tune.rescueAt) checkRescue();
         /* and the ice takes a crack, for the same reason: a pillar passed */
         if (ice) iceCrack();
+        /* Pickle's soak counts a pillar passed sour, and the wave counts one
+           it carried him past - both a pillar passed, whichever way */
+        if (sour > 0 && brine) checkBrine();
+        if (surf) surfCrest(ob);
         /* Crow's crew, every tenth pillar - asked for here, sent after the
            walk, because sending them admits two gifts into this list */
         if (doodad.ordnance && passedN % doodad.ordnance.every === 0 && !escort) ordnanceDue = true;
@@ -7166,6 +7685,7 @@ var PlayScene = (function () {
     if (doodad.watch && state === 'play') drawLines(ctx);
 
     if (heat > 0.02) drawHeat(ctx);
+    if (surfK > 0.02) drawSurf(ctx);
     if (shrivel > 0.02) drawSourAura(ctx);
     if (twirl > 0.02) drawWhirlAura(ctx);
     if (ice) drawIceGlow(ctx);
@@ -7313,6 +7833,65 @@ var PlayScene = (function () {
     }
   }
 
+  /* THE WAVE, in the room: water lines tearing past, a blue wash with the
+     wave coming in off the left edge, and the WAKE - a band of water laid
+     along the path he actually flew, so it threads every gap he threaded,
+     3 px tall 110 px behind him and swelling to 22 at his back, with a
+     running foam crest, a lip curling over him, and a dark line under it
+     for the white rooms. After the set-down `surf` is null, so the band
+     flattens under him and sinks as surfK eases out: that is the recede. */
+  function drawSurf(ctx) {
+    var k = surfK, pulse = 0.8 + 0.2 * Math.sin(t * 9), a = ctx.globalAlpha, i, x;
+    for (i = 0; i < streaks.length; i++) {
+      var s = streaks[i];
+      ctx.globalAlpha = a * k * (s.bright ? 0.75 : 0.45);
+      ctx.fillStyle = s.bright ? RINSE_HI : RINSE_MID;
+      ctx.fillRect(Math.round(s.x), Math.round(s.y), s.len, 1);
+    }
+    ctx.globalAlpha = a;
+    Tint.rect(ctx, 0, CEIL, VW, FLOOR - CEIL, RINSE_DEEP, k * 2.0);
+    Tint.rect(ctx, 0, CEIL, 54, FLOOR - CEIL, RINSE_MID, k * 2.5 * pulse);
+    if (state !== 'play') return;
+    var br = bodyR(), x0 = Math.round(player.x) - SURF_WAKE, x1 = Math.round(player.x) + 14;
+    var tr = surf ? surf.trail : null;
+    for (x = x0; x < x1; x += 2) {
+      var u = (x - x0) / (x1 - x0), v = Math.min(1, u / 0.85);
+      var h = u < 0.85 ? 3 + 19 * v * v * (3 - 2 * v) : 22 * (1 - (u - 0.85) / 0.15);
+      h = Math.max(0, Math.round(h * k + 1.5 * Math.sin(t * 11 + x * 0.09)));
+      var base = clamp(Math.round(wakeY(tr, x) + br + 3), CEIL + 2, FLOOR - 1);
+      var top = Math.max(CEIL, base - h);
+      ctx.globalAlpha = a * k * 0.5;  ctx.fillStyle = RINSE_DEEP; ctx.fillRect(x, top, 2, base - top);
+      ctx.globalAlpha = a * k * 0.85; ctx.fillStyle = RINSE_MID;  ctx.fillRect(x, top, 2, 2);
+      if (((x >> 1) + Math.floor(t * 14)) % 3) {
+        ctx.globalAlpha = a * k * 0.95; ctx.fillStyle = RINSE_HI; ctx.fillRect(x, top - 1, 2, 1);
+      }
+      ctx.globalAlpha = a * k * 0.35; ctx.fillStyle = RINSE_INK; ctx.fillRect(x, base, 2, 1);
+    }
+    /* the lip: six 2x2 foam squares arching from the crest's peak, 8 px
+       behind him, forward over his back */
+    var LIP = [[0, 0], [4, -3], [8, -4], [12, -3], [14, 0], [15, 4]];
+    var lx = Math.round(player.x) - 8, ly = Math.round(player.y + br + 3) - 22;
+    ctx.globalAlpha = a * k * 0.9; ctx.fillStyle = RINSE_HI;
+    for (i = 0; i < LIP.length; i++) ctx.fillRect(lx + LIP[i][0], ly + LIP[i][1], 2, 2);
+    ctx.globalAlpha = a;
+  }
+
+  /* the path's y at a screen x, off the wake's room-x samples; his own y
+     ahead of them and once the wave has let him go */
+  function wakeY(tr, x) {
+    if (!tr || !tr.length) return player.y;
+    var rx = scroll + x;
+    if (rx >= tr[tr.length - 1].rx) return player.y;
+    if (rx <= tr[0].rx) return tr[0].y;
+    for (var i = tr.length - 2; i >= 0; i--) {
+      if (rx >= tr[i].rx) {
+        var span = tr[i + 1].rx - tr[i].rx;
+        return span > 0 ? lerp(tr[i].y, tr[i + 1].y, (rx - tr[i].rx) / span) : tr[i].y;
+      }
+    }
+    return player.y;
+  }
+
   /* The smooth layer, and then whatever the level does to it. A wrapper,
      because drawDoodads below has five ways out and the treatment has to
      land after every one of them: a doodad being pulled down a hole, one
@@ -7405,6 +7984,12 @@ var PlayScene = (function () {
       if (o) { o.squashX /= sh; o.squashY *= sh; }
       else o = { squashX: 1 / sh, squashY: sh };
     }
+    /* and stretched long into the speed while the wave has him */
+    if (surfK > 0.02) {
+      var sw = 1 + surfK * 0.06;
+      if (o) { o.squashX *= sw; o.squashY /= sw; }
+      else o = { squashX: sw, squashY: 1 / sw };
+    }
     /* and the stretch of a rebound, for the one doodad whose flap can be
        one: a ball leaving the floor is taller than it is wide, and 22% at a
        full spring is enough to be read and not enough to look like a new
@@ -7458,6 +8043,7 @@ var PlayScene = (function () {
        score, the gauges and the warnings are the game talking, and nothing
        a level paints may get in their way. */
     if (ice) drawIce(ctx);
+    if (mom && (state === 'play' || state === 'paused')) drawMom(ctx);
     if (art.drawFront) art.drawFront(ctx, run, state);
     if (flash > 0) { ctx.fillStyle = '#f7e6c0'; ctx.fillRect(0, 0, VW, VH); }
     if (iceFlash > 0) {
@@ -7522,6 +8108,13 @@ var PlayScene = (function () {
       ctx.fillRect(0, 0, VW, VH);
       ctx.globalAlpha = wfa;
     }
+    if (surfFlash > 0) {
+      var sfa = ctx.globalAlpha;
+      ctx.globalAlpha = sfa * clamp(surfFlash / 0.14, 0, 1) * 0.7;
+      ctx.fillStyle = RINSE_HI;
+      ctx.fillRect(0, 0, VW, VH);
+      ctx.globalAlpha = sfa;
+    }
     if (stunFlash > 0) {
       /* shorter and paler than the other three: this is a jolt, not an
          event, and the run is carrying straight on underneath it */
@@ -7537,14 +8130,16 @@ var PlayScene = (function () {
       /* `spiced`, not `hot`: `hot` is this scene's target list and `var` is
          function-scoped, so a local of that name in here would hide it */
       var spiced = spicy > 0;
-      /* and a squall's hot score in his blues, off the field */
-      var sqs = doodad.squall;
+      /* and a squall's hot score in his blues, off the field; the wave's in
+         its water */
+      var sqs = doodad.squall, surfing = !!surf;
       var s = scorePop > 0 ? 4 : 3;
       UI.heading(ctx, String(score), VW / 2, 34 - (scorePop > 0 ? 3 : 0), s, {
-        colour: spiced ? (scorePop > 0 ? (sqs ? sqs.inkPop : '#ffe9bd') : (sqs ? sqs.ink : '#ffb45c'))
+        colour: surfing ? (scorePop > 0 ? RINSE_HI : RINSE_MID)
+              : spiced ? (scorePop > 0 ? (sqs ? sqs.inkPop : '#ffe9bd') : (sqs ? sqs.ink : '#ffb45c'))
                        : (scorePop > 0 ? '#fff3d0' : UI.C.ink),
-        outline: spiced ? (sqs ? sqs.outline : '#5c1a08') : UI.C.shadow,
-        wave: spiced ? t * 9 : undefined, waveAmp: 1
+        outline: surfing ? RINSE_INK : spiced ? (sqs ? sqs.outline : '#5c1a08') : UI.C.shadow,
+        wave: (spiced || surfing) ? t * 9 : undefined, waveAmp: 1
       });
       /* THE CHASE LINE'S SLOT, WHICH A STAY BORROWS. There is no table to
          chase down there - the place the hole leads to is not a level, has no
@@ -7560,6 +8155,7 @@ var PlayScene = (function () {
       drawSpicy(ctx);
       drawSour(ctx);
       drawWhirl(ctx);
+      drawSurfHud(ctx);
       if (stunBanner > 0) drawStun(ctx);
       if (nervePop > 0) drawNerve(ctx);
       if (goldPop > 0) drawGold(ctx);
@@ -7568,6 +8164,7 @@ var PlayScene = (function () {
          which is why they have their own clamped points and never share one */
       if (fledPop > 0) drawFled(ctx);
       if (streakPop > 0) drawStreak(ctx);
+      if (capPop > 0) drawCap(ctx);
       if (tape && tape.fx > 0.02 && state === 'play') drawTape(ctx);
       if (boonBanner > 0 || saveBanner > 0) drawSaveBanner(ctx);
       if (unlockBanner > 0) drawUnlockBanner(ctx);
@@ -7685,11 +8282,15 @@ var PlayScene = (function () {
     var ga = ctx.globalAlpha;
     if (saveBanner > 0) {
       ctx.globalAlpha = ga * clamp(saveBanner / 0.6, 0, 1);
-      UI.heading(ctx, 'SAVED!', VW / 2, 112 - (1.5 - saveBanner) * 9, 3,
-                 { colour: LIFE_PALE, outline: '#123a30', wave: t * 11, waveAmp: 1.4 });
-      UI.text(ctx, spentPotted ? 'ONE ' + boonName + ' SPENT' : 'ONE LIFE SPENT',
+      /* a bailout is a save paid in points, so it takes the save's slot
+         under its own words and in the minus's red */
+      UI.heading(ctx, bailNote ? 'BAILED OUT' : 'SAVED!', VW / 2, 112 - (1.5 - saveBanner) * 9, 3,
+                 bailNote ? { colour: '#ffd0c8', outline: '#5c1208', wave: t * 11, waveAmp: 1.4 }
+                          : { colour: LIFE_PALE, outline: '#123a30', wave: t * 11, waveAmp: 1.4 });
+      UI.text(ctx, bailNote ? 'MINUS ' + bailNote + '. BACK TO WORK.'
+                            : (spentPotted ? 'ONE ' + boonName + ' SPENT' : 'ONE LIFE SPENT'),
               VW / 2, 140 - (1.5 - saveBanner) * 9,
-              { align: 'center', colour: LIFE_LEAF, shadow: UI.C.shadow });
+              { align: 'center', colour: bailNote ? BAIL_INK : LIFE_LEAF, shadow: UI.C.shadow });
     } else if (boonBanner > 0) {
       ctx.globalAlpha = ga * clamp(boonBanner / 0.6, 0, 1);
       UI.heading(ctx, boonBonus ? '+' + BOON_BONUS : 'EXTRA LIFE', VW / 2,
@@ -7981,7 +8582,7 @@ var PlayScene = (function () {
        land together by accident inside a second and a half - where the four
        above land together by construction. A badge is never worth standing
        on top of the news that you nearly died. */
-    spicyBanner = 0; sourBanner = 0; stunBanner = 0; boonBanner = 0; whirlBanner = 0;
+    spicyBanner = 0; sourBanner = 0; stunBanner = 0; boonBanner = 0; whirlBanner = 0; surfBanner = 0;
     for (var i = 0; i < won.length; i++) { runAchv.push(won[i]); announce('achievement', won[i]); }
     /* everything above happens however many times this is reached; only the
        noise and the confetti are once a frame */
@@ -8036,9 +8637,44 @@ var PlayScene = (function () {
   }
 
   /* the one-off heads up when the rafters start letting go */
+  /* the wave's shout and its gauge: RINSE CYCLE! where every pickup shouts,
+     and a bar that steps down a seventh per plank - a smooth one would lie
+     about where the planks are - blinking on the last */
+  function drawSurfHud(ctx) {
+    if (state === 'entry') return;
+    if (surfBanner > 0) {
+      var a = ctx.globalAlpha, lift = (1.1 - surfBanner) * 11;
+      ctx.globalAlpha = a * clamp(surfBanner / 0.6, 0, 1);
+      UI.heading(ctx, 'RINSE CYCLE!', VW / 2, 112 - lift, 3,             /* 12 ch, 213px at scale 3 */
+                 { colour: RINSE_HI, outline: RINSE_INK, wave: t * 11, waveAmp: 1.4 });
+      UI.text(ctx, surfSub, VW / 2, 138 - lift, { align: 'center', colour: RINSE_MID, shadow: UI.C.shadow });
+      ctx.globalAlpha = a;
+    }
+    if (surfK < 0.02) return;
+    if (surf && surf.left <= 1 && Math.floor(t * 8) % 2 === 0) return;
+    drawGauge(ctx, surf ? surf.left / surf.of : 0, surfK, SURF_GAUGE,
+              'RINSE  ' + (surf ? surf.left : 0) + ' LEFT', surfSlot);    /* 13 ch, 77px */
+  }
+
+  /* THE MARK OF MOM: a 7x6 pixel heart in her gift's legend colour, perched
+     at his shoulder and bobbing, with a one-pixel dark edge so it reads on a
+     white wall as on the boards; white for the first beat of a dose */
+  function drawMom(ctx) {
+    var col = momPop > 0.22 ? '#fff3d0' : GIFT_COL[mom];
+    var bx = Math.round(player.x - bodyR()) - 7, by = Math.round(player.y - bodyR() + Math.sin(t * 5) * 1.5) - 6;
+    var a = ctx.globalAlpha, r, c;
+    ctx.globalAlpha = a * 0.75; ctx.fillStyle = UI.C.shadow;
+    for (r = 0; r < 6; r++) for (c = 0; c < 7; c++) if (MOM_HEART[r].charAt(c) === 'X') {
+      ctx.fillRect(bx + c + 1, by + r, 1, 1); ctx.fillRect(bx + c - 1, by + r, 1, 1);
+      ctx.fillRect(bx + c, by + r + 1, 1, 1); ctx.fillRect(bx + c, by + r - 1, 1, 1);
+    }
+    ctx.globalAlpha = a; ctx.fillStyle = col;
+    for (r = 0; r < 6; r++) for (c = 0; c < 7; c++) if (MOM_HEART[r].charAt(c) === 'X') ctx.fillRect(bx + c, by + r, 1, 1);
+  }
+
   function drawHazardWarning(ctx) {
     if (state === 'entry' || spicyBanner > 0 || sourBanner > 0 || stunBanner > 0 ||
-        whirlBanner > 0) return;
+        whirlBanner > 0 || surfBanner > 0) return;
     if (Math.floor(hazardWarn * 6) % 2) return;
     var w = warnLines;
     if (!w) return;
@@ -8486,6 +9122,18 @@ var PlayScene = (function () {
                                     warn: hazardWarn > 0 ? warnLines : null,
                                     /* and how much his last flap sprang */
                                     spring: player.spring,
+                                    /* the Kitchen's five: Rocky's wave,
+                                       Hatchling's Mom and the real flags,
+                                       Pollos's bailouts and the next one's
+                                       price, Cobb's popcorn points, and the
+                                       soak still owed here */
+                                    surf: surf ? { left: surf.left, of: surf.of, passed: surf.passed,
+                                                   v: Math.round(surf.v), t: +surf.t.toFixed(2) } : null,
+                                    surfK: surfK, surfOut: surfOut,
+                                    mom: mom, doses: doses, realHot: realHot, realSour: realSour, realSpin: realSpin,
+                                    bails: bails, bailPrice: bailPrice,
+                                    pops: pops, brine: brine ? Doodads.brineTaken(brine.room) : -1,
+                                    passedN: passedN,
                                     /* the level's per-run notebook, live,
                                        and what stands and acts in the bays
                                        and what is in flight from them -

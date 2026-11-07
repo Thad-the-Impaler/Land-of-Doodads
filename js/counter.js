@@ -197,6 +197,7 @@ var Counter = (function () {
     pot:      ['▲ INSTANT POT ▲',       'THE VALVE. THEN THE GEYSER'],
     fryer:    ['▲ AIR FRYER ▲',         'HOT AIR PUSHES YOU BACK'],
     micro:    ['▼ MICROWAVE ▼',         'SPARKS FROM ABOVE. GO LOW'],
+    nest:     ['▼ POPCORN ▼',           'CATCH WHAT POPS OUT'],
     maker:    ['▲ ICE CREAM MAKER ▲',   'SCOOPS ARE ROCK HARD. UP']
   };
 
@@ -1940,6 +1941,17 @@ var Counter = (function () {
     return 0;
   }
 
+  /* the nest's door: the same four frames, opened earlier (makeMeet) */
+  function nestFrame(x) {
+    if (x > NEST_DOOR) return 0;
+    if (x > NEST_DOOR - 9) return 1;
+    if (x > NEST_DOOR - 18) return 2;
+    if (x > MI_SHUT) return 3;
+    if (x > 96) return 2;
+    if (x > 92) return 1;
+    return 0;
+  }
+
   /* THE ICE CREAM MAKER: the lid rattles, POPS, and the machine flings
      three scoops of rock-hard ice cream back along the bay in an arc.
        300  TELL: 'whirr'; the dome rattles, the paddle flicks
@@ -1972,7 +1984,7 @@ var Counter = (function () {
       case 'press': return pressFrame(x);
       case 'pot': return (x <= POT_TELL && x > POT_FIRE && (Math.floor(x / 3) & 1)) ? 1 : 0;
       case 'fryer': return fryerFrame(x);
-      case 'micro': return microFrame(x);
+      case 'micro': return ob.nest ? nestFrame(x) : microFrame(x);
       case 'maker': return makerFrame(x);
     }
     return 0;
@@ -2295,6 +2307,68 @@ var Counter = (function () {
     } else if (ob.kind === 'micro') {
       /* the hum of the open cavity: a flicker of light at the door */
       if (f === 3 && (Math.floor(x / 3) & 1)) dot(ctx, X + 30, top + 18, '#ffffff');
+      if (ob.nest) drawNest(ctx, ob, X, top, f);
+    }
+  }
+
+  /* WHAT IS IN THE NEST: a popcorn bucket on the turntable, kernels hopping
+     out of it, while the door is open and he is still in there; then the
+     burst of popcorn thrown out of the door with him, worked out from how
+     far the microwave has come since NEST_POP (so it holds on pause and
+     plays back on the tape), and a few kernels left on the turntable. All
+     on the pixel layer and never boxed: popcorn out of a microwave is
+     scenery, the one thing in it that counts is him. */
+  var POP_LIT = '#fff6d8', POP_MID = '#f4dc76', POP_DEEP = '#d9b64a';
+  var TUB = '#b07c3a', TUB_SHADE = '#7a5224', TUB_PRINT = '#7d4f7a', TUB_INK = '#3e2410';
+  function nestRect(ctx, x, y, w, h, col) {
+    if (y + h <= CEIL) return;
+    if (y < CEIL) { h -= CEIL - y; y = CEIL; }
+    rect(ctx, x, y, w, h, col);
+  }
+  function drawNest(ctx, ob, X, top, f) {
+    var x = ob.x, i, h;
+    var cx = X + NEST_MX, floorY = top + 28;
+    if (f > 0 && x > NEST_POP) {
+      /* the bucket, flared from a 10 px foot to a 14 px rim, inked all
+         round so it holds against the lit cavity, with the seam down its
+         left and a smudge of plum print */
+      for (i = 0; i < 9; i++) {
+        var hw = 7 - Math.floor(i / 4), y = floorY - 9 + i;
+        nestRect(ctx, cx - hw - 1, y, hw * 2 + 2, 1, TUB_INK);
+        nestRect(ctx, cx - hw, y, hw * 2, 1, i === 0 ? TUB_SHADE : TUB);
+        nestRect(ctx, cx - hw + 2, y, 1, 1, TUB_SHADE);
+      }
+      nestRect(ctx, cx - 4, floorY - 1, 8, 1, TUB_INK);
+      nestRect(ctx, cx - 1, floorY - 5, 5, 1, TUB_PRINT);
+      /* the popcorn heaped over the rim in three puffs, inked on top, and
+         kernels jumping out of it */
+      for (i = 0; i < 3; i++) {
+        var px0 = cx - 6 + i * 4, top0 = floorY - 12 - (i === 1 ? 1 : 0);
+        nestRect(ctx, px0, top0 - 1, 4, 1, TUB_INK);
+        nestRect(ctx, px0 - 1, top0, 6, 3, POP_LIT);
+        nestRect(ctx, px0, top0 + 2, 4, 1, POP_MID);
+      }
+      for (i = 0; i < 3; i++) {
+        var k = wrap((NEST_DOOR - x) / 14 + i / 3, 1), ky = floorY - 15 - Math.round(Math.sin(k * Math.PI) * 6);
+        nestRect(ctx, cx - 5 + i * 4, ky, 2, 2, POP_LIT);
+        nestRect(ctx, cx - 5 + i * 4, ky + 2, 2, 1, TUB_INK);
+      }
+    }
+    if (x <= NEST_POP) {
+      /* what he left behind on the turntable */
+      if (f > 0) { nestRect(ctx, cx - 9, floorY - 1, 2, 1, POP_LIT); nestRect(ctx, cx + 6, floorY - 1, 2, 1, POP_MID); }
+      /* the burst: ten kernels thrown out of the door and down into the bay */
+      var tau = (NEST_POP - x) / 150;
+      if (tau < 0.9) {
+        for (i = 0; i < 10; i++) {
+          h = hash(i * 977 + 31);
+          var vx = ((h % 140) - 70), vy = -40 - ((h >>> 8) % 90);
+          var px = Math.round(cx + vx * tau), py = Math.round(floorY - 4 + vy * tau + 160 * tau * tau);
+          if (py >= FLOOR - 2) continue;
+          nestRect(ctx, px, py, 2, 2, (h & 1) ? POP_LIT : POP_MID);
+          if (h & 2) nestRect(ctx, px + 1, py + 1, 1, 1, POP_DEEP);
+        }
+      }
     }
   }
 
@@ -2448,6 +2522,12 @@ var Counter = (function () {
 
   function drawBoon(ctx, ob) {
     if (ob.taken) return;
+    /* the nest's hider is the ENGINE'S to draw (Doodads.draw, on the smooth
+       layer); all this bay adds is his shadow on the stone once he sits */
+    if (ob.nest) {
+      if (ob.landed && !ob.met) Tint.rect(ctx, Math.round(ob.x + ob.dx) - 9, FLOOR + 1, 18, 2, K.void, 7);
+      return;
+    }
     var bx = Math.round(ob.x);
     if (!ob.held) {
       /* its shadow, and the grounds that fell off it onto the stone */
@@ -2749,6 +2829,17 @@ var Counter = (function () {
      the one the ledger just wrote down plus the last spacing. ob.x is the
      body's left edge and ob.w covers everything it ever boxes, the jet's
      reach too, so collide()'s cull never drops a live box. */
+  function placeMachine(kind, x, L) {
+    var W = MSPR[kind].W, bx = Math.round(x - W / 2), hi = 9999;
+    if (L.plank) {
+      var lo = L.plank.x + 38 + 6;
+      hi = L.plank.x + (L.spacing > 0 ? L.spacing : 182) - 4 - 6 - 1;
+      var need = kind === 'espresso' ? WAND[0] + ESP_RMIN + 8 : W;
+      bx = Math.round(clamp(bx, lo, Math.max(lo, hi - need)));
+    }
+    return { x: bx, hi: hi };
+  }
+
   function makeSpikes(x, side, count, maxLen, run) {
     var L = book(run), score = run ? run.score : 99, kind = null, i, j;
     for (i = 0; i < ROSTER.length; i++) {
@@ -2763,13 +2854,7 @@ var Counter = (function () {
     if (!kind) { kind = 'espresso'; L.turn = 0; }
     var first = !L.seen[kind];
     L.seen[kind] = true;
-    var W = MSPR[kind].W, bx = Math.round(x - W / 2), hi = 9999;
-    if (L.plank) {
-      var lo = L.plank.x + 38 + 6;
-      hi = L.plank.x + (L.spacing > 0 ? L.spacing : 182) - 4 - 6 - 1;
-      var need = kind === 'espresso' ? WAND[0] + ESP_RMIN + 8 : W;
-      bx = Math.round(clamp(bx, lo, Math.max(lo, hi - need)));
-    }
+    var W = MSPR[kind].W, at = placeMachine(kind, x, L), bx = at.x, hi = at.hi;
     var ob = { type: 'spike', side: kind === 'micro' ? 'ceil' : 'floor', kind: kind,
                x: bx, w: W, lastX: bx, first: first, deflect: true, spikes: [] };
     if (kind === 'espresso') {
@@ -2779,6 +2864,94 @@ var Counter = (function () {
     L.machine = { x: bx, w: ob.w, kind: kind, plank: L.plank };
     L.stats.made[kind]++;
     return ob;
+  }
+
+  /* SOMEBODY IS POPPING IN A MICROWAVE - the Counter's hider, for whoever
+     the roster has put here (Cobb). The engine asks for him once a run on
+     the plank tune.meetAt rolls, holds that gap (no machine, no litter, no
+     gift of its own), sets ob.meet after this returns, and catches him on
+     its collide path when he is flown into, as a ground hider is.
+
+     TWO THINGS ARE MADE AND ONE IS RETURNED. The microwave is a real one,
+     its body as lethal as any (born through run.born, beside him), only it
+     is a NEST: it dings, its door swings open on a popcorn bucket in the lit
+     cavity, and at NEST_POP it throws out popcorn instead of sparks - and
+     him with it. He is the returned boon, sitting in the cavity unboxed and
+     undrawn by the engine (selfDrawn) until the pop; then the engine draws
+     him, and he flutters down through the bay at NEST_FALL px/s with a
+     little forward drift that dies away, so he crosses the doodad's column
+     about a second later somewhere in the upper half of the lane. Missed,
+     he goes on down to the stone and sits in his bucket until the room
+     carries him off - catchable there too, for a doodad willing to skim
+     the counter. He is not `shy`: nothing in the bay can scare him off, and
+     a hit costs the player a life or the run, never him.
+
+     It all happens in the RIGHT THIRD of the screen, where an ordinary
+     microwave is only telling: popped at the ordinary 238 he came out
+     straight behind the score's digits, which sit over the middle of the
+     lid band. Out at 332 he is clear of them, and has about two seconds of
+     flight to the doodad's column, so there is time to see him and set up
+     under him. The door opens 52 px before he goes so the bucket can be
+     seen hopping in the cavity first, and the heads-up is raised as the
+     nest is BUILT, off the right edge, so its banner has faded by the pop
+     instead of hanging across the middle of the bay he falls through.
+     Every new field is a plain number or flag, so the tape rewinds
+     him and the forecast can step a copy of him: stepBoon rolls no dice. */
+  var NEST_TELL = 430, NEST_DOOR = 384, NEST_POP = 332;
+  var NEST_MX = 28;                  /* his x in the machine: the cavity's middle */
+  var NEST_Y = CEIL + 18;            /* where he comes out: the cavity's foot */
+  var NEST_G = 260, NEST_FALL = 62, NEST_VX = 46, NEST_VY = 30, NEST_DRAG = 2.2;
+  var NEST_REST = FLOOR - 14;        /* sitting on the stone, Couch's FLOOR - 14 */
+
+  function makeMeet(x, run) {
+    var L = book(run), at = placeMachine('micro', x, L);
+    var m = { type: 'spike', side: 'ceil', kind: 'micro', nest: true,
+              x: at.x, w: MSPR.micro.W, lastX: at.x, first: false, deflect: true, spikes: [] };
+    L.machine = { x: at.x, w: m.w, kind: 'micro', plank: L.plank };
+    L.stats.nests = (L.stats.nests || 0) + 1;
+    L.warn = 'nest';
+    if (run && run.born) run.born.push(m);
+    return { type: 'boon', nest: true, x: at.x + NEST_MX, y: NEST_Y, w: 20, mx: NEST_MX,
+             taken: false, phase: 0, dx: 0, dy: 0, selfDrawn: true,
+             out: false, vx: 0, vy: 0, t: 0, landed: false, flap: false, tilt: 0 };
+  }
+
+  /* him, after the engine's scroll: in the cavity until his microwave
+     reaches NEST_POP, then the flutter down, then the bucket on the stone */
+  function stepBoon(ob, dt, obstacles, run) {
+    if (!ob.nest || ob.met) return;
+    if (!ob.out) {
+      /* held in the cavity of his own microwave, which the engine let in a
+         frame after him (it came through run.born) and so stands a frame's
+         scroll to the right of where he was made: read it off the list
+         rather than trusting the two to agree */
+      for (var i = 0; i < obstacles.length; i++) {
+        var o = obstacles[i];
+        if (o.nest && o.type === 'spike' && Math.abs(o.x + ob.mx - ob.x) < 12) { ob.x = o.x + ob.mx; break; }
+      }
+      if (ob.x - ob.mx > NEST_POP) return;
+      ob.out = true; ob.selfDrawn = false;
+      ob.vx = NEST_VX; ob.vy = NEST_VY; ob.t = 0;
+      if (run && run.ledger) cry(run.ledger, 'pop', 1.5);
+      return;
+    }
+    ob.t += dt;
+    if (ob.landed) {
+      ob.flap = false; ob.tilt = 0;
+      if (ob.squash < 1) ob.squash = Math.min(1, ob.squash + dt * 3);
+      return;
+    }
+    ob.vy = Math.min(ob.vy + NEST_G * dt, NEST_FALL);
+    ob.vx -= ob.vx * Math.min(1, NEST_DRAG * dt);
+    ob.dx += ob.vx * dt;
+    ob.y += ob.vy * dt;
+    /* a chick's flutter: the wing beats, the bucket rocks */
+    ob.flap = Math.floor(ob.t * 9) % 2 === 0;
+    ob.tilt = Math.sin(ob.t * 7) * 0.14;
+    if (ob.y >= NEST_REST) {
+      ob.y = NEST_REST; ob.landed = true; ob.squash = 0.72;
+      if (run && run.ledger) cry(run.ledger, 'bop');
+    }
   }
 
   /* ONE MAKER FOR THE KNIVES AND THE GIFTS. The engine says spicy, and
@@ -2987,6 +3160,11 @@ var Counter = (function () {
       if (crossed(lx, x, FR_T1) || crossed(lx, x, FR_T2) || crossed(lx, x, FR_T3)) cry(L, 'tick');
       if (crossed(lx, x, FR_FIRE)) { cry(L, 'slam', 3); L.stats.fired[k]++; }
       if (crossed(lx, x, FR_IN)) cry(L, 'tock');
+    } else if (k === 'micro' && ob.nest) {
+      /* the nest: the ding and the door, and no sparks - what comes out
+         of this one is stepBoon's business */
+      if (crossed(lx, x, NEST_TELL)) cry(L, 'ding');
+      if (crossed(lx, x, NEST_DOOR) || crossed(lx, x, MI_SHUT)) cry(L, 'tock');
     } else if (k === 'micro') {
       if (crossed(lx, x, MI_TELL)) cry(L, 'ding');
       if (crossed(lx, x, MI_DOOR) || crossed(lx, x, MI_SHUT)) cry(L, 'tock');
@@ -3092,7 +3270,10 @@ var Counter = (function () {
         }
       }
     } else if (ob.type === 'boon') {
-      if (!ob.taken) out.push([ob.x + ob.dx - 10, FLOOR - 11 + ob.dy, 21, 11]);
+      /* the nest's hider: no box at all until he is out of the microwave,
+         then his body where the engine draws it */
+      if (ob.nest) { if (ob.out && !ob.met) out.push([ob.x + ob.dx - 8, ob.y - 9, 16, 18]); }
+      else if (!ob.taken) out.push([ob.x + ob.dx - 10, FLOOR - 11 + ob.dy, 21, 11]);
     }
     return out;
   }
@@ -3116,8 +3297,8 @@ var Counter = (function () {
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
     drawPreview: drawPreview, drawOverlay: drawOverlay, drawFront: drawFront,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
-    makeLitter: makeLitter, makeBoon: makeBoon,
-    stepDrop: stepDrop, stepWorld: stepWorld,
+    makeLitter: makeLitter, makeBoon: makeBoon, makeMeet: makeMeet,
+    stepDrop: stepDrop, stepWorld: stepWorld, stepBoon: stepBoon,
     rectsFor: rectsFor,
     /* for the headless checks, read-only: the clocks and the parts */
     machineFrame: machineFrame, espJet: espJet, potColumn: potColumn, blastK: blastK,

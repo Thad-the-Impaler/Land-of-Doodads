@@ -437,7 +437,19 @@ var Audio3 = (function () {
        'shatter' is a long 0.20 burst and comes ten times a minute in here */
     tinkle:  function () { noise({ freq: 4200, dur: 0.12, vol: 0.08, q: 1.2 });
                            tone({ from: 2637, dur: 0.05, type: 'triangle', vol: 0.05 });
-                           tone({ from: 3520, dur: 0.05, type: 'triangle', vol: 0.04, delay: 0.05 }); }
+                           tone({ from: 3520, dur: 0.05, type: 'triangle', vol: 0.04, delay: 0.05 }); },
+
+    /* ---- ROCKY'S RINSE CYCLE (js/scene_play.js, "the wave"). The wave
+       arriving under him: water opening and swelling over a low surge, and
+       two bright squares on top so it is still heard as a pickup ---- */
+    wave:    function () { noise({ freq: 1400, dur: 0.6, vol: 0.12, q: 0.5, attack: 0.08 });
+                           tone({ from: 110, to: 220, dur: 0.45, type: 'sawtooth', vol: 0.06, attack: 0.1 });
+                           tone({ from: 784, dur: 0.07, type: 'square', vol: 0.11, delay: 0.12 });
+                           tone({ from: 1046, dur: 0.2, type: 'square', vol: 0.11, delay: 0.19 }); },
+    /* and letting him down: a splash, then the water running off */
+    wash:    function () { noise({ freq: 900, dur: 0.14, vol: 0.14, q: 0.8 });
+                           noise({ freq: 2200, dur: 0.5, vol: 0.06, q: 0.5, delay: 0.1 });
+                           tone({ from: 520, to: 260, dur: 0.3, type: 'triangle', vol: 0.08 }); }
   };
 
   /* ---------------------------------------------------------- samples

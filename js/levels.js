@@ -994,7 +994,12 @@ var Levels = (function () {
       /* the Tabasco and the mixer heads; no sour, no gold (the gold bean is
          for crows only, js/counter.js GOLD_GIFT) */
       spicyChance: 0.065, whirlChance: 0.055,
-      boonChance: 0.032, boonGap: 10
+      boonChance: 0.032, boonGap: 10,
+      /* Somebody is popping in a microwave once a run, between the
+         fourteenth plank spawned and the twenty-fourth: past the first few
+         machines, and before most runs end. Who it is is the roster's
+         business (Doodads.meetable); how is js/counter.js's makeMeet. */
+      meetAt: 14, meetSpan: 10
     }
   };
 
