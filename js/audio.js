@@ -429,7 +429,7 @@ var Audio3 = (function () {
     /* the drain at CLEAN: two falling gulps, the second a fifth lower */
     glug:    function () { tone({ from: 190, to: 85, dur: 0.42, type: 'triangle', vol: 0.10 });
                            tone({ from: 127, to: 57, dur: 0.42, type: 'triangle', vol: 0.08, delay: 0.32 }); },
-    /* the Bosch's end-of-cycle beep, played three times by three cries 0.5 s apart */
+    /* the dishwasher's end-of-cycle beep, played three times by three cries 0.5 s apart */
     beep:    function () { tone({ from: 2093, dur: 0.11, type: 'square', vol: 0.075 }); },
     /* a soap bubble bursting (quiet; at most one in 0.35 s) */
     bubble:  function () { tone({ from: 900, to: 1500, dur: 0.03, type: 'sine', vol: 0.035 }); },

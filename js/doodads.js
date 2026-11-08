@@ -1080,7 +1080,7 @@ var Doodads = (function () {
          the black tie and the glasses - and fried the way he went, half his
          face gone in the blast, walking out of it to straighten his tie.
          Named for nobody on the card; the art says it. */
-      tagline: 'HALF FRIED. FULLY COMPOSED.',              /* 27 ch, 187px at spacing 2 */
+      tagline: 'TASTE THE FAMILY',                         /* 16 ch, 110px at spacing 2 */
       about: ['FRIED CHICKEN WHO SELLS FRIED CHICKEN.',      /* 38 ch, 227px */
               'HE HIDES IN PLAIN SIGHT.'],                  /* 24 ch, 143px */
       lockedAbout: ['SOMEBODY IN HERE WALKS AWAY FROM FIRE.',   /* 38 ch, 227px */
@@ -1119,7 +1119,7 @@ var Doodads = (function () {
     {
       id: 'pickle',
       name: 'PICKLE',                                      /* 6 ch, 105px at scale 3 */
-      tagline: 'IN A BIT OF A PICKLE',                     /* 20 ch, 138px */
+      tagline: 'JAR IS THRONE',                            /* 13 ch, 89px */
       about: ['A DILL PICKLE, VERY WORRIED.',                /* 28 ch, 167px */
               'ALL THOSE TEETH AND NOTHING TO SAY.'],       /* 35 ch, 209px */
       lockedAbout: ['SOMETHING GREEN IS SOAKING IN HERE.',      /* 35 ch, 209px */

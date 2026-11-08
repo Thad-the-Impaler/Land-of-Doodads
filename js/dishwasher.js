@@ -4,12 +4,12 @@
    The finale of the Kitchen. We have followed the dishes through the
    room - across the island, along the counter, in and out of the
    fridge - and here they are cleansed, so the cycle may be restarted.
-   The door has shut behind you and the Bosch is RUNNING: you are an
+   The door has shut behind you and the machine is RUNNING: you are an
    action camera sealed in the tub, between the lower rack and the
    upper, looking straight at the back wall. Drawn from Dishwasher ref
    1-6 and the crops cut from them: the dark stainless tub with its big
    pressed panels, the water tower up the middle of the back wall, the
-   upper rack's coated wires seen from under them with the grey BOSCH
+   upper rack's coated wires seen from under them with the grey
    handle on its front rail, the lower rack's wire floor, the owner's
    black square plates with the gold ring, the black bowl with the cream
    enamel inside, the big black pan, the ribbed stacking tumblers and
@@ -28,7 +28,7 @@
    (the door is where the camera is, and is never drawn), one wall sheet
    of 470 px that comes past once every 1270 px of travel - and in that
    loop there is ONE tower, TWO big panels on the back wall, ONE panel
-   and ONE rack rail on each side wall, and ONE BOSCH handle on the lid.
+   and ONE rack rail on each side wall, and ONE DOODADS handle on the lid.
    The lid IS the underside of the upper rack; the ground IS the lower
    rack's wire floor with the tub floor and its pool under it. No lamp:
    the only light is the camera's own LED, so the tub is lit from the
@@ -358,14 +358,14 @@ var Dishwasher = (function () {
      three walls side by side, 470 px at 0.37 of the lane's scale, so it
      slides at 470/1270 of the room's speed and comes round once a loop;
      the lid and the ground are the play plane's own surfaces, one loop
-     long at 1.0, so the BOSCH handle and the rack's every wire come round
+     long at 1.0, so the DOODADS handle and the rack's every wire come round
      with it. */
   var LOOP = 1270;
   var WALL_W = 470, WALL_PAR = WALL_W / LOOP;          /* 0.370 */
   var SEC_BACK = 157, SEC_RIGHT = 157;                 /* the left wall is the 156 left over */
   var TOWER_X = 78;                                    /* the tower's centre on the back wall */
   var PANEL_W = 60, PANEL_H = 120, PANEL_Y = 30;       /* a pressed panel, on the sheet */
-  var HANDLE_X = 236, HANDLE_W = 62;                   /* the BOSCH handle on the lid loop */
+  var HANDLE_X = 236, HANDLE_W = 62;                   /* the DOODADS handle on the lid loop */
 
   /* the lid band's rows (0..23) and the ground band's (242..269) */
   var LID_ARM_Y = 11;                                  /* the middle arm's frame's top row */
@@ -762,12 +762,12 @@ var Dishwasher = (function () {
     return t;
   }
 
-  /* THE BOSCH HANDLE (ref 1, 5; crop bosch_handle): the grey bar on the
+  /* THE HANDLE (ref 1, 5; crop bosch_handle): the grey bar on the
      upper rack's front rail, at exactly the lid's height, so from under
      the rack it is its underside - a 62 x 9 bar with rounded ends, a lit
-     top and a deep foot, and the maker's name pressed into it with the
-     ring before it. ONE, once a loop, drawn over the middle arm because
-     it is in front of it. */
+     top and a deep foot, and DOODADS pressed into it where the real one
+     has its maker's name and ring (no real brand on a level). ONE, once a
+     loop, drawn over the middle arm because it is in front of it. */
   function bakeHandle() {
     var W = HANDLE_W, H = 9, t = makeCanvas(W, H), c = t.ctx;
     rect(c, 2, 0, W - 4, H, P.handle);
@@ -779,13 +779,7 @@ var Dishwasher = (function () {
     rect(c, 2, H - 1, W - 4, 1, P.handleDeep);
     rect(c, W - 1, 2, 1, H - 4, P.handleDeep);
     dot(c, W - 2, H - 2, P.handleDeep);
-    var word = 'BOSCH', ww = Font.measure(word, 1), x0 = Math.round((W - ww - 8) / 2) + 8;
-    /* the ring logo, a 5-px hollow circle with its bar */
-    var lx = x0 - 8;
-    rect(c, lx + 1, 1, 3, 1, P.handleInk); rect(c, lx + 1, 7, 3, 1, P.handleInk);
-    rect(c, lx, 2, 1, 5, P.handleInk); rect(c, lx + 4, 2, 1, 5, P.handleInk);
-    rect(c, lx + 2, 2, 1, 5, P.handleInk);
-    rect(c, lx + 1, 2, 3, 1, P.handleLit);
+    var word = 'DOODADS', x0 = Math.round((W - Font.measure(word, 1)) / 2);
     /* pressed in: the letters' light edge under them, then the letters */
     Font.draw(c, word, x0 + 1, 2, { scale: 1, colour: P.handleLit });
     Font.draw(c, word, x0, 1, { scale: 1, colour: P.handleInk });
@@ -2588,7 +2582,7 @@ var Dishwasher = (function () {
     ctx.globalAlpha = a0;
   }
 
-  /* THE READOUT, the Bosch's own display, on the front layer IN THE LID
+  /* THE READOUT, the machine's own display, on the front layer IN THE LID
      BAND at its right end, in one line: the cycle (dim), the part, and
      the time left in it as the machine counts it. Up here it can never
      sit over the mouth of a hanging stack as one comes in (the lead
@@ -3099,7 +3093,7 @@ var Dishwasher = (function () {
 
   /* THE LID: the rack's underside, the middle arm of every station
      turning in its recess with the top of its jets coming out of its
-     nozzles, and the BOSCH handle over all of it, once a loop */
+     nozzles, and the DOODADS handle over all of it, once a loop */
   function drawCeiling(ctx, scroll) {
     var jx = rattleDX();
     tileX(ctx, T.lid.canvas, scroll - jx, 0);
@@ -3186,7 +3180,7 @@ var Dishwasher = (function () {
   }
 
   /* THE CALM DISHWASHER for any menu pointed at it: the pump OFF - the
-     walls at their parallax, the rack and the BOSCH handle, the pool
+     walls at their parallax, the rack and the DOODADS handle, the pool
      still, one slow drip off the upper rack every two seconds, and the
      camera's falloff a little stronger. No stacks, no arms, no jets, no
      bubbles, no beads, no readout. */

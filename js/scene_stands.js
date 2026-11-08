@@ -758,7 +758,7 @@ var StandsScene = (function () {
 
     /* the dishwasher's upper rack, pulled out and seen from the front:
        the ribbed tumblers upside down behind its coated wires, the grey
-       BOSCH handle on the front rail, and the hot sauce and the tablet
+       DOODADS handle on the front rail, and the hot sauce and the tablet
        standing on top. The water is live: it drips, and on the trick the
        arm under the rack throws a jet up through it. */
     dishwasher: function (c, w, h, P, m) {
