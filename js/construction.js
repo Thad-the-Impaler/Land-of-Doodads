@@ -169,8 +169,9 @@ var Construction = (function () {
     spike: ['▲ BUZZSAWS ▲', 'SOMEBODY LEFT THEM RUNNING']
   };
 
-  /* the thirteen colours the generic level-select window would use. This
-     level paints its own cover below, but the table stays honest. */
+  /* the thirteen colours the contract publishes for a level's little
+     window. The cover itself is COVER, below; tv.js and the stands still
+     read PREVIEW.back, so the table stays honest. */
   var PREVIEW = {
     back: P.stuccoMid, backAlt: P.stuccoLit, seam: P.stuccoShade,
     beam: P.lumMid, beamDark: P.lumShadow, beamLight: P.lumHi,
@@ -1506,140 +1507,310 @@ var Construction = (function () {
 
   /* ------------------------------------------------- the cover art
 
-     The little live window on the level select: 118x114 on the big card,
-     82x94 on the side ones. The generic cover is the Coop's shapes, which
-     read as neither level, so this paints the yard's own - stucco with its
-     shade line, the lid and its cord, leaning plywood, two stacks of
-     lumber with a gap, a saw sliding past and the speckled slab. The
-     caller has already clipped to the box, so nothing here clips or
-     restores. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var slab = y + h - Math.round(h * 0.15);
-    var lidY = y + Math.round(h * 0.08);
-    var i, u, nx;
+     The Construction Zone's painters for its cover (js/cover.js lays it
+     out and times it): stucco with its shade line, leaning plywood and a
+     charcoal board drifting past, lumber stacks strapped in steel for
+     columns, the plywood lid on its angle iron with the cord slung along
+     it, the speckled slab, a buzzsaw turning in the open spans and a 2x4
+     coming down. */
 
-    /* 1. the stucco, sun above and shade below a hard line */
-    ctx.fillStyle = P.stuccoMid; ctx.fillRect(x, y, w, h);
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.5), P.stuccoSun, 4);
-    Tint.rect(ctx, x, y + h - 40, w, 40, P.stuccoShade, 4);
-    Tint.rect(ctx, x, y + Math.round(h * 0.45), w, h, P.stuccoShade, 2);
+  /* an integer hash, so a painter can pick a variant off an index rather
+     than off Math.random: a cover is redrawn in the middle of a run */
+  function hash(n) {
+    n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d);
+    n = Math.imul(n ^ (n >>> 12), 0x297a2d39);
+    return (n ^ (n >>> 15)) >>> 0;
+  }
 
-    /* 2. the plywood lid, on its steel angle, with the cord slung along it */
-    ctx.fillStyle = P.plyMid;    ctx.fillRect(x, y, w, lidY - y);
-    ctx.fillStyle = P.plyGrain;  ctx.fillRect(x, y + Math.round((lidY - y) * 0.6), w, 1);
-    ctx.fillStyle = P.steelBlack; ctx.fillRect(x, lidY, w, 2);
-    for (i = 10; i < w - 10; i++) {
-      u = (i - 10) / Math.max(1, w - 20);
-      var cy = lidY + 2 + Math.round(Math.sin(u * Math.PI) * 5);
-      ctx.fillStyle = P.cord; ctx.fillRect(x + i, cy, 1, 1);
-      if (Math.abs(u - 0.5) < 0.04) { ctx.fillStyle = P.cordHi; ctx.fillRect(x + i, cy - 1, 1, 1); }
+  /* One buzzsaw in a cover: a disc of radius R standing `len` rows out of
+     its slot, in outline, its rim pixels swapping ten times a second - a
+     spin without frames, and the spin is the warning, as in the level.
+     `rise` is how far its sawdust may climb short of the doodad's line. */
+  function coverSaw(ctx, S, cx, R, len, down, rise) {
+    var q = S.k * 2.4, dir = down ? 1 : -1, j, dy, hw, y;
+    var mouth = down ? S.top + 2 : S.floor - 3;              /* the row against the slot */
+    var flip = Math.floor(S.t * 10) % 2;
+    function rowY(r) { return mouth + dir * (len - 1 - r); }  /* r = 0 is the outer rim */
+    /* half-widths sampled at pixel centres, so the rim is a short flat
+       run rather than one pixel sticking up like a nipple */
+    function half(r) { dy = R - r - 0.5; return Math.round(Math.sqrt(Math.max(0, R * R - dy * dy))); }
+    for (j = 0; j < len; j++) {
+      hw = half(j); y = rowY(j);
+      ctx.fillStyle = P.outline;  ctx.fillRect(cx - hw - 1, y, hw * 2 + 3, 1);
+      ctx.fillStyle = P.nailMid;  ctx.fillRect(cx - hw, y, hw * 2 + 1, 1);
+      ctx.fillStyle = P.bladeEdge; ctx.fillRect(cx - hw, y, 1, 1); ctx.fillRect(cx + hw, y, 1, 1);
+      /* the teeth: every other pixel of the rim's outline is a bright tip
+         instead, and they swap places as it turns */
+      ctx.fillStyle = P.bladeHi;
+      if ((j + flip) % 2) { ctx.fillRect(cx - hw - 1, y, 1, 1); ctx.fillRect(cx + hw + 1, y, 1, 1); }
     }
-
-    /* 2b. stucco tooth. Without it the cover is a flat tan field, and a
-       flat field is exactly what a stucco wall must not look like. */
-    for (i = 0; i < w * 2; i++) {
-      var n = (i * 1103515245 + 12345) >>> 0;
-      ctx.fillStyle = (n & 3) ? P.stuccoDark : P.stuccoLit;
-      ctx.fillRect(x + (n >>> 9) % w, lidY + 2 + (n >>> 17) % Math.max(1, slab - lidY - 2), 1, 1);
+    hw = half(0); y = rowY(0) - dir;
+    for (j = -hw; j <= hw; j++) {
+      ctx.fillStyle = (j + hw + flip) % 2 ? P.bladeHi : P.outline;
+      ctx.fillRect(cx + j, y, 1, 1);
     }
+    if (len > R) { ctx.fillStyle = P.nailDark; ctx.fillRect(cx, rowY(R), 1, 1); }   /* the hub */
+    /* the slot, and the brackets the arbor runs through */
+    var sy = down ? S.top : S.floor - 2, bw = Math.max(2, Math.round(3 * q));
+    ctx.fillStyle = P.steelBlack; ctx.fillRect(cx - R - 2, sy, R * 2 + 5, 2);
+    [cx - R - 2 - bw, cx + R + 3].forEach(function (bx) {
+      ctx.fillStyle = P.steelBlack; ctx.fillRect(bx, sy, bw, 2);
+      ctx.fillStyle = P.steelHi;    ctx.fillRect(bx, down ? sy + 1 : sy, bw, 1);
+    });
+    /* sawdust coming off the cut */
+    for (var k = 0; k < 2; k++) {
+      var kk = mod(S.t * 0.8 + k * 0.5, 1);
+      var up = Math.min(rise, len + 1 + Math.round((2 + kk * 6) * q));
+      if (up <= len) continue;
+      ctx.fillStyle = k ? P.sawdust : P.plyPale;
+      ctx.fillRect(cx - R + Math.round(kk * R * 2), mouth + dir * up, 1, 1);
+    }
+  }
 
-    /* 3. a leaning sheet with a charcoal board in front, drifting slowly.
-       Two of them a period apart, so one is always in frame - one sheet
-       alone leaves the cover bare for half of its cycle. */
-    var sw = Math.round(w * 0.3);
-    /* the period is shorter than the window, so one sheet is entering as
-       the last one leaves and the wall is never bare */
-    var period3 = Math.round(w * 0.8);
-    var stop = y + Math.round(h * 0.25);
-    var bw = Math.round(w * 0.12), btop = y + Math.round(h * 0.4);
-    for (var c3 = 0; c3 < 3; c3++) {
-      var sx = Math.round(x + w - mod(s * 0.3, period3)) - c3 * period3;
-      if (sx > x + w || sx + sw + 8 < x) continue;
-      for (i = 0; slab - i > stop; i++) {
-        var off = Math.round(i / Math.max(1, slab - stop) * 6);
-        ctx.fillStyle = P.plyLit;  ctx.fillRect(sx + off, slab - i, sw, 1);
-        ctx.fillStyle = P.plyMid;  ctx.fillRect(sx + off + sw - 2, slab - i, 2, 1);
-        ctx.fillStyle = P.plyEdge; ctx.fillRect(sx + off - 1, slab - i, 1, 1);
-        ctx.fillRect(sx + off + sw, slab - i, 1, 1);
+  var COVER = {
+    halo: P.stuccoShade,
+    ink: P.outline,
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, q = S.k * 2.4, i, c, n, off;
+      function Q(a) { return Math.max(1, Math.round(a * q)); }
+
+      /* 1. the stucco, sun above and shade below a hard line */
+      ctx.fillStyle = P.stuccoMid; ctx.fillRect(x, y, w, h);
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.5), P.stuccoSun, 4);
+      Tint.rect(ctx, x, y + h - Q(40), w, Q(40), P.stuccoShade, 4);
+      Tint.rect(ctx, x, y + Math.round(h * 0.45), w, h - Math.round(h * 0.45), P.stuccoShade, 2);
+
+      /* 2. stucco tooth, two specks a column in wall space. Without it the
+         wall is a flat tan field, which is exactly what stucco is not. */
+      off = Math.floor(S.s * 0.14);
+      for (c = off; c < off + w; c++) {
+        for (i = 0; i < 2; i++) {
+          n = hash(c * 2 + i + 5150);
+          ctx.fillStyle = n & 3 ? P.stuccoDark : P.stuccoLit;
+          ctx.fillRect(x + c - off, S.top + (n >>> 9) % S.lane, 1, 1);
+        }
       }
-      cathedral(ctx, sx + Math.round(sw / 2), slab - Math.round(h * 0.35),
-                Math.round(w * 0.06), Math.round(h * 0.16), 1);
-      ctx.fillStyle = P.slate;   ctx.fillRect(sx + 4, btop, bw, slab - btop);
-      ctx.fillStyle = P.slateHi; ctx.fillRect(sx + 4, btop, 1, slab - btop);
-    }
 
-    /* 4. two stacks of lumber with a gap you could fly through */
-    var period = big ? 46 : 38;
-    var span = slab - lidY;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - mod(s + i * period, period * 3));
-      if (ox < x - 12 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.36);
-      var gapY = Math.round(lidY + 4 + ((i * 19) % Math.max(1, span - gapH - 10)));
-      stack(ctx, ox, lidY, gapY - lidY);
-      stack(ctx, ox, gapY + gapH, slab - gapY - gapH);
-    }
+      /* 3. leaning sheets of plywood, each with a charcoal board stood in
+         front of it. The period is shorter than the card, so one is
+         always coming on as the last goes off and the wall is never bare. */
+      off = S.s * 0.42;
+      var period = Math.round(w * 0.8), sw = Math.round(w * 0.3), shear = Q(6);
+      var stop = S.top + Math.round(S.lane * 0.2), tall = S.floor - stop;
+      var bw = Math.round(w * 0.12), btop = S.top + Math.round(S.lane * 0.38);
+      for (c = Math.floor(off / period) - 1; c * period - off < w; c++) {
+        var sx = Math.round(x + c * period - off);
+        for (i = 0; i < tall; i++) {
+          var o = Math.round(i / tall * shear), ry = S.floor - i;
+          ctx.fillStyle = P.plyLit;  ctx.fillRect(sx + o, ry, sw, 1);
+          ctx.fillStyle = P.plyMid;  ctx.fillRect(sx + o + sw - 2, ry, 2, 1);
+          ctx.fillStyle = P.plyEdge; ctx.fillRect(sx + o - 1, ry, 1, 1); ctx.fillRect(sx + o + sw, ry, 1, 1);
+        }
+        cathedral(ctx, sx + (sw >> 1) + (shear >> 1), S.floor - Math.round(S.lane * 0.43),
+                  Math.max(1, Math.round(w * 0.06)), Math.max(2, Math.round(S.lane * 0.2)), 1);
+        ctx.fillStyle = P.slate;   ctx.fillRect(sx + Q(4), btop, bw, S.floor - btop);
+        ctx.fillStyle = P.slateHi; ctx.fillRect(sx + Q(4), btop, 1, S.floor - btop);
+        ctx.fillStyle = P.outline; ctx.fillRect(sx + Q(4) - 1, btop, bw + 2, 1);
+      }
 
-    /* 5. the slab, with its white aggregate crawling past */
-    ctx.fillStyle = P.concLit; ctx.fillRect(x, slab - 3, w, 3);
-    ctx.fillStyle = P.concMid; ctx.fillRect(x, slab, w, y + h - slab);
-    Tint.rect(ctx, x, slab, w, y + h - slab, P.concDark, 6);
-    ctx.fillStyle = P.concHi;  ctx.fillRect(x, slab, w, 1);
-    for (i = 0; i < w / 4; i++) {
-      var cx2 = x + ((i * 11 + Math.round(s)) % w);
-      ctx.fillStyle = i % 3 ? P.concHi : P.concDark;
-      ctx.fillRect(cx2, slab + 2 + (i % 3), 2, 1);
-    }
-
-    /* 6. a floor buzzsaw sliding past, its teeth swapping as it turns. It
-       goes on AFTER the slab: painted before it, the curb strip buries
-       three of the four rows that were meant to show. */
-    nx = Math.round(x + w - mod(s + 31, w + 30));
-    var half = [[3, 3], [1, 7], [0, 9], [0, 9]];
-    var flip = Math.floor(s / 3) % 2;
-    for (i = 0; i < half.length; i++) {
-      ctx.fillStyle = P.nailMid;
-      ctx.fillRect(nx + half[i][0], slab - 4 + i, half[i][1], 1);
-    }
-    ctx.fillStyle = flip ? P.bladeEdge : P.nailMid; ctx.fillRect(nx + 3, slab - 4, 1, 1);
-    ctx.fillStyle = flip ? P.nailMid : P.bladeEdge; ctx.fillRect(nx + 5, slab - 4, 1, 1);
-    ctx.fillStyle = P.steelBlack; ctx.fillRect(nx - 2, slab, 13, 2);
-
-    /* 7. a beam coming down */
-    var ty = y + 8 + mod(s * 1.6, slab - y - 14);
-    ctx.fillStyle = P.lumMid; ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 3, 9);
-    ctx.fillStyle = P.lumHi;  ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 1, 1);
-
-    /* 8. the doodad flying it, with a halo so it does not vanish into the
-       stucco the way a tan bird against a tan wall would */
-    var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.stuccoShade, 5);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 9. and the warm air over the whole yard */
-    Tint.rect(ctx, x, y, w, h, P.sunHaze, 1);
-  }
-
-  /* one little lumber stack inside a cover */
-  function stack(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.lumMid;  ctx.fillRect(x, y, 9, h);
-    ctx.fillStyle = P.lumHi;   ctx.fillRect(x + 1, y, 1, h);
-    ctx.fillStyle = P.lumDark; ctx.fillRect(x + 7, y, 1, h);
-    for (var sy = y + 5; sy < y + h; sy += 5) {
-      ctx.fillStyle = P.lumShadow; ctx.fillRect(x, sy, 9, 1);
-    }
-    ctx.fillStyle = P.steelBlack; ctx.fillRect(x + 3, y, 1, h);
-    ctx.fillStyle = P.outline;
-    ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 8, y, 1, h);
-  }
+      /* 4. everything behind the action stands back a step - this is what
+         lifts a lumber-coloured column off a plywood-coloured yard - then
+         the warm air under the lid and the slab's gloom down low */
+      Tint.rect(ctx, x, y, w, h, P.stuccoShade, 3);
+      Tint.rect(ctx, x, S.top, w, Math.round(60 * S.k), P.sunHaze, 2);
+      Tint.rect(ctx, x, S.floor - Math.round(70 * S.k), w, Math.round(70 * S.k), P.void, 4);
+    },
+    /* A bundle of stacked cut lumber, banded with black steel straps: a
+       pile seen from the side, every third course laid crosswise so you
+       see the ends of those pieces. Courses are counted from the cap, so
+       the part one lands against the lid or the slab. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var q = S.k * 2.4, capH = Math.max(2, Math.round(9 * S.k)), pr = Math.max(1, Math.round(4 * S.k));
+      var top = end === 'top', body = h - capH, by = top ? y : y + capH, seed = p.i * 2 + (top ? 0 : 1);
+      var ch = Math.max(3, Math.round(8.5 * S.k)), j, n, k;
+      Tint.rect(ctx, x + w, by, Math.max(1, Math.round(4 * S.k)), body, P.void, 7);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, by, w, body); ctx.clip();
+      ctx.fillStyle = P.lumShadow; ctx.fillRect(x, by, w, body);
+      for (j = 0; j * ch < body; j++) {
+        var cy = top ? by + body - (j + 1) * ch : by + j * ch;
+        n = hash(seed * 41 + j);
+        var jog = n % 3 - 1, cx = x + jog;
+        if (j % 3 === 2) {
+          /* a cross course: the ends of the pieces, a ring in each */
+          var ew = Math.max(3, Math.round(8 * S.k));
+          ctx.fillStyle = P.lumEnd; ctx.fillRect(cx, cy, w, ch - 1);
+          for (k = 1; k < w; k += ew) {
+            ctx.fillStyle = P.plyDark;   ctx.fillRect(cx + k, cy + ch - 3, Math.min(2, ew - 1), 1);
+            ctx.fillStyle = P.lumShadow; ctx.fillRect(cx + k + ew - 1, cy, 1, ch - 1);
+          }
+        } else {
+          ctx.fillStyle = P.lumHi;  ctx.fillRect(cx, cy, w, 1);              /* the lit arris */
+          ctx.fillStyle = P.lumMid; ctx.fillRect(cx, cy + 1, w, ch - 2);
+          if (ch >= 4) { ctx.fillStyle = P.lumDark; ctx.fillRect(cx, cy + ch - 2, w, 1); }
+          /* a grain tick */
+          ctx.fillStyle = (n >>> 4) & 1 ? P.lumDark : P.lumHi;
+          ctx.fillRect(cx + 2 + (n >>> 8) % Math.max(1, w - 6), cy + 1, 2 + (n >>> 12) % 3, 1);
+        }
+        ctx.fillStyle = P.lumShadow; ctx.fillRect(x, cy + ch - 1, w, 1);   /* the gap to the next piece */
+      }
+      /* hazard tape round one bundle in three, in its longer half, its
+         stripes in the column's own coordinates so they ride with it */
+      var tH = p.gapY - S.top, bH = S.floor - p.gapY - p.gapH;
+      if (hash(p.i + 11) % 3 === 1 && (top ? tH >= bH : bH > tH) && body > ch * 3) {
+        var th = Math.max(2, Math.round(5 * S.k)), ty = by + (body >> 1) - (th >> 1);
+        for (var ly = 0; ly < th; ly++) {
+          for (var lx = 0; lx < w; lx++) {
+            ctx.fillStyle = (lx + ly) % 6 < 2 ? P.steelBlack : P.crateMid;
+            ctx.fillRect(x + lx, ty + ly, 1, 1);
+          }
+        }
+      }
+      /* the steel packing straps holding it together - one on a thin card */
+      var straps = w >= 9 ? [Math.round(7 * S.k), Math.round(26 * S.k)] : [w >> 1];
+      var hstep = Math.max(4, Math.round(9 * q));
+      for (k = 0; k < straps.length; k++) {
+        ctx.fillStyle = P.steelBlack; ctx.fillRect(x + straps[k], by, 1, body);
+        ctx.fillStyle = P.steelHi;
+        for (j = hstep >> 1; j < body; j += hstep) ctx.fillRect(x + straps[k], top ? by + body - 1 - j : by + j, 1, 1);
+      }
+      ctx.restore();
+      ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+      /* a nail left in the side of a piece */
+      if (body > capH + 6 && w >= 9) {
+        n = hash(seed * 7 + 2);
+        var side = n & 1, nl = Math.max(1, Math.round(4 * S.k)), ny = by + 2 + (n >>> 4) % (body - 4);
+        var nx = side ? x + w : x - nl;
+        ctx.fillStyle = P.nailMid;   ctx.fillRect(nx, ny, nl, 1);
+        ctx.fillStyle = P.nailLight; ctx.fillRect(side ? nx + nl : nx - 1, ny - 1, 1, 2);
+      }
+      /* THE CAP: a plywood offcut seen edge-on, its outline row facing the
+         gap, its plies behind, screwed on at both ends */
+      var cw = w + pr * 2, cx0 = x - pr, cyy = top ? y + h - capH : y;
+      var rows = capH >= 4 ? [P.outline, P.plyPale, P.plyGrain, P.plyDark]
+               : (capH === 3 ? [P.outline, P.plyPale, P.plyDark] : [P.outline, P.plyPale]);
+      for (j = 4; j < capH; j++) rows.splice(2, 0, j % 2 ? P.plyPale : P.plyLit);
+      for (j = 0; j < capH; j++) {
+        ctx.fillStyle = rows[top ? capH - 1 - j : j];
+        ctx.fillRect(cx0, cyy + j, cw, 1);
+      }
+      ctx.fillStyle = P.plyDark; ctx.fillRect(cx0 + 1, cyy, 1, capH); ctx.fillRect(cx0 + cw - 2, cyy, 1, capH);
+      ctx.fillStyle = P.outline; ctx.fillRect(cx0, cyy, 1, capH); ctx.fillRect(cx0 + cw - 1, cyy, 1, capH);
+      var pale = cyy + (top ? capH - 2 : 1), screw = capH >= 4 ? 2 : 1;
+      ctx.fillStyle = P.nailLight;
+      ctx.fillRect(cx0 + 2, pale, screw, 1); ctx.fillRect(cx0 + cw - 2 - screw, pale, screw, 1);
+    },
+    /* the plywood lid on its angle iron, with the cord slung along it */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, d = S.top - S.y, q = S.k * 2.4, off = Math.floor(S.s), c, n, i;
+      function Q(a) { return Math.max(1, Math.round(a * q)); }
+      var iron = Math.max(1, Math.round(7 * S.k)), ply = Math.max(1, d - iron - 2);
+      var ironY = S.top - 1 - iron;
+      ctx.fillStyle = P.plyMid; ctx.fillRect(x, S.y, w, ply);
+      /* grain streaks, a knot now and then, and where two sheets meet */
+      var step = Math.max(10, Math.round(30 * q));
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        n = hash(c + 1290);
+        var gx = x + c * step - off;
+        if (ply >= 3) {
+          ctx.fillStyle = P.plyGrain;
+          ctx.fillRect(gx + (n >>> 4) % step, S.y + 1 + (n >>> 8) % (ply - 2), Q(8 + (n >>> 12) % 14), 1);
+        }
+        if (n % 3 === 0 && ply >= 4) { ctx.fillStyle = P.plyDark; ctx.fillRect(gx + (n >>> 16) % step, S.y + 1 + (n >>> 20) % (ply - 3), 2, 1); }
+        if (n % 4 === 1) { ctx.fillStyle = P.plyEdge; ctx.fillRect(gx, S.y, 1, ply); }
+      }
+      ctx.fillStyle = P.plyEdge;    ctx.fillRect(x, ironY - 1, w, 1);
+      ctx.fillStyle = P.steelBlack; ctx.fillRect(x, ironY, w, iron);
+      if (iron >= 2) { ctx.fillStyle = P.steelMid; ctx.fillRect(x, ironY, w, 1); }
+      if (iron >= 3) { ctx.fillStyle = P.steelHi;  ctx.fillRect(x, ironY + 1, w, 1); }
+      ctx.fillStyle = P.void;       ctx.fillRect(x, S.top - 1, w, 1);
+      /* the bolt heads, and the orange cord sagging between its hooks,
+         the light on the flat of the sag; it never hangs below the lid */
+      var per = Math.round(128 * S.k), run = Math.round(88 * S.k), sag = iron + 1;
+      for (c = Math.floor(off / per) - 1; c * per - off < w; c++) {
+        var px = x + c * per - off;
+        if (iron >= 2) { ctx.fillStyle = P.nailLight; ctx.fillRect(px + Math.round(12 * S.k), ironY + iron - 2, 2, iron >= 3 ? 2 : 1); }
+        var cx0 = px + Math.round(20 * S.k);
+        for (i = 0; i < run; i++) {
+          var cy = Math.min(S.top - 1, ironY - 1 + Math.round(Math.sin(i / run * Math.PI) * sag));
+          ctx.fillStyle = P.cord; ctx.fillRect(cx0 + i, cy, 1, 1);
+          if (Math.abs(i / run - 0.5) < 0.07 && cy > S.y) { ctx.fillStyle = P.cordHi; ctx.fillRect(cx0 + i, cy - 1, 1, 1); }
+        }
+      }
+      /* the shadow the lid throws down into the yard */
+      Tint.rect(ctx, x, S.top, w, Math.round(11 * S.k), P.void, 6);
+    },
+    /* the slab: a lit lip, white aggregate, a control joint, gravel along
+       the bottom and a run of cord lying on it */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, d = S.y + S.h - f, q = S.k * 2.4, off = Math.floor(S.s), c, n;
+      Tint.rect(ctx, x, f - Math.round(10 * S.k), w, Math.round(10 * S.k), P.void, 5);
+      ctx.fillStyle = P.concMid; ctx.fillRect(x, f, w, d);
+      Tint.rect(ctx, x, f, w, d, P.concDark, 4);
+      var grav = Math.max(1, Math.round(d * 0.4));
+      Tint.rect(ctx, x, f + d - grav, w, grav, P.gravel, 8);
+      for (c = Math.floor(off / 3) - 1; c * 3 - off < w; c++) {
+        n = hash(c + 2718);
+        var ax = x + c * 3 - off;
+        if (n % 3 !== 2) {
+          var v = (n >>> 4) % 10;
+          ctx.fillStyle = v < 4 ? P.concHi : (v < 7 ? P.concDark : P.concLit);
+          ctx.fillRect(ax, f + 2 + (n >>> 8) % Math.max(1, d - grav - 2), (n >>> 12) % 5 ? 1 : 2, 1);
+        }
+        if (n % 2) {
+          ctx.fillStyle = (n >>> 16) % 2 ? P.gravel : P.concLit;
+          ctx.fillRect(ax + 1, f + d - grav + (n >>> 20) % grav, 1, 1);
+        }
+      }
+      var per = Math.max(20, Math.round(160 * S.k));
+      for (c = Math.floor(off / per) - 1; c * per - off < w + 2; c++) {
+        var jx = x + c * per - off;
+        ctx.fillStyle = P.concDark; ctx.fillRect(jx, f, 2, d - grav);
+        ctx.fillStyle = P.concHi;   ctx.fillRect(jx + 2, f, 1, d - grav);
+        /* the cord trailing away across the slab */
+        if (d >= 7) {
+          ctx.fillStyle = P.cord; ctx.fillRect(jx + Math.round(per * 0.4), f + Math.round(d * 0.45), Math.max(4, Math.round(20 * q)), 1);
+        }
+      }
+      ctx.fillStyle = P.concHi;  ctx.fillRect(x, f, w, 1);
+      ctx.fillStyle = P.concLit; ctx.fillRect(x, f + 1, w, 1);
+    },
+    /* THE BUZZSAWS, the level's own hazard, in the even spans: up out of
+       the slab or down out of the lid, whichever leaves the more room
+       short of the doodad's line - the gaps climb and fall by turns, so
+       that comes out slab, lid, slab - and never into the player's path */
+    props: function (ctx, S) {
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var up = sp.line.top - S.top - 2, down = S.floor - 3 - sp.line.bottom;
+        var hang = up > down, room = Math.max(up, down) - 1;
+        var R = Math.max(2, Math.round((hash(sp.i + 808) & 1 ? 12 : 9) * S.k));
+        var len = Math.min(room, R + Math.round(R * 0.6));
+        if (len < 2) continue;
+        coverSaw(ctx, S, Math.round((sp.x0 + sp.x1) / 2), R, len, hang, room);
+      }
+    },
+    /* a 2x4 coming down, lying flat or falling on end */
+    drop: function (ctx, d, S) {
+      var L = Math.max(6, Math.round(26 * S.k)), T = 4, upright = mod(d.i, 4) === 1;
+      var bw = upright ? T : L, bh = upright ? L : T, x0 = d.x - (bw >> 1), y0 = d.y - (bh >> 1);
+      var band = [P.outline, P.lumHi, P.lumMid, P.outline];
+      for (var i = 0; i < T; i++) {
+        ctx.fillStyle = band[i];
+        if (upright) ctx.fillRect(x0 + i, y0, 1, bh); else ctx.fillRect(x0, y0 + i, bw, 1);
+      }
+      /* the sawn ends, the end grain showing in each */
+      ctx.fillStyle = P.outline;
+      if (upright) { ctx.fillRect(x0, y0, T, 1); ctx.fillRect(x0, y0 + L - 1, T, 1); }
+      else { ctx.fillRect(x0, y0, 1, T); ctx.fillRect(x0 + L - 1, y0, 1, T); }
+      ctx.fillStyle = P.lumEnd;
+      if (upright) { ctx.fillRect(x0 + 1, y0 + 1, 2, 1); ctx.fillRect(x0 + 1, y0 + L - 2, 2, 1); }
+      else { ctx.fillRect(x0 + 1, y0 + 1, 1, 2); ctx.fillRect(x0 + L - 2, y0 + 1, 1, 2); }
+    },
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.sunHaze, 1); }
+  };
 
   /* ---------------------------------------------------- generation */
 
@@ -1791,7 +1962,7 @@ var Construction = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     BOON_NAME: BOON_NAME,
     build: function () { build(); buildSprites(); },
@@ -1799,7 +1970,6 @@ var Construction = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor

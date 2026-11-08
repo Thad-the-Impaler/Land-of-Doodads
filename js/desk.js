@@ -530,10 +530,10 @@ var Desk = (function () {
     ceil:  LivingRoom.WARN_CEIL
   };
 
-  /* the thirteen colours the generic level-select window would use. This
-     bay paints its own cover below; the table stays honest, and it is
-     honest about a room - pale oak on the floor, a book tower for a
-     beam, an app icon for a spike. */
+  /* the thirteen colours the generic cover would use. This bay paints
+     its own (see COVER); the table stays honest, and it is honest about
+     a room - pale oak on the floor, a book tower for a beam, an app icon
+     for a spike. The TV and the stands read `back` off it. */
   var PREVIEW = {
     back: P.wallMid, backAlt: P.wallDark, seam: P.wallDeep,
     beam: P.bookRed, beamDark: P.bookBlack, beamLight: P.pages,
@@ -2124,270 +2124,364 @@ var Desk = (function () {
   /* ================================================================
      THE COVER ART
 
-     118x114 on the big card, 82x94 on the side ones. The caller has
-     already clipped to the box, so nothing here clips or restores.
+     The Desk's painters for its cover. js/cover.js lays it out, times
+     it and paints the doodad; this says what the bay looks like.
 
      It has to look like the level actually looks, which for this bay
      means four things have to be in it: a PALE TOP - the only cover in
      the game whose ceiling is plaster rather than sky or rafters, and
      the tell that this is a room; a shutter; the desk with its drawers
-     and its three lit screens, every one of them running its own
-     sequence; and the app icon with its red badge, bobbing, which is
-     the one thing nobody will mistake for another level.
+     and its lit screens, every one of them running its own sequence;
+     and the app icon with its red badge, which is the one thing nobody
+     will mistake for another level. The book towers are the columns.
      ================================================================ */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var lidY = y + Math.round(h * 0.08);
-    /* The desktop sits at 70% and the boards start at 85%, which leaves
-       fifteen per cent of the card for the drawers under it. At the 78%
-       the first draft used, the bank was two pixels tall on the big card
-       and one on the small one - a desk with no drawers in it, in the
-       cover for a level called THE DESK. */
-    var deskY = y + Math.round(h * 0.70);
-    var oakY = y + h - Math.round(h * 0.15);
-    var i;
 
-    /* 1. the wall, with the lamp pool on the left third. Three nested
-       bands rather than one, so it reads as light falling off rather
-       than as a rectangle somebody painted a different colour. */
-    ctx.fillStyle = P.wallMid; ctx.fillRect(x, y, w, h);
-    Tint.rect(ctx, x, y, Math.round(w * 0.40), h, P.wallLamp, 3);
-    Tint.rect(ctx, x, y + Math.round(h * 0.2), Math.round(w * 0.28), Math.round(h * 0.6), P.wallLamp, 3);
-    Tint.rect(ctx, x, y + Math.round(h * 0.35), Math.round(w * 0.16), Math.round(h * 0.3), P.wallLamp, 3);
-    Tint.rect(ctx, x + Math.round(w * 0.5), y, Math.round(w * 0.5), h, P.wallDark, 4);
+  /* the desktop's row on a card: DESK_Y, carried over by the lane */
+  function coverDeskY(S) { return S.top + Math.round(S.lane * (DESK_Y - CEIL) / (FLOOR - CEIL)); }
 
-    /* 2. the ceiling strip, and it is THE WHOLE POINT OF THIS COVER.
-       Every other card in the game has sky, leaf or rafters across the
-       top; this one has plaster and crown moulding, and the four hard
-       rows under it are the same four rows the bay itself uses. A player
-       looking at the level select learns from this picture alone that
-       the Living Room has a lid, before they are ever told it kills. */
-    ctx.fillStyle = R.plasterMid; ctx.fillRect(x, y, w, lidY - y);
-    ctx.fillStyle = R.plasterLit; ctx.fillRect(x + Math.round(w * 0.3), y, Math.round(w * 0.3), lidY - y);
-    ctx.fillStyle = R.crown;      ctx.fillRect(x, lidY, w, 1);
-    ctx.fillStyle = R.plasterLit; ctx.fillRect(x, lidY + 1, w, 1);
-    ctx.fillStyle = R.crownShade; ctx.fillRect(x, lidY + 2, w, 1);
-    ctx.fillStyle = R.outline;    ctx.fillRect(x, lidY + 3, w, 1);
-    /* one pendant hanging under it, sliding past */
-    var px0 = Math.round(x + w - mod(s * 0.5, w + 30));
-    if (px0 > x + 2 && px0 < x + w - 3) {
-      ctx.fillStyle = R.lampRod;   ctx.fillRect(px0, y, 1, lidY - y - 3);
-      ctx.fillStyle = R.lampGlass; ctx.fillRect(px0 - 2, lidY - 4, 5, 3);
-      ctx.fillStyle = R.lampCore;  ctx.fillRect(px0, lidY - 3, 1, 1);
-    }
+  var COVER = {
+    halo: P.shade,
+    ink: P.outline,
 
-    /* 3. a shutter, upper right - AND THE DAY BEHIND IT. The pitch is
-       five here and not the bay's six: three of slat, one of shadow and
-       one of sky, with the bay's lit arris dropped because a single pale
-       row at card scale only greys the slat it sits under. The sky row
-       is the one thing on this card that is not a room, and the cover
-       has to agree with the level it is a picture of - the window is
-       where this bay's daylight comes from. */
-    var shW = Math.round(w * 0.3), shX = x + w - shW - 4, shH = Math.round(h * 0.26);
-    var shY = lidY + 4;
-    ctx.fillStyle = P.shutterFrame; ctx.fillRect(shX, shY, shW, shH);
-    for (i = 2; i + 4 < shH - 2; i += 5) {
-      ctx.fillStyle = P.louvre;    ctx.fillRect(shX + 2, shY + i, shW - 4, 3);
-      ctx.fillStyle = P.louvreGap; ctx.fillRect(shX + 2, shY + i + 3, shW - 4, 1);
-      ctx.fillStyle = P.daySky;    ctx.fillRect(shX + 2, shY + i + 4, shW - 4, 1);
-    }
-    ctx.fillStyle = P.shutterLit; ctx.fillRect(shX, shY, shW, 1);
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, q = S.k * 2.4, i, n;
+      var deskY = coverDeskY(S);
 
-    /* 4. the desk line, two drawer fronts and their pulls. The knee hole
-       between them goes down FIRST and stays dark, because without it the
-       drawers are two pale rectangles with nothing between them and the
-       desk reads as a shelf. */
-    ctx.fillStyle = P.shade;    ctx.fillRect(x, deskY + 3, w, oakY - deskY - 3);
-    ctx.fillStyle = P.deskLit;  ctx.fillRect(x, deskY, w, 1);
-    ctx.fillStyle = P.deskTop;  ctx.fillRect(x, deskY + 1, w, 2);
-    ctx.fillStyle = P.deskEdge; ctx.fillRect(x, deskY + 3, w, 1);
-    var dw = Math.round(w * 0.4), dh = oakY - deskY - 6;
-    [x + 3, x + Math.round(w * 0.54)].forEach(function (bx) {
-      ctx.fillStyle = P.outline;     ctx.fillRect(bx, deskY + 4, dw, dh);
-      ctx.fillStyle = P.drawerFace;  ctx.fillRect(bx + 1, deskY + 5, dw - 2, dh - 2);
-      ctx.fillStyle = P.drawerPanel; ctx.fillRect(bx + 3, deskY + 7, dw - 6, dh - 6);
-      ctx.fillStyle = P.drawerShade; ctx.fillRect(bx + 3, deskY + dh, dw - 6, 1);
-      ctx.fillStyle = P.pullBlack;   ctx.fillRect(bx + 5, deskY + 4 + (dh >> 1), dw - 10, 2);
-      ctx.fillStyle = P.pullHi;      ctx.fillRect(bx + 5, deskY + 4 + (dh >> 1), dw - 10, 1);
-    });
+      /* the wall, with the lamp pool on the left third. Three nested
+         bands rather than one, so it reads as light falling off rather
+         than as a rectangle somebody painted a different colour. */
+      ctx.fillStyle = P.wallMid; ctx.fillRect(x, y, w, h);
+      Tint.rect(ctx, x, y, Math.round(w * 0.40), h, P.wallLamp, 3);
+      Tint.rect(ctx, x, y + Math.round(h * 0.2), Math.round(w * 0.28), Math.round(h * 0.6), P.wallLamp, 3);
+      Tint.rect(ctx, x, y + Math.round(h * 0.35), Math.round(w * 0.16), Math.round(h * 0.3), P.wallLamp, 3);
+      Tint.rect(ctx, x + Math.round(w * 0.5), y, Math.round(w * 0.5), h, P.wallDark, 4);
 
-    /* 5. the three screens, each running its own sequence in miniature */
-    previewScreens(ctx, x, y, w, h, deskY, s);
-
-    /* 6. the oak, with its seams crawling past */
-    ctx.fillStyle = R.oakLip;   ctx.fillRect(x, oakY, w, 1);
-    ctx.fillStyle = R.oakLight; ctx.fillRect(x, oakY + 1, w, 1);
-    ctx.fillStyle = R.oakMid;   ctx.fillRect(x, oakY + 2, w, y + h - oakY - 2);
-    for (i = 0; i < 4; i++) {
-      var sx = x + Math.round(mod(s * 0.9 + i * (w / 4), w));
-      ctx.fillStyle = R.oakSeam; ctx.fillRect(sx, oakY + 2, 1, y + h - oakY - 2);
-    }
-    for (i = 0; i < w / 6; i++) {
-      var gx = x + ((i * 13 + Math.round(s)) % w);
-      ctx.fillStyle = i % 3 ? R.oakGrain : R.oakLight;
-      ctx.fillRect(gx, oakY + 3 + (i % 3), 3, 1);
-    }
-    /* the boards are the biggest single block on the card, so they are
-       held down two steps: a flat wash over all of them and a deeper one
-       under the skirting, the same shape the room's own drawLight makes */
-    Tint.rect(ctx, x, oakY, w, y + h - oakY, R.nightShade, 4);
-    Tint.rect(ctx, x, oakY + 5, w, y + h - oakY - 5, R.oakShade, 6);
-
-    /* 7. two book towers sliding past, with a gap you could fly through */
-    var period = big ? 46 : 38;
-    var span = oakY - lidY;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - mod(s + i * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.36);
-      var gapY = Math.round(lidY + 4 + ((i * 19) % Math.max(1, span - gapH - 10)));
-      tower(ctx, ox, lidY + 3, gapY - lidY - 3, i);
-      tower(ctx, ox, gapY + gapH, oakY - gapY - gapH, i + 1);
-    }
-
-    /* 8. a hardback coming down. Its fore edge is dropPages, the same as
-       the real sprite's - the cover is a promise about the level, and a
-       cover that draws the hazard in the tower's dark paper promises a
-       book the player will not be able to see. */
-    var ty = y + 10 + mod(s * 1.5, oakY - y - 16);
-    ctx.fillStyle = P.outline;    ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 5);
-    ctx.fillStyle = P.bookBlue;   ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 4);
-    ctx.fillStyle = P.bookBlueHi; ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 11, 1);
-    ctx.fillStyle = P.dropPages;  ctx.fillRect(x + Math.round(w * 0.72) + 9, Math.round(ty) + 1, 2, 3);
-
-    /* 9. THE SIGNATURE: an app icon COMING OUT OF THE WIDESCREEN, which
-       is the one thing nobody will mistake for another level - and the
-       one thing the first cover got wrong, because it hung the icon in
-       mid air exactly as the bay itself used to. It runs the bay's own
-       cycle on a 2.4s loop: the glass charges, the icon leaves it,
-       climbs, bobs where it stops, and is gone before the next one. The
-       pane is recomputed from previewScreens' own arithmetic rather than
-       guessed at, so the icon always leaves the glass and never the
-       bezel beside it. */
-    var ww = Math.round(w * 0.3), wh = Math.round(h * 0.2);
-    var wx = x + Math.round(w * 0.3), wy = deskY - wh;
-    /* glowX, not gx: the oak-grain loop above already declared a `var gx` in
-       this same function, and a second `var` of a name is not a second
-       variable - it is the same one. This project has shipped that four
-       times now (PANEL_W, fy, gx, and one before them), always in a long
-       draw function where the two uses are a hundred lines apart and the
-       order of assignment happens to save it. */
-    var glowX = wx + Math.round(ww * 0.62), gy = wy + wh - 3;
-    var k = mod(t * 0.42, 1);
-    if (k < 0.90) {
-      /* the glass lighting up: all of the charge, then the flash spent */
-      var lit = k < 0.18 ? k / 0.18 : (k < 0.42 ? 1 - (k - 0.18) / 0.24 : 0);
-      if (lit > 0) {
-        Tint.rect(ctx, glowX - 4, gy - 3, 9, 5, P.appGreenHi, Math.round(10 * lit));
-        Tint.rect(ctx, glowX - 2, gy - 2, 5, 4, P.appGreenHi, Math.round(10 * lit));
+      /* A shutter, upper right - AND THE DAY BEHIND IT, drifting at a
+         seventh of the lane. Three of slat, one of shadow and one of sky
+         on the big card, with the bay's lit arris dropped because a
+         single pale row at card scale only greys the slat it sits under.
+         The sky row is the one thing on this card that is not a room,
+         and the window is where this bay's daylight comes from. */
+      var shW = Math.round(w * 0.3), shH = Math.round(h * 0.26);
+      var shY = S.top + Math.max(1, Math.round(4 * q)), edge = Math.max(2, Math.round(4 * q));
+      var pitch = Math.max(3, Math.round(5 * q)), slat = pitch - 2;
+      var every = Math.round(w * 1.5);
+      var sx0 = x + w - shW - edge - Math.round(mod(S.s * 0.14, every));
+      for (n = 0; n < 2; n++) {
+        var shX = sx0 + n * every;
+        if (shX >= x + w || shX + shW <= x) continue;
+        ctx.fillStyle = P.shutterFrame; ctx.fillRect(shX, shY, shW, shH);
+        for (i = 2; i + pitch - 1 < shH - 2; i += pitch) {
+          ctx.fillStyle = P.louvre;    ctx.fillRect(shX + 2, shY + i, shW - 4, slat);
+          ctx.fillStyle = P.louvreGap; ctx.fillRect(shX + 2, shY + i + slat, shW - 4, 1);
+          ctx.fillStyle = P.daySky;    ctx.fillRect(shX + 2, shY + i + slat + 1, shW - 4, 1);
+        }
+        ctx.fillStyle = P.shutterLit; ctx.fillRect(shX, shY, shW, 1);
       }
-      if (k >= 0.18) {
-        var rp = clamp((k - 0.18) / 0.26, 0, 1);
-        var re = 1 - (1 - rp) * (1 - rp);
-        var topY = y + Math.round(h * 0.26);
-        var ix = glowX - 4;
-        var iy = Math.round(gy - 4 - (gy - 4 - topY) * re - 3 * Math.sin(Math.PI * rp));
-        if (rp >= 1) iy += Math.round(Math.sin(t * 2.6) * 3);
-        ctx.fillStyle = P.outline;  ctx.fillRect(ix - 1, iy - 1, 11, 11);
-        ctx.fillStyle = P.appGreen; ctx.fillRect(ix, iy, 9, 9);
-        ctx.fillStyle = P.appGreenHi; ctx.fillRect(ix, iy, 9, 1);
-        ctx.fillStyle = P.appGreenDk; ctx.fillRect(ix, iy + 7, 9, 2);
-        ctx.fillStyle = P.appGlyph; ctx.fillRect(ix + 2, iy + 3, 5, 3);
-        ctx.fillStyle = P.badge;    ctx.fillRect(ix + 6, iy - 2, 5, 4);
-        ctx.fillStyle = P.badgeInk; ctx.fillRect(ix + 8, iy - 1, 1, 2);
-        if (Math.floor(t * 3) % 2 === 0) {
-          ctx.fillStyle = P.ringArc;
-          ctx.fillRect(ix + 12, iy, 1, 1); ctx.fillRect(ix + 13, iy + 3, 1, 1);
+
+      /* The desk line, two drawer fronts and their pulls. The knee hole
+         goes down FIRST and stays dark, because without it the drawers
+         are two pale rectangles with nothing between them and the desk
+         reads as a shelf. On the stands' little set there is no room for
+         a drawer, and the knee hole is the desk. */
+      ctx.fillStyle = P.shade;    ctx.fillRect(x, deskY + 3, w, S.floor - deskY - 3);
+      ctx.fillStyle = P.deskLit;  ctx.fillRect(x, deskY, w, 1);
+      ctx.fillStyle = P.deskTop;  ctx.fillRect(x, deskY + 1, w, 2);
+      ctx.fillStyle = P.deskEdge; ctx.fillRect(x, deskY + 3, w, 1);
+      var dw = Math.round(w * 0.4), dh = S.floor - deskY - 6;
+      if (dh >= 4) {
+        [x + 3, x + Math.round(w * 0.54)].forEach(function (bx) {
+          ctx.fillStyle = P.outline;     ctx.fillRect(bx, deskY + 4, dw, dh);
+          ctx.fillStyle = P.drawerFace;  ctx.fillRect(bx + 1, deskY + 5, dw - 2, dh - 2);
+          if (dh >= 8) {
+            ctx.fillStyle = P.drawerPanel; ctx.fillRect(bx + 3, deskY + 7, dw - 6, dh - 6);
+            ctx.fillStyle = P.drawerShade; ctx.fillRect(bx + 3, deskY + dh, dw - 6, 1);
+          }
+          ctx.fillStyle = P.pullBlack;   ctx.fillRect(bx + 5, deskY + 4 + (dh >> 1), dw - 10, 2);
+          ctx.fillStyle = P.pullHi;      ctx.fillRect(bx + 5, deskY + 4 + (dh >> 1), dw - 10, 1);
+        });
+      }
+
+      /* Two of the three screens stand at the back of the desk, each
+         running its own sequence in miniature, on the clock rather than
+         the scroll so every card plays them at one speed. The widescreen
+         is not here: it is the one the notifications come out of, so it
+         travels with them (see props). */
+      var pw = Math.round(w * 0.14), ph = Math.round(S.lane * 0.35);
+      var px = x + Math.round(w * 0.06), py = deskY - ph;
+      ctx.fillStyle = P.bezel;   ctx.fillRect(px - 1, py - 1, pw + 2, ph + 2);
+      ctx.fillStyle = P.dawGrey; ctx.fillRect(px, py, pw, ph);
+      ctx.fillStyle = P.dawHead; ctx.fillRect(px, py, pw, Math.min(2, Math.max(1, ph >> 3)));
+      var rows = Math.min(6, Math.floor((ph - 3) / 3)), row = mod(Math.floor(S.t * 2.75), Math.max(1, rows));
+      for (i = 0; i < rows; i++) {
+        ctx.fillStyle = i === row ? P.dawPlay : P.dawCell;
+        ctx.fillRect(px + 1, py + 3 + i * 3, pw - 2, 2);
+      }
+      /* and the all-in-one, with a dot bouncing about on it */
+      var aw = Math.round(w * 0.2), ah = Math.round(S.lane * 0.2);
+      var ax = x + Math.round(w * 0.76), ay = deskY - ah;
+      ctx.fillStyle = P.bezel;     ctx.fillRect(ax - 1, ay - 1, aw + 2, ah + 2);
+      ctx.fillStyle = P.screenOff; ctx.fillRect(ax, ay, aw, ah);
+      ctx.fillStyle = P.screenLogo;
+      ctx.fillRect(ax + Math.round(tri(S.t * 11, aw - 2)), ay + Math.round(tri(S.t * 7, ah - 2)), 2, 1);
+      ctx.fillStyle = P.bezelSilver; ctx.fillRect(ax, ay + ah - 1, aw, 1);
+      /* turned down, exactly as they are in the bay - see SCREEN_DIM */
+      Tint.rect(ctx, px, py, pw, ph, P.void, SCREEN_DIM);
+      Tint.rect(ctx, ax, ay, aw, ah, P.void, SCREEN_DIM);
+    },
+
+    /* THE BOOK TOWER: courses of hardbacks, some spine out and some fore
+       edge out, every one jogged a pixel because nobody stacked it
+       straight, counted from the dictionary at the mouth of the gap so
+       the short one ends against the moulding or the boards. Covers are
+       hashed off the column, its end and the course, never off x. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var q = S.k * 2.4, top = end === 'top';
+      var capH = Math.max(2, Math.round(9 * S.k)), proud = Math.max(1, Math.round(4 * S.k));
+      var key = p.i * 2 + (top ? 0 : 1), hv, c, d = capH;
+      ctx.fillStyle = P.shade; ctx.fillRect(x, y, w, h);
+      for (c = 0; d < h; c++) {
+        hv = LivingRoom.hash(key * 131 + c * 7 + 5);
+        var ch = Math.max(2, Math.round((5 + hv % 4) * q * 0.55));
+        var cy = top ? y + h - d - ch : y + d, cb = cy + ch;
+        if (cy < y) cy = y;
+        if (cb > y + h) cb = y + h;
+        var cover = COVERS[(hv >>> 4) % COVERS.length];
+        var seam = ch >= 3 ? 1 : 0, jog = (hv >>> 8) & 1;
+        var bx = x + 1 + jog, bw = w - 3, rh = cb - cy - seam;
+        if (rh > 0) {
+          if (((hv >>> 10) % 20) < 11) {
+            /* spine out: the cover, its lit arris, a dim title */
+            ctx.fillStyle = cover[0]; ctx.fillRect(bx, cy, bw, rh);
+            ctx.fillStyle = cover[1]; ctx.fillRect(bx, cy, bw, 1);
+            if (rh >= 3) {
+              ctx.fillStyle = P.title;
+              ctx.fillRect(bx + 2 + (hv >>> 14) % Math.max(1, bw - 6), cy + 1 + (rh > 3 ? 1 : 0), 2, 1);
+            }
+          } else {
+            /* fore edge out: the block of pages between two boards */
+            ctx.fillStyle = P.pages;      ctx.fillRect(bx, cy, bw, rh);
+            ctx.fillStyle = cover[0];     ctx.fillRect(bx, cy, bw, 1);
+            if (rh >= 3) {
+              ctx.fillStyle = P.pagesShade; ctx.fillRect(bx, cy + rh - 1, bw, 1);
+              ctx.fillRect(bx + 2 + (hv >>> 14) % Math.max(1, bw - 4), cy + 1, 1, rh - 2);
+            }
+          }
+        }
+        d += ch;
+      }
+      /* One tower in three has somebody's sticky note on the standing
+         half and a ribbon marker hanging out of the hanging one - what
+         stops a wall of books from being a texture. */
+      var tag = LivingRoom.hash(p.i * 17 + 3);
+      if (tag % 3 === 1) {
+        var at = capH + Math.round(S.lane * 0.1);
+        if (!top && h > at + 6) {
+          ctx.fillStyle = P.outline; ctx.fillRect(x + w - 6, y + at, 5, 4);
+          ctx.fillStyle = P.tYellow; ctx.fillRect(x + w - 5, y + at + 1, 3, 2);
+        } else if (top && h > at + 4) {
+          ctx.fillStyle = P.bookRed; ctx.fillRect(x + (w >> 1) - 2, y + h - at - 3, 1, 3);
         }
       }
-    }
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
 
-    /* 10. the doodad flying it, with the Construction's halo so it does
-       not vanish into a beige wall the way a tan bird against a tan wall
-       would */
-    var dx = Math.round(x + w * 0.28);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.shade, 5);
-    ctx.fillStyle = P.outline; ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c'; ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873'; ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline; ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84'; ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 11. and one lamp over the whole room */
-    Tint.rect(ctx, x, y, w, h, P.lampWarm, 1);
-  }
-
-  /* the three screens on the cover's desk, each running the same
-     sequence it runs in the level, at a size you can still read */
-  function previewScreens(ctx, x, y, w, h, deskY, s) {
-    var i;
-    /* the portrait one, playing a row at a time */
-    var pw = Math.round(w * 0.14), ph = Math.round(h * 0.28);
-    var px = x + Math.round(w * 0.1), py = deskY - ph;
-    ctx.fillStyle = P.bezel;   ctx.fillRect(px - 1, py - 1, pw + 2, ph + 2);
-    ctx.fillStyle = P.dawGrey; ctx.fillRect(px, py, pw, ph);
-    ctx.fillStyle = P.dawHead; ctx.fillRect(px, py, pw, 2);
-    var row = mod(Math.floor(s / 8), 6);
-    for (i = 0; i < 6; i++) {
-      ctx.fillStyle = i === row ? P.dawPlay : P.dawCell;
-      ctx.fillRect(px + 1, py + 3 + i * 3, pw - 2, 2);
-    }
-
-    /* the widescreen, with its lines stepping up a pixel every six */
-    var ww = Math.round(w * 0.3), wh = Math.round(h * 0.2);
-    var wx = x + Math.round(w * 0.3), wy = deskY - wh;
-    ctx.fillStyle = P.bezel;     ctx.fillRect(wx - 1, wy - 1, ww + 2, wh + 2);
-    ctx.fillStyle = P.pageWhite; ctx.fillRect(wx, wy, ww, wh);
-    ctx.fillStyle = P.pageBar;   ctx.fillRect(wx, wy, ww, 2);
-    var creep = Math.round(mod(s / 6, 5));
-    for (i = 0; i < 5; i++) {
-      var ly = wy + 3 + mod(i * 4 - creep, wh - 4);
-      ctx.fillStyle = (i === 2) ? P.pageOrange : P.pageText;
-      ctx.fillRect(wx + 2, ly, ww - 4 - (i % 3) * 3, 1);
-    }
-
-    /* and the all-in-one, with a dot bouncing about on it */
-    var aw = Math.round(w * 0.2), ah = Math.round(h * 0.16);
-    var ax = x + Math.round(w * 0.66), ay = deskY - ah;
-    ctx.fillStyle = P.bezel;     ctx.fillRect(ax - 1, ay - 1, aw + 2, ah + 2);
-    ctx.fillStyle = P.screenOff; ctx.fillRect(ax, ay, aw, ah);
-    ctx.fillStyle = P.screenLogo;
-    ctx.fillRect(ax + Math.round(tri(s * 0.5, aw - 2)),
-                 ay + Math.round(tri(s * 0.33, ah - 1)), 2, 1);
-    ctx.fillStyle = P.bezelSilver; ctx.fillRect(ax, ay + ah - 1, aw, 1);
-
-    /* turned down, exactly as they are in the bay - three lit panes on a
-       card this size would be the first thing the eye lands on, and what
-       it has to land on is the moulding and the towers */
-    Tint.rect(ctx, px, py, pw, ph, P.void, SCREEN_DIM);
-    Tint.rect(ctx, wx, wy, ww, wh, P.void, SCREEN_DIM);
-    Tint.rect(ctx, ax, ay, aw, ah, P.void, SCREEN_DIM);
-  }
-
-  /* one little book tower inside a cover */
-  function tower(ctx, x, y, h, seed) {
-    if (h <= 0) return;
-    var cy = y, i = 0;
-    while (cy < y + h) {
-      var ch = Math.min(4 + ((seed + i) % 2), y + h - cy);
-      var cover = COVERS[(seed * 3 + i * 5) % COVERS.length];
-      if ((seed + i) % 3 === 0) {
-        ctx.fillStyle = P.pages;      ctx.fillRect(x, cy, 10, ch);
-        ctx.fillStyle = P.pagesShade; ctx.fillRect(x, cy + ch - 1, 10, 1);
-      } else {
-        ctx.fillStyle = cover[0]; ctx.fillRect(x, cy, 10, ch);
-        ctx.fillStyle = cover[1]; ctx.fillRect(x, cy, 10, 1);
+      /* The DICTIONARY, laid flat across the mouth of the gap: the bay's
+         nine rows - outline, arris, board, pages, board - folded to what
+         the card has, the outline always on the gap's edge. */
+      var rows = capH >= 4 ? [P.outline, P.bookBlackHi, P.pages, P.bookBlack]
+               : capH === 3 ? [P.outline, P.pagesHi, P.bookBlack] : [P.outline, P.pagesHi];
+      var capY = top ? y + h - capH : y, r;
+      for (r = 0; r < capH; r++) {
+        ctx.fillStyle = rows[Math.min(r, rows.length - 1)];
+        ctx.fillRect(x - proud, top ? y + h - 1 - r : y + r, w + proud * 2, 1);
       }
-      cy += ch;
-      i++;
-    }
-    ctx.fillStyle = P.outline;
-    ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 9, y, 1, h);
-    /* the dark dictionary at the mouth of the gap */
-    ctx.fillStyle = P.bookBlack; ctx.fillRect(x - 1, (seed % 2) ? y : y + h - 3, 12, 3);
-  }
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(x - proud, capY, 1, capH); ctx.fillRect(x + w + proud - 1, capY, 1, capH);
+      /* a ribbon marker trailing out of its far side */
+      if (tag & 1) {
+        ctx.fillStyle = P.bookRed;
+        ctx.fillRect(x + w - 2, top ? capY - 1 : capY + capH - 1, 1, 2);
+      }
+      /* the hard cast shadow: the lamp is low and to the left in this
+         bay, so everything throws to the RIGHT */
+      Tint.rect(ctx, x + w, y, proud, h, P.void, 7);
+    },
+
+    /* THE WHOLE POINT OF THIS COVER. Every other card in the game has
+       sky, leaf or rafters across the top; this one has plaster and
+       crown moulding, and the hard rows under it are the rows the bay
+       itself uses. A player looking at the level select learns from this
+       picture alone that the Living Room has a lid, before they are ever
+       told it kills. The pendants and their pools pass at the lane's own
+       pace, one per 240 px of world, as the room's tile lays them. */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, y = S.y, d = S.top - S.y, n;
+      var hard = d >= 8 ? 4 : 3, pr = d - hard;
+      ctx.fillStyle = R.plasterMid; ctx.fillRect(x, y, w, pr);
+      var every = Math.max(24, Math.round(240 * S.k)), poolW = Math.round(w * 0.3);
+      var first = x + Math.round(w * 0.45) - Math.round(mod(S.s, every));
+      for (n = -1; n < Math.ceil(w / every) + 1; n++) {
+        var lx = first + n * every;
+        if (lx + poolW < x || lx - poolW > x + w) continue;
+        ctx.fillStyle = R.plasterLit; ctx.fillRect(lx - (poolW >> 1), y, poolW, pr);
+        /* the pendant hanging in it */
+        var gr = pr >= 6 ? 3 : (pr >= 3 ? 2 : 1), gw = Math.max(3, Math.round(7 * S.k));
+        var gy = y + pr - gr, gx = lx - (gw >> 1);
+        if (gy > y) { ctx.fillStyle = R.lampRod; ctx.fillRect(lx, y, 1, gy - y); }
+        ctx.fillStyle = R.lampGlass; ctx.fillRect(gx, gy, gw, gr);
+        ctx.fillStyle = R.outline;   ctx.fillRect(gx - 1, gy, 1, gr); ctx.fillRect(gx + gw, gy, 1, gr);
+        ctx.fillStyle = R.lampCore;  ctx.fillRect(lx, gy + (gr > 1 ? 1 : 0), 1, 1);
+      }
+      var mould = hard === 4 ? [R.crown, R.plasterLit, R.crownShade, R.outline]
+                             : [R.crown, R.crownShade, R.outline];
+      for (n = 0; n < hard; n++) { ctx.fillStyle = mould[n]; ctx.fillRect(x, y + pr + n, w, 1); }
+    },
+
+    /* the oak, with its seams and grain crawling past at the lane's pace */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, fy = S.floor, d = S.y + S.h - S.floor, q = S.k * 2.4, c;
+      var off = Math.round(S.s);
+      ctx.fillStyle = R.oakLip;   ctx.fillRect(x, fy, w, 1);
+      ctx.fillStyle = R.oakLight; ctx.fillRect(x, fy + 1, w, 1);
+      ctx.fillStyle = R.oakMid;   ctx.fillRect(x, fy + 2, w, d - 2);
+      var seam = Math.max(8, Math.round(w / 4));
+      for (c = Math.floor(off / seam); c * seam - off < w; c++) {
+        ctx.fillStyle = R.oakSeam; ctx.fillRect(x + c * seam - off, fy + 2, 1, d - 2);
+      }
+      var gp = Math.max(3, Math.round(6 * q)), gl = Math.max(2, Math.round(3 * q));
+      for (c = Math.floor(off / gp) - 1; c * gp - off < w; c++) {
+        var hv = LivingRoom.hash(c + 977);
+        ctx.fillStyle = hv % 3 ? R.oakGrain : R.oakLight;
+        ctx.fillRect(x + c * gp - off + hv % gp, fy + 3 + (hv >>> 5) % Math.max(1, d - 4), gl, 1);
+      }
+      /* The boards are the biggest single block on the card, so they are
+         held down two steps: a flat wash over all of them and a deeper one
+         under the skirting, the shape the room's own drawLight makes. */
+      Tint.rect(ctx, x, fy, w, d, R.nightShade, 4);
+      var deep = Math.max(2, Math.round(5 * q));
+      Tint.rect(ctx, x, fy + deep, w, d - deep, R.oakShade, 6);
+    },
+
+    /* THE SIGNATURE: an app icon COMING OUT OF A SCREEN. The widescreen
+       rides each even span on the desktop, narrower than the span so it
+       never meets a tower, and runs the bay's own pop as its span comes
+       in: the glass charges, flashes, the icon leaves it with a kick and
+       climbs - the rise is keyed off how far the span has travelled, the
+       way the level keys it off ob.x - and bobs where it stops. Where it
+       stops is whichever side of the doodad's line has more room, so it
+       never hangs where the doodad has to fly. */
+    props: function (ctx, S) {
+      var q = S.k * 2.4, deskY = coverDeskY(S), i, j;
+      var z = Math.max(4, Math.round(9 * q)), half = Math.ceil(z / 2), bobA = Math.max(1, Math.round(2 * q));
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var mx = Math.round((sp.x0 + sp.x1) / 2), sw = sp.x1 - sp.x0;
+
+        /* the widescreen and its page, creeping upward */
+        var ww = Math.min(Math.round(102 * S.k), sw - 2 * Math.max(1, Math.round(4 * S.k)) - 4);
+        var wh = Math.max(4, Math.round(48 * S.k));
+        var wx = mx - (ww >> 1), wy = deskY - wh;
+        ctx.fillStyle = P.bezel;     ctx.fillRect(wx - 1, wy - 1, ww + 2, wh + 2);
+        ctx.fillStyle = P.pageWhite; ctx.fillRect(wx, wy, ww, wh);
+        ctx.fillStyle = P.pageBar;   ctx.fillRect(wx, wy, ww, wh >= 10 ? 2 : 1);
+        var lines = Math.floor((wh - 4) / 4), creep = mod(Math.floor(S.t * 4), 4);
+        for (j = 0; j < lines; j++) {
+          var lw = ww - 4 - (j % 3) * 3;
+          if (lw < 2) continue;
+          ctx.fillStyle = (j % 3 === 2) ? P.pageOrange : P.pageText;
+          ctx.fillRect(wx + 2, wy + 3 + mod(j * 4 - creep, lines * 4), lw, 1);
+        }
+        Tint.rect(ctx, wx, wy, ww, wh, P.void, SCREEN_DIM);
+
+        /* the pop, on the span's travel: charge over CH px, then the rise
+           over RISE, starting once the next tower is in frame */
+        var u = S.x + S.w - mx;
+        var C = Math.ceil(sw / 2) + 1, CH = Math.max(6, Math.round(46 * S.k));
+        var RISE = Math.max(8, Math.round(110 * S.k));
+        var gx = mx + Math.round(ww * 0.12), gy = deskY - Math.max(2, Math.round(9 * S.k));
+        var g1w = Math.max(3, Math.round(9 * q)), g1h = Math.max(2, Math.round(5 * q));
+        var g2w = Math.max(1, Math.round(5 * q)), g2h = Math.max(1, Math.round(4 * q));
+        var glow = 0;
+        if (u < C) { var c = clamp((u - (C - CH)) / CH, 0, 1); glow = c * c; }
+        var rp = clamp((u - C) / RISE, 0, 1);
+        if (u >= C && rp < 0.34) glow = 1 - rp / 0.34;
+        var hv = LivingRoom.hash(sp.i * 31 + 7), mail = hv % 4 === 1;
+        var hi = mail ? P.appBlueHi : P.appGreenHi;
+        if (glow > 0) {
+          Tint.rect(ctx, gx - (g1w >> 1), gy - (g1h >> 1), g1w, g1h, hi, Math.round(10 * glow));
+          Tint.rect(ctx, gx - (g2w >> 1), gy - (g2h >> 1), g2w, g2h, hi, Math.round(10 * glow));
+        }
+        if (u < C) continue;
+        /* the spray, thrown off the spot on the glass */
+        if (rp < 0.3) {
+          for (j = 0; j < 4; j++) {
+            var a = j * (Math.PI / 2) + 0.6;
+            ctx.fillStyle = j % 2 ? P.appRim : P.ringArc;
+            ctx.fillRect(gx + Math.round(Math.cos(a) * rp * 10 * q), gy + Math.round(Math.sin(a) * rp * 10 * q), 1, 1);
+          }
+        }
+
+        /* where it stops: under the moulding or over the desk, on the
+           side of sp.line with more room, at the bay's own standoffs */
+        var hy;
+        if (sp.line.top - S.top >= deskY - sp.line.bottom) {
+          hy = Math.max(S.top + half + bobA + 1,
+                        Math.min(S.top + Math.round(30 * S.k) + half, sp.line.top - half - bobA - 1));
+        } else {
+          hy = Math.min(deskY - half - 1,
+                        Math.max(deskY - Math.round(14 * S.k) - half, sp.line.bottom + half + bobA + 1));
+        }
+        var e = 1 - (1 - rp) * (1 - rp);
+        var cy = Math.round(gy - (gy - hy) * e - 5 * q * Math.sin(Math.PI * rp));
+        if (rp >= 1) cy += Math.round(Math.sin(S.t * 2.6 + (hv % 628) / 100) * bobA);
+        /* and never up into the moulding, kick and badge included */
+        cy = Math.max(cy, S.top + half + 3);
+        var ix = gx - half, iy = cy - half;
+        var bw = Math.max(2, Math.round(5 * q)), bh = Math.max(2, Math.round(4 * q));
+        ctx.fillStyle = P.outline;  ctx.fillRect(ix - 1, iy - 1, z + 2, z + 2);
+        ctx.fillStyle = mail ? P.appBlue : P.appGreen; ctx.fillRect(ix, iy, z, z);
+        ctx.fillStyle = hi;         ctx.fillRect(ix, iy, z, 1);
+        ctx.fillStyle = mail ? P.appBlueDk : P.appGreenDk;
+        ctx.fillRect(ix, iy + z - (z >= 6 ? 2 : 1), z, z >= 6 ? 2 : 1);
+        if (z >= 6) {
+          ctx.fillStyle = P.appGlyph;
+          ctx.fillRect(ix + Math.round(z * 0.22), iy + Math.round(z * 0.33), Math.round(z * 0.55), Math.max(1, Math.round(z * 0.33)));
+        }
+        ctx.fillStyle = P.badge;    ctx.fillRect(ix + z - bw + 2, iy - 2, bw, bh);
+        if (bh >= 3) { ctx.fillStyle = P.badgeInk; ctx.fillRect(ix + z - (bw >> 1) + 1, iy - 1, 1, bh - 2); }
+        if (Math.floor(S.t * 3) % 2 === 0 && z >= 6) {
+          ctx.fillStyle = P.ringArc;
+          ctx.fillRect(ix + z + 3, iy, 1, 1); ctx.fillRect(ix + z + 4, iy + 3, 1, 1);
+        }
+      }
+    },
+
+    /* A hardback coming down, flat on every other one and upright on the
+       rest - the two dodges the level asks for. Its fore edge is the
+       falling book's own lit paper, dropPages, not the stack's shadowed
+       one: a cover that drew the hazard in the tower's dark paper would
+       promise a book the player will not be able to see. */
+    drop: function (ctx, d, S) {
+      var q = S.k * 2.4, flat = mod(d.i, 4) === 1;
+      var L = Math.max(5, Math.round(11 * q)), N = Math.max(3, Math.round(5 * q));
+      var bw = flat ? L : N, bh = flat ? N : L;
+      var bx = d.x - (bw >> 1), by = d.y - (bh >> 1);
+      var cover = COVERS[LivingRoom.hash(d.i * 13 + 1) % COVERS.length];
+      ctx.fillStyle = P.outline; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = cover[0];  ctx.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
+      ctx.fillStyle = cover[1];
+      if (flat) ctx.fillRect(bx + 1, by + 1, bw - 2, 1); else ctx.fillRect(bx + 1, by + 1, 1, bh - 2);
+      var pc = bw >= 7 ? 2 : 1;
+      ctx.fillStyle = P.dropPages;   ctx.fillRect(bx + bw - 1 - pc, by + 1 + (flat ? 1 : 0), pc, bh - 2 - (flat ? 1 : 0));
+      ctx.fillStyle = P.dropPagesHi; ctx.fillRect(bx + bw - 1 - pc, by + 1 + (flat ? 1 : 0), flat ? pc : 1, flat ? 1 : bh - 2);
+    },
+
+    /* and one lamp over the whole room */
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.lampWarm, 1); }
+  };
 
   /* ================================================================
      GENERATION
@@ -2715,7 +2809,7 @@ var Desk = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
@@ -2724,7 +2818,6 @@ var Desk = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor

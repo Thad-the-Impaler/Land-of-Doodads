@@ -100,6 +100,70 @@ var Coop = (function () {
     spike: P.nailMid, spikeHi: P.nailLight, air: P.daylight, gloom: P.void
   };
 
+  /* THE COVER (js/cover.js lays it out and times it): the slat wall, the
+     rafters and the hay, plank columns, nails in the bedding and an egg
+     coming down. It was the level select's generic card, kept in three
+     files; it lives with its level now. */
+  var COVER = {
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, s = S.s * 0.25;
+      ctx.fillStyle = PREVIEW.back; ctx.fillRect(x, y, w, h);
+      for (var i = -1; i < w / 11 + 1; i++) {
+        var sx = Math.round(x + i * 11 - s % 11);
+        ctx.fillStyle = (i % 2) ? PREVIEW.backAlt : PREVIEW.back;
+        ctx.fillRect(sx, y, 10, h);
+        ctx.fillStyle = PREVIEW.seam; ctx.fillRect(sx, y, 1, h);
+      }
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.5), PREVIEW.air, 1);
+      Tint.rect(ctx, x, S.floor - 22, w, 22, PREVIEW.gloom, 3);
+    },
+    pillar: function (ctx, x, y, w, h, end) {
+      if (h <= 0) return;
+      ctx.fillStyle = P.plankMid;   ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = P.plankLight; ctx.fillRect(x + 1, y, 2, h);
+      ctx.fillStyle = P.plankDark;  ctx.fillRect(x + w - 3, y, 2, h);
+      ctx.fillStyle = P.plankEdge;  ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+      /* the cross-board at the plank's free end */
+      var cy = end === 'top' ? y + h - 3 : y;
+      ctx.fillStyle = P.plankHi;    ctx.fillRect(x - 1, cy, w + 2, 1);
+      ctx.fillStyle = P.plankMid;   ctx.fillRect(x - 1, cy + 1, w + 2, 2);
+      ctx.fillStyle = P.plankEdge;  ctx.fillRect(x - 1, cy + 3, w + 2, 1);
+    },
+    ceiling: function (ctx, S) {
+      var d = S.top - S.y;
+      ctx.fillStyle = PREVIEW.beam;     ctx.fillRect(S.x, S.y, S.w, d);
+      ctx.fillStyle = PREVIEW.beamDark; ctx.fillRect(S.x, S.top - 2, S.w, 2);
+    },
+    floor: function (ctx, S) {
+      var d = S.y + S.h - S.floor;
+      ctx.fillStyle = PREVIEW.ground; ctx.fillRect(S.x, S.floor, S.w, d);
+      Tint.rect(ctx, S.x, S.floor, S.w, d, PREVIEW.groundDark, 7);
+      ctx.fillStyle = PREVIEW.groundHi; ctx.fillRect(S.x, S.floor, S.w, 1);
+    },
+    /* nails poking out of the bedding, in the even spans */
+    props: function (ctx, S) {
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var nx = Math.round((sp.x0 + sp.x1) / 2) - 2, fy = S.floor;
+        ctx.fillStyle = PREVIEW.spike;
+        ctx.fillRect(nx, fy - 5, 1, 5);
+        ctx.fillRect(nx + 3, fy - 7, 1, 7);
+        ctx.fillStyle = PREVIEW.spikeHi;
+        ctx.fillRect(nx + 3, fy - 8, 2, 1);
+        ctx.fillRect(nx - 1, fy - 6, 2, 1);
+      }
+    },
+    /* an egg */
+    drop: function (ctx, d) {
+      var ex = d.x - 2, ey = d.y - 3;
+      ctx.fillStyle = P.eggShadow;  ctx.fillRect(ex, ey + 1, 5, 5); ctx.fillRect(ex + 1, ey, 3, 7);
+      ctx.fillStyle = P.eggShell;   ctx.fillRect(ex + 1, ey + 1, 3, 5);
+      ctx.fillStyle = P.eggShellHi; ctx.fillRect(ex + 1, ey + 1, 1, 2);
+    },
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, PREVIEW.air, 1); }
+  };
+
   var T = {};             /* baked tiles */
 
   /* ---------------------------------------------------------- tiles */
@@ -780,7 +844,7 @@ var Coop = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,

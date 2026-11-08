@@ -962,117 +962,111 @@ var Garden = (function () {
 
   /* ------------------------------------------------- the cover art
 
-     The little window on the level select. It was painting the Coop's
-     shapes in the Garden's colours, which read as neither level. This
-     draws the Garden's own: stucco, a bed of fruiting crops, bamboo
-     trellises with a gap, the white board and the mulch. The caller has
-     already clipped to the box, so nothing here clips or restores. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var soil = y + h - Math.round(h * 0.17);
-    var canopy = y + Math.round(h * 0.09);
-
-    /* stucco, lighter at the top where the sun is */
-    ctx.fillStyle = P.wallMid; ctx.fillRect(x, y, w, h);
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.5), P.wallLit, 4);
-    Tint.rect(ctx, x, y + h - 40, w, 40, P.wallShadow, 4);
-
-    /* the canopy across the top, with a couple of vines hanging in */
-    ctx.fillStyle = P.leafDark; ctx.fillRect(x, y, w, canopy - y);
-    ctx.fillStyle = P.leafMid;  ctx.fillRect(x, canopy - 2, w, 2);
-    for (var v = 0; v < 4; v++) {
-      var vx = Math.round(x + ((v * 29 - s * 0.5) % (w + 14)) - 7);
-      if (vx < x - 2 || vx > x + w) continue;
-      var vlen = 8 + (v % 3) * 7;
-      ctx.fillStyle = P.stalkMid;
-      ctx.fillRect(vx, canopy, 1, vlen);
-      ctx.fillStyle = P.leafLight;
-      ctx.fillRect(vx - 1, canopy + vlen - 4, 3, 2);
-    }
-
-    /* The bed: three bands of crop mass with fruit in it. The heights come
-       off a cheap hash rather than a modulus - a plain `i % 9` marched up
-       and down in a sawtooth and the band read as a picket fence. */
-    for (var band = 0; band < 3; band++) {
-      var by = soil - 4 - band * Math.round(h * 0.13);
-      var depth = Math.round(h * 0.24) - band * 2;
-      var tone = band === 0 ? P.leafMid : (band === 1 ? P.leafMid : P.leafDark);
-      var lit  = band === 0 ? P.leafLight : P.leafMid;
-      for (var i = 0; i < w / 2 + 2; i++) {
-        var px = x + ((i * 5 + band * 4) % (w + 4)) - 2;
-        var n = (i * 1103515245 + band * 12345) >>> 0;
-        var jitter = (n >>> 16) % 17;
-        var ph = 5 + jitter + band * 3;
-        ctx.fillStyle = tone;
-        ctx.fillRect(px, by - ph, 3, ph + depth);
-        if (jitter > 9) {
-          ctx.fillStyle = lit;
-          ctx.fillRect(px - 2, by - ph - 2, 6, 3);
-          ctx.fillRect(px - 1, by - ph - 4, 4, 2);
-        }
-        if (jitter % 5 === 0) {
-          ctx.fillStyle = (jitter % 3) ? P.tomMid : P.hotMid;
-          ctx.fillRect(px, by - Math.round(ph * 0.55), 2, 2);
-          ctx.fillStyle = P.tomHi;
-          ctx.fillRect(px, by - Math.round(ph * 0.55), 1, 1);
+     The Garden's painters for its cover (js/cover.js lays it out and
+     times it): stucco with the bed of fruiting crops along it, bamboo
+     trellis columns, the canopy across the top with vines hanging in,
+     the white board and the mulch, the level's own mint sprouts in the
+     open spans and a tomato coming down. */
+  var COVER = {
+    halo: P.wallShadow,
+    ink: P.outline,
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, soil = S.floor;
+      /* stucco, lighter at the top where the sun is */
+      ctx.fillStyle = P.wallMid; ctx.fillRect(x, y, w, h);
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.5), P.wallLit, 4);
+      Tint.rect(ctx, x, soil - 30, w, 30, P.wallShadow, 4);
+      /* The bed: three bands of crop mass with fruit in it, sliding with
+         the lane. The heights come off a cheap hash rather than a modulus -
+         a plain `i % 9` marched up and down in a sawtooth and the band read
+         as a picket fence. */
+      var off = Math.floor(S.s * 0.6);
+      for (var band = 0; band < 3; band++) {
+        var by = soil - 1 - band * Math.round(S.lane * 0.14);
+        var depth = Math.round(S.lane * 0.26) - band * 2;
+        var tone = band < 2 ? P.leafMid : P.leafDark;
+        var lit  = band === 0 ? P.leafLight : P.leafMid;
+        for (var c = Math.floor(off / 5) - 1; c * 5 - off < w + 4; c++) {
+          var px = x + c * 5 - off + band * 2;
+          var n = ((c + band * 97) * 1103515245 + band * 12345) >>> 0;
+          var jitter = (n >>> 16) % 17;
+          var ph = Math.round((5 + jitter + band * 3) * S.k * 2.4);
+          ctx.fillStyle = tone;
+          ctx.fillRect(px, by - ph, 3, ph + depth);
+          if (jitter > 9) {
+            ctx.fillStyle = lit;
+            ctx.fillRect(px - 2, by - ph - 2, 6, 3);
+            ctx.fillRect(px - 1, by - ph - 4, 4, 2);
+          }
+          if (jitter % 5 === 0) {
+            var fy = by - Math.round(ph * 0.55);
+            ctx.fillStyle = (jitter % 3) ? P.tomMid : P.hotMid;
+            ctx.fillRect(px, fy, 2, 2);
+            ctx.fillStyle = P.tomHi;
+            ctx.fillRect(px, fy, 1, 1);
+          }
         }
       }
-    }
-
-    /* two bamboo trellises with a gap you could fly through */
-    var period = big ? 46 : 38;
-    for (var k = 0; k < 3; k++) {
-      var ox = Math.round(x + w + 10 - ((s + k * period) % (period * 3)));
-      if (ox < x - 12 || ox > x + w + 2) continue;
-      var span = soil - canopy;
-      var gapH = Math.round(span * 0.36);
-      var gapY = Math.round(canopy + 4 + ((k * 19) % Math.max(1, span - gapH - 10)));
-      stake(ctx, ox, canopy, gapY - canopy);
-      stake(ctx, ox, gapY + gapH, soil - gapY - gapH);
-    }
-
+    },
+    /* one bamboo column, its nodes on a 13 px pitch from the free end */
+    pillar: function (ctx, x, y, w, h, end) {
+      if (h <= 0) return;
+      ctx.fillStyle = P.bambooMid;  ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = P.bambooLit;  ctx.fillRect(x + 1, y, Math.max(2, Math.round(w / 3)), h);
+      ctx.fillStyle = P.bambooDark; ctx.fillRect(x + w - 2, y, 2, h);
+      ctx.fillStyle = P.outline;    ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+      ctx.fillStyle = P.bambooNode;
+      if (end === 'top') { for (var ny = y + h - 4; ny > y; ny -= 13) ctx.fillRect(x, ny, w, 1); }
+      else { for (var my = y + 3; my < y + h; my += 13) ctx.fillRect(x, my, w, 1); }
+      /* the cut end */
+      ctx.fillStyle = P.outline;    ctx.fillRect(x, end === 'top' ? y + h - 1 : y, w, 1);
+    },
+    /* the canopy across the top, with vines hanging in */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, canopy = S.top;
+      ctx.fillStyle = P.leafDark; ctx.fillRect(x, S.y, w, canopy - S.y);
+      ctx.fillStyle = P.leafMid;  ctx.fillRect(x, canopy - 2, w, 2);
+      var off = Math.floor(S.s * 0.5);
+      for (var v = Math.floor(off / 29) - 1; v * 29 - off < w + 7; v++) {
+        var vx = x + v * 29 - off;
+        var vlen = Math.round((8 + (((v % 3) + 3) % 3) * 7) * S.k * 2.4);
+        ctx.fillStyle = P.stalkMid;  ctx.fillRect(vx, canopy, 1, vlen);
+        ctx.fillStyle = P.leafLight; ctx.fillRect(vx - 1, canopy + vlen - 4, 3, 2);
+      }
+    },
     /* the white board and the mulch in front of everything */
-    ctx.fillStyle = P.board;     ctx.fillRect(x, soil - 4, w, 4);
-    ctx.fillStyle = P.boardHi;   ctx.fillRect(x, soil - 4, w, 1);
-    ctx.fillStyle = P.boardEdge; ctx.fillRect(x, soil - 1, w, 1);
-    ctx.fillStyle = P.soilMid;   ctx.fillRect(x, soil, w, y + h - soil);
-    Tint.rect(ctx, x, soil, w, y + h - soil, P.soilDark, 6);
-    for (var ch = 0; ch < w / 4; ch++) {
-      var cx2 = x + ((ch * 11 + Math.round(s)) % w);
-      ctx.fillStyle = ch % 3 ? P.chipLight : P.chipPale;
-      ctx.fillRect(cx2, soil + 2 + (ch % 3), 3, 1);
-    }
-
-    /* a falling tomato, and the doodad flying it */
-    var ty2 = y + 6 + ((s * 1.6) % (soil - y - 10));
-    ctx.fillStyle = P.tomMid;  ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty2), 3, 3);
-    ctx.fillStyle = P.stalkHi; ctx.fillRect(x + Math.round(w * 0.72) + 1, Math.round(ty2) - 1, 1, 1);
-
-    var bx = Math.round(x + w * 0.3);
-    var byy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    /* a halo of wall-shadow, so it does not disappear into the stucco */
-    Tint.rect(ctx, bx - sz, byy - sz, sz * 2, sz * 2, P.wallShadow, 5);
-    ctx.fillStyle = P.outline;  ctx.fillRect(bx - sz / 2 - 1, byy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(bx - sz / 2, byy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(bx - sz / 2, byy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(bx + sz / 2 - 2, byy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(bx + sz / 2, byy, 2, 1);
-
-    Tint.rect(ctx, x, y, w, h, P.sunHaze, 1);
-  }
-
-  /* one little bamboo column inside a cover */
-  function stake(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.bambooMid;  ctx.fillRect(x, y, 9, h);
-    ctx.fillStyle = P.bambooLit;  ctx.fillRect(x + 1, y, 3, h);
-    ctx.fillStyle = P.bambooDark; ctx.fillRect(x + 7, y, 2, h);
-    ctx.fillStyle = P.outline;    ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 8, y, 1, h);
-    for (var ny = y + 5; ny < y + h; ny += 13) {
-      ctx.fillStyle = P.bambooNode; ctx.fillRect(x, ny, 9, 1);
-    }
-  }
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, soil = S.floor, d = S.y + S.h - soil;
+      ctx.fillStyle = P.board;     ctx.fillRect(x, soil, w, 3);
+      ctx.fillStyle = P.boardHi;   ctx.fillRect(x, soil, w, 1);
+      ctx.fillStyle = P.boardEdge; ctx.fillRect(x, soil + 2, w, 1);
+      ctx.fillStyle = P.soilMid;   ctx.fillRect(x, soil + 3, w, d - 3);
+      Tint.rect(ctx, x, soil + 3, w, d - 3, P.soilDark, 6);
+      var off = Math.floor(S.s);
+      for (var ch = Math.floor(off / 11) - 1; ch * 11 - off < w; ch++) {
+        ctx.fillStyle = ((ch % 3) + 3) % 3 ? P.chipLight : P.chipPale;
+        ctx.fillRect(x + ch * 11 - off, soil + 4 + (((ch % 3) + 3) % 3), 3, 1);
+      }
+    },
+    /* the level's own mint sprouts, three to a clump, in the even spans */
+    props: function (ctx, S) {
+      var len = Math.max(5, Math.round(26 * S.k));
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var mx = Math.round((sp.x0 + sp.x1) / 2) - 5;
+        for (var q = 0; q < 3; q++) drawSprout(ctx, mx + q * 5, S.floor, len - (q % 2) * 2, false, sp.i + q);
+      }
+    },
+    /* a tomato */
+    drop: function (ctx, d) {
+      ctx.fillStyle = P.outline; ctx.fillRect(d.x - 2, d.y - 1, 5, 4); ctx.fillRect(d.x - 1, d.y - 2, 3, 6);
+      ctx.fillStyle = P.tomMid;  ctx.fillRect(d.x - 1, d.y - 1, 3, 4);
+      ctx.fillStyle = P.tomHi;   ctx.fillRect(d.x - 1, d.y - 1, 1, 1);
+      ctx.fillStyle = P.stalkHi; ctx.fillRect(d.x, d.y - 3, 1, 1);
+    },
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.sunHaze, 1); }
+  };
 
   /* ---------------------------------------------------- generation */
 
@@ -1158,14 +1152,13 @@ var Garden = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     build: function () { build(); buildSprites(); },
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor

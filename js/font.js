@@ -137,7 +137,10 @@ var Font = (function () {
 
   function height(scale) { return GH * (scale || 1); }
 
-  /* core blit. o = {scale,colour,spacing,align,wave,waveAmp,waveSpeed,alpha} */
+  /* core blit. o = {scale,colour,spacing,align,wave,waveAmp,waveSpeed,alpha,dy}
+     dy is an optional array of whole-pixel lifts, one per character of the
+     string (spaces included), added on top of any wave: the title screens'
+     letters bounce one at a time when they are tapped. */
   function blit(ctx, text, x, y, o) {
     var scale = o.scale || 1;
     var spacing = o.spacing === undefined ? 1 : o.spacing;
@@ -160,6 +163,7 @@ var Font = (function () {
       if (ch === ' ') continue;
       var oy = 0;
       if (o.wave) oy = Math.round(Math.sin(o.wave + i * (o.wavePhase || 0.55)) * (o.waveAmp || 1)) * scale;
+      if (o.dy && o.dy[i]) oy += o.dy[i];
       ctx.drawImage(a.canvas, gi * a.cw, 0, a.cw, a.ch,
                     startX + i * adv, y + oy, a.cw, a.ch);
     }
@@ -173,14 +177,14 @@ var Font = (function () {
 
     if (o.outline) {
       var oc = { scale: scale, spacing: o.spacing, colour: o.outline, align: o.align,
-                 wave: o.wave, waveAmp: o.waveAmp, wavePhase: o.wavePhase };
+                 wave: o.wave, waveAmp: o.waveAmp, wavePhase: o.wavePhase, dy: o.dy };
       var d = (o.outlineWidth || 1) * scale;
       var offs = [[-d, 0], [d, 0], [0, -d], [0, d], [-d, -d], [d, -d], [-d, d], [d, d]];
       for (var i = 0; i < offs.length; i++) blit(ctx, text, x + offs[i][0], y + offs[i][1], oc);
     }
     if (o.shadow) {
       var sc = { scale: scale, spacing: o.spacing, colour: o.shadow, align: o.align,
-                 wave: o.wave, waveAmp: o.waveAmp, wavePhase: o.wavePhase };
+                 wave: o.wave, waveAmp: o.waveAmp, wavePhase: o.wavePhase, dy: o.dy };
       var sx = (o.shadowX === undefined ? 1 : o.shadowX) * scale;
       var sy = (o.shadowY === undefined ? 1 : o.shadowY) * scale;
       blit(ctx, text, x + sx, y + sy, sc);

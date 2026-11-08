@@ -547,8 +547,9 @@ var Couch = (function () {
     ceil:  LivingRoom.WARN_CEIL
   };
 
-  /* the thirteen colours the generic level-select window would use.
-     This bay paints its own cover below, but the table stays honest. */
+  /* the thirteen colours the generic cover would use. This bay paints
+     its own (see COVER), but the table stays honest - the TV and the
+     stands read `back` off it. */
   var PREVIEW = {
     /* the FIELD, not the lid: a generic card painted out of this table
        has to come out grey microfibre, because that is what the bay is */
@@ -2765,340 +2766,424 @@ var Couch = (function () {
 
   /* ---------------------------------------------------- the cover art
 
-     118x114 on the big card, 82x94 on the side ones, and the caller has
-     already clipped to the box so nothing in here clips or restores.
+     The Couch's painters for its cover. js/cover.js lays it out, times
+     it and paints the doodad; this says what the bay looks like.
 
      IT SHOWS WHAT THE LEVEL IS, which means it shows what the level
      looks like and in the same proportions: a band of louvred shutters
      across the top THIRD and no more, the grey tufted field with its
      buttons filling everything under it, a damask cushion leaning on
-     the seat, two pillow stacks with a gap sliding by, and - the point
-     of the whole bay - popcorn hopping along the seat at the bottom,
-     with one more still on its way down.
+     the seat, the pillow stacks for columns, and - the point of the
+     whole bay - popcorn: heaped in drifts, hopping along the seat, and
+     one more on its way out of the moulding.
 
-     The card used to give the shutters 54% of its height, which was the
+     The card once gave the shutters 54% of its height, which was the
      level as it was then. A cover that is mostly shutters sits on the
      level select next to the Desk's cover, which is also mostly
-     shutters, and the two cards are the same card. 30% is the level's
-     own figure: 70 rows of shutter out of 218 between the lid and the
-     floor. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var lidY   = y + Math.round(h * 0.07);
-    var backY  = y + Math.round(h * 0.30);   /* the crest of the sofa     */
-    var seatY  = y + h - Math.round(h * 0.17);
-    var i, k;
+     shutters, and the two cards are the same card. 32% is the level's
+     own figure: BACK_Y is 70 rows of shutter out of 218 between the lid
+     and the floor. */
 
-    /* 1. the wall, and the crown moulding across the very top */
-    ctx.fillStyle = P.backMid;    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = R.plasterMid; ctx.fillRect(x, y, w, lidY - y);
-    ctx.fillStyle = R.plasterLit; ctx.fillRect(x + Math.round(w * 0.3), y, Math.round(w * 0.3), lidY - y - 2);
-    ctx.fillStyle = R.crown;      ctx.fillRect(x, lidY - 2, w, 1);
-    ctx.fillStyle = R.outline;    ctx.fillRect(x, lidY - 1, w, 1);
-
-    /* 2. the shutters: a 4px louvre pitch with the night in every gap,
-       which is as fine as this band goes before it turns into grey */
-    ctx.fillStyle = P.shutterMid; ctx.fillRect(x, lidY, w, backY - lidY);
-    for (i = lidY + 2; i < backY - 1; i += 4) {
-      ctx.fillStyle = P.shutterLit;   ctx.fillRect(x, i, w, 1);
-      ctx.fillStyle = P.shutterShade; ctx.fillRect(x, i + 2, w, 1);
-      ctx.fillStyle = (((i - lidY) >> 2) % 4 === 3) ? P.nightDeep : P.nightBlue;
-      ctx.fillRect(x, i + 3, w, 1);
+  /* the moulding: plaster, a pendant and its pool passing at the lane's
+     pace one per 240 px of world as the room's tile lays them, then the
+     hard rows the bay itself ends on */
+  function coverCeiling(ctx, S) {
+    var x = S.x, w = S.w, y = S.y, d = S.top - S.y, n;
+    var hard = d >= 8 ? 4 : 3, pr = d - hard;
+    ctx.fillStyle = R.plasterMid; ctx.fillRect(x, y, w, pr);
+    var every = Math.max(24, Math.round(240 * S.k)), poolW = Math.round(w * 0.3);
+    var first = x + Math.round(w * 0.45) - Math.round(wrap(S.s, every));
+    for (n = -1; n < Math.ceil(w / every) + 1; n++) {
+      var lx = first + n * every;
+      if (lx + poolW < x || lx - poolW > x + w) continue;
+      ctx.fillStyle = R.plasterLit; ctx.fillRect(lx - (poolW >> 1), y, poolW, pr);
+      var gr = pr >= 6 ? 3 : (pr >= 3 ? 2 : 1), gw = Math.max(3, Math.round(7 * S.k));
+      var gy = y + pr - gr, gx = lx - (gw >> 1);
+      if (gy > y) { ctx.fillStyle = R.lampRod; ctx.fillRect(lx, y, 1, gy - y); }
+      ctx.fillStyle = R.lampGlass; ctx.fillRect(gx, gy, gw, gr);
+      ctx.fillStyle = R.outline;   ctx.fillRect(gx - 1, gy, 1, gr); ctx.fillRect(gx + gw, gy, 1, gr);
+      ctx.fillStyle = R.lampCore;  ctx.fillRect(lx, gy + (gr > 1 ? 1 : 0), 1, 1);
     }
-    /* the stiles and the tilt rods, which is what makes this a shutter
-       and not a venetian blind - exactly as in the level itself */
-    for (i = 0; i < 2; i++) {
-      var sx = x + Math.round(w * (0.33 + i * 0.4));
-      ctx.fillStyle = P.shutterMid; ctx.fillRect(sx, lidY, 4, backY - lidY);
-      ctx.fillStyle = P.shutterLit; ctx.fillRect(sx + 1, lidY, 1, backY - lidY);
-      ctx.fillStyle = P.outline;    ctx.fillRect(sx + 4, lidY, 1, backY - lidY);
-      var rx = x + Math.round(w * (0.13 + i * 0.4));
-      ctx.fillStyle = P.shutterShade; ctx.fillRect(rx - 1, lidY + 1, 4, backY - lidY - 2);
-      ctx.fillStyle = P.shutterLit;   ctx.fillRect(rx, lidY + 1, 1, backY - lidY - 2);
-    }
-
-    /* 3. THE SOFA, and it gets the rest of the card: the cushion panels
-       the level bakes, reduced to the marks that survive at sixty pixels
-       - a curved crest with a hard edge over it, a lit cap under that, a
-       flat body, a shaded skirt, a valley at every seam, and FOUR BUTTONS
-       in a wide rectangle, which is the one of those marks that says
-       "this sofa" rather than "some sofa".
-
-       It is drawn in the same five tones and the same bands as bakeCouch,
-       and that is not a nicety. This file has advertised the wrong
-       rendering on this card once already: bakeCouch stopped drawing a
-       straight rule across the top of the fabric and the cover went on
-       drawing one, so the card promised a level that no longer existed.
-       The cushions have just been redrawn in flat bands with hard edges,
-       so the cover is redrawn with them. */
-    var band = seatY - backY - 2;
-    var top = backY + 2;
-    var PW = Math.max(14, Math.round(band * 1.17));
-
-    /* The crest, as the level bakes it and NOT as a rule: CREST_DIP 11
-       over a 160px panel is the level's figure, so a cover panel PW wide
-       dips PW * 11/160, and the exponent stays 1.6 because a quadratic
-       arch is flat at its own apex and a flat apex is the straight rule
-       coming back under another name. */
-    var cDip = Math.max(1, Math.round(PW * 11 / 160));
-
-    /* EVERY TERM THAT DEPENDS ONLY ON THE COLUMN, COMPUTED ONCE. A cover
-       is repainted every frame it is on screen and the carousel paints
-       every visible card; this function had already gone from 0.188ms a
-       call to 0.447ms once by leaving row-invariant arithmetic inside the
-       pixel loop, and the fix was to hoist it. Same discipline, one loop
-       further out: the crest's Math.pow and the cap's Math.cos are paid
-       w times a call instead of w * band times.
-         pRy    the first fabric row of this column - the crest
-         pCap   how many rows of lit cap hang under the arris: the level's
-                16 rows of 141 at a panel's apex, 9 at its seams
-         pSkirtD / pShadeD / pLitD  the level's vv 131, 20 and 44, scaled
-         pQx    how far outside the corner radius this column is
-         pFlank 1 on the lit left strip, 2 on the shaded right one */
-    var pRy = [], pCap = [], pSkirtD = [], pShadeD = [], pLitD = [], pQx = [], pFlank = [];
-    var CR = 0.26;                           /* corner radius, in half-panels */
-    var pShadeW = Math.max(1, Math.round(PW * 5 / 160));
-    var pLitW = Math.max(1, Math.round(PW * 4 / 160));
-    var ci, pu, cu2, au, kc, ph2;
-    for (ci = 0; ci < w; ci++) {
-      pu = ci % PW;
-      cu2 = ((pu + 0.5) / PW - 0.5) * 2;
-      au = cu2 < 0 ? -cu2 : cu2;
-      pRy[ci] = top + Math.round(cDip * Math.pow(au, 1.6));
-      ph2 = Math.max(1, seatY - pRy[ci]);
-      kc = Math.cos(Math.PI * cu2 / 2);
-      pCap[ci] = Math.max(1, Math.round(ph2 * (9 + 7 * kc * kc) / 141));
-      pSkirtD[ci] = Math.round(ph2 * (1 - 10 / 141));
-      pShadeD[ci] = Math.round(ph2 * 20 / 141);
-      pLitD[ci] = Math.round(ph2 * 44 / 141);
-      pQx[ci] = au - (1 - CR);
-      pFlank[ci] = (pu > 0 && pu <= pLitW) ? 1 : (pu >= PW - pShadeW ? 2 : 0);
-    }
-
-    /* and the bands themselves, laid as RUNS and not as pixels: at this
-       size a row of the sofa is five or six flat runs, which is the whole
-       claim the level's own tile now makes. The order of the tests is
-       bakeCouch's order - dark, arris, skirt, right flank, cap, left
-       flank, body - because that order is what keeps the cap's curved
-       edge the only curved edge on the panel. */
-    var n, col, runCol, runFrom, d2, ay2, uy2, qy3, qy3sq;
-    for (n = -2; n < band; n++) {
-      ay2 = (n + 0.5) / band * 2 - 1;
-      uy2 = ay2 < 0 ? -ay2 : ay2;
-      if (uy2 > 0.98) uy2 = 0.98;
-      qy3 = uy2 - (1 - CR);
-      qy3sq = qy3 * qy3;
-      runCol = null; runFrom = 0;
-      for (ci = 0; ci <= w; ci++) {
-        col = null;
-        if (ci < w) {
-          d2 = top + n - pRy[ci];
-          if (d2 === -1 || d2 === -2) col = P.outline;
-          else if (d2 < 0) col = (n >= 0) ? P.button : null;   /* the V above the crest */
-          else if ((ci % PW) === 0 ||
-                   (pQx[ci] > 0 && qy3 > 0 && pQx[ci] * pQx[ci] + qy3sq > CR * CR)) col = P.button;
-          else if (d2 === 0) col = P.crest;
-          else if (d2 >= pSkirtD[ci]) col = P.backCrease;
-          else if (pFlank[ci] === 2 && d2 >= pShadeD[ci]) col = P.backCrease;
-          else if (d2 < pCap[ci]) col = P.backLit;
-          else if (pFlank[ci] === 1 && d2 < pLitD[ci]) col = P.backLit;
-          else col = P.backMid;
-        }
-        if (col === runCol) continue;
-        if (runCol) { ctx.fillStyle = runCol; ctx.fillRect(x + runFrom, top + n, ci - runFrom, 1); }
-        runCol = col; runFrom = ci;
-      }
-    }
-
-    /* AND THE NAP OVER THEM, because the level's fabric has one and a
-       cover that advertises bare flat bands advertises the slab this
-       round was called in to fix. At 160 pixels a panel a tick is 1 wide
-       and two to four tall; at the thirty or sixty a cover gets it is one
-       pixel, which is the same mark as far down as it goes.
-
-       It is laid ONLY on the flat body - the middle three fifths of a
-       panel, between the cap and the skirt - which is where all but a
-       tenth of the level's ticks land anyway, and which is cheap: it
-       needs none of the band chain above repeated, so this costs w*band/22
-       hash calls and nothing else. Seeded off the column and row, never
-       off `t`, so the speckle is nailed to the card and does not crawl
-       while the carousel animates. */
-    var nn, nh2, nx3, ny3, nd2;
-    for (nn = 0; nn < (w * band) / 22; nn++) {
-      nh2 = hash(5101 + nn * 7919 + w * 31 + band * 7);
-      nx3 = nh2 % w;
-      ny3 = (nh2 >>> 9) % band;
-      pu = nx3 % PW;
-      if (pu < PW * 0.2 || pu > PW * 0.8) continue;
-      nd2 = top + ny3 - pRy[nx3];        /* rows below this column's crest */
-      if (nd2 < pCap[nx3] || nd2 >= pSkirtD[nx3]) continue;
-      ctx.fillStyle = ((nh2 >>> 20) & 1) ? P.backLit : P.backCrease;
-      ctx.fillRect(x + nx3, top + ny3, 1, 1);
-    }
-
-    /* the four buttons on every panel, and a button is a dark pixel with
-       a shade pixel over it and NOTHING UNDER IT. The lit lower lip that
-       used to sit there went with the ramp: in Couch ref 2 and ref 4 a
-       button is a soft dark dimple with no highlight at all, and the
-       level stamps an eyebrow above and a shadow row below. At one pixel
-       a button that is all the eyebrow there is room for.
-
-       0.62 and not 0.64 on the lower row: the level moved its own lower
-       buttons from tile row 92 to 88 of 141 to get them clear of the
-       cushions propped in front of them, and 88/141 is 0.62. */
-    var bx, byy, px0;
-    for (k = 0; k * PW < w; k++) {
-      px0 = x + k * PW;
-      for (n = 0; n < 2; n++) {
-        byy = top + Math.round(band * (n ? 0.62 : 0.36));
-        for (i = 0; i < 2; i++) {
-          bx = px0 + Math.round(PW * (i ? 0.68 : 0.32));
-          if (bx >= x + w - 1) continue;
-          ctx.fillStyle = P.backCrease; ctx.fillRect(bx, byy - 1, 1, 1);
-          ctx.fillStyle = P.button;     ctx.fillRect(bx, byy, 1, 1);
-        }
-      }
-    }
-
-    /* the damask cushion propped ON THE SEAT and leaning back, rounded -
-       a square one reads as a picture hung on the wall, and one propped
-       at the crest reads as a cushion nobody could sit next to. Its
-       bottom is on the seat line because that is where the level's three
-       are, six rows down into the crease. */
-    var pw = Math.round(w * 0.22), ph = Math.round(band * 0.60);
-    var pxx = x + Math.round(w * 0.05);
-    for (i = 0; i < ph; i++) {
-      var ins = i < 2 ? 2 - i : (i > ph - 3 ? 3 - (ph - i) : 0);
-      var lean = Math.round((ph - 1 - i) / (ph - 1) * 3);
-      var rx2 = pxx + ins + lean, rw = pw - ins * 2;
-      ctx.fillStyle = P.outline;
-      ctx.fillRect(rx2 - 1, seatY - ph + i, rw + 2, 1);
-      ctx.fillStyle = (i < 3) ? P.propGreyHi : (i > ph - 4 ? P.propGreyDeep : P.propGrey);
-      ctx.fillRect(rx2, seatY - ph + i, rw, 1);
-    }
-    /* two curls and not a diamond, the same rule the backrest's own
-       cushions follow: the diamond is the column's badge, and the cover
-       is where a player learns which shape is going to kill them */
-    ctx.fillStyle = P.propMotif;
-    var mcx = pxx + Math.round(pw / 2) + 2, mcy = seatY - Math.round(ph / 2);
-    ctx.fillRect(mcx - 4, mcy - 2, 7, 1);
-    ctx.fillRect(mcx - 2, mcy + 2, 7, 1);
-
-    /* 4. two pillow stacks with a gap, sliding past */
-    var period = big ? 46 : 38;
-    var span = seatY - lidY;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var gapY = Math.round(lidY + 4 + ((i * 19) % Math.max(1, span - gapH - 10)));
-      pillowlet(ctx, ox, lidY + 2, gapY - lidY - 2, i % 3, false);
-      pillowlet(ctx, ox, gapY + gapH, seatY - gapY - gapH, i % 3, true);
-    }
-
-    /* 5. the seat, and the popcorn that is the whole reason for it. The
-       three kernels are each on their own rhythm, each casts a spot
-       that darkens as it comes down, and one more is always on its way
-       out of the moulding - which is the level in one picture. */
-    ctx.fillStyle = P.seatDeep; ctx.fillRect(x, seatY - 3, w, 3);
-    ctx.fillStyle = P.seatHi;   ctx.fillRect(x, seatY, w, 1);
-    ctx.fillStyle = P.seatLit;  ctx.fillRect(x, seatY + 1, w, 1);
-    ctx.fillStyle = P.seat;     ctx.fillRect(x, seatY + 2, w, y + h - seatY - 2);
-    Tint.rect(ctx, x, seatY + 5, w, y + h - seatY - 5, P.void, 6);
-    /* the walnut table across the very bottom, nearer than anything */
-    ctx.fillStyle = P.walnutHi; ctx.fillRect(x, y + h - 4, w, 1);
-    ctx.fillStyle = P.walnut;   ctx.fillRect(x, y + h - 3, w, 3);
-    for (i = 0; i < 6; i++) {
-      ctx.fillStyle = (i % 2) ? P.chessLight : P.chessDark;
-      ctx.fillRect(x + Math.round(wrap(w * 0.5 - s * 1.35 + i * 3, w + 20)) - 10, y + h - 3, 3, 3);
-    }
-
-    for (i = 0; i < 3; i++) {
-      var kx = x + Math.round(wrap(w - s * 0.9 + i * 37, w + 8)) - 4;
-      if (kx < x || kx > x + w - 4) continue;
-      var apex = Math.round(band * (0.45 + i * 0.2));
-      var rise = Math.abs(Math.sin(t * (2.6 - i * 0.4) + i * 1.3));
-      var ky = Math.round(seatY - 4 - rise * apex);
-      Tint.rect(ctx, kx - 1, seatY + 2, 5, 1, P.void, 15 - Math.round(rise * 9));
-      kernelet(ctx, kx, ky, false);
-    }
-    /* and the hot one on its way down, which is the one warm thing in a
-       grey room and the only colour on this card */
-    var hotY = lidY + Math.round(wrap(s * 1.5, seatY - lidY - 6));
-    kernelet(ctx, x + Math.round(w * 0.78), hotY, true);
-
-    /* 6. the doodad flying it, with a halo so a pale bird never goes
-       missing against a pale shutter */
-    var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.void, 5);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84'; ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 7. THE ROOM'S OWN LIGHT, in miniature. LivingRoom.drawLight is
-       half of what the Couch looks like - night creeping up off the
-       seat, void in the two side columns, lamp warmth under the
-       moulding - and a cover painted without it came out eleven values
-       paler than the level and sat on the level select looking like a
-       different bay to the two either side of it. */
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.3), R.lampGlow, 2);
-    /* anchored to the CARD and not to backY any more: the crest moved up
-       to 30% and a night wash starting there would have put two thirds
-       of the cover in shadow */
-    Tint.rect(ctx, x, y + Math.round(h * 0.52), w, Math.round(h * 0.48), R.nightShade, 4);
-    Tint.rect(ctx, x, seatY - 6, w, y + h - seatY + 6, P.void, 4);
-    var vig = Math.max(4, Math.round(w * 0.09));
-    Tint.rect(ctx, x, y, vig, h, P.void, 4);
-    Tint.rect(ctx, x + w - vig, y, vig, h, P.void, 4);
-    Tint.rect(ctx, x, y, w, h, R.lampGlow, 1);
+    var mould = hard === 4 ? [R.crown, R.plasterLit, R.crownShade, R.outline]
+                           : [R.crown, R.crownShade, R.outline];
+    for (n = 0; n < hard; n++) { ctx.fillStyle = mould[n]; ctx.fillRect(x, y + pr + n, w, 1); }
   }
 
-  /* One kernel inside a cover: five pixels across with its corners
-     knocked off, because a white square at this size is a window and
-     the one thing the cover has to get right is that these are round */
-  function kernelet(ctx, x, y, hot) {
-    if (hot) Tint.rect(ctx, x - 3, y - 3, 9, 9, P.cheddarHi, 4);
+  /* One kernel: n pixels across with its corners knocked off, because a
+     white square at this size is a window and the one thing the cover
+     has to get right is that these are round. */
+  function coverKernel(ctx, x, y, n, hot) {
+    var m = n - 2;
+    if (hot) { var g = n * 2 - 1, o = (g - m) >> 1; Tint.rect(ctx, x - o, y - o, g, g, P.cheddarHi, 4); }
     ctx.fillStyle = P.outline;
-    ctx.fillRect(x - 1, y, 5, 3); ctx.fillRect(x, y - 1, 3, 5);
-    ctx.fillStyle = hot ? P.cheddar : P.popWhite;
-    ctx.fillRect(x, y, 3, 3);
-    ctx.fillStyle = hot ? P.cheddarHi : P.popHi;   ctx.fillRect(x, y, 1, 1);
-    ctx.fillStyle = hot ? P.cheddarDust : P.popShade; ctx.fillRect(x + 1, y + 2, 2, 1);
+    ctx.fillRect(x - 1, y, n, m); ctx.fillRect(x, y - 1, m, n);
+    ctx.fillStyle = hot ? P.cheddar : P.popWhite;   ctx.fillRect(x, y, m, m);
+    ctx.fillStyle = hot ? P.cheddarHi : P.popHi;    ctx.fillRect(x, y, 1, 1);
+    if (m >= 3) { ctx.fillStyle = hot ? P.cheddarDust : P.popShade; ctx.fillRect(x + 1, y + m - 1, m - 1, 1); }
   }
 
-  /* One cushion column inside a cover. `up` says which end carries the
-     bolster: the cap has to be on the end that faces the gap, or the
-     cover shows two columns with their mouths shut. Each cushion is
-     drawn as its own rounded block with a dark seam between, because a
-     ruled column with lines across it is a ladder. */
-  function pillowlet(ctx, x, y, h, variant, up) {
-    if (h <= 0) return;
-    /* the cover's columns follow bakeStack: all cream, because the cover
-       is the one frame a player sees before they choose the level and it
-       has to teach the same thing the level does - cream is the hazard */
-    var body  = variant === 2 ? P.knitCream : P.pillowCream;
-    var hi    = P.pillowHi;
-    var shade = variant === 2 ? P.knitShade : P.pillowShade;
-    var cy, ch;
-    for (cy = y; cy < y + h; cy += 11) {
-      ch = Math.min(11, y + h - cy);
-      ctx.fillStyle = P.outline; ctx.fillRect(x, cy, 10, ch);
-      if (ch < 3) continue;
-      ctx.fillStyle = body;  ctx.fillRect(x + 1, cy + 1, 8, ch - 2);
-      ctx.fillStyle = hi;    ctx.fillRect(x + 2, cy + 1, 5, 1); ctx.fillRect(x + 1, cy + 2, 1, ch - 4);
-      ctx.fillStyle = shade; ctx.fillRect(x + 8, cy + 2, 1, ch - 3); ctx.fillRect(x + 3, cy + ch - 2, 5, 1);
-    }
-    /* the bolster across the mouth */
-    var by = up ? y : y + h - 3;
-    ctx.fillStyle = P.outline;     ctx.fillRect(x - 2, by, 14, 3);
-    ctx.fillStyle = P.pillowCream; ctx.fillRect(x - 1, by + (up ? 0 : 1), 12, 2);
-    ctx.fillStyle = P.pillowGold;  ctx.fillRect(x - 1, by + 1, 12, 1);
-    ctx.fillStyle = P.pillowHi;    ctx.fillRect(x, by + (up ? 0 : 1), 10, 1);
-  }
+  var COVER = {
+    halo: P.void,
+    ink: P.outline,
+
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, q = S.k * 2.4, i, k, n;
+      var backY = S.top + Math.round(S.lane * (BACK_Y - CEIL) / (FLOOR - CEIL));
+      var seatY = S.floor;
+      ctx.fillStyle = P.backMid; ctx.fillRect(x, y, w, h);
+
+      /* The shutters: a louvre pitch with the night in every gap, which
+         at four is as fine as this band goes before it turns into grey;
+         then the stiles and the tilt rods, which are what make this a
+         shutter and not a venetian blind - one of each to the level's
+         96 px panel, drifting at the shutters' own sixth of the lane. */
+      ctx.fillStyle = P.shutterMid; ctx.fillRect(x, S.top, w, backY - S.top);
+      var pitch = Math.max(3, Math.round(4 * q));
+      for (i = S.top + 2, n = 0; i + pitch - 1 < backY - 1; i += pitch, n++) {
+        ctx.fillStyle = P.shutterLit;   ctx.fillRect(x, i, w, 1);
+        ctx.fillStyle = P.shutterShade; ctx.fillRect(x, i + pitch - 2, w, 1);
+        ctx.fillStyle = (n % 4 === 3) ? P.nightDeep : P.nightBlue;
+        ctx.fillRect(x, i + pitch - 1, w, 1);
+      }
+      var panel = Math.max(12, Math.round(96 * S.k)), soff = Math.round(wrap(S.s * 0.16, panel));
+      var stile = Math.max(2, Math.round(4 * q)), sh = backY - S.top;
+      for (k = 0; k * panel - soff < w + panel; k++) {
+        var sx = x + k * panel - soff;
+        ctx.fillStyle = P.shutterMid;   ctx.fillRect(sx, S.top, stile, sh);
+        ctx.fillStyle = P.shutterLit;   ctx.fillRect(sx + 1, S.top, 1, sh);
+        ctx.fillStyle = P.outline;      ctx.fillRect(sx + stile, S.top, 1, sh);
+        var rx = sx - (panel >> 1);
+        ctx.fillStyle = P.shutterShade; ctx.fillRect(rx - 1, S.top + 1, 2, sh - 2);
+        ctx.fillStyle = P.shutterLit;   ctx.fillRect(rx, S.top + 1, 1, sh - 2);
+      }
+      Tint.rect(ctx, x, backY - 1, w, 1, P.void, 3);
+
+      /* THE SOFA, and it gets the rest of the card: the cushion panels
+         the level bakes, reduced to the marks that survive at sixty
+         pixels - a curved crest with a hard edge over it, a lit cap under
+         that, a flat body, a shaded skirt, a valley at every seam, and
+         FOUR BUTTONS in a wide rectangle, which is the one of those marks
+         that says "this sofa" rather than "some sofa". It is drawn in the
+         same five tones and the same bands as bakeCouch, and that is not
+         a nicety: this card has advertised the wrong rendering once
+         already, when bakeCouch stopped drawing a straight rule across
+         the top of the fabric and the cover went on drawing one.
+
+         A panel is the level's 160 px at card scale, and the fabric
+         slides at the sofa's own 0.62 of the lane: `off` is added to the
+         column index and nothing else, so every mark below rides it. */
+      var band = seatY - backY - 2;
+      var top = backY + 2;
+      var PW = Math.max(14, Math.round(160 * S.k));
+      var off = Math.floor(S.s * 0.62);
+
+      /* The crest, as the level bakes it and NOT as a rule: CREST_DIP 11
+         over a 160px panel is the level's figure, and the exponent stays
+         1.6 because a quadratic arch is flat at its own apex and a flat
+         apex is the straight rule coming back under another name. */
+      var cDip = Math.max(1, Math.round(PW * 11 / 160));
+
+      /* EVERY TERM THAT DEPENDS ONLY ON THE COLUMN, COMPUTED ONCE. A
+         cover is repainted every frame it is on screen and the carousel
+         paints every visible card; this painter once went from 0.188ms a
+         call to 0.447ms by leaving row-invariant arithmetic inside the
+         pixel loop, and the fix was to hoist it. The crest's Math.pow
+         and the cap's Math.cos are paid w times a call, not w * band.
+           pRy    the first fabric row of this column - the crest
+           pCap   how many rows of lit cap hang under the arris: the
+                  level's 16 rows of 141 at a panel's apex, 9 at its seams
+           pSkirtD / pShadeD / pLitD  the level's vv 131, 20 and 44, scaled
+           pQx    how far outside the corner radius this column is
+           pFlank 1 on the lit left strip, 2 on the shaded right one
+           pSeam  the valley between two panels */
+      var pRy = [], pCap = [], pSkirtD = [], pShadeD = [], pLitD = [], pQx = [], pFlank = [], pSeam = [];
+      var CR = 0.26;                           /* corner radius, in half-panels */
+      var pShadeW = Math.max(1, Math.round(PW * 5 / 160));
+      var pLitW = Math.max(1, Math.round(PW * 4 / 160));
+      var ci, pu, cu2, au, kc, ph2;
+      for (ci = 0; ci < w; ci++) {
+        pu = wrap(ci + off, PW);
+        cu2 = ((pu + 0.5) / PW - 0.5) * 2;
+        au = cu2 < 0 ? -cu2 : cu2;
+        pRy[ci] = top + Math.round(cDip * Math.pow(au, 1.6));
+        ph2 = Math.max(1, seatY - pRy[ci]);
+        kc = Math.cos(Math.PI * cu2 / 2);
+        pCap[ci] = Math.max(1, Math.round(ph2 * (9 + 7 * kc * kc) / 141));
+        pSkirtD[ci] = Math.round(ph2 * (1 - 10 / 141));
+        pShadeD[ci] = Math.round(ph2 * 20 / 141);
+        pLitD[ci] = Math.round(ph2 * 44 / 141);
+        pQx[ci] = au - (1 - CR);
+        pFlank[ci] = (pu > 0 && pu <= pLitW) ? 1 : (pu >= PW - pShadeW ? 2 : 0);
+        pSeam[ci] = pu === 0;
+      }
+
+      /* and the bands themselves, laid as RUNS and not as pixels, in
+         bakeCouch's order - dark, arris, skirt, right flank, cap, left
+         flank, body - because that order is what keeps the cap's curved
+         edge the only curved edge on the panel */
+      var col, runCol, runFrom, d2, ay2, uy2, qy3, qy3sq;
+      for (n = -2; n < band; n++) {
+        ay2 = (n + 0.5) / band * 2 - 1;
+        uy2 = ay2 < 0 ? -ay2 : ay2;
+        if (uy2 > 0.98) uy2 = 0.98;
+        qy3 = uy2 - (1 - CR);
+        qy3sq = qy3 * qy3;
+        runCol = null; runFrom = 0;
+        for (ci = 0; ci <= w; ci++) {
+          col = null;
+          if (ci < w) {
+            d2 = top + n - pRy[ci];
+            if (d2 === -1 || d2 === -2) col = P.outline;
+            else if (d2 < 0) col = (n >= 0) ? P.button : null;   /* the V above the crest */
+            else if (pSeam[ci] ||
+                     (pQx[ci] > 0 && qy3 > 0 && pQx[ci] * pQx[ci] + qy3sq > CR * CR)) col = P.button;
+            else if (d2 === 0) col = P.crest;
+            else if (d2 >= pSkirtD[ci]) col = P.backCrease;
+            else if (pFlank[ci] === 2 && d2 >= pShadeD[ci]) col = P.backCrease;
+            else if (d2 < pCap[ci]) col = P.backLit;
+            else if (pFlank[ci] === 1 && d2 < pLitD[ci]) col = P.backLit;
+            else col = P.backMid;
+          }
+          if (col === runCol) continue;
+          if (runCol) { ctx.fillStyle = runCol; ctx.fillRect(x + runFrom, top + n, ci - runFrom, 1); }
+          runCol = col; runFrom = ci;
+        }
+      }
+
+      /* AND THE NAP OVER THEM, because the level's fabric has one. At
+         card scale a tick is one pixel, laid ONLY on the flat body - the
+         middle three fifths of a panel, between the cap and the skirt -
+         which is where all but a tenth of the level's ticks land anyway.
+         Seeded off the PANEL and never off `t`, so the speckle is nailed
+         to the fabric and slides with it rather than crawling over it. */
+      var per = Math.round(PW * band / 22), nh, nx, ny, nd;
+      for (k = Math.floor(off / PW); k * PW - off < w; k++) {
+        for (i = 0; i < per; i++) {
+          nh = hash(5101 + (k * 613 + i) * 7919);
+          pu = nh % PW;
+          if (pu < PW * 0.2 || pu > PW * 0.8) continue;
+          nx = k * PW - off + pu;
+          if (nx < 0 || nx >= w) continue;
+          ny = (nh >>> 9) % band;
+          nd = top + ny - pRy[nx];
+          if (nd < pCap[nx] || nd >= pSkirtD[nx]) continue;
+          ctx.fillStyle = ((nh >>> 20) & 1) ? P.backLit : P.backCrease;
+          ctx.fillRect(x + nx, top + ny, 1, 1);
+        }
+      }
+
+      /* the four buttons on every panel: a dark pixel with a shade pixel
+         over it and NOTHING UNDER IT, as in Couch ref 2 and ref 4. 0.62
+         on the lower row because the level moved its own lower buttons to
+         88 of 141 to clear the cushions propped in front of them. */
+      for (k = Math.floor(off / PW); k * PW - off < w; k++) {
+        var px0 = x + k * PW - off;
+        for (n = 0; n < 2; n++) {
+          var byy = top + Math.round(band * (n ? 0.62 : 0.36));
+          for (i = 0; i < 2; i++) {
+            var bx = px0 + Math.round(PW * (i ? 0.68 : 0.32));
+            if (bx < x || bx >= x + w) continue;
+            ctx.fillStyle = P.backCrease; ctx.fillRect(bx, byy - 1, 1, 1);
+            ctx.fillStyle = P.button;     ctx.fillRect(bx, byy, 1, 1);
+          }
+        }
+
+        /* The damask cushion propped ON THE SEAT and leaning back,
+           rounded - a square one reads as a picture hung on the wall, and
+           one propped at the crest reads as a cushion nobody could sit
+           next to. One to a panel, riding the fabric. Two curls and not a
+           diamond: the diamond is the column's badge. */
+        var cw = Math.round(PW * 0.38), chh = Math.round(band * 0.60), lean = Math.max(1, Math.round(3 * q));
+        var cx0 = px0 + Math.round(PW * 0.05);
+        if (cx0 > x + w || cx0 + cw + lean + 2 < x || chh < 4) continue;
+        for (i = 0; i < chh; i++) {
+          var ins = i < 2 ? 2 - i : (i > chh - 3 ? 3 - (chh - i) : 0);
+          var lr = Math.round((chh - 1 - i) / (chh - 1) * lean);
+          var rx2 = cx0 + ins + lr, rw = cw - ins * 2;
+          ctx.fillStyle = P.outline;
+          ctx.fillRect(rx2 - 1, seatY - chh + i, rw + 2, 1);
+          ctx.fillStyle = (i < 3) ? P.propGreyHi : (i > chh - 4 ? P.propGreyDeep : P.propGrey);
+          ctx.fillRect(rx2, seatY - chh + i, rw, 1);
+        }
+        if (cw >= 10) {
+          ctx.fillStyle = P.propMotif;
+          var mcx = cx0 + Math.round(cw / 2) + 1, mcy = seatY - Math.round(chh / 2);
+          var ml = Math.max(3, Math.round(cw * 0.27));
+          ctx.fillRect(mcx - ml + 1, mcy - 2, ml + 1, 1);
+          ctx.fillRect(mcx - 1, mcy + 2, ml + 1, 1);
+        }
+      }
+
+      /* THE ROOM'S OWN LIGHT, in miniature, under the stacks as the
+         level's light sheet is: lamp warmth under the moulding, night
+         creeping up off the seat, void in the two side columns. A cover
+         painted without it came out eleven values paler than the level
+         and looked like a different bay to the two either side of it. */
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.3), R.lampGlow, 2);
+      Tint.rect(ctx, x, y + Math.round(h * 0.52), w, h - Math.round(h * 0.52), R.nightShade, 4);
+      var foot = Math.max(2, Math.round(6 * q));
+      Tint.rect(ctx, x, seatY - foot, w, foot, P.void, 4);
+      var vig = Math.max(4, Math.round(w * 0.09));
+      Tint.rect(ctx, x, y, vig, h, P.void, 4);
+      Tint.rect(ctx, x + w - vig, y, vig, h, P.void, 4);
+    },
+
+    /* THE PILLOW STACK: cream cushions, each its own stuffed block with
+       its corners pinched, counted from the bolster at the mouth of the
+       gap so the cut one lands in the moulding or the seat. The fabric
+       is the column's (5 damask, 3 tufted, 2 knit, as makePillar deals
+       them) and cream is the hazard, so the outline ring and the shadow
+       are what carry it against the pale shutters. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var top = end === 'top';
+      var capH = Math.max(2, Math.round(9 * S.k)), proud = Math.max(1, Math.round(4 * S.k));
+      var ch = Math.max(5, Math.round(32 * S.k));
+      var fab = hash(p.i * 7 + 11) % 10;
+      var knit = fab >= 8;
+      var body = knit ? P.knitCream : P.pillowCream, shade = knit ? P.knitShade : P.pillowShade;
+      var d = capH, cy;
+      for (; d - capH < h; d += ch) {
+        cy = top ? y + h - d - ch : y + d;
+        if (cy + ch <= y || cy >= y + h) break;
+        /* the ring with its corners taken in; what shows at the corner
+           is the wall, as it does round the level's own tile */
+        ctx.fillStyle = P.outline;
+        ctx.fillRect(x + 1, cy, w - 2, ch); ctx.fillRect(x, cy + 1, w, ch - 2);
+        ctx.fillStyle = body;
+        ctx.fillRect(x + 2, cy + 1, w - 4, ch - 2); ctx.fillRect(x + 1, cy + 2, w - 2, ch - 4);
+        if (ch >= 7) {
+          ctx.fillStyle = P.pillowHi;
+          ctx.fillRect(x + 2, cy + 1, w - 4, 1); ctx.fillRect(x + 1, cy + 2, 1, ch - 4);
+          ctx.fillStyle = shade;
+          ctx.fillRect(x + w - 2, cy + 2, 1, ch - 4); ctx.fillRect(x + 2, cy + ch - 2, w - 4, 1);
+        }
+        var mx = x + (w >> 1) - 1, my = cy + (ch >> 1) - 1;
+        if (fab < 5) {          /* the damask's medallion */
+          ctx.fillStyle = P.pillowGold; ctx.fillRect(mx, my, 2, ch >= 9 ? 2 : 1);
+        } else if (!knit) {     /* the tufted one's covered button */
+          ctx.fillStyle = P.pillowGoldDeep; ctx.fillRect(mx + 1, my, 1, 1);
+        } else if (ch >= 7) {   /* stocking stitch, in two dashes */
+          ctx.fillStyle = P.knitShade;
+          ctx.fillRect(x + 3, my - 1, Math.max(1, (w >> 1) - 3), 1);
+          ctx.fillRect(mx + 1, my + 2, Math.max(1, (w >> 1) - 3), 1);
+        }
+      }
+      /* The BOLSTER across the mouth: the bay's bands folded to what the
+         card has, lit on the face that looks into the gap, and its end
+         columns a row shorter at both ends because it is a tube. */
+      var rows = capH >= 4 ? [P.outline, P.pillowHi, P.pillowGold, P.pillowGoldDeep]
+               : capH === 3 ? [P.outline, P.pillowHi, P.pillowGold] : [P.outline, P.pillowGold];
+      var capY = top ? y + h - capH : y, cw = w + proud * 2, r;
+      for (r = 0; r < capH; r++) {
+        ctx.fillStyle = rows[r];
+        ctx.fillRect(x - proud + 1, top ? y + h - 1 - r : y + r, cw - 2, 1);
+      }
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(x - proud, capY + 1, 1, capH - 2); ctx.fillRect(x + w + proud - 1, capY + 1, 1, capH - 2);
+      /* the hard cast shadow on the shutters behind */
+      Tint.rect(ctx, x + w, y, proud, h, P.void, 6);
+    },
+
+    ceiling: coverCeiling,
+
+    /* The seat, its crease over the feet of the stacks, and the walnut
+       table across the very bottom - nearer than anything, so it slides
+       at 1.35 of the lane with a game of chess on it. */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, fy = S.floor, d = S.y + S.h - S.floor, q = S.k * 2.4, n, i;
+      var crease = Math.max(2, Math.round(4 * q));
+      Tint.rect(ctx, x, fy - crease, w, crease, P.seatDeep, 8);
+      ctx.fillStyle = P.seatHi;  ctx.fillRect(x, fy, w, 1);
+      ctx.fillStyle = P.seatLit; ctx.fillRect(x, fy + 1, w, 1);
+      ctx.fillStyle = P.seat;    ctx.fillRect(x, fy + 2, w, d - 2);
+      var dim = Math.max(3, Math.round(5 * q));
+      Tint.rect(ctx, x, fy + dim, w, d - dim, P.void, 6);
+      var wt = Math.max(2, Math.round(4 * q)), ty = S.y + S.h - wt;
+      ctx.fillStyle = P.walnutHi; ctx.fillRect(x, ty, w, 1);
+      ctx.fillStyle = P.walnut;   ctx.fillRect(x, ty + 1, w, wt - 1);
+      var sq = Math.max(1, Math.round(3 * q)), every = Math.round(w * 1.3);
+      var b0 = x + Math.round(w * 0.5) - Math.round(wrap(S.s * 1.35, every));
+      for (n = 0; n < 2; n++) {
+        var bx = b0 + n * every;
+        for (i = 0; i < 6; i++) {
+          ctx.fillStyle = (i % 2) ? P.chessLight : P.chessDark;
+          ctx.fillRect(bx + i * sq, ty + 1, sq, Math.min(sq, wt - 1));
+        }
+      }
+    },
+
+    /* THE DRIFTS - the bay's spike, the same popcorn heaped where it
+       landed - in the even spans: on the cushion or wedged in the
+       moulding, alternately, each kept clear of the doodad's line. Every
+       floor drift has a kernel hopping beside it, its spot darkening on
+       the seat as it comes down, never high enough to meet the doodad. */
+    props: function (ctx, S) {
+      var q = S.k * 2.4, i, j, b;
+      /* never under four: at three the ring is a cross and reads as a sparkle */
+      var kn = Math.max(4, Math.round(5 * q));
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var hv = hash(sp.i * 41 + 3), sz = DRIFT[hv % 4];
+        var mx = Math.round((sp.x0 + sp.x1) / 2), sw = sp.x1 - sp.x0;
+        var W = Math.min(Math.round(sz.w * S.k), sw - 4), H = Math.round(sz.h * S.k);
+        var roomDn = S.floor - 2 - sp.line.bottom, roomUp = sp.line.top - S.top - 1;
+        var floorSide = wrap(sp.i, 4) === 0;
+        if (floorSide && roomDn < 3 && roomUp > roomDn) floorSide = false;
+        else if (!floorSide && roomUp < 3 && roomDn > roomUp) floorSide = true;
+        H = Math.min(H, floorSide ? roomDn : roomUp);
+        if (H >= 2 && W >= 4) {
+          /* the dome, row by row from its base: its outline is the
+             shape grown by a pixel, then the mass in shadow, then the
+             kernels stamped where the dome has room */
+          var cx = mx, base = floorSide ? S.floor - 1 : S.top, dir = floorSide ? -1 : 1;
+          var hw = [];
+          for (j = 0; j < H; j++) hw[j] = Math.round(driftHalf(j, W, H));
+          ctx.fillStyle = P.outline;
+          for (j = 0; j <= H; j++) {
+            var ow = Math.max(j < H ? hw[j] + 1 : 0, j > 0 ? hw[j - 1] : 0);
+            if (ow > 0) ctx.fillRect(cx - ow, base + dir * j, ow * 2, 1);
+          }
+          ctx.fillStyle = P.popShade;
+          for (j = 0; j < H; j++) if (hw[j] > 0) ctx.fillRect(cx - hw[j], base + dir * j, hw[j] * 2, 1);
+          var blobs = Math.max(2, Math.round(W * H / 10));
+          for (b = 0; b < blobs; b++) {
+            var bh = hash(sp.i * 97 + b * 13 + 1);
+            var bj = (bh >>> 3) % Math.max(1, H - 1);
+            var room = hw[bj + 1] !== undefined ? Math.min(hw[bj], hw[bj + 1]) : hw[bj];
+            if (room < 1) continue;
+            var bx = cx - room + (bh >>> 11) % Math.max(1, room * 2 - 1);
+            var by = floorSide ? base - bj - 1 : base + bj;
+            ctx.fillStyle = (bh & 1) ? P.popWhite : P.popCream;
+            ctx.fillRect(bx, by, 2, 2);
+            if ((bh >>> 7) % 4 === 0) { ctx.fillStyle = P.popHi; ctx.fillRect(bx, by, 1, 1); }
+          }
+          ctx.fillStyle = P.hull;
+          ctx.fillRect(cx + (hv >>> 6) % Math.max(1, hw[0]) - (hw[0] >> 1), floorSide ? base - 1 : base + 1, 1, 1);
+          if (floorSide) Tint.rect(ctx, cx - (W >> 1) - 2, S.floor - 2, W + 4, 2, P.seatDeep, 9);
+        }
+
+        /* the hop: the level's 20-46 px, capped under the doodad's line */
+        if (!floorSide) continue;
+        var kx = sp.x1 - Math.max(3, Math.round(7 * q)) - (kn >> 1);
+        var apex = Math.min(Math.round(S.lane * (0.10 + 0.05 * (hv % 3))), S.floor - 3 - kn - sp.line.bottom);
+        var rise = Math.abs(Math.sin(S.t * 2.6 + (hv % 628) / 100));
+        var ky = S.floor - kn - Math.round(rise * Math.max(0, apex));
+        Tint.rect(ctx, kx - 1, S.floor + 1, kn + 1, 1, P.void, 15 - Math.round(rise * 9));
+        coverKernel(ctx, kx, ky, kn, false);
+      }
+    },
+
+    /* a kernel out of the moulding, and every third one the HOT one -
+       the one warm thing in a grey room and the only colour on the card */
+    drop: function (ctx, d, S) {
+      var n = Math.max(4, Math.round(5 * S.k * 2.4)), m = n - 2;
+      coverKernel(ctx, d.x - (m >> 1), d.y - (m >> 1), n, wrap(d.i, 6) === 3);
+    },
+
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, R.lampGlow, 1); }
+  };
 
   /* ----------------------------------------------------- generation */
 
@@ -3661,7 +3746,7 @@ var Couch = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: CEIL_KILLS,
     BOON_NAMES: [MAP_NAME, YARN_NAME],
@@ -3670,7 +3755,6 @@ var Couch = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     /* The two optional hooks, and optional is the whole point of them:

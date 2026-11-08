@@ -180,9 +180,9 @@ var Deck = (function () {
     spike: ['▲ MISTERS ▲', 'ON A TIMER. NOT YOURS.']
   };
 
-  /* the thirteen colours js/scene_levelselect.js paints its generic
-     preview window with. The Deck paints its own cover below, but the
-     contract publishes these and a future caller may want them. */
+  /* the thirteen colours the contract publishes for a level's little
+     window. The cover itself is COVER, below; tv.js and the stands still
+     read PREVIEW.back. */
   var PREVIEW = {
     back: P.fenceMid, backAlt: P.fenceLight, seam: P.fenceSeam,
     beam: P.bronzeMid, beamDark: P.bronzeDark, beamLight: P.bronzeHi,
@@ -199,7 +199,7 @@ var Deck = (function () {
 
   /* ------------------------------------------------------- utilities */
 
-  /* a positive modulo, for scrolling things backwards in the preview */
+  /* a positive modulo, for scrolling things backwards on the cover */
   function wrap(v, m) { return ((v % m) + m) % m; }
 
   /* an integer hash: the mister's droplets shimmer off this rather than
@@ -1478,185 +1478,366 @@ var Deck = (function () {
 
   /* ------------------------------------------------- the cover art
 
-     The little window on the level select. The generic cover is the
-     Coop's shapes recoloured, which reads as neither level, so the Deck
-     paints its own: canopy, fence, rail, a chair going past, red boards
-     with the paint off them, bronze heaters, and a mister blinking on
-     and off so the card says what the level does. The caller has
-     already clipped to the box, so nothing here saves or restores. */
+     The Deck's painters for its cover (js/cover.js lays it out and times
+     it): the canopy, the board fence with its trunks and string lights,
+     the rail and a chair going by, each at its own drift; heaters for
+     columns, silver mesh above the gap and bronze tank below; the apple
+     bough across the top and the red boards with the paint off them; a
+     mister on its timer in the open spans, and an apple coming down.
 
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var deck = y + h - Math.round(h * 0.16);
-    var railY = y + Math.round(h * 0.60);
-    var fenceTop = y + Math.round(h * 0.34);
-    var i, n, px;
+     The posts are a step darker here than they are in the room: on a
+     card three lit tan posts fought the bronze heaters for the eye and
+     the card read as scaffolding. That is the level's own readability
+     rule - lift the pillar, sink whatever stands behind it - applied to
+     the cover. */
 
-    /* 1. the canopy: a hash-jittered field of blocks. The tone has to come
-       off BOTH coordinates - a single running counter hashed once per
-       block hands every row the same sequence shifted by a constant, and
-       the canopy came out as diagonal stripes of leaf. */
-    ctx.fillStyle = P.leafDeep;
-    ctx.fillRect(x, y, w, h);
-    for (var ly = y; ly < fenceTop; ly += 3) {
-      for (var lx = x; lx < x + w; lx += 4) {
-        n = (Math.imul(lx - x, 1103515245) ^ Math.imul(ly - y, 19349663)) >>> 0;
-        var v = (n >>> 16) % 100;
-        ctx.fillStyle = (v < 15 && ly < y + (fenceTop - y) * 0.4) ? P.leafLight
-                      : (v < 55 ? P.leafMid : P.leafDark);
-        ctx.fillRect(lx, ly, 4, 3);
+  /* One end of a heater: the dish under the emitter, or the lid on the
+     tank. Lit from above, as in the room, so the bright row is on top and
+     the dark one underneath. The gap side always gets its outline row,
+     because that is the edge the doodad flies past; the far side gets one
+     only when the cap is deep enough to spare the row. */
+  function coverCap(ctx, x, y, w, h, end, S, hi, mid, dark) {
+    var capH = Math.max(2, Math.round(9 * S.k)), pr = Math.max(1, Math.round(4 * S.k));
+    var cx = x - pr, cw = w + pr * 2, cy = end === 'top' ? y + h - capH : y;
+    var i0 = (end === 'bottom' || capH >= 4) ? 1 : 0;
+    var i1 = (end === 'top' || capH >= 4) ? capH - 2 : capH - 1;
+    ctx.fillStyle = P.outline; ctx.fillRect(cx, cy, cw, capH);
+    ctx.fillStyle = mid;       ctx.fillRect(cx + 1, cy + i0, cw - 2, i1 - i0 + 1);
+    ctx.fillStyle = hi;        ctx.fillRect(cx + 1, cy + i0, cw - 2, 1);
+    if (i1 > i0) { ctx.fillStyle = dark; ctx.fillRect(cx + 1, cy + i1, cw - 2, 1); }
+    var mx = x + (w >> 1);
+    if (end === 'top') {
+      ctx.fillStyle = P.bronzeDark; ctx.fillRect(mx - 1, cy + i1, 3, 1);   /* the hub */
+    } else {
+      ctx.fillStyle = P.brass;      ctx.fillRect(mx - 1, cy + i0, 2, 1);   /* the pole socket */
+    }
+  }
+
+  /* One mister head in a cover: the level's drawHead at card scale. The
+     jet stops short of `room` - the rows the doodad's line can use - so it
+     can never spray through the player on any card. */
+  function coverMister(ctx, S, mx, onCeil, p, seed, room) {
+    var q = S.k * 2.4, dir = onCeil ? 1 : -1, base, i, y, kk, cw;
+    var tube = Math.max(2, Math.round((onCeil ? 10 : 14) * S.k));
+    var collar = Math.max(3, Math.round(6 * q)), cH = Math.max(1, Math.round(2 * q));
+    if (onCeil) {
+      base = S.top + tube;
+      ctx.fillStyle = P.hoseBlack; ctx.fillRect(mx, S.top, 2, tube);
+      ctx.fillStyle = P.hoseHi;    ctx.fillRect(mx, S.top, 1, tube - 1);
+      ctx.fillStyle = P.hoseBlack; ctx.fillRect(mx + 1 - (collar >> 1), S.top, collar, cH);   /* the saddle */
+      ctx.fillStyle = P.brass;     ctx.fillRect(mx, base - 1, 2, 2);
+      ctx.fillStyle = P.brassHi;   ctx.fillRect(mx, base - 1, 1, 1);
+    } else {
+      base = S.floor - tube;
+      /* the boards are damp where it stands */
+      Tint.rect(ctx, mx + 1 - Math.round(6 * q), S.floor - 3, Math.round(12 * q), 3, P.deckRedDark, 7);
+      ctx.fillStyle = P.hoseBlack; ctx.fillRect(mx, base, 2, tube);
+      ctx.fillStyle = P.hoseHi;    ctx.fillRect(mx, base + 1, 1, tube - 2);
+      ctx.fillStyle = P.hoseBlack; ctx.fillRect(mx + 1 - (collar >> 1), S.floor - cH, collar, cH);   /* the stake collar */
+      ctx.fillStyle = P.brass;     ctx.fillRect(mx, base - 2, 2, 2);
+      ctx.fillStyle = P.brassHi;   ctx.fillRect(mx, base - 2, 1, 1);
+      base -= 2;
+    }
+    var J = Math.min(Math.round(S.lane * 0.30), room - Math.max(3, Math.round(3 * q)));
+    if (p < 0.58) {
+      /* a bead hanging off the nozzle between cycles */
+      if (p > 0.3) { ctx.fillStyle = P.mistHi; ctx.fillRect(mx + (onCeil ? 1 : 0), base + dir, 1, 1); }
+      return;
+    }
+    if (J < 3) return;
+    var a = ctx.globalAlpha;
+    if (p < 0.64) {
+      /* the tell: a bead swelling on the mouth, and two spits of water */
+      var r = (p - 0.58) / 0.06, sz = 1 + Math.round(r * 2);
+      ctx.fillStyle = P.mistHi; ctx.fillRect(mx + 1 - (sz >> 1), base - (sz >> 1), sz, sz);
+      ctx.fillStyle = P.mist;
+      ctx.fillRect(mx, base + dir * Math.min(J, Math.round((2 + r * 6) * q)), 1, 1);
+      ctx.fillRect(mx + 1, base + dir * Math.min(J, Math.round((4 + r * 10) * q)), 1, 1);
+    } else if (p < 0.92) {
+      /* the cone, in 2-px bands, full length almost at once */
+      var jl = Math.round(J * Math.min(1, (p - 0.64) / 0.28 / 0.07));
+      ctx.globalAlpha = a * 0.82;
+      for (i = 0; i < jl; i += 2) {
+        kk = i / J; cw = 1 + Math.round(kk * 4);
+        y = dir < 0 ? base - i - 1 : base + i;
+        ctx.fillStyle = P.mistEdge; ctx.fillRect(mx + 1 - (cw >> 1), y, cw, 2);
+        if (cw >= 3) { ctx.fillStyle = P.mist; ctx.fillRect(mx + 1 - ((cw - 2) >> 1), y, cw - 2, 2); }
+      }
+      ctx.globalAlpha = a;
+      ctx.fillStyle = P.mistHi;
+      for (i = 0; i < jl && i < J * 0.45; i += 2) ctx.fillRect(mx, dir < 0 ? base - i - 1 : base + i, 1, 2);
+      /* the billow at the working end, wandering a pixel */
+      var tip = base + dir * jl, sway = Math.round(Math.sin(S.t * 4 + seed) * 1);
+      var bw = Math.max(3, Math.round(5 * q));
+      ctx.fillStyle = P.mist;   ctx.fillRect(mx + 1 - (bw >> 1) + sway, tip - (dir < 0 ? 2 : 0), bw, 3);
+      ctx.fillStyle = P.mistHi; ctx.fillRect(mx + sway, tip - (dir < 0 ? 1 : -1), 1, 1);
+      /* four droplets, re-rolled five times a second: a shimmer, not a
+         pattern sliding under the picture */
+      var tick = Math.floor(S.t * 5);
+      for (var d = 0; d < 4; d++) {
+        var n = hash(d * 73 + tick * 7 + seed);
+        var along = Math.round(jl * (0.4 + ((n >>> 8) % 60) / 100));
+        var cwd = 1 + Math.round(Math.min(1, along / J) * 4) + 2;
+        ctx.fillStyle = (d % 2 === 0) ? P.mistHi : P.mistEdge;
+        ctx.fillRect(mx + 1 + (n % cwd) - (cwd >> 1), base + dir * along, 1, 1);
+      }
+    } else {
+      /* the valve has shut: the top of the cone lets go and drifts on */
+      var rr = (p - 0.92) / 0.08, shift = Math.round(6 * q * rr);
+      ctx.globalAlpha = a * 0.8 * (1 - rr);
+      for (i = Math.round(J * 0.6); i < J - shift; i += 2) {
+        kk = i / J; cw = 1 + Math.round(kk * 4);
+        y = base + dir * (i + shift) - (dir < 0 ? 1 : 0);
+        ctx.fillStyle = P.mistEdge; ctx.fillRect(mx + 1 - (cw >> 1), y, cw, 2);
+        if (cw >= 3) { ctx.fillStyle = P.mist; ctx.fillRect(mx + 1 - ((cw - 2) >> 1), y, cw - 2, 2); }
       }
     }
-    ctx.fillStyle = P.skyPeek;
-    for (i = 0; i < 4; i++) ctx.fillRect(x + 4 + i * 9, y + 1 + (i % 3) * 2, 2, 1);
+    ctx.globalAlpha = a;
+  }
 
-    /* 2. the fence, with two trunks drifting across it */
-    ctx.fillStyle = P.fenceMid;   ctx.fillRect(x, fenceTop, w, deck - fenceTop);
-    ctx.fillStyle = P.fenceLight; ctx.fillRect(x, fenceTop, w, 2);
-    ctx.fillStyle = P.fenceSeam;
-    var seamOff = Math.round(s * 0.22) % 6;
-    for (i = -seamOff; i < w; i += 6) {
-      if (i < 0) continue;
-      ctx.fillRect(x + i, fenceTop + 2, 1, deck - fenceTop - 2);
-    }
-    [30, 80].forEach(function (t0) {
-      var tx = x + wrap(t0 - s * 0.22, w + 10);
-      ctx.fillStyle = P.trunkMid; ctx.fillRect(tx, fenceTop - 8, 5, deck - fenceTop + 8);
-      ctx.fillStyle = P.trunkHi;  ctx.fillRect(tx, fenceTop - 8, 1, deck - fenceTop + 8);
-      ctx.fillStyle = P.trunkDark; ctx.fillRect(tx + 4, fenceTop - 8, 1, deck - fenceTop + 8);
-    });
+  var COVER = {
+    halo: P.fenceSeam,
+    ink: P.outline,
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, q = S.k * 2.4, deck = S.floor;
+      var fenceTop = S.top + Math.round(S.lane * 0.385);
+      var railY = S.top + Math.round(S.lane * 0.569);
+      var i, n, c, off, step;
 
-    /* 3. the rail and its posts. The posts are a step darker here than
-       they are in the room: on a 118px card three lit tan posts fought
-       the bronze heaters for the eye and the card read as scaffolding.
-       This is the level's own readability rule - lift the pillar, sink
-       whatever stands behind it - applied to the cover. */
-    for (i = 0; i < 4; i++) {
-      px = x + wrap(i * 40 - s * 0.42, w + 8);
-      ctx.fillStyle = P.postDark; ctx.fillRect(px, railY + 3, 4, deck - railY - 3);
-      ctx.fillStyle = P.postMid;  ctx.fillRect(px, railY + 3, 1, deck - railY - 3);
-    }
-    ctx.fillStyle = P.railMid; ctx.fillRect(x, railY, w, 3);
-    ctx.fillStyle = P.railTop; ctx.fillRect(x, railY, w, 1);
-    ctx.fillStyle = P.outline; ctx.fillRect(x, railY + 3, w, 1);
-
-    /* 4. one chair going by, and the fire pit beside it */
-    var cx = x + wrap(w * 0.55 - s * 0.6, w + 40) - 20;
-    ctx.fillStyle = P.wickerMid; ctx.fillRect(cx + 5, deck - 44, 30, 28);
-    ctx.fillStyle = P.wickerLight;
-    for (i = 0; i < 28; i += 3) ctx.fillRect(cx + 5, deck - 44 + i, 30, 1);
-    ctx.fillStyle = P.wickerMid;
-    ctx.fillRect(cx, deck - 30, 6, 16); ctx.fillRect(cx + 34, deck - 30, 6, 16);
-    ctx.fillStyle = P.wickerHi;
-    ctx.fillRect(cx, deck - 30, 6, 1); ctx.fillRect(cx + 34, deck - 30, 6, 1);
-    ctx.fillStyle = P.cushion;    ctx.fillRect(cx + 8, deck - 20, 24, 5);
-    ctx.fillStyle = P.wickerDark; ctx.fillRect(cx + 2, deck - 8, 2, 8); ctx.fillRect(cx + 36, deck - 8, 2, 8);
-    /* the outline follows the chair's actual silhouette. A single bar the
-       full 40px wide floated over open fence either side of the back, and
-       read as a scratch across the card. */
-    ctx.fillStyle = P.outline;
-    ctx.fillRect(cx + 5, deck - 45, 30, 1);
-    ctx.fillRect(cx, deck - 31, 6, 1); ctx.fillRect(cx + 34, deck - 31, 6, 1);
-    ctx.fillStyle = P.steelMid;   ctx.fillRect(cx + 46, deck - 10, 12, 10);
-    ctx.fillStyle = P.steelLight; ctx.fillRect(cx + 48, deck - 10, 2, 10);
-    ctx.fillStyle = P.ash;
-    for (i = 0; i < 3; i++) ctx.fillRect(cx + 48 + i * 4, deck - 3, 1, 1);
-
-    /* 5. the boards, with the paint coming off them */
-    ctx.fillStyle = P.deckRed;   ctx.fillRect(x, deck, w, y + h - deck);
-    ctx.fillStyle = P.deckGap;
-    for (i = 4; i < y + h - deck; i += 4) ctx.fillRect(x, deck + i, w, 1);
-    ctx.fillStyle = P.deckRedHi; ctx.fillRect(x, deck, w, 1);
-    for (i = 0; i < 6; i++) {
-      ctx.fillStyle = P.deckBare;
-      ctx.fillRect(x + wrap(i * 17 + Math.round(s), w), deck + 1 + (i % 3), 2 + (i % 3), 1);
-    }
-
-    /* 6. three heaters: silver mesh above the gap, bronze tank below */
-    var period = big ? 46 : 38;
-    var firstOx = 0;
-    for (var k = 0; k < 3; k++) {
-      var ox = Math.round(x + w + 10 - ((s + k * period) % (period * 3)));
-      if (k === 0) firstOx = ox;
-      if (ox < x - 12 || ox > x + w + 2) continue;
-      var span = deck - (y + 6);
-      var gapH = Math.round(span * 0.36);
-      /* The three gaps are spread over thirds of the room rather than
-         taken off a modulus. `(k * 19) % room` gave the big card 8/27/46
-         and the small card 18/20/22 - on the small one all three gaps
-         sat in the same band, so the card read as scaffolding instead of
-         as three heaters with somewhere to fly between them. */
-      var room = Math.max(1, span - gapH - 26);
-      var gapY = Math.round(y + 18 + (k * room) / 3);
-      pvEmitter(ctx, ox, y, gapY - y);
-      pvHousing(ctx, ox, gapY + gapH, deck - gapY - gapH);
-      ctx.fillStyle = P.steelLight; ctx.fillRect(ox - 2, gapY - 3, 13, 3);
-      ctx.fillStyle = P.steelDark;  ctx.fillRect(ox - 2, gapY - 1, 13, 1);
-      ctx.fillStyle = P.bronzeLight; ctx.fillRect(ox - 2, gapY + gapH, 13, 3);
-      ctx.fillStyle = P.bronzeDark;  ctx.fillRect(ox - 2, gapY + gapH + 2, 13, 1);
-    }
-
-    /* 7. a mister on the boards, blinking its own cycle */
-    var mx = firstOx + Math.round(period / 2);
-    if (mx > x && mx < x + w - 4) {
-      ctx.fillStyle = P.hoseBlack; ctx.fillRect(mx, deck - 5, 1, 5);
-      ctx.fillStyle = P.brass;     ctx.fillRect(mx - 1, deck - 7, 2, 2);
-      if ((t % 2.4) > 1.5) {
-        ctx.fillStyle = P.mistEdge; ctx.fillRect(mx - 1, deck - 25, 3, 18);
-        ctx.fillStyle = P.mist;     ctx.fillRect(mx, deck - 19, 1, 12);
-        ctx.fillStyle = P.mistHi;   ctx.fillRect(mx - 1, deck - 27, 3, 2);
-        ctx.fillRect(mx + 2, deck - 22, 1, 1); ctx.fillRect(mx - 2, deck - 16, 1, 1);
+      /* 1. the canopy: a hash-jittered field of blocks, drifting at the
+         canopy's own rate. The tone comes off BOTH the block's column and
+         its row - one running counter hashed once per block hands every
+         row the same sequence shifted along, and the canopy comes out as
+         diagonal stripes of leaf. */
+      var bw = S.k < 0.3 ? 3 : 4, bh = S.k < 0.3 ? 2 : 3;
+      ctx.fillStyle = P.leafDeep; ctx.fillRect(x, y, w, h);
+      off = Math.floor(S.s * 0.10);
+      for (var row = 0; y + row * bh < fenceTop; row++) {
+        for (c = Math.floor(off / bw) - 1; c * bw - off < w; c++) {
+          n = hash(c * 131 + row * 7919);
+          var v = (n >>> 8) % 100, bx = x + c * bw - off, by = y + row * bh;
+          ctx.fillStyle = (v < 15 && row * bh < (fenceTop - y) * 0.4) ? P.leafLight
+                        : (v < 55 ? P.leafMid : P.leafDark);
+          ctx.fillRect(bx, by, bw, bh);
+          /* a fleck of white sky through the top of it */
+          if (v >= 98 && row * bh < (fenceTop - y) * 0.5) { ctx.fillStyle = P.skyPeek; ctx.fillRect(bx + 1, by + 1, 2, 1); }
+        }
       }
-    }
 
-    /* 8. an apple on its way down; every third one is golden */
-    var ay = y + 6 + ((s * 1.6) % (deck - y - 10));
-    var golden = Math.floor((s * 1.6) / (deck - y - 10)) % 3 === 0;
-    px = x + Math.round(w * 0.72);
-    ctx.fillStyle = golden ? P.goldMid : P.appleMid;
-    ctx.fillRect(px, Math.round(ay), 3, 3);
-    ctx.fillStyle = golden ? P.goldHi : P.appleHi;
-    ctx.fillRect(px, Math.round(ay), 1, 1);
-    ctx.fillStyle = P.stem;
-    ctx.fillRect(px + 1, Math.round(ay) - 1, 1, 1);
+      /* 2. the fence: boards and seams, the cap rail, its string of lights,
+         and two grey trunks standing against it */
+      off = S.s * 0.22;
+      ctx.fillStyle = P.fenceMid;   ctx.fillRect(x, fenceTop, w, deck - fenceTop);
+      step = Math.max(4, Math.round(6 * q));
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        var sx = Math.round(x + c * step - off);
+        if (hash(c + 900) % 4 === 0) { ctx.fillStyle = P.fenceLight; ctx.fillRect(sx + 1, fenceTop, step - 1, deck - fenceTop); }
+        ctx.fillStyle = P.fenceSeam; ctx.fillRect(sx, fenceTop, 1, deck - fenceTop);
+      }
+      ctx.fillStyle = P.fenceLight; ctx.fillRect(x, fenceTop, w, Math.max(1, Math.round(2 * q)));
+      ctx.fillStyle = P.fenceSeam;  ctx.fillRect(x, fenceTop + Math.max(1, Math.round(2 * q)), w, 1);
+      step = Math.max(6, Math.round(11 * q));
+      ctx.fillStyle = P.bulb;
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        var sag = Math.round(Math.sin(wrap(c, 6) / 5 * Math.PI) * 4 * q);
+        ctx.fillRect(Math.round(x + c * step - off), fenceTop + Math.round(5 * q) + sag, 1, 1);
+      }
+      var tw = Math.max(3, Math.round(5 * q)), tTop = fenceTop - Math.round(8 * q);
+      for (i = 0; i < 2; i++) {
+        var tx = x + Math.round(wrap(i * (w + 10) / 2 + 30 * q - off, w + 10)) - tw;
+        ctx.fillStyle = P.trunkMid;  ctx.fillRect(tx, tTop, tw, deck - tTop);
+        ctx.fillStyle = P.trunkHi;   ctx.fillRect(tx, tTop, 1, deck - tTop);
+        ctx.fillStyle = P.trunkDark; ctx.fillRect(tx + tw - 1, tTop, 1, deck - tTop);
+      }
 
-    /* 9. the doodad flying it, with a halo so it does not sink into the
-       fence the way it sank into the Garden's stucco */
-    var bx = Math.round(x + w * 0.3);
-    var byy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, bx - sz, byy - sz, sz * 2, sz * 2, P.fenceSeam, 5);
-    ctx.fillStyle = P.outline; ctx.fillRect(bx - sz / 2 - 1, byy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c'; ctx.fillRect(bx - sz / 2, byy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873'; ctx.fillRect(bx - sz / 2, byy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline; ctx.fillRect(bx + sz / 2 - 2, byy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84'; ctx.fillRect(bx + sz / 2, byy, 2, 1);
+      /* 3. the rail and its posts */
+      off = S.s * 0.42;
+      var pstep = Math.round(40 * q), pwid = Math.max(2, Math.round(4 * q)), rh = Math.max(2, Math.round(3 * q));
+      for (c = Math.floor(off / pstep) - 1; c * pstep - off < w; c++) {
+        var px = Math.round(x + c * pstep - off);
+        ctx.fillStyle = P.postDark; ctx.fillRect(px, railY + rh, pwid, deck - railY - rh);
+        ctx.fillStyle = P.postMid;  ctx.fillRect(px, railY + rh, 1, deck - railY - rh);
+      }
+      ctx.fillStyle = P.railMid; ctx.fillRect(x, railY, w, rh);
+      ctx.fillStyle = P.railTop; ctx.fillRect(x, railY, w, 1);
+      ctx.fillStyle = P.outline; ctx.fillRect(x, railY + rh, w, 1);
 
-    /* 10. the yard's warm air over the lot of it */
-    Tint.rect(ctx, x, y, w, h, P.sunHaze, 1);
-  }
+      /* 4. one chair going by, and the fire pit beside it. The pair is
+         `G` wide and comes round once per card plus G, so it is wholly off
+         one side before it comes back on the other. */
+      function Q(v) { return Math.round(v * q); }
+      var G = Q(58), cx = x + Math.round(wrap(w * 0.55 - S.s * 0.6, w + G)) - G;
+      ctx.fillStyle = P.wickerMid; ctx.fillRect(cx + Q(5), deck - Q(44), Q(30), Q(28));
+      ctx.fillStyle = P.wickerLight;
+      for (i = 0; i < Q(28); i += (S.k < 0.3 ? 2 : 3)) ctx.fillRect(cx + Q(5), deck - Q(44) + i, Q(30), 1);
+      ctx.fillStyle = P.wickerMid;
+      ctx.fillRect(cx, deck - Q(30), Q(6), Q(16)); ctx.fillRect(cx + Q(34), deck - Q(30), Q(6), Q(16));
+      ctx.fillStyle = P.wickerHi;
+      ctx.fillRect(cx, deck - Q(30), Q(6), 1); ctx.fillRect(cx + Q(34), deck - Q(30), Q(6), 1);
+      ctx.fillStyle = P.cushion;    ctx.fillRect(cx + Q(8), deck - Q(20), Q(24), Q(5));
+      ctx.fillStyle = P.wickerDark; ctx.fillRect(cx + Q(2), deck - Q(8), Q(2), Q(8)); ctx.fillRect(cx + Q(36), deck - Q(8), Q(2), Q(8));
+      /* the outline follows the chair's own silhouette: one bar the full
+         width floated over open fence either side of the back */
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(cx + Q(5), deck - Q(44) - 1, Q(30), 1);
+      ctx.fillRect(cx, deck - Q(30) - 1, Q(6), 1); ctx.fillRect(cx + Q(34), deck - Q(30) - 1, Q(6), 1);
+      ctx.fillStyle = P.steelMid;   ctx.fillRect(cx + Q(46), deck - Q(10), Q(12), Q(10));
+      ctx.fillStyle = P.steelLight; ctx.fillRect(cx + Q(48), deck - Q(10), Q(2), Q(10));
+      ctx.fillStyle = P.ash;
+      for (i = 0; i < 3; i++) ctx.fillRect(cx + Q(48 + i * 4), deck - Q(3), 1, 1);
 
-  /* one little emitter column inside a cover */
-  function pvEmitter(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.steelMid;   ctx.fillRect(x, y, 9, h);
-    ctx.fillStyle = P.steelLight; ctx.fillRect(x + 1, y, 2, h);
-    ctx.fillStyle = P.steelDark;  ctx.fillRect(x + 6, y, 2, h);
-    ctx.fillStyle = P.outline;    ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 8, y, 1, h);
-    ctx.fillStyle = P.steelDark;
-    for (var my = y + 2; my < y + h; my += 3) ctx.fillRect(x + 3 + ((my / 3) % 2), my, 1, 1);
-  }
-
-  /* and one little tank housing */
-  function pvHousing(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.bronzeMid;  ctx.fillRect(x, y, 9, h);
-    ctx.fillStyle = P.bronzeHi;   ctx.fillRect(x + 1, y, 2, h);
-    ctx.fillStyle = P.bronzeDark; ctx.fillRect(x + 6, y, 2, h);
-    ctx.fillStyle = P.outline;    ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 8, y, 1, h);
-    ctx.fillStyle = P.bronzeDark;
-    for (var sy = y + 6; sy < y + h; sy += 13) ctx.fillRect(x + 1, sy, 7, 1);
-  }
+      /* the shade the heaters stand in, down by the boards */
+      Tint.rect(ctx, x, deck - Math.round(70 * S.k), w, Math.round(70 * S.k), P.void, 4);
+    },
+    /* a heater: the silver mesh emitter hangs above the gap, the bronze
+       tank housing stands below it, two materials as in the room */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var capH = Math.max(2, Math.round(9 * S.k)), j, n, ry;
+      var top = end === 'top', body = h - capH, by = top ? y : y + capH;
+      Tint.rect(ctx, x + w, by, Math.max(1, Math.round(4 * S.k)), body, P.void, 7);
+      if (top) {
+        ctx.fillStyle = P.steelMid;   ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = P.steelLight; ctx.fillRect(x + 1, y, 2, h);
+        ctx.fillStyle = P.steelHi;    ctx.fillRect(x + 2, y, 1, h);
+        ctx.fillStyle = P.steelDark;  ctx.fillRect(x + w - 3, y, 2, h);
+        /* the burner mesh: dots on a 3-px grid, every other row shifted,
+           which is what makes it a mesh rather than a dotted grid */
+        if (w >= 9) {
+          ctx.fillStyle = P.steelDark;
+          for (var my = 1; my < body; my += 3) {
+            for (var mxx = 4 + ((my - 1) / 3) % 2; mxx < w - 4; mxx += 3) ctx.fillRect(x + mxx, y + my, 1, 1);
+          }
+        }
+        /* the rings that make it a cylinder of mesh, counted up from the
+           dish so a part ring lands in the ceiling's shade */
+        var rstep = Math.max(5, Math.round(32 * S.k)), rr = S.k < 0.3 ? 1 : 2;
+        for (ry = y + body - rstep; ry > y; ry -= rstep) {
+          ctx.fillStyle = P.steelLight; ctx.fillRect(x + 1, ry, w - 2, rr);
+          ctx.fillStyle = P.outline;    ctx.fillRect(x + 1, ry + rr, w - 2, 1);
+        }
+        /* weld spatter, so the mesh is not perfectly regular */
+        for (j = 0; j < 3 && body > 4 && w > 6; j++) {
+          n = hash(p.i * 31 + j * 7 + 3);
+          ctx.fillStyle = j % 2 ? P.steelHi : P.steelDark;
+          ctx.fillRect(x + 3 + n % (w - 6), y + (n >>> 8) % body, 1, 1);
+        }
+      } else {
+        ctx.fillStyle = P.bronzeMid;   ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = P.bronzeLight; ctx.fillRect(x + 1, y, 2, h);
+        ctx.fillStyle = P.bronzeHi;    ctx.fillRect(x + 2, y, 1, h);
+        ctx.fillStyle = P.bronzeDark;  ctx.fillRect(x + w - (w >= 12 ? 4 : 3), y, w >= 12 ? 3 : 2, h);
+        /* the panel seams it is rolled from, counted down from the lid */
+        var sstep = Math.max(5, Math.round(21 * S.k));
+        for (ry = y + capH + sstep - 2; ry < y + h - 1; ry += sstep) {
+          ctx.fillStyle = P.bronzeDark; ctx.fillRect(x + 1, ry, w - 2, 1);
+          ctx.fillStyle = P.bronzeHi;   ctx.fillRect(x + 1, ry + 1, 2, 1);
+        }
+        /* hammered bronze: specks, half lit and half in shadow */
+        for (j = 0; j < 4 && body > 4 && w > 6; j++) {
+          n = hash(p.i * 97 + j * 13 + 5);
+          ctx.fillStyle = j % 2 ? P.bronzeHi : P.bronzeDark;
+          ctx.fillRect(x + 3 + n % (w - 6), by + (n >>> 8) % body, 1, 1);
+        }
+        /* the warning sticker nobody ever peels off, on one heater in five */
+        var lw = Math.max(2, Math.round(4 * S.k * 2.4)), lh = Math.max(2, Math.round(3 * S.k * 2.4));
+        if (hash(p.i) % 5 === 1 && body > lh + 6 && w >= lw + 4) {
+          var lx = x + (w >> 1) - (lw >> 1), ly = by + (body >> 1) - (lh >> 1);
+          ctx.fillStyle = P.label;    ctx.fillRect(lx, ly, lw, lh);
+          ctx.fillStyle = P.labelRed; ctx.fillRect(lx, ly, lw, 1);
+        }
+      }
+      ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+      if (top) coverCap(ctx, x, y, w, h, end, S, P.steelHi, P.steelLight, P.steelDark);
+      else coverCap(ctx, x, y, w, h, end, S, P.bronzeHi, P.bronzeLight, P.bronzeDark);
+    },
+    /* the apple bough across the top, the mister supply line under it and
+       apples hanging off it, in the leaf mass */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, d = S.top - S.y, q = S.k * 2.4, off = Math.floor(S.s), c, n, step;
+      ctx.fillStyle = P.leafDeep; ctx.fillRect(x, S.y, w, d);
+      step = Math.max(5, Math.round(10 * q));
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        n = hash(c + 4410);
+        if (n % 3 === 0 || d < 6) continue;
+        ctx.fillStyle = (n >>> 4) % 3 ? P.leafMid : P.leafLight;
+        ctx.fillRect(x + c * step - off + (n >>> 8) % step, S.y + (n >>> 12) % Math.max(1, d - 5), 3, 1);
+      }
+      /* the bough, wobbling a pixel either way so it is a branch and not
+         a beam */
+      var by = S.top - Math.max(3, Math.round(11 * S.k)), deep = Math.min(2, S.top - 2 - by);
+      for (var px = 0; px < w; px++) {
+        var wob = d >= 8 ? Math.round(Math.sin((px + off) * 0.12)) : 0;
+        ctx.fillStyle = P.boughHi; ctx.fillRect(x + px, by + wob, 1, 1);
+        ctx.fillStyle = P.bough;   ctx.fillRect(x + px, by + wob + 1, 1, deep);
+      }
+      ctx.fillStyle = P.hoseBlack; ctx.fillRect(x, S.top - 1, w, 1);
+      /* apples hanging off its underside, one in four of them red */
+      if (d >= 6) {
+        step = Math.round(76 * S.k);
+        for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+          var red = wrap(c, 4) === 2, ax = x + c * step - off + 3;
+          ctx.fillStyle = red ? P.appleRed : P.appleMid; ctx.fillRect(ax, S.top - 2, 2, 2);
+          ctx.fillStyle = red ? P.appleRedHi : P.appleHi; ctx.fillRect(ax, S.top - 2, 1, 1);
+        }
+      }
+      Tint.rect(ctx, x, S.top, w, Math.round(12 * S.k), P.void, 6);
+    },
+    /* the red boards with the paint coming off them */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, d = S.y + S.h - S.floor, q = S.k * 2.4, off = Math.floor(S.s), c, n, i, step;
+      Tint.rect(ctx, x, S.floor - Math.round(10 * S.k), w, Math.round(10 * S.k), P.void, 6);
+      ctx.fillStyle = P.deckRed;   ctx.fillRect(x, S.floor, w, d);
+      ctx.fillStyle = P.deckRedHi; ctx.fillRect(x, S.floor, w, 1);
+      ctx.fillStyle = P.deckGap;
+      step = Math.max(3, Math.round(7 * S.k));
+      for (i = step; i < d; i += step) ctx.fillRect(x, S.floor + i, w, 1);
+      step = Math.max(6, Math.round(17 * q));
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        n = hash(c + 2718);
+        var cx = x + c * step - off + (n >>> 4) % step;
+        ctx.fillStyle = P.deckRedDark;
+        ctx.fillRect(cx + 5, S.floor + 1 + (n >>> 12) % Math.max(1, d - 2), 3 + (n >>> 16) % 3, 1);
+        if (n % 3) continue;
+        ctx.fillStyle = P.deckBare;
+        ctx.fillRect(cx, S.floor + 1 + (n >>> 8) % Math.max(1, d - 2), 2 + (n >>> 20) % 2, 1);
+      }
+    },
+    /* the misters, in the even spans, each on its own timer. A head goes
+       on whichever side leaves its jet the longer reach short of the
+       doodad's line - on the boards under a high pair of gaps, off the
+       supply line over a low pair. The gaps climb and fall by turns, so
+       that comes out floor, ceiling, floor, as the level alternates them,
+       and no jet is ever a stub. */
+    props: function (ctx, S) {
+      var tubeC = Math.max(2, Math.round(10 * S.k)), tubeF = Math.max(2, Math.round(14 * S.k)) + 2;
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var up = sp.line.top - S.top - tubeC, down = S.floor - tubeF - sp.line.bottom;
+        var mx = Math.round((sp.x0 + sp.x1) / 2) - 1, seed = hash(sp.i);
+        var p = wrap(S.t / 2.4 + (seed % 1000) / 1000, 1);
+        coverMister(ctx, S, mx, up > down, p, seed % 97, Math.max(up, down));
+      }
+    },
+    /* an apple; one in three of them golden, with its shine trailing above */
+    drop: function (ctx, d, S) {
+      var z = Math.max(3, Math.round(9 * S.k)), x0 = d.x - (z >> 1), y0 = d.y - (z >> 1);
+      var gold = wrap(d.i, 6) === 3;
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(x0 - 1, y0, z + 2, z); ctx.fillRect(x0, y0 - 1, z, z + 2);
+      ctx.fillStyle = gold ? P.goldMid : P.appleMid;
+      ctx.fillRect(x0 + 1, y0, z - 2, z); ctx.fillRect(x0, y0 + 1, z, z - 2);
+      ctx.fillStyle = gold ? P.goldHi : P.appleHi;
+      ctx.fillRect(x0 + 1, y0 + (z > 3 ? 1 : 0), 1, 1);
+      ctx.fillStyle = gold ? P.goldDark : P.appleDark;
+      ctx.fillRect(x0 + z - 2, y0 + z - (z > 3 ? 2 : 1), 1, 1);
+      ctx.fillStyle = P.stem; ctx.fillRect(x0 + (z >> 1), y0 - 2, 1, 2);
+      if (z > 3) { ctx.fillStyle = P.appleDark; ctx.fillRect(x0 + (z >> 1) + 1, y0 - 2, 1, 1); }
+      if (gold) { ctx.fillStyle = P.goldShine; ctx.fillRect(d.x, y0 - 4 - Math.round(2 * S.k * 2.4), 1, 1); }
+    },
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.sunHaze, 1); }
+  };
 
   /* ---------------------------------------------------- generation */
 
@@ -1777,14 +1958,13 @@ var Deck = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     build: function () { build(); buildSprites(); },
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor

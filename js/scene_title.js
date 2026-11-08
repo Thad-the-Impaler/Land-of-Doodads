@@ -21,6 +21,7 @@ var CoopTitle = (function () {
   var actors = {};                 /* id -> Actor, whoever is in today */
   var cast = [];                   /* the same actors, in draw order    */
   var directorTimer = 3;
+  var chirpCooldown = 0;           /* ticked down in update(); see say() */
 
   /* who stands in front of whom */
   var DEPTH = { walk: 0, perch: 1, patrol: 2 };
@@ -81,6 +82,21 @@ var CoopTitle = (function () {
      thing on the title a tap can land on - the coop, the logo and the sky
      are scenery again. */
   var hot = [];
+
+  /* THE TOYS' STATE - everything a poke, a toss of feed or a tapped letter
+     leaves behind, reset on every enter(). See "the toys" further down. */
+  var visitPokes = 0, denyCool = 0;
+  var plate = null;                /* { a, t }: whose name the subtitle shows */
+  var hoverA = null, hoverT = 0;   /* the doodad under a still cursor        */
+  var dood = [];                   /* last frame's doodad rects, for hover   */
+  var grains = [], piles = [], feedCool = 0, tossN = 0, toss = 0;
+  var hiRect = null;               /* the HI panel, which feed must not fall from */
+  var LOGO = ['LAND OF', 'DOODADS'];
+  var logoAge = [[9, 9, 9, 9, 9, 9, 9], [9, 9, 9, 9, 9, 9, 9]];
+  var logoDy = [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]];
+  var spell = 0, spellT = 0, spelled = false;
+  var hintT = 0, hints = 0, rings = [], toyTapped = false;
+  var TOY_FAIL = {};
 
   /* ------------------------------------------------------- scenery */
 
@@ -198,12 +214,17 @@ var CoopTitle = (function () {
      at the same spot, one over the other - which reads as a smeared or
      doubled bubble rather than as two remarks. Saying something again
      replaces what is already up. */
-  function say(actor, symbol) {
+  /* It also keeps the porch's two other limits now - five bubbles on
+     screen and one chirp every 0.45s - because a doodad can be poked as
+     fast as a finger can tap, and a chirp per poke is a machine gun.
+     `quiet` skips the chirp for a remark that brings its own sound. */
+  function say(actor, symbol, quiet) {
     for (var i = bubbles.length - 1; i >= 0; i--) {
       if (bubbles[i].actor === actor) bubbles.splice(i, 1);
     }
     bubbles.push({ actor: actor, symbol: symbol, life: 1.2 });
-    Audio3.play('chirp');
+    if (bubbles.length > 5) bubbles.shift();
+    if (!quiet && chirpCooldown <= 0) { Audio3.play('chirp'); chirpCooldown = 0.45; }
   }
 
   /* -------------------------------------------------------- actors */
@@ -221,7 +242,22 @@ var CoopTitle = (function () {
     this.perch = null;
     this.target = null;
     this.spanX = 78; this.spanY = 34;   /* how far a flyer wanders */
-    this.foot = Doodads.get(id).sprite.footOffset;
+    var sp = Doodads.get(id).sprite;
+    this.foot = sp.footOffset;
+    /* the sprite's reach left, right and above its pivot, in radii, which
+       is the rectangle a poke has to land in - plenty of sprites are not
+       centred on their pivot */
+    this.left = sp.pivotX / sp.bodyR;
+    this.right = (sp.w - sp.pivotX) / sp.bodyR;
+    this.head = sp.pivotY / sp.bodyR;
+    this.ix = Doodads.indexOf(id);
+    /* the toys: pokes running, the little lift a poke gives a sitter, a
+       sulk's squash, a shiver, a flyer's loop and a walker's meal */
+    this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
+    this.hy = 0; this.hv = 0;
+    this.squashT = 0; this.shiverT = 0;
+    this.loop = null;
+    this.goal = null; this.homing = false; this.peckT = 0; this.peckN = 0;
   }
 
   Actor.prototype.flap = function (strength) {
@@ -236,6 +272,7 @@ var CoopTitle = (function () {
   function updatePercher(a, dt) {
     a.flapTimer -= dt;
     a.timer -= dt;
+    stepLift(a, dt);
 
     if (a.state === 'perch') {
       /* TWO DIFFERENT REASONS TO GO, AND ONLY ONE OF THEM IS A REASON TO
@@ -272,8 +309,8 @@ var CoopTitle = (function () {
          called for in the first place, which is the ordinary case */
       if (a.state === 'perch' && held) {
         a.x = a.perch.x + a.perch.w * 0.5;
-        a.y = a.perch.y - a.r * a.foot + Math.sin(t * 2.1 + a.bobPhase) * 1.2;
-        a.angle = Math.sin(t * 1.1 + a.bobPhase) * 0.05;
+        a.y = a.perch.y - a.r * a.foot + Math.sin(t * 2.1 + a.bobPhase) * 1.2 + a.hy;
+        a.angle = a.hy < 0 ? clamp(a.hv / 700, -0.16, 0.2) : Math.sin(t * 1.1 + a.bobPhase) * 0.05;
         if (a.timer <= 0) {
           a.timer = rand(2.2, 5);
           if (chance(0.45)) { a.flap(0); say(a, '♪'); }
@@ -372,6 +409,7 @@ var CoopTitle = (function () {
     var best = bestPerch(a, 392, true) || bestPerch(a, 392, false);
     if (!best) { a.timer = 0.4; return; }
     a.from = { x: a.x, y: a.y };
+    a.hy = 0; a.hv = 0;              /* a poke's lift rides on into the hop */
     a.target = best;
     a.state = 'hopping';
     a.hopT = 0;
@@ -386,6 +424,7 @@ var CoopTitle = (function () {
   function updateFlyer(a, dt) {
     a.flapTimer -= dt;
     a.timer -= dt;
+    if (a.loop) { stepLoop(a, dt); return; }
 
     var tx, ty;
     if (a.state === 'swoop' && a.target) {
@@ -417,7 +456,9 @@ var CoopTitle = (function () {
     a.timer -= dt;
     var ground = FLOOR - a.r * a.foot;
 
-    if (a.state === 'walk') {
+    if (a.state === 'walk' && (a.goal || a.homing)) {
+      feedWalk(a, dt, ground);
+    } else if (a.state === 'walk') {
       /* spanX, because how far a stomper can wander depends on how wide
          its artwork is: the default 26 walks a broad sprite off the stage */
       a.x = damp(a.x, a.homeX + Math.sin(t * 0.3 + a.bobPhase) * (a.spanX || 26), 0.4, dt);
@@ -467,6 +508,9 @@ var CoopTitle = (function () {
     var flyer = anyWithRole('patrol');
     var percher = anyWithRole('perch');
     var walker = anyWithRole('walk');
+    /* a flyer mid-loop is busy, and so is a walker on its way to its dinner */
+    if (flyer && flyer.loop) flyer = null;
+    if (walker && (walker.goal || walker.homing)) walker = null;
 
     if (roll < 0.36 && flyer && percher) {
       /* the flyer buzzes somebody sitting down */
@@ -503,11 +547,542 @@ var CoopTitle = (function () {
     }
   }
 
+  /* ------------------------------------------------------- the toys
+
+     THE TITLE IS SOMETHING TO PLAY WITH WHILE YOU DECIDE. Poke a doodad
+     and it answers - and answers differently the second and third time,
+     and sulks after that, because escalation is funnier than repetition.
+     Tap the coop and you toss feed, which the walkers come and peck. Tap a
+     letter of the name and it rings. Hover a cursor over anybody and they
+     notice, and the subtitle says who they are.
+
+     None of it can reach the menu. Every rectangle here is pushed BEFORE
+     the boards (Input tests last-pushed-first, so the boards stay on top)
+     and none of them carries an action, so a tap on a toy can move no
+     cursor and start nothing. Every toy is also run through toy(), which
+     puts that toy away for the visit the first time it throws: a bug in
+     the feed must never cost the player the title screen.
+
+     The porch and the stands carry the same vocabulary - the same poke,
+     the same hover, the same name - copied rather than shared, like
+     logoLine and for the same reason. */
+
+  function toy(name, fn) {
+    if (TOY_FAIL[name]) return;
+    try { fn(); }
+    catch (e) {
+      TOY_FAIL[name] = true;
+      if (window.console) console.warn('title: the ' + name + ' toy is put away for now', e);
+    }
+  }
+
+  /* the part of the coop floor that is behind the menu boards: feed that
+     lands there is out of sight, and nobody is sent behind a board to eat */
+  function inMenu(x) { return x > 150 && x < 330; }
+
+  function actorByIx(ix) {
+    for (var i = 0; i < cast.length; i++) if (cast[i].ix === ix) return cast[i];
+    return null;
+  }
+
+  /* THE RECTANGLE A POKE HAS TO LAND IN: the sprite's own extent at its
+     size right now, and never smaller than 30 square, because a fingertip
+     is about 32 virtual pixels on a phone in landscape */
+  function rectOf(a) {
+    var L = a.left * a.r, R = a.right * a.r, U = a.head * a.r, D = a.foot * a.r;
+    var x = a.x - L, y = a.y - U, w = L + R, h = U + D;
+    if (w < 30) { x -= (30 - w) / 2; w = 30; }
+    if (h < 30) { y -= (30 - h) / 2; h = 30; }
+    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  }
+
+  function showPlate(a, secs) {
+    if (!plate || plate.a !== a || plate.t < secs) plate = { a: a, t: secs };
+  }
+
+  /* the first toy anybody touches on this device retires the touch hint */
+  function touchedToy() {
+    toyTapped = true;
+    rings.length = 0;
+    if (!Save.get('titlePoked', false)) Save.set('titlePoked', true);
+  }
+
+  /* ---- POKE
+
+     Every poke flaps and bops at once, whatever the doodad is in the middle
+     of, so a touch always answers. Then the count running on that doodad
+     (it forgets after 2.5s of peace) picks what else happens:
+       1  a little hop             !
+       2  a bigger one, or a loop  ?
+       3  its own voice if it has one, otherwise a go at flying; and the
+          neighbours look round   ♪ / ★
+       4+ it has had enough        #   */
+  function poke(a) {
+    if (!a) return;
+    var d = Doodads.list[a.ix];
+    a.pokes = Math.min(6, a.pokes + 1);
+    a.pokeT = 2.5;
+    visitPokes++;
+    a.flap(0);
+    Audio3.play('bop');
+    showPlate(a, 2.2);
+    if (a.pokes === 1) { lift(a, 1); say(a, '!'); }
+    else if (a.pokes === 2) { lift(a, 2); say(a, '?'); }
+    else if (a.pokes === 3) {
+      if (d.voice && a.voiceCool <= 0) {
+        Audio3.play(d.voice);
+        a.voiceCool = 12;
+        a.shiverT = 0.6;
+        showPlate(a, 3);
+        say(a, '♪', true);
+      } else {
+        attemptFor(a);
+        say(a, '★');
+      }
+      neighbours(a);
+    } else {
+      a.squashT = 0.5;
+      say(a, '#');
+      if (denyCool <= 0) { Audio3.play('deny'); denyCool = 0.6; }
+    }
+  }
+
+  function lift(a, step) {
+    if (a.role === 'walk') {
+      if (a.state === 'walk') { a.state = 'hop'; a.vy = step > 1 ? -120 : -92; a.hops = 1; }
+    } else if (a.role === 'perch') {
+      if (a.state === 'perch' && a.hy === 0) {
+        a.hv = -Math.sqrt(2 * 620 * (step > 1 ? 14 : 9));
+        a.hy = -0.01;
+      }
+    } else if (step > 1) startLoop(a);
+    else a.vy += 70;                 /* a flyer dips, and its spring brings it back */
+  }
+
+  function attemptFor(a) {
+    if (a.role === 'walk') {
+      if (a.state === 'walk') { a.state = 'attempt'; a.vy = -120; a.hops = 3; }
+      return;
+    }
+    for (var k = 1; k < 3; k++) later(k * 0.12, function () { a.flap(0); });
+  }
+
+  /* up to two doodads near the one being poked turn and wonder about it */
+  function neighbours(a) {
+    var n = 0;
+    for (var i = 0; i < cast.length && n < 2; i++) {
+      var o = cast[i];
+      if (o === a || Math.abs(o.x - a.x) > 70 || Math.abs(o.y - a.y) > 40) continue;
+      (function (o, d) { later(d, function () { say(o, '?'); }); })(o, n ? 0.5 : 0.3);
+      n++;
+    }
+  }
+
+  /* A SITTER'S LIFT: a little ballistic offset over its perch, so a poke
+     can bounce somebody without them letting go of the perch */
+  function stepLift(a, dt) {
+    if (a.hy === 0 && a.hv === 0) return;
+    a.hv += 620 * dt;
+    a.hy += a.hv * dt;
+    if (a.hy >= 0) {
+      a.hy = 0; a.hv = 0;
+      if (a.state === 'perch' && a.perch) puff(a.x, a.perch.y, 3);
+    }
+  }
+
+  /* A FLYER'S LOOP-THE-LOOP: up and over a circle 12 px round, the whole
+     bird turning with it, in 0.65s. It sets off with half its speed still
+     on, and its spring eases it home from there. Under the rafters there
+     is only room for a small one. */
+  function startLoop(a) {
+    var R = 12;
+    if (a.y - 2 * R - a.r * a.head < CEIL + 4) R = 6;
+    a.loop = { t: 0, dur: 0.65, cx: a.x, cy: a.y - R, R: R };
+    a.state = 'patrol'; a.target = null;
+    Audio3.play('spin');
+  }
+
+  function stepLoop(a, dt) {
+    var L = a.loop;
+    L.t += dt;
+    var k = clamp(L.t / L.dur, 0, 1), th = TAU * k;
+    a.x = L.cx + L.R * Math.sin(th);
+    a.y = L.cy + L.R * Math.cos(th);
+    a.angle = -th;
+    /* the wings go as fast as they can: up, down, up */
+    a.flapTimer = (Math.floor(L.t / 0.08) % 2) ? -0.01 : 0.05;
+    if (k >= 1) {
+      a.loop = null;
+      a.angle = 0;
+      a.vx = TAU * L.R / L.dur * 0.5;
+      a.vy = 0;
+    }
+  }
+
+  /* ---- FEED
+
+     A tap on the coop tosses a handful of feed from the finger: corn,
+     seed and chaff, falling, drifting with the coop like everything else
+     on its floor, and settling into a little pile in the hay. A walker on
+     that side of the menu with nothing better to do goes over and pecks
+     at it until it is gone or it drifts behind the boards, then walks
+     home. A sitter nearby remarks on it; a flyer comes down to look. */
+
+  var PILE_DOTS = [[0, 1], [-2, 1], [2, 1], [-1, 0], [1, 0], [-3, 1], [3, 1],
+                   [0, 0], [-2, 0], [2, 0], [-1, 1], [1, 1], [-3, 0], [3, 0]];
+
+  function grainCol(c) { return c === 0 ? Coop.P.yolk : (c === 1 ? Coop.P.beddingDark : Coop.P.hayPale); }
+
+  function tossFeed(x, y) {
+    if (feedCool > 0) return;
+    feedCool = 0.25;
+    tossN++;
+    var n = randInt(8, 10);
+    for (var i = 0; i < n; i++) {
+      grains.push({ x: x + rand(-3, 3), y: y, vx: rand(-9, 9), vy: rand(-20, 10), c: i % 3, toss: tossN });
+    }
+    while (grains.length > 40) grains.shift();
+    Audio3.play('pat');
+  }
+
+  function updateFeed(dt) {
+    var move = SCROLL * dt, i, j;
+    if (feedCool > 0) feedCool -= dt;
+    for (i = grains.length - 1; i >= 0; i--) {
+      var g = grains[i];
+      g.vy += 320 * dt;
+      g.x += g.vx * dt - move;
+      g.y += g.vy * dt;
+      if (g.y >= FLOOR - 1) { grains.splice(i, 1); settle(g); }
+    }
+    for (i = piles.length - 1; i >= 0; i--) {
+      var p = piles[i];
+      p.x -= move;
+      if (p.x < -10 || p.n <= 0) {
+        if (p.eater) { p.eater.goal = null; p.eater.homing = true; p.eater.peckT = 0; }
+        piles.splice(i, 1);
+      }
+    }
+    /* a pile nobody is eating, out from behind the boards, goes to the
+       nearest idle walker on its side of the menu, if one is near enough */
+    for (i = 0; i < piles.length; i++) {
+      var pl = piles[i];
+      if (pl.eater || inMenu(pl.x)) continue;
+      var best = null, bd = 170;
+      for (j = 0; j < cast.length; j++) {
+        var a = cast[j];
+        if (a.role !== 'walk' || a.state !== 'walk' || a.goal || a.homing) continue;
+        if ((a.homeX < VW / 2) !== (pl.x < VW / 2)) continue;
+        var dd = Math.abs(a.x - pl.x);
+        if (dd < bd) { bd = dd; best = a; }
+      }
+      if (best) { best.goal = pl; pl.eater = best; best.peckT = 0; }
+    }
+  }
+
+  /* one handful makes one pile: a grain joins its own toss's pile if it
+     lands anywhere near it, then any pile within 8 px, and only founds a
+     new one when neither is there (four at most) */
+  function settle(g) {
+    if (g.x < 0 || g.x > VW || inMenu(g.x)) return;
+    var near = null, own = null, i, p;
+    for (i = 0; i < piles.length; i++) {
+      p = piles[i];
+      if (p.toss === g.toss && Math.abs(p.x - g.x) <= 16) own = p;
+      if (!near || Math.abs(p.x - g.x) < Math.abs(near.x - g.x)) near = p;
+    }
+    if (own) near = own;
+    if (near && (near === own || Math.abs(near.x - g.x) <= 8 || piles.length >= 4)) near.n = Math.min(14, near.n + 1);
+    else { near = { x: g.x, y: FLOOR - 20, n: 1, eater: null, toss: g.toss }; piles.push(near); }
+    if (g.toss !== toss) { toss = g.toss; noticeFeed(near); }
+  }
+
+  /* the nearest pile nobody is eating, out from behind the boards, within
+     reach of this walker's side of the menu */
+  function nextPile(a, reach) {
+    var best = null, bd = reach;
+    for (var i = 0; i < piles.length; i++) {
+      var pl = piles[i];
+      if (pl.eater || pl.n <= 0 || inMenu(pl.x) || (a.homeX < VW / 2) !== (pl.x < VW / 2)) continue;
+      var dd = Math.abs(a.x - pl.x);
+      if (dd < bd) { bd = dd; best = pl; }
+    }
+    return best;
+  }
+
+  /* once a toss: the nearest sitter says so, the nearest flyer comes down */
+  function noticeFeed(p) {
+    var sitter = null, flyer = null, i, a;
+    for (i = 0; i < cast.length; i++) {
+      a = cast[i];
+      if (a.role === 'perch' && a.state === 'perch' && Math.abs(a.x - p.x) < 60 &&
+          (!sitter || Math.abs(a.x - p.x) < Math.abs(sitter.x - p.x))) sitter = a;
+      if (a.role === 'patrol' && !a.loop && (!flyer || Math.abs(a.x - p.x) < Math.abs(flyer.x - p.x))) flyer = a;
+    }
+    if (sitter) say(sitter, '·');
+    if (flyer) {
+      flyer.state = 'swoop';
+      flyer.target = p;
+      flyer.swoopDX = 0; flyer.swoopDY = -40;
+      flyer.timer = 1.2;
+    }
+  }
+
+  /* A WALKER ON ITS WAY TO DINNER, AT DINNER, AND ON ITS WAY HOME, at a
+     steady 46 px/s rather than the wander's damp, which would zip it
+     across the coop. It stands ten pixels short of the pile and bows at
+     it, three pecks a second, two grains a peck, and goes on pecking
+     until the pile is gone. */
+  function feedWalk(a, dt, ground) {
+    var p = a.goal;
+    if (p && (piles.indexOf(p) < 0 || p.n <= 0 || (a.peckT <= 0 && inMenu(p.x)))) {
+      if (p.eater === a) p.eater = null;
+      a.goal = null; a.homing = true; a.peckT = 0;
+      p = null;
+    }
+    var lo = a.r * a.left + 2, hi = VW - a.r * a.right - 2;
+    if (p && a.peckT > 0) {
+      var dir = sign(p.x - a.x) || 1;
+      a.peckT -= dt;
+      a.x = approach(a.x, clamp(p.x - 10 * dir, lo, hi), 46 * dt);
+      a.y = ground;
+      a.angle = 0.35 * Math.abs(Math.sin(t * 18)) * dir;
+      if (a.peckN < 3 && 1 - a.peckT >= a.peckN * 0.33) {
+        a.peckN++;
+        p.n = Math.max(0, p.n - 2);
+        Audio3.play('pat');
+      }
+      if (p.n <= 0) {
+        /* finished: on to the next pile if there is one close by, and
+           only home - with a happy note - when the floor is clean */
+        p.eater = null; a.peckT = 0;
+        a.goal = nextPile(a, 60);
+        if (a.goal) a.goal.eater = a;
+        else { a.homing = true; say(a, '♪'); }
+      } else if (a.peckT <= 0) { a.peckT = 1; a.peckN = 0; }
+      return;
+    }
+    var tx = clamp(p ? p.x - 10 * (sign(p.x - a.x) || 1) : a.homeX, lo, hi);
+    a.x = approach(a.x, tx, 46 * dt);
+    a.y = ground - Math.abs(Math.sin(t * 6 + a.bobPhase)) * 1.6;
+    a.angle = Math.sin(t * 6 + a.bobPhase) * 0.06;
+    if (p && Math.abs(a.x - tx) < 6) { a.peckT = 1; a.peckN = 0; }
+    else if (!p && Math.abs(a.x - a.homeX) < 1) { a.homing = false; a.timer = rand(1.5, 3); }
+  }
+
+  function drawFeed(ctx) {
+    var i, k;
+    for (i = 0; i < grains.length; i++) {
+      ctx.fillStyle = grainCol(grains[i].c);
+      ctx.fillRect(Math.round(grains[i].x), Math.round(grains[i].y), 1, 1);
+    }
+    for (i = 0; i < piles.length; i++) {
+      var p = piles[i], x = Math.round(p.x);
+      for (k = 0; k < p.n && k < PILE_DOTS.length; k++) {
+        ctx.fillStyle = grainCol(k % 3);
+        ctx.fillRect(x + PILE_DOTS[k][0], FLOOR - 2 + PILE_DOTS[k][1], 1, 1);
+      }
+    }
+  }
+
+  /* ---- THE LETTERS RING
+
+     Each letter of the name is a bar of a toy glockenspiel: tap it and it
+     jumps and rings its note. The two lines are drawn centred at scale 5,
+     so the geometry comes from one place, used by both the draw and the
+     rectangles. Play the whole name, left to right, and it plays you back. */
+
+  var NOTE = { L: 'note1', A: 'note2', N: 'note3', D: 'note4', O: 'note5', F: 'note6', S: 'note8' };
+  var SPELL = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+
+  function logoGeom() {
+    var y1 = 26 + Math.round(Math.sin(t * 1.2) * 1);
+    return { y: [y1, y1 + 40], adv: 30,
+             x: [Math.round(VW / 2 - Font.measure(LOGO[0], 5) / 2),
+                 Math.round(VW / 2 - Font.measure(LOGO[1], 5) / 2)] };
+  }
+
+  function tapLetter(i) {
+    var l = (i / 7) | 0, c = i % 7, ch = LOGO[l].charAt(c);
+    if (ch === ' ' || logoAge[l][c] < 0.1) return;
+    logoAge[l][c] = 0;
+    Audio3.play(NOTE[ch] || 'note5');
+    if (spellT > 3) spell = 0;
+    spellT = 0;
+    if (SPELL[spell] === i) spell++;
+    else spell = i === SPELL[0] ? 1 : 0;
+    if (spell === SPELL.length && !spelled) { spelled = true; spell = 0; playedTheName(); }
+  }
+
+  /* the whole name, in order: a run up the scale, every letter jumping in
+     turn, and the whole coop flapping along */
+  function playedTheName() {
+    var i;
+    for (i = 0; i < 8; i++) (function (k) { later(0.25 + k * 0.07, function () { Audio3.play('note' + (k + 1)); }); })(i);
+    for (i = 0; i < SPELL.length; i++) logoAge[(SPELL[i] / 7) | 0][SPELL[i] % 7] = -0.25 - i * 0.06;
+    for (i = 0; i < cast.length; i++) {
+      (function (a, d) {
+        later(d, function () {
+          a.flap(0);
+          if (a.role === 'walk') puff(a.x, FLOOR, 4);
+        });
+      })(cast[i], 0.3 + i * 0.05);
+    }
+    var pool = cast.slice();
+    for (i = 0; i < 3 && pool.length; i++) {
+      (function (a, d) { later(d, function () { say(a, '★'); }); })(pool.splice((Math.random() * pool.length) | 0, 1)[0], 0.5 + i * 0.3);
+    }
+  }
+
+  function updateLetters(dt) {
+    for (var l = 0; l < 2; l++) {
+      for (var c = 0; c < 7; c++) {
+        var age = logoAge[l][c] += dt;
+        var k = age / 0.32;
+        logoDy[l][c] = (age >= 0 && k < 1) ? Math.round(-7 * Math.sin(Math.PI * k)) : 0;
+      }
+    }
+    spellT += dt;
+  }
+
+  /* ---- what the toys listen to, and where */
+
+  function pushToyTargets() {
+    var i, r, a;
+    /* the coop itself, under everything: a tap that lands on nothing else
+       tosses feed. The footer strip is left out. */
+    hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
+    dood.length = 0;
+    for (i = 0; i < cast.length; i++) {
+      a = cast[i];
+      r = rectOf(a);
+      hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
+      dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
+    }
+    /* the letters are on the foreground, over anybody standing behind them */
+    var g = logoGeom();
+    for (var l = 0; l < 2; l++) {
+      for (var c = 0; c < 7; c++) {
+        if (LOGO[l].charAt(c) === ' ') continue;
+        hot.push({ x: g.x[l] + c * g.adv - 2, y: g.y[l] - 4, w: 29, h: 42, id: 'logo', i: l * 7 + c });
+      }
+    }
+  }
+
+  /* A CURSOR RESTING ON A DOODAD: it notices (one flap, no sound, so a
+     sweep across the coop ripples), and after a moment the subtitle says
+     who it is. Worked out against last frame's rectangles every frame,
+     not from Input.hovering, which only refreshes when the mouse moves -
+     a doodad that hops out from under a still cursor has stopped being
+     hovered. Nothing at all on a phone. */
+  function hover(dt) {
+    var p = Input.pointer(), a = null;
+    if (p && p.kind === 'mouse') {
+      for (var i = dood.length - 1; i >= 0; i--) {
+        var r = dood[i];
+        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) { a = r.a; break; }
+      }
+    }
+    if (a !== hoverA) { hoverA = a; hoverT = 0; if (a) a.flap(0); }
+    else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2); }
+  }
+
+  /* THE TOUCH HINT. A phone has no footer and no cursor, so nothing says
+     the coop is alive. Until somebody on this device has touched a toy,
+     five seconds in and every six after (four times a visit at most) the
+     idle doodad nearest the middle gets two gold rings round it and says
+     "!". */
+  function hint(dt) {
+    if (!UI.touch() || toyTapped || hints >= 4 || t < 5) return;
+    hintT -= dt;
+    if (hintT > 0) return;
+    hintT = 6;
+    if (Save.get('titlePoked', false)) { hints = 4; return; }
+    var best = null;
+    for (var i = 0; i < cast.length; i++) {
+      var a = cast[i];
+      if (a.loop || a.goal || a.homing || (a.role === 'perch' && a.state !== 'perch')) continue;
+      /* not somebody standing behind the boards, where the rings would be too */
+      if (a.x > MENU_L && a.x < MENU_R && a.y > 130) continue;
+      if (!best || Math.abs(a.x - VW / 2) < Math.abs(best.x - VW / 2)) best = a;
+    }
+    if (!best) return;
+    hints++;
+    rings.push({ a: best, t: 0 }, { a: best, t: -0.3 });
+    say(best, '!');
+  }
+
+  function updateToys(dt) {
+    if (denyCool > 0) denyCool -= dt;
+    if (plate && (plate.t -= dt) <= 0) plate = null;
+    for (var i = 0; i < cast.length; i++) {
+      var a = cast[i];
+      if (a.pokeT > 0 && (a.pokeT -= dt) <= 0) a.pokes = 0;
+      if (a.voiceCool > 0) a.voiceCool -= dt;
+      if (a.squashT > 0) a.squashT -= dt;
+      if (a.shiverT > 0) a.shiverT -= dt;
+    }
+    for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
+    updateLetters(dt);
+    hover(dt);
+    hint(dt);
+  }
+
+  /* the taps and keys, read after the lock like the menu's own */
+  function readToys(tg) {
+    if (Input.hit('left')) tossFeed(120 + rand(-25, 25), 110);
+    if (Input.hit('right')) tossFeed(360 + rand(-25, 25), 110);
+    if (!tg) return;
+    var at = Input.tapPos();
+    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i)); }
+    else if (tg.id === 'logo') { touchedToy(); tapLetter(tg.i); }
+    else if (tg.id === 'bg' && at) {
+      if (hiRect && at.x >= hiRect.x && at.x <= hiRect.x + hiRect.w && at.y >= hiRect.y && at.y <= hiRect.y + hiRect.h) return;
+      touchedToy();
+      tossFeed(at.x, at.y);
+    }
+  }
+
+  /* two gold rings opening out round the doodad, the second a beat behind */
+  function drawRings(ctx) {
+    var ga = ctx.globalAlpha;
+    for (var i = 0; i < rings.length; i++) {
+      var g = rings[i];
+      if (g.t < 0) continue;
+      var k = g.t / 0.6;
+      ctx.globalAlpha = ga * (1 - k);
+      ring(ctx, Math.round(g.a.x), Math.round(g.a.y), Math.round(4 + k * (g.a.r + 6)), UI.C.gold);
+    }
+    ctx.globalAlpha = ga;
+  }
+
+  /* a one-pixel circle, the midpoint way, so it stays crisp */
+  function ring(ctx, cx, cy, r, col) {
+    var x = r, y = 0, e = 1 - r;
+    ctx.fillStyle = col;
+    while (x >= y) {
+      ctx.fillRect(cx + x, cy + y, 1, 1); ctx.fillRect(cx - x, cy + y, 1, 1);
+      ctx.fillRect(cx + x, cy - y, 1, 1); ctx.fillRect(cx - x, cy - y, 1, 1);
+      ctx.fillRect(cx + y, cy + x, 1, 1); ctx.fillRect(cx - y, cy + x, 1, 1);
+      ctx.fillRect(cx + y, cy - x, 1, 1); ctx.fillRect(cx - y, cy - x, 1, 1);
+      y++;
+      if (e < 0) e += 2 * y + 1;
+      else { x--; e += 2 * (y - x) + 1; }
+    }
+  }
+
   /* ------------------------------------------------------ lifecycle */
 
   function enter(params) {
     t = 0; scroll = 0;
     bubbles.length = 0; puffs.length = 0; timers.length = 0;
+    chirpCooldown = 0;
+    visitPokes = 0; denyCool = 0; plate = null;
+    hoverA = null; hoverT = 0; dood.length = 0;
+    grains.length = 0; piles.length = 0; feedCool = 0; toss = 0;
+    spell = 0; spellT = 0; spelled = false;
+    hintT = 0; hints = 0; rings.length = 0; toyTapped = false;
+    for (var l = 0; l < 2; l++) for (var c = 0; c < 7; c++) { logoAge[l][c] = 9; logoDy[l][c] = 0; }
     seedScenery();
     menuIndex = (params && params.menu) || 0;
 
@@ -600,16 +1175,20 @@ var CoopTitle = (function () {
   function update(dt) {
     t += dt;
     scroll += SCROLL * dt;
+    if (chirpCooldown > 0) chirpCooldown -= dt;
     updateTimers(dt);
     updateScenery(dt);
     for (var i = 0; i < cast.length; i++) BEHAVIOUR[cast[i].role](cast[i], dt);
     director(dt);
+    toy('feed', function () { updateFeed(dt); });
+    toy('toys', function () { updateToys(dt); });
 
     if (Game.locked()) return;
     /* A tap on a board moves the cursor onto it BEFORE the confirm below
        runs, and the board carries a:'confirm' - so one tap is choose and
        go, and the keyboard branch underneath does the going. */
     var tg = Input.tapped();
+    toy('taps', function () { readToys(tg); });
     if (tg && tg.id === 'menu') menuIndex = tg.i;
     if (tg && tg.id === 'sound') {
       /* the same toggle M has always driven, and the same toast with it, so
@@ -672,6 +1251,7 @@ var CoopTitle = (function () {
       ctx.fillStyle = pf.col;
       ctx.fillRect(Math.round(pf.x), Math.round(pf.y), 1, 1);
     }
+    toy('feed', function () { drawFeed(ctx); });
   }
 
   /* things that live on the floor of the coop */
@@ -724,12 +1304,18 @@ var CoopTitle = (function () {
     for (var i = 0; i < cast.length; i++) drawActor(ctx, cast[i]);
   }
 
+  /* a sulk squashes a doodad down onto its feet, and a shiver rattles it */
   function drawActor(ctx, a) {
-    Doodads.draw(ctx, a.id, a.x, a.y, a.r, a.angle, a.flying());
+    var sq = a.squashT > 0;
+    var sh = a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0;
+    Doodads.draw(ctx, a.id, a.x, a.y + (sq ? a.r * a.foot * 0.15 : 0), a.r, a.angle + sh, a.flying(),
+                 sq ? { squashX: 1.1, squashY: 0.85 } : null);
   }
 
   function drawFg(ctx) {
     hot.length = 0;
+    /* the toys' rectangles first, so every board pushed below lies on top */
+    toy('targets', pushToyTargets);
     drawLogo(ctx);
 
     /* Menu boards, one per option, and each one a button: 32 tall rather
@@ -817,11 +1403,13 @@ var CoopTitle = (function () {
 
     /* arcade style hi-score readout in the corner */
     var best = Scores.table(Game.room(), Game.level())[0];
+    hiRect = null;
     if (best) {
       var hi = 'HI  ' + best.name + '  ' + best.score;
       var hw = Font.measure(hi, 1) + 10;
       UI.panel(ctx, VW - hw - 6, 5, hw, 13, { fill: UI.C.darker, edge: UI.C.inkFaint });
       UI.text(ctx, hi, VW - 11, 8, { align: 'right', colour: UI.C.gold });
+      hiRect = { x: VW - hw - 6, y: 5, w: hw, h: 13 };
     }
 
     /* Speech bubbles ride above their doodad.
@@ -855,36 +1443,54 @@ var CoopTitle = (function () {
       drawBubble(ctx, sx, sy, b.symbol);
     }
     ctx.globalAlpha = ga;
+    toy('rings', function () { drawRings(ctx); });
 
     /* footer. It said "◀ ▶ MOVE", which was wrong on every input the game
        has - this menu is a column and always has been - and on a phone it
        repeated the boards as words directly underneath them, so UI.footer
-       leaves it out there entirely. */
-    UI.footer(ctx, '▲ ▼ CHOOSE   ENTER SELECT   M SOUND   F FULLSCREEN',
-                   'CLICK A BOARD   F FULLSCREEN');
+       leaves it out there entirely. ◀ ▶ are free on a column, so they toss
+       the feed. */
+    UI.footer(ctx, '▲ ▼ CHOOSE   ENTER SELECT   ◀ ▶ FEED   M SOUND   F FULLSCREEN',
+                   'CLICK A BOARD   OR POKE ANYTHING   F FULLSCREEN');
   }
 
   function drawLogo(ctx) {
-    var s = 5;
-    var y1 = 26 + Math.round(Math.sin(t * 1.2) * 1);
-    var y2 = y1 + 40;
-    /* LAND OF / DOODADS, with the lower third of every letter shaded */
-    logoLine(ctx, 'LAND OF', VW / 2, y1, s, t * 1.6);
-    logoLine(ctx, 'DOODADS', VW / 2, y2, s, t * 1.6 + 1.2);
-    UI.text(ctx, 'A BACKYARD ADVENTURE', VW / 2, y2 + 40,
-            { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow, spacing: 3 });
+    var s = 5, g = logoGeom();
+    var y1 = g.y[0], y2 = g.y[1];
+    /* LAND OF / DOODADS, with the lower third of every letter shaded, and
+       any letter that has just been tapped jumping */
+    logoLine(ctx, LOGO[0], VW / 2, y1, s, t * 1.6, logoDy[0]);
+    logoLine(ctx, LOGO[1], VW / 2, y2, s, t * 1.6 + 1.2, logoDy[1]);
+    /* the subtitle gives way to the name of whoever was just poked or is
+       under the cursor - who they are, then what they are like - and,
+       thirty pokes into a visit, it has something to ask */
+    var d = plate ? Doodads.list[plate.a.ix] : null;
+    if (d) drawPlate(ctx, d, y2 + 40);
+    else UI.text(ctx, visitPokes >= 30 ? 'PLEASE STOP POKING THE DOODADS' : 'A BACKYARD ADVENTURE', VW / 2, y2 + 40,
+                 { align: 'center', colour: UI.C.inkDim, shadow: UI.C.shadow, spacing: 3 });
   }
 
-  function logoLine(ctx, str, x, y, s, wave) {
+  /* NAME · TAGLINE as one centred line: the name in gold, the rest dim.
+     The longest today is Teef's, 41 characters and 245 px. */
+  function drawPlate(ctx, d, y) {
+    var tail = ' · ' + d.tagline;
+    var w = Font.measure(d.name + tail, 1);
+    var x = Math.round(VW / 2 - w / 2);
+    var nw = UI.text(ctx, d.name, x, y, { colour: UI.C.gold, shadow: UI.C.shadow });
+    UI.text(ctx, tail, x + nw + 1, y,
+            { colour: UI.C.inkDim, shadow: UI.C.shadow });
+  }
+
+  function logoLine(ctx, str, x, y, s, wave, dy) {
     Font.draw(ctx, str, x, y, { scale: s, align: 'center', colour: UI.C.shadow,
-                                wave: wave, waveAmp: 0.6, outline: UI.C.shadow, outlineWidth: 1 });
-    Font.draw(ctx, str, x, y, { scale: s, align: 'center', colour: UI.C.gold, wave: wave, waveAmp: 0.6 });
+                                wave: wave, waveAmp: 0.6, outline: UI.C.shadow, outlineWidth: 1, dy: dy });
+    Font.draw(ctx, str, x, y, { scale: s, align: 'center', colour: UI.C.gold, wave: wave, waveAmp: 0.6, dy: dy });
     /* two-tone shading on the bottom rows of each glyph */
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, y + Math.round(s * 4.2), VW, s * 3);
     ctx.clip();
-    Font.draw(ctx, str, x, y, { scale: s, align: 'center', colour: UI.C.goldDark, wave: wave, waveAmp: 0.6 });
+    Font.draw(ctx, str, x, y, { scale: s, align: 'center', colour: UI.C.goldDark, wave: wave, waveAmp: 0.6, dy: dy });
     ctx.restore();
   }
 
@@ -909,7 +1515,9 @@ var CoopTitle = (function () {
 
   return { enter: enter, refresh: refresh, update: update,
            drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
-           targets: function () { return hot; } };
+           targets: function () { return hot; },
+           /* for a headless check: live references, read them only */
+           inspect: function () { return { cast: cast, piles: piles, grains: grains, plate: plate, rings: rings, failed: TOY_FAIL, t: t }; } };
 })();
 
 /* WHICH TITLE SCREEN. The Coop until ten priced doodads are open, the porch

@@ -336,8 +336,9 @@ var Dishwasher = (function () {
     pots:  ['▲ POTS AND PANS ▲',   'THE PANS FLY TOO']
   };
 
-  /* the thirteen colours a generic cover would use; this bay paints its
-     own, but the table stays honest */
+  /* the thirteen colours a generic cover would use: the TV's reruns and
+     the stands' set read PREVIEW.back, and the cover itself is COVER,
+     below, in the bay's own pigments */
   var PREVIEW = {
     back: P.wall, backAlt: P.wallPanel, seam: P.seam,
     beam: P.plate, beamDark: P.plateDeep, beamLight: P.plateRing,
@@ -3462,127 +3463,235 @@ var Dishwasher = (function () {
 
   /* ======================================================= THE COVER
 
-     118 x 114 on the big card, 82 x 94 on the side ones (and small in the
-     stands' set); the caller has clipped. The tub in miniature at the
-     lane's own proportions: the upper rack's wires along the top and the
-     lower rack's along the bottom, the back wall between with a pressed
-     panel and the tower; a glass stack hanging and a plate stack
-     standing; THE LOWER ARM turning in the floor band with ONE JET
-     standing up from its near tip, flowing and fraying; a tumbler flying
-     in from the right end over end; beads on the lens (rims only - no
-     turning-over on a card) and the readout saying WASH. Whole pixels;
+     The Dishwasher's painters for its cover (js/cover.js lays it out and
+     times it, the same on every card). The tub in miniature: the upper
+     rack's wires along the top and the lower rack's along the bottom,
+     the back wall between with its pressed panels and the tower going by
+     at the wall's own pace. The columns are the bay's: glasses hanging
+     mouth down over the glass tub or a tumbler's base, plates standing
+     under the bowl or a square plate. In the open spans THE STATION, the
+     bay's own hazard: the lower arm turning in the floor band and the
+     middle arm under the upper rack, each throwing ONE JET from its near
+     tip, flowing and fraying - never as far as the doodad's line. Now
+     and then a tumbler flies in from the right end over end and bursts
+     on a stack, as the bay's do; cutlery comes down off the upper rack;
+     beads run on the lens, and the readout says WASH. Whole pixels;
      nothing rotates at draw. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var i, k;
-    var lidH = Math.max(3, Math.round(h * 0.08));
-    var floorY = y + Math.round(h * 0.88);
-    var top = y + lidH, lane = floorY - top;
 
-    /* 1. the back wall, a pressed panel either side of the tower */
-    rect(ctx, x, top, w, lane, P.wall);
-    var pw = Math.round(w * 0.3), ph = Math.round(lane * 0.55), py = top + Math.round(lane * 0.14);
-    var tw = Math.max(2, Math.round(w * 0.05)), tx = x + Math.round(w * 0.5 - tw / 2);
-    [x + Math.round(w * 0.5) - tw - 3 - pw, x + Math.round(w * 0.5) + tw + 3].forEach(function (px0) {
-      rect(ctx, px0, py, pw, ph, P.wallPanel);
-      rect(ctx, px0, py, pw, 1, P.wallHi);
-      rect(ctx, px0, py, 1, ph, P.wallLit);
-      rect(ctx, px0, py + ph - 1, pw, 1, P.wallDeep);
-      rect(ctx, px0 + pw - 1, py, 1, ph, P.wallDeep);
-    });
-    rect(ctx, tx, top, tw, lane, P.tower);
-    rect(ctx, tx, top, 1, lane, P.towerLit);
-    for (i = 0; i < 40; i++) {
-      var hh = hash(i * 7919 + 13);
-      dot(ctx, x + hh % w, top + (hh >>> 8) % lane, P.bead);
-    }
-    /* the camera's falloff at the card's sides */
-    var vig = Math.max(3, Math.round(w * 0.08));
-    Tint.rect(ctx, x, top, vig, lane, P.void, 3);
-    Tint.rect(ctx, x + w - vig, top, vig, lane, P.void, 3);
+  /* a 4-row cap squeezed to n rows, the row at the gap's edge first: the
+     rows nearest the gap are the ones that say what it is */
+  function squeeze(rows, n) {
+    if (n >= rows.length) return rows;
+    if (n === 3) return [rows[0], rows[1], rows[3]];
+    return rows.slice(0, n);
+  }
+  /* the caps, the gap's edge first: hanging, the glass tub lid-down or a
+     tumbler's heavy base; standing, the bowl or a square plate */
+  var COVER_HANG = [[P.outline, P.tubLid, P.tubLidLit, P.tubGlass],
+                    [P.outline, P.glassRim, P.glassDeep, P.glassRib]];
+  var COVER_STAND = [[P.panRim, P.enamel, P.enamel, P.enamelShade],
+                     [P.plateLit, P.plate, P.plateRing, P.plateDeep]];
+  /* the cutlery's eight leans, one turn a second */
+  var COVER_LEAN = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]];
 
-    /* 2. the lid: the dark over the rack, its wires, the arris */
-    rect(ctx, x, y, w, lidH, P.lidDark);
-    rect(ctx, x, y + lidH - 3, w, 1, P.wireShade);
-    rect(ctx, x, y + lidH - 1, w, 1, P.wireLit);
-    for (i = 0; i < w; i += 4) dot(ctx, x + i, y + lidH - 2, P.wire);
-
-    /* 3. the ground: the kill wire, the rack, the floor and the pool */
-    rect(ctx, x, floorY, w, y + h - floorY, P.floor);
-    rect(ctx, x, floorY, w, 1, P.wireLit);
-    rect(ctx, x, floorY + 1, w, 1, P.wire);
-    for (i = 1; i < w; i += 4) dot(ctx, x + i, floorY + 2, P.wire);
-    if (floorY + 6 < y + h) {
-      rect(ctx, x, floorY + 6, w, y + h - floorY - 6, P.pool);
-      for (i = 0; i < w; i++) if (Math.sin(i * 0.5 + t * 6) > 0.6) dot(ctx, x + i, floorY + 6, P.poolSheen);
-    }
-
-    /* 4. a glass stack hanging, a plate stack standing */
-    var sw = big ? 12 : 9;
-    var gx = x + Math.round(w * 0.25) - sw / 2, gH = Math.round(lane * 0.34);
-    for (i = 0; i < gH; i++) {
-      var rimRow = (gH - 1 - i) % 4 === 0;
-      rect(ctx, gx, top + i, sw, 1, rimRow ? P.glassRim : P.glass);
-      dot(ctx, gx + 1, top + i, P.glassLit);
-    }
-    rect(ctx, gx - 2, top + gH, sw + 4, 3, P.tubLid);
-    rect(ctx, gx - 2, top + gH, sw + 4, 1, P.tubLidLit);
-    rect(ctx, gx + sw, top, 1, gH, P.outline);
-    var sx = x + Math.round(w * 0.82) - sw / 2, sH = Math.round(lane * 0.44), sy = floorY - sH;
-    for (i = 0; i < sH; i++) {
-      var row = i % 3;
-      rect(ctx, sx, sy + i, sw, 1, row === 0 ? P.plateRing : (row === 1 ? P.plateLit : P.plate));
-    }
-    rect(ctx, sx - 2, sy - 3, sw + 4, 1, P.panRim);
-    rect(ctx, sx - 2, sy - 2, sw + 4, 2, P.enamel);
-    rect(ctx, sx, sy, 1, sH, P.sheen);
-    rect(ctx, sx + sw - 1, sy, 1, sH, P.outline);
-
-    /* 5. THE ARMS, the lower turning in the floor band and the middle one
-       under the upper rack the other way, each with a jet from its near
-       tip - the floor's flowing up, the rack's flowing down - both in the
-       clear span between the stacks */
-    var ax = x + Math.round(w * 0.535), R = big ? 18 : 13;
-    [[t * 2.4, Math.min(y + h - 3, floorY + 3), true], [-t * 2.9 + 1.3, Math.max(y, y + lidH - 3), false]].forEach(function (A) {
-      var th = A[0], ay = A[1], up = A[2], rr = up ? R : Math.round(R * 0.8);
-      var L = Math.max(2, Math.round(rr * Math.abs(Math.cos(th))));
-      rect(ctx, ax - L, ay, 2 * L, 2, up ? P.arm : P.armFar);
-      rect(ctx, ax - L, ay, 2 * L, 1, P.armLit);
-      rect(ctx, ax - 2, ay - 1, 4, 3, P.hub);
-      var jx = ax + Math.round(rr * Math.cos(th) * (Math.sin(th) >= 0 ? 1 : -1));
-      var jh = Math.round(h * (up ? 0.30 : 0.22));
-      var j0 = up ? floorY - jh : top;
+  /* one arm of a station: the bar foreshortening as it turns, its hub,
+     and the jet off its near tip - up from the floor or down from the
+     upper rack, `jh` long, flowing out of the nozzle and fraying at its
+     free end */
+  function coverArm(ctx, S, hx, ay, R, th, up, jh, seed) {
+    var L = Math.max(2, Math.round(R * Math.abs(Math.cos(th)))), i;
+    rect(ctx, hx - L, ay, 2 * L, 2, up ? P.arm : P.armFar);
+    rect(ctx, hx - L, ay, 2 * L, 1, P.armLit);
+    rect(ctx, hx - 2, ay - 1, 4, 3, P.hub);
+    if (jh <= 0) return;
+    var jx = hx + Math.round(R * Math.cos(th) * (Math.sin(th) >= 0 ? 1 : -1));
+    var j0 = up ? S.floor - jh : S.top, wide = S.pw >= 12;
+    if (wide) {
       rect(ctx, jx - 2, j0, 5, jh, P.jetEdge);
       rect(ctx, jx - 1, j0, 3, jh, P.jet);
-      rect(ctx, jx, j0, 1, jh, P.jetCore);
-      for (i = 0; i < jh; i += 5) dot(ctx, jx - 1, j0 + ((i + Math.floor(t * 30) * (up ? -1 : 1)) % jh + jh) % jh, P.jetCore);
-      for (i = 0; i < 3; i++) {
-        var hs = hash(Math.floor(t * 12) * 31 + i * 7 + (up ? 0 : 99));
-        dot(ctx, jx - 3 + hs % 7, up ? j0 - 1 - (hs >>> 5) % 5 : j0 + jh + (hs >>> 5) % 5, P.spray);
-      }
-    });
-
-    /* 6. a tumbler flying in from the right, end over end */
-    var fx = x + w - Math.round(wrap(t * 60, w + 24)) + 8, fy = y + Math.round(h * 0.45 + 6 * Math.sin(t * 3));
-    var fs = T.kind[K_TUMBLER][Math.floor(t * 8) % TURN_N];
-    ctx.drawImage(fs.canvas, fx - fs.w / 2, fy - fs.h / 2);
-
-    /* 7. the doodad, the Couch's block */
-    var dx = Math.round(x + w * 0.12), dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.12));
-    var sz = big ? 8 : 6;
-    rect(ctx, dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2, P.outline);
-    rect(ctx, dx - sz / 2, dy - sz / 2, sz, sz, '#c9873c');
-    rect(ctx, dx - sz / 2, dy - sz / 2, sz - 2, 1, '#eab873');
-    dot(ctx, dx + sz / 2 - 2, dy - 1, P.outline);
-    rect(ctx, dx + sz / 2, dy, 2, 1, '#f3cc84');
-
-    /* 8. beads on the lens, rims only, one of them running */
-    var b1 = T.lensRim[1], b2 = T.lensRim[0];
-    ctx.drawImage(b1.canvas, x + Math.round(w * 0.78) - 6, y + Math.round(h * 0.56) + Math.round(wrap(t * 8, 20)) - 6);
-    if (big) ctx.drawImage(b2.canvas, x + Math.round(w * 0.16) - 5, y + Math.round(h * 0.26) - 5);
-
-    /* 9. the readout */
-    if (big) Font.draw(ctx, 'WASH', x + w - 3, y + lidH + 3, { scale: 1, colour: P.readout, shadow: P.readoutShadow, align: 'right' });
+    } else rect(ctx, jx - 1, j0, 3, jh, P.jetEdge);
+    rect(ctx, jx, j0, 1, jh, P.jetCore);
+    var run = Math.floor(S.t * 30) * (up ? -1 : 1);
+    for (i = 0; i < jh; i += 5) dot(ctx, jx - 1, j0 + wrap(i + run, jh), P.jetCore);
+    for (i = 0; i < 3; i++) {
+      var hs = hash(Math.floor(S.t * 12) * 31 + i * 7 + seed);
+      dot(ctx, jx - 3 + hs % 7, up ? j0 - 1 - (hs >>> 5) % 5 : j0 + jh + (hs >>> 5) % 5, P.spray);
+    }
   }
+
+  var COVER = {
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, top = S.top, lane = S.lane, i, u;
+      rect(ctx, x, S.y, w, S.h, P.wall);
+      /* a pressed panel either side of the tower, going by at the back
+         wall's pace on a loop a little longer than the card */
+      var pw2 = Math.round(w * 0.30), ph2 = Math.round(lane * 0.55), py2 = top + Math.round(lane * 0.14);
+      var tw = Math.max(2, Math.round(w * 0.05)), loop = Math.round(w * 1.1);
+      var off = Math.round(wrap(S.s * 0.37, loop));
+      for (u = -1; u <= 1; u++) {
+        var cx = x + Math.round(w * 0.5) + u * loop - off, tx = cx - Math.round(tw / 2);
+        [tx - 3 - pw2, tx + tw + 3].forEach(function (px0) {
+          rect(ctx, px0, py2, pw2, ph2, P.wallPanel);
+          rect(ctx, px0, py2, pw2, 1, P.wallHi);
+          rect(ctx, px0, py2, 1, ph2, P.wallLit);
+          rect(ctx, px0, py2 + ph2 - 1, pw2, 1, P.wallDeep);
+          rect(ctx, px0 + pw2 - 1, py2, 1, ph2, P.wallDeep);
+        });
+        rect(ctx, tx, top, tw, lane, P.tower);
+        rect(ctx, tx, top, 1, lane, P.towerLit);
+      }
+      /* the beads standing on the wall */
+      for (i = 0; i < 40; i++) {
+        var hh = hash(i * 7919 + 13);
+        dot(ctx, x + hh % w, top + (hh >>> 8) % lane, P.bead);
+      }
+      /* the camera's falloff at the card's sides */
+      var vig = Math.max(3, Math.round(w * 0.08));
+      Tint.rect(ctx, x, top, vig, lane, P.void, 3);
+      Tint.rect(ctx, x + w - vig, top, vig, lane, P.void, 3);
+    },
+
+    /* Hanging, the glasses mouth down, seen through - a ladder of bright
+       rims with the wall showing between, which is what a stack of clear
+       glass is - tumblers, or highballs two abreast on an odd column.
+       Standing, the plates, a ring and a lit edge to each, with the bowl
+       in the stack on an odd column. Wet steel: no shadow. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var ch = Math.min(h, Math.max(2, Math.round(9 * S.k))), ov = Math.max(1, Math.round(4 * S.k));
+      var odd = (p.i & 1) === 1, r, ry, rows, a0 = ctx.globalAlpha;
+      if (end === 'top') {
+        var cb = y + h - ch;
+        var pitch = odd ? Math.max(3, Math.round(16 * S.k * 1.2)) : Math.max(3, Math.round(12 * S.k));
+        ctx.globalAlpha = a0 * 0.62;
+        rect(ctx, x, y, w, cb - y, P.glass);
+        ctx.globalAlpha = a0;
+        for (ry = cb - 1; ry >= y; ry -= pitch) rect(ctx, x, ry, w, 1, P.glassRim);
+        if (odd) rect(ctx, x + Math.floor(w / 2), y, 1, cb - y, P.glassRib);
+        rect(ctx, x + 1, y, 1, cb - y, P.glassLit);
+        rect(ctx, x + w - 1, y, 1, cb - y, P.outline);
+        rows = squeeze(COVER_HANG[hash(p.i * 5) & 1], ch);
+        for (r = 0; r < ch; r++) rect(ctx, x - ov, y + h - 1 - r, w + 2 * ov, 1, rows[r]);
+        rect(ctx, x - ov, cb, 1, ch, P.outline); rect(ctx, x + w + ov - 1, cb, 1, ch, P.outline);
+        return;
+      }
+      var ROW = [P.plateRing, P.plateLit, P.plate];
+      for (ry = y + ch; ry < y + h; ry++) rect(ctx, x, ry, w, 1, ROW[(ry - y - ch) % 3]);
+      if (odd) {
+        /* the bowl, a third of the way down */
+        var bw = y + ch + Math.round((h - ch) / 3);
+        if (bw + 3 <= y + h) { rect(ctx, x, bw, w, 3, P.enamel); rect(ctx, x, bw, w, 1, P.plateLit); }
+      }
+      rect(ctx, x, y + ch, 1, Math.max(0, h - ch), P.sheen);
+      rect(ctx, x + w - 1, y + ch, 1, Math.max(0, h - ch), P.outline);
+      rows = squeeze(COVER_STAND[hash(p.i * 3) & 1], ch);
+      for (r = 0; r < ch; r++) rect(ctx, x - ov, y + r, w + 2 * ov, 1, rows[r]);
+      rect(ctx, x - ov, y, 1, ch, P.outline); rect(ctx, x + w + ov - 1, y, 1, ch, P.outline);
+    },
+
+    /* the lid: the dark over the upper rack, its wires, the arris */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, i, o = Math.floor(wrap(S.s, 4));
+      rect(ctx, x, S.y, w, S.top - S.y, P.lidDark);
+      rect(ctx, x, S.top - 3, w, 1, P.wireShade);
+      rect(ctx, x, S.top - 1, w, 1, P.wireLit);
+      for (i = -o; i < w; i += 4) if (i >= 0) dot(ctx, x + i, S.top - 2, P.wire);
+    },
+    /* the ground: the kill wire, the lower rack, the floor and the pool */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, b = S.y + S.h, i, o = Math.floor(wrap(S.s, 4));
+      rect(ctx, x, f, w, b - f, P.floor);
+      rect(ctx, x, f, w, 1, P.wireLit);
+      rect(ctx, x, f + 1, w, 1, P.wire);
+      for (i = 1 - o; i < w; i += 4) if (i >= 0) dot(ctx, x + i, f + 2, P.wire);
+      if (f + 6 < b) {
+        rect(ctx, x, f + 6, w, b - f - 6, P.pool);
+        for (i = 0; i < w; i++) if (Math.sin(i * 0.5 + S.t * 6) > 0.6) dot(ctx, x + i, f + 6, P.poolSheen);
+      }
+    },
+
+    props: function (ctx, S) {
+      var n, sp, a0 = ctx.globalAlpha;
+      for (n = 0; n < S.spans.length; n++) {
+        sp = S.spans[n];
+        if (sp.i & 1) continue;
+        /* THE STATION at the span's middle, its arms out of step with
+           the next one's; each jet stops short of the doodad's line */
+        var hx = Math.round((sp.x0 + sp.x1) / 2);
+        var R = Math.min(Math.round(52 * S.k), Math.floor((sp.x1 - sp.x0) / 2) - 3);
+        var jh = Math.min(Math.round(S.lane * 0.36), S.floor - sp.line.bottom - 2);
+        var jh2 = Math.min(Math.round(S.lane * 0.26), sp.line.top - 2 - S.top);
+        coverArm(ctx, S, hx, S.floor + 3, R, S.t * 2.4 + sp.i * 1.1, true, jh, sp.i * 13);
+        coverArm(ctx, S, hx, S.top - 3, Math.round(R * 0.8), -S.t * 2.9 + 1.3 + sp.i, false, jh2, sp.i * 13 + 99);
+
+        /* THE FLYER, in every other station's span as it comes in: a
+           tumbler crossing from the right, end over end, to burst on the
+           left stack - the taller half of it, so it never bursts in the
+           gap - and done well before the span reaches the doodad. The
+           sprite is the bay's own at its own size, so not on the
+           smallest sets. */
+        if (S.k < 0.3 || ((sp.i % 4) + 4) % 4 !== 0) continue;
+        var u = (S.x + S.w - sp.x1) / Math.round(S.period * 0.45);
+        if (u < 0 || u >= 1.35) continue;
+        var g = sp.gaps[0], upper = g - S.top > S.floor - (g + S.gapH);
+        var fy = upper ? S.top + Math.round((g - S.top) / 2) : Math.round((g + S.gapH + S.floor) / 2);
+        if (u < 1) {
+          var fs = T.kind[K_TUMBLER][Math.floor(S.t * 8) % TURN_N];
+          var fx = Math.round(sp.x1 - u * (sp.x1 - sp.x0));
+          ctx.drawImage(fs.canvas, fx - Math.floor(fs.w / 2), fy - Math.floor(fs.h / 2));
+        } else {
+          /* the burst: shards flung back off the stack, falling, fading */
+          var b = (u - 1) / 0.35;
+          ctx.globalAlpha = a0 * (1 - b * b);
+          for (var q = 0; q < 6; q++) {
+            var hq = hash(sp.i * 61 + q * 17);
+            var qx = sp.x0 + 1 + Math.round(b * (4 + hq % 11)), qy = fy + Math.round(b * ((hq >>> 4) % 13 - 6) + b * b * 8);
+            rect(ctx, qx, qy, 2, 1, q % 3 ? P.glassRim : P.white);
+            if (q & 1) dot(ctx, qx, qy + 1, P.glassDeep);
+          }
+          ctx.globalAlpha = a0;
+        }
+      }
+    },
+
+    /* CUTLERY off the upper rack, a fork or a spoon, turning end over end
+       on eight leans; its spot under the kill wire, so the wire stays
+       whole. Kept a pixel off the wire as it lands. */
+    drop: function (ctx, d, S) {
+      var sw = Math.max(2, Math.round(5 - 3 * d.f));
+      Tint.rect(ctx, d.x - sw, S.floor + 1, sw * 2 + 1, 2, P.void, 6 + Math.round(8 * d.f));
+      var L = Math.max(5, Math.round(21 * S.k)), lean = COVER_LEAN[Math.floor(S.t * 8) % 8];
+      var vx = lean[0], vy = lean[1], diag = vx !== 0 && vy !== 0;
+      var nn = diag ? Math.round(L * 0.7) : L, half = Math.floor(nn / 2), j, R = [];
+      /* the handle, two pixels thick across its lean */
+      for (j = -half; j < nn - half; j++) {
+        R.push([vx * j, vy * j, vy === 0 ? 1 : 2, vy === 0 ? 2 : 1, P.steelLit]);
+      }
+      /* the head past its end: three tines, or the spoon's bowl */
+      var ex = vx * (nn - half), ey = vy * (nn - half);
+      if (hash(d.i) & 1) {
+        R.push([ex - 1 + (vx > 0 ? 1 : 0), ey - 1 + (vy > 0 ? 1 : 0), 3, 3, P.steel]);
+      } else {
+        var px = -vy, py = vx;
+        for (j = -1; j <= 1; j++) R.push([ex + px * j + vx, ey + py * j + vy, 1, 1, P.steel]);
+        R.push([ex, ey, 1, 1, P.steel]);
+      }
+      var low = -99;
+      for (j = 0; j < R.length; j++) low = Math.max(low, R[j][1] + R[j][3] - 1);
+      var oy = Math.min(d.y, S.floor - 1 - low);
+      for (j = 0; j < R.length; j++) rect(ctx, d.x + R[j][0], oy + R[j][1], R[j][2], R[j][3], R[j][4]);
+    },
+
+    /* beads on the lens, rims only, one of them running; the readout */
+    front: function (ctx, S) {
+      var b1 = T.lensRim[1], b2 = T.lensRim[0];
+      ctx.drawImage(b1.canvas, S.x + Math.round(S.w * 0.78) - 6, S.y + Math.round(S.h * 0.56) + Math.round(wrap(S.t * 8, 20)) - 6);
+      if (S.big) {
+        ctx.drawImage(b2.canvas, S.x + Math.round(S.w * 0.16) - 5, S.y + Math.round(S.h * 0.26) - 5);
+        Font.draw(ctx, 'WASH', S.x + S.w - 3, S.top + 3, { scale: 1, colour: P.readout, shadow: P.readoutShadow, align: 'right' });
+      }
+    }
+  };
 
   /* ==================================================== GENERATION */
 
@@ -4057,14 +4166,14 @@ var Dishwasher = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME, GOLD_NAME: GOLD_NAME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview, drawOverlay: drawOverlay, drawFront: drawFront,
+    drawOverlay: drawOverlay, drawFront: drawFront,
     postBg: postBg, postChars: postChars,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,

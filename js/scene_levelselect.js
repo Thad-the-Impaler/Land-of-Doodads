@@ -539,98 +539,10 @@ var LevelSelectScene = (function () {
     }
   }
 
-  /* a small live window into the level */
+  /* a small live window into the level: js/cover.js lays it out and
+     times it, the level paints it */
   function drawPreview(ctx, x, y, w, h, big, lv) {
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-    /* a level can paint its own cover; the generic one below is the Coop's
-       shapes, which read as neither level once it is recoloured */
-    if (lv && lv.art && lv.art.drawPreview) {
-      lv.art.drawPreview(ctx, x, y, w, h, t, big);
-      ctx.restore();
-      return;
-    }
-    /* every level publishes the handful of colours this window needs, so
-       the Garden's card is not painted in the Coop's browns */
-    var P = (lv && lv.art && lv.art.PREVIEW) || Coop.PREVIEW;
-    var s = t * 24;
-    var ceil = y + 6, floor = y + h - 9;
-
-    /* back wall */
-    ctx.fillStyle = P.back; ctx.fillRect(x, y, w, h);
-    for (var i = -1; i < w / 11 + 1; i++) {
-      var sx = Math.round(x + i * 11 - (s * 0.25) % 11);
-      ctx.fillStyle = (i % 2) ? P.backAlt : P.back;
-      ctx.fillRect(sx, y, 10, h);
-      ctx.fillStyle = P.seam; ctx.fillRect(sx, y, 1, h);
-    }
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.5), P.air, 1);
-    Tint.rect(ctx, x, y + h - 30, w, 30, P.gloom, 3);
-
-    /* rafters and hay */
-    ctx.fillStyle = P.beam; ctx.fillRect(x, y, w, 6);
-    ctx.fillStyle = P.beamDark; ctx.fillRect(x, y + 4, w, 2);
-    ctx.fillStyle = P.ground; ctx.fillRect(x, floor, w, y + h - floor);
-    Tint.rect(ctx, x, floor, w, y + h - floor, P.groundDark, 7);
-    ctx.fillStyle = P.groundHi; ctx.fillRect(x, floor, w, 1);
-
-    /* plank pairs sliding past, with a gap you could fly through */
-    var period = 40;
-    var span = floor - ceil;
-    for (var k = 0; k < 4; k++) {
-      var ox = Math.round(x + w + 12 - ((s + k * period) % (period * 4)));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var gapY = Math.round(ceil + 6 + ((k * 17) % Math.max(1, span - gapH - 12)));
-      planklet(ctx, ox, ceil, gapY - ceil, P);
-      planklet(ctx, ox, gapY + gapH, floor - gapY - gapH, P);
-    }
-
-    /* nails poking out of the bedding */
-    for (var n = 0; n < 3; n++) {
-      var nx = Math.round(x + w - ((s * 1 + n * 53) % (w + 30)));
-      if (nx < x || nx > x + w - 2) continue;
-      ctx.fillStyle = P.spike;
-      ctx.fillRect(nx, floor - 5, 1, 5);
-      ctx.fillRect(nx + 2, floor - 7, 1, 7);
-      ctx.fillStyle = P.spikeHi;
-      ctx.fillRect(nx + 2, floor - 8, 2, 1);
-    }
-
-    /* a doodad silhouette flying it */
-    var bx = Math.round(x + w * 0.32);
-    var by = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 7 : 5;
-    ctx.fillStyle = '#20150c';
-    ctx.fillRect(bx - sz / 2 - 1, by - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';
-    ctx.fillRect(bx - sz / 2, by - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';
-    ctx.fillRect(bx - sz / 2, by - sz / 2, sz - 2, 1);
-    ctx.fillStyle = '#20150c';
-    ctx.fillRect(bx + sz / 2 - 2, by - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';
-    ctx.fillRect(bx + sz / 2, by, 2, 1);
-
-    Tint.rect(ctx, x, y, w, h, P.air, 1);
-    ctx.restore();
-  }
-
-  /* One little plank column inside a preview, painted from the PREVIEW
-     palette it was handed.
-
-     This used to reach for `Coop.P` and ask it for `beam`, which the Coop's
-     pigment table does not have - it calls that colour `beamMid`, and only
-     PREVIEW publishes it as `beam`. Assigning undefined to fillStyle is a
-     no-op rather than an error, so the column kept whatever colour was set
-     last, which is the hay highlight two lines above the loop: the Coop's
-     planks came out near-white. Take the palette as an argument, so a
-     missing key is a missing key on the level that owns it. */
-  function planklet(ctx, x, y, h, P) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.beam; ctx.fillRect(x, y, 10, h);
-    ctx.fillStyle = P.beamLight; ctx.fillRect(x + 1, y, 2, h);
-    ctx.fillStyle = P.beamDark; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 9, y, 1, h);
+    Cover.draw(lv && lv.art, ctx, x, y, w, h, t, big);
   }
 
   return { enter: enter, exit: exit, refresh: refresh, update: update,

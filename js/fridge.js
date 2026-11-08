@@ -318,8 +318,9 @@ var Fridge = (function () {
     late: ['▲ COLD SNAP ▲', 'THE ICE HOLDS FOR 3 STACKS']
   };
 
-  /* the thirteen colours a generic cover would use; this bay paints its
-     own, but the table stays honest */
+  /* the thirteen colours a generic cover would use: the TV's reruns and
+     the stands' set read PREVIEW.back, and the cover itself is COVER,
+     below, in the bay's own pigments */
   var PREVIEW = {
     back: P.liner, backAlt: P.roofNear, seam: P.ribShade,
     beam: P.tubWhite, beamDark: P.tubDeep, beamLight: '#ffffff',
@@ -2382,156 +2383,226 @@ var Fridge = (function () {
 
   /* ======================================================= THE COVER
 
-     118 x 114 on the big card, 82 x 94 on the side ones, 72 x 44 in the
-     stands' TV; the caller has clipped. The compartment straight on, at
-     the bay's own row fractions: the lid, the roof with its LED and its
-     ribs, the back wall with the steel and the shelf's three things, the
-     glass, the trim. Two frosted stacks sliding past, a frozen egg on its
-     way down with its spot, the haze and a bank going by, and every seven
-     seconds THE SNAP on the card's middle - sparks spiralling in, the
-     card going blue, a pale flash. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k;
-    var lidH = Math.max(3, Math.round(h * 0.09));
-    var trimY = y + Math.round(h * 0.90);
-    var lane = trimY - (y + lidH);
-    var top = y + lidH;
-    var roofB = top + Math.round(lane * 0.18);
-    var glassT = trimY - Math.round(lane * 0.17);
+     The Fridge's painters for its cover (js/cover.js lays it out and
+     times it, the same on every card). The compartment straight on: the
+     roof with its LED and its ribs, the back wall with the steel and the
+     shelf's three things, the glass, the lid and the trim. The columns
+     are the bay's stacks of tubs, foil and steel under a foil tray or a
+     blue lid; a frozen egg comes down with its spot; the haze lies over
+     the lane with a bank going by in it; and every seven seconds THE
+     SNAP closes on the doodad - sparks spiralling in, the lane going
+     blue, a pale flash and the ice round him. */
 
-    /* 1. the roof, its gradient, its LED, its ribs */
-    for (i = top; i < roofB; i++) rect(ctx, x, i, w, 1, mix(P.roofNear, P.roofFar, (i - top) / Math.max(1, roofB - top)));
-    var ledW = Math.round(w * 0.22), lx = x + Math.round(wrap(w * 0.5 - s * 0.9, w + ledW)) - ledW;
-    rect(ctx, lx, top + 1, ledW, 2, P.ledCore);
-    rect(ctx, lx - 1, top + 3, ledW + 2, 1, P.ledRim);
-    for (i = 0; i < 6; i++) {
-      var rbx = x + Math.round(wrap(i * w / 5 - s * 0.7, w));
-      var lean = Math.round((rbx - (x + w / 2)) * 0.15);
-      rect(ctx, rbx, roofB - 3, 1, 3, P.ribLit);
-      rect(ctx, rbx + Math.round(lean / 2), roofB - 5, 1, 2, P.ribLit);
-    }
-    /* 2. the wall: liner, steel, the shelf's things, the channel */
-    rect(ctx, x, roofB, w, glassT - roofB, P.steel);
-    rect(ctx, x, roofB, w, 2, P.liner);
-    rect(ctx, x, roofB + 2, w, 1, P.steelLit);
-    var cyc = w + 40, ox = Math.round(wrap(-s * 0.64, cyc));
-    for (k = -1; k <= 1; k++) {
-      var bx = x + ox + k * cyc;
-      rect(ctx, bx + 2, glassT - 7, 16, 7, P.milkRed);
-      rect(ctx, bx + 4, glassT - 9, 3, 2, P.cap);
-      rect(ctx, bx + 5, glassT - 5, 6, 2, P.milkWhite);
-      rect(ctx, bx + 22, glassT - 3, 14, 3, P.pack);
-      rect(ctx, bx + 40, glassT - 5, 20, 5, P.pulp);
-      rect(ctx, bx + 40, glassT - 5, 20, 1, P.pulpLit);
-    }
-    rect(ctx, x, glassT - 1, w, 1, P.channel);
-    /* 3. the glass, then the trim and its arris */
-    for (i = glassT; i < trimY; i++) rect(ctx, x, i, w, 1, mix(P.glassFar, P.glassNear, (i - glassT) / Math.max(1, trimY - glassT)));
-    rect(ctx, x, trimY, w, y + h - trimY, P.trimFace);
-    rect(ctx, x, trimY, w, 1, P.trimArris);
-    rect(ctx, x, trimY + 1, w, 1, P.trimLit);
-    if (trimY + 5 < y + h) rect(ctx, x, y + h - 2, w, 2, P.trimShadow);
-    /* 4. the lid */
-    rect(ctx, x, y, w, lidH, P.lip);
-    rect(ctx, x, y + lidH - 2, w, 1, P.lipLit);
-    rect(ctx, x, y + lidH - 1, w, 1, P.lidArris);
+  /* a 5-row cap or band squeezed to n rows: the first, the last, and the
+     ones between evenly spaced; at two rows the outline and the colour
+     under it, so a cap never goes solid black */
+  function squeeze(rows, n) {
+    if (n >= rows.length) return rows;
+    if (n === 2) return [rows[0], rows[2]];
+    var out = [];
+    for (var j = 0; j < n; j++) out.push(rows[Math.round(j * (rows.length - 1) / (n - 1))]);
+    return out;
+  }
+  var COVER_CAPS = [
+    /* the foil tray; the 'F' row is the fluted foil */
+    [P.outline, P.foilLit, 'F', P.foilDeep, P.outline],
+    /* the steel box under the blue lid */
+    [P.outline, P.lidBlueLit, P.lidBlue, P.boxSteel, P.outline]
+  ];
 
-    /* 5. two stacks sliding past, half a loop apart, the loop running
-       from just off the right edge to just off the left - a shorter loop
-       took them off the card a third of the way across */
-    var sw = big ? 10 : 8, loop = w + sw + 14;
-    for (i = 0; i < 2; i++) {
-      var sx0 = Math.round(x + w + 10 - wrap(s + i * loop / 2, loop));
-      if (sx0 < x - sw - 4 || sx0 > x + w + 2) continue;
-      var gapH = Math.round(lane * 0.36);
-      var gapY = top + 6 + ((i * 29) % Math.max(1, lane - gapH - 12));
-      stacklet(ctx, sx0, top, gapY - top, sw, true, i);
-      stacklet(ctx, sx0, gapY + gapH, trimY - gapY - gapH, sw, false, i);
-    }
+  var COVER = {
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, top = S.top, trimY = S.floor, lane = S.lane, s = S.s, i, k;
+      var roofB = top + Math.round(lane * 0.18), glassT = trimY - Math.round(lane * 0.17);
+      rect(ctx, x, S.y, w, S.h, P.steel);
+      /* the roof, its gradient, its LED, its ribs */
+      for (i = top; i < roofB; i++) rect(ctx, x, i, w, 1, mix(P.roofNear, P.roofFar, (i - top) / Math.max(1, roofB - top)));
+      var ledW = Math.round(w * 0.22), lx = x + Math.round(wrap(w * 0.5 - s * 0.9, w + ledW)) - ledW;
+      rect(ctx, lx, top + 1, ledW, 2, P.ledCore);
+      rect(ctx, lx - 1, top + 3, ledW + 2, 1, P.ledRim);
+      for (i = 0; i < 6; i++) {
+        var rbx = x + Math.round(wrap(i * w / 5 - s * 0.7, w));
+        var lean = Math.round((rbx - (x + w / 2)) * 0.15);
+        rect(ctx, rbx, roofB - 3, 1, 3, P.ribLit);
+        rect(ctx, rbx + Math.round(lean / 2), roofB - 5, 1, 2, P.ribLit);
+      }
+      /* the wall: liner, steel, the shelf's things at the wall's own
+         speed, the channel */
+      rect(ctx, x, roofB, w, glassT - roofB, P.steel);
+      rect(ctx, x, roofB, w, 2, P.liner);
+      rect(ctx, x, roofB + 2, w, 1, P.steelLit);
+      var cyc = w + 40, ox = Math.round(wrap(-s * 0.64, cyc));
+      for (k = -1; k <= 1; k++) {
+        var bx = x + ox + k * cyc;
+        rect(ctx, bx + 2, glassT - 7, 16, 7, P.milkRed);
+        rect(ctx, bx + 4, glassT - 9, 3, 2, P.cap);
+        rect(ctx, bx + 5, glassT - 5, 6, 2, P.milkWhite);
+        rect(ctx, bx + 22, glassT - 3, 14, 3, P.pack);
+        rect(ctx, bx + 40, glassT - 5, 20, 5, P.pulp);
+        rect(ctx, bx + 40, glassT - 5, 20, 1, P.pulpLit);
+      }
+      rect(ctx, x, glassT - 1, w, 1, P.channel);
+      /* the glass, seen through to the dark below */
+      for (i = glassT; i < trimY; i++) rect(ctx, x, i, w, 1, mix(P.glassFar, P.glassNear, (i - glassT) / Math.max(1, trimY - glassT)));
+      /* the lens's side falloff */
+      var vig = Math.max(4, Math.round(w * 0.09));
+      Tint.rect(ctx, x, top, vig, lane, P.coldDeep, 2);
+      Tint.rect(ctx, x + w - vig, top, vig, lane, P.coldDeep, 2);
+    },
 
-    /* 6. a frozen egg on a 2.4s loop, and its spot */
-    var ek = wrap(t / 2.4, 1), ey = top + Math.round(ek * (lane - 4)), ex = x + Math.round(w * 0.62);
-    var sw2 = Math.max(2, Math.round(5 - ek * 3));
-    Tint.rect(ctx, ex - sw2, trimY + 1, sw2 * 2 + 1, 2, P.void, 6 + Math.round(8 * ek));
-    rect(ctx, ex - 2, ey - 3, 5, 6, P.shellLine);
-    rect(ctx, ex - 1, ey - 2, 3, 4, P.shell);
-    rect(ctx, ex - 1, ey - 2, 3, 1, P.frost);
-    dot(ctx, ex - 1, ey - 1, P.iceHi);
+    /* One stack: white tubs with dark joints, counted from the cap so
+       the one at the mouth of the gap is always whole (the bay tiles its
+       stacks the same way). Dairy, steel or foil off the column's index,
+       the bay's three towers; rime on every third tub's lit edge; the
+       foil tray or the blue lid at the mouth. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var v = ((p.i % 3) + 3) % 3, hang = end === 'top';
+      var ch = Math.max(2, Math.round(9 * S.k)), ov = Math.max(1, Math.round(4 * S.k));
+      var st = Math.max(3, Math.round(12 * S.k)), sh = w <= 9 ? 1 : 2;
+      Tint.rect(ctx, x + w, y, ov, h, P.void, 5);
+      rect(ctx, x, y, w, h, P.outline);
+      /* walk away from the cap, one element at a time: `at` is the
+         element's edge nearest the cap, its joint the row furthest */
+      var at = hang ? y + h - ch : y + ch, j = 0;
+      while (hang ? at > y : at < y + h) {
+        var foil = v === 2 && j % 3 !== 0, eh = foil ? 3 : st;
+        var by = hang ? at - eh + 1 : at, bh = eh - 1;
+        if (by < y) { bh -= y - by; by = y; }
+        if (by + bh > y + h) bh = y + h - by;
+        if (bh > 0) {
+          if (foil) {
+            for (var fx = x + 1; fx < x + w - 1; fx++) dot(ctx, fx, by, ((fx - x) >> 1) & 1 ? P.foilShade : P.foil);
+            if (bh > 1) rect(ctx, x + 1, by + 1, w - 2, bh - 1, P.foilShade);
+            dot(ctx, x + 1, by, P.foilLit);
+          } else {
+            var steel = v === 0 ? j % 4 === 3 : (v === 1 && (j & 1) === 1);
+            rect(ctx, x + 1, by, w - 2, bh, steel ? P.boxSteel : P.tubWhite);
+            rect(ctx, x + w - 1 - sh, by, sh, bh, steel ? P.boxSteelShade : P.tubShade);
+            /* where a tub has the rows for it, its label: the sour
+               cream's lavender and the Chobani's green band; the steel
+               box's green lid */
+            if (bh >= 4 && steel) rect(ctx, x + 1, by, w - 2, 1, P.lidGreen);
+            else if (bh >= 4 && v === 0) {
+              if (j & 1) rect(ctx, x + 1, by + 2, w - 2, 1, P.chobaniGreen);
+              else rect(ctx, x + 1, by + 1, w - 2, bh - 2, P.sourLav);
+            }
+            if (j % 3 === 1) dot(ctx, x + 1, by, P.frost);
+          }
+        }
+        at += hang ? -eh : eh;
+        j++;
+      }
+      /* the cap across the mouth, its outline at the gap's edge */
+      var rows = squeeze(COVER_CAPS[hash(p.i * 41 + 26) & 1], ch);
+      for (var r = 0; r < ch; r++) {
+        var cy = hang ? y + h - 1 - r : y + r, col = rows[r];
+        if (col === 'F') {
+          for (var cx = 0; cx < w + 2 * ov; cx++) dot(ctx, x - ov + cx, cy, (cx >> 1) & 1 ? P.foilShade : P.foil);
+        } else rect(ctx, x - ov, cy, w + 2 * ov, 1, col);
+      }
+    },
 
-    /* 7. the doodad, the Couch's block */
-    var dx = Math.round(x + w * 0.3), dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.14));
-    var sz = big ? 8 : 6;
+    /* the lid: the liner's white flange, its dark arris the kill line */
+    ceiling: function (ctx, S) {
+      rect(ctx, S.x, S.y, S.w, S.top - S.y, P.lip);
+      rect(ctx, S.x, S.top - 2, S.w, 1, P.lipLit);
+      rect(ctx, S.x, S.top - 1, S.w, 1, P.lidArris);
+    },
+    /* the shelf's polished trim and its bright arris */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, b = S.y + S.h;
+      rect(ctx, x, f, w, b - f, P.trimFace);
+      rect(ctx, x, f, w, 1, P.trimArris);
+      rect(ctx, x, f + 1, w, 1, P.trimLit);
+      if (f + 5 < b) rect(ctx, x, b - 2, w, 2, P.trimShadow);
+    },
 
-    /* 8. THE MIST: the haze, and a bank crossing on a 7s loop */
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x, top, w, trimY - top); ctx.clip();
-    Tint.rect(ctx, x, top, w, trimY - top, P.mist, 3);
-    var bk = wrap(t / 7, 1), bxx = x + w - bk * (w * 2.2);
-    var bg = ctx.createLinearGradient(bxx, 0, bxx + w, 0);
-    bg.addColorStop(0, 'rgba(228,241,247,0)');
-    bg.addColorStop(0.3, 'rgba(228,241,247,0.55)');
-    bg.addColorStop(0.7, 'rgba(228,241,247,0.55)');
-    bg.addColorStop(1, 'rgba(228,241,247,0)');
-    ctx.fillStyle = bg; ctx.fillRect(bxx, top, w, trimY - top);
+    /* THE MIST. The haze over the whole lane first - here, not in back,
+       so the stacks stand in it as they do in the bay, and under the
+       doodad so he reads through it - then a bank in every other even
+       span, a soft column of cold with frost drifting down it. Clipped
+       to the lane: the lid and the trim never fog. */
+    props: function (ctx, S) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(S.x, S.top, S.w, S.lane); ctx.clip();
+      Tint.rect(ctx, S.x, S.top, S.w, S.lane, P.mist, 3);
+      for (var n = 0; n < S.spans.length; n++) {
+        var sp = S.spans[n];
+        if (((sp.i % 4) + 4) % 4 !== 0) continue;
+        var b0 = sp.x0 - 6, b1 = sp.x1 + 6, mid = Math.round((sp.x0 + sp.x1) / 2);
+        var bg = ctx.createLinearGradient(b0, 0, b1, 0);
+        bg.addColorStop(0, 'rgba(228,241,247,0)');
+        bg.addColorStop(0.3, 'rgba(228,241,247,0.55)');
+        bg.addColorStop(0.7, 'rgba(228,241,247,0.55)');
+        bg.addColorStop(1, 'rgba(228,241,247,0)');
+        ctx.fillStyle = bg; ctx.fillRect(b0, S.top, b1 - b0, S.lane);
+        for (var i = 0; i < 4; i++) {
+          var fy = S.top + Math.round(wrap(S.t * 9 + i * 17, S.lane));
+          dot(ctx, mid + (hash(sp.i * 7 + i) % 13) - 6, fy, i & 1 ? P.ice : P.iceHi);
+        }
+      }
+      ctx.restore();
+    },
 
-    /* 9. THE SNAP, every 7s offset 3.5 from the bank */
-    var sk = wrap(t / 7 + 0.5, 1) * 7;
-    if (sk < 1.2) {
-      var kk = ease(sk / 1.2);
-      ctx.globalAlpha = 0.20 * kk; ctx.fillStyle = P.coldTint; ctx.fillRect(x, top, w, trimY - top);
-      ctx.globalAlpha = 1;
-      for (i = 0; i < 12; i++) {
-        var th = i * TAU / 12 + sk * 6;
-        var rr = lerp(w * 0.38, 5, kk);
-        var spx = Math.round(dx + Math.cos(th) * rr), spy = Math.round(dy + Math.sin(th) * rr);
-        dot(ctx, spx, spy, P.iceHi); dot(ctx, spx + 1, spy, P.ice); dot(ctx, spx, spy + 1, P.ice);
+    /* the frozen egg, swaying as the bay's does, and its spot on the trim */
+    drop: function (ctx, d, S) {
+      var ex = d.x + Math.round(Math.sin(S.t * 6)), ey = d.y;
+      var sw = Math.max(2, Math.round(5 - 3 * d.f));
+      Tint.rect(ctx, d.x - sw, S.floor + 1, sw * 2 + 1, 2, P.void, 6 + Math.round(8 * d.f));
+      if (S.k < 0.2) {
+        /* the stands' set, where the doodad is four pixels: a fleck of an egg */
+        rect(ctx, ex - 1, ey - 2, 3, 4, P.shellLine);
+        rect(ctx, ex, ey - 1, 1, 2, P.shell);
+        return;
+      }
+      /* the Coop's egg in its frozen colours, corners off. The shell is
+         within a shade of the glass behind it, so a flat one was only its
+         outline - and five by seven of outline beside 37F reads as a
+         nought. Lit on top and shaded underneath, it is a solid thing. */
+      rect(ctx, ex - 2, ey - 2, 5, 5, P.shellLine);
+      rect(ctx, ex - 1, ey - 3, 3, 7, P.shellLine);
+      rect(ctx, ex - 1, ey - 2, 3, 5, P.shell);
+      rect(ctx, ex - 1, ey + 1, 3, 2, P.shellShade);
+      rect(ctx, ex - 1, ey - 2, 2, 1, P.frost);
+      dot(ctx, ex - 1, ey - 1, P.iceHi);
+    },
+
+    /* THE SNAP on a seven-second loop: the lane cooling to blue as the
+       sparks spiral in on him, the flash, and the block of ice round him
+       for two seconds; the thermometer's readout on the big card */
+    front: function (ctx, S) {
+      var sk = wrap(S.t / 7 + 0.5, 1) * 7, D = S.doodad, i;
+      if (sk < 1.2) {
+        var kk = ease(sk / 1.2);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(S.x, S.top, S.w, S.lane); ctx.clip();
+        var a0 = ctx.globalAlpha;
+        ctx.globalAlpha = a0 * 0.20 * kk; rect(ctx, S.x, S.top, S.w, S.lane, P.coldTint);
+        ctx.globalAlpha = a0;
+        for (i = 0; i < 12; i++) {
+          var th = i * TAU / 12 + sk * 6, rr = lerp(S.w * 0.38, 5, kk);
+          var spx = Math.round(D.x + Math.cos(th) * rr), spy = Math.round(D.y + Math.sin(th) * rr);
+          dot(ctx, spx, spy, P.iceHi); dot(ctx, spx + 1, spy, P.ice); dot(ctx, spx, spy + 1, P.ice);
+        }
+        ctx.restore();
+      }
+      if (sk >= 1.2 && sk < 3.4) {
+        var z = D.size, bx = D.x - Math.floor(z / 2) - 3, by = D.y - Math.floor(z / 2) - 3, a1 = ctx.globalAlpha;
+        ctx.globalAlpha = a1 * 0.45; rect(ctx, bx, by, z + 6, z + 6, P.ice); ctx.globalAlpha = a1;
+        rect(ctx, bx, by, z + 6, 1, P.iceHi);
+        rect(ctx, bx, by, 1, z + 6, P.iceHi);
+      }
+      if (sk >= 1.2 && sk < 1.3) {
+        var a2 = ctx.globalAlpha;
+        ctx.globalAlpha = a2 * 0.5; rect(ctx, S.x, S.y, S.w, S.h, P.frost); ctx.globalAlpha = a2;
+      }
+      if (S.big) {
+        var rd = sk < 1.2 ? Math.round(37 * (1 - ease(sk / 1.2))) : (sk < 3.4 ? 0 : 37);
+        Font.draw(ctx, rd + 'F', S.x + S.w - 3, S.top + 3, { scale: 1, colour: P.readout, shadow: P.readoutShadow, align: 'right' });
       }
     }
-    ctx.restore();
-    rect(ctx, dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2, P.outline);
-    rect(ctx, dx - sz / 2, dy - sz / 2, sz, sz, '#c9873c');
-    rect(ctx, dx - sz / 2, dy - sz / 2, sz - 2, 1, '#eab873');
-    dot(ctx, dx + sz / 2 - 2, dy - 1, P.outline);
-    rect(ctx, dx + sz / 2, dy, 2, 1, '#f3cc84');
-    if (sk >= 1.2 && sk < 3.4) {
-      /* iced: the block round him */
-      ctx.globalAlpha = 0.45; rect(ctx, dx - sz / 2 - 3, dy - sz / 2 - 3, sz + 6, sz + 6, P.ice); ctx.globalAlpha = 1;
-      rect(ctx, dx - sz / 2 - 3, dy - sz / 2 - 3, sz + 6, 1, P.iceHi);
-      rect(ctx, dx - sz / 2 - 3, dy - sz / 2 - 3, 1, sz + 6, P.iceHi);
-    }
-    if (sk >= 1.2 && sk < 1.3) {
-      ctx.globalAlpha = 0.5; rect(ctx, x, y, w, h, P.frost); ctx.globalAlpha = 1;
-    }
-    if (big) {
-      var rd = sk < 1.2 ? Math.round(37 * (1 - ease(sk / 1.2))) : (sk < 3.4 ? 0 : 37);
-      Font.draw(ctx, rd + 'F', x + w - 3, y + lidH + 3, { scale: 1, colour: P.readout, shadow: P.readoutShadow, align: 'right' });
-    }
-    /* the lens's side falloff */
-    var vig = Math.max(4, Math.round(w * 0.09));
-    Tint.rect(ctx, x, top, vig, trimY - top, P.coldDeep, 2);
-    Tint.rect(ctx, x + w - vig, top, vig, trimY - top, P.coldDeep, 2);
-  }
-
-  /* one stack in a cover: white tubs with dark joints, the foil cap or
-     the blue lid at the mouth */
-  function stacklet(ctx, x, y, h, w, hang, v) {
-    if (h <= 0) return;
-    rect(ctx, x, y, w, h, P.outline);
-    var step = 5, j = 0;
-    for (var cy = 0; cy < h; cy += step, j++) {
-      var yy = hang ? y + h - cy - step : y + cy;
-      var hh = Math.min(step, (hang ? yy + step - y : y + h - yy));
-      if (hang && yy < y) { hh = step - (y - yy); yy = y; }
-      if (hh <= 1) continue;
-      var dark = (j + v) % 4 === 3;
-      rect(ctx, x + 1, yy, w - 2, hh - 1, dark ? P.boxSteel : P.tubWhite);
-      rect(ctx, x + w - 3, yy, 2, hh - 1, dark ? P.boxSteelShade : P.tubShade);
-    }
-    var cy2 = hang ? y + h - 3 : y;
-    rect(ctx, x - 2, cy2, w + 4, 3, P.outline);
-    rect(ctx, x - 1, cy2 + (hang ? 0 : 1), w + 2, 2, v ? P.lidBlue : P.foil);
-    rect(ctx, x - 1, hang ? cy2 + 1 : cy2 + 1, w + 2, 1, v ? P.lidBlueLit : P.foilLit);
-  }
+  };
 
   /* ==================================================== GENERATION */
 
@@ -2645,14 +2716,14 @@ var Fridge = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview, drawOverlay: drawOverlay, drawFront: drawFront,
+    drawOverlay: drawOverlay, drawFront: drawFront,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld,

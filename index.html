@@ -24,17 +24,18 @@
        tools/build_single_file.py: a changed file gets a new address, so a
        refresh after a push never runs the last push's scripts -->
   <script src="js/core.js?v=a6e9af491e"></script>
-  <script src="js/font.js?v=c8d0b6521f"></script>
-  <script src="js/input.js?v=e5ac397e3f"></script>
-  <script src="js/audio.js?v=260f5f4daf"></script>
+  <script src="js/font.js?v=1b4ffa4fdb"></script>
+  <script src="js/input.js?v=bbced6eba4"></script>
+  <script src="js/audio.js?v=25d4a9dcc4"></script>
   <script src="js/screen.js?v=bab6a3d8ef"></script>
   <script src="js/assets.js?v=d2c5c6f872"></script>
   <script src="js/doodads.js?v=6f62d3f957"></script>
-  <script src="js/coop.js?v=5fbcb18261"></script>
-  <script src="js/garden.js?v=2c18cf4da0"></script>
-  <script src="js/deck.js?v=b46c12cc50"></script>
-  <script src="js/canopy.js?v=8f57f36ab9"></script>
-  <script src="js/construction.js?v=b822efc41f"></script>
+  <script src="js/cover.js?v=f5efd42b21"></script>
+  <script src="js/coop.js?v=c4509c15c1"></script>
+  <script src="js/garden.js?v=4743704f12"></script>
+  <script src="js/deck.js?v=36b8d3156d"></script>
+  <script src="js/canopy.js?v=72b0b7cab4"></script>
+  <script src="js/construction.js?v=fd7045a3b9"></script>
   <!-- the Living Room: the room itself, then its five bays, then levels.js,
        which is where they are named. Load order is the dependency order.
        chalkboard.js is not a bay - it is the second art module the
@@ -46,13 +47,13 @@
        aliases its palette at load while Fort.build() reaches Cupmen.build()
        only at boot. -->
   <script src="js/livingroom.js?v=e1726d4fc8"></script>
-  <script src="js/desk.js?v=31f9b274c6"></script>
-  <script src="js/couch.js?v=4c4aaf565c"></script>
-  <script src="js/mantle.js?v=b31ef58c8c"></script>
-  <script src="js/whiteboard.js?v=f9d7e8cd6f"></script>
-  <script src="js/chalkboard.js?v=c2a5db50c6"></script>
+  <script src="js/desk.js?v=477fbbf7f8"></script>
+  <script src="js/couch.js?v=e217e148e8"></script>
+  <script src="js/mantle.js?v=2c184a99f5"></script>
+  <script src="js/whiteboard.js?v=17b00e86d1"></script>
+  <script src="js/chalkboard.js?v=3044704942"></script>
   <script src="js/cupmen.js?v=e40f65884a"></script>
-  <script src="js/fort.js?v=2d1e7e97c0"></script>
+  <script src="js/fort.js?v=55634e7cc7"></script>
   <!-- the Dining Room: the room itself, then its five bays, in the same
        dependency order. diningroom.js reads LivingRoom.P at load (it is
        the same house - the same ceiling, the same oak), so it sits after
@@ -60,20 +61,20 @@
        because its set broadcasts every bay before it: it reads their
        baked sprites and calls their covers. -->
   <script src="js/diningroom.js?v=e67c93bfb3"></script>
-  <script src="js/table.js?v=71b5c68427"></script>
-  <script src="js/floor.js?v=3491c608b6"></script>
-  <script src="js/bar.js?v=0026003b11"></script>
-  <script src="js/ceiling.js?v=1438e06f29"></script>
-  <script src="js/tv.js?v=2739538aa4"></script>
+  <script src="js/table.js?v=b459398320"></script>
+  <script src="js/floor.js?v=8695ac372f"></script>
+  <script src="js/bar.js?v=6d72697e47"></script>
+  <script src="js/ceiling.js?v=a718d267dc"></script>
+  <script src="js/tv.js?v=2821503ef9"></script>
   <!-- the Kitchen: the room itself, then its five bays. kitchen.js reads
        DiningRoom.P at load (the same house, through the doorway), so it
        sits after the Dining Room; every bay reads Kitchen at load. -->
   <script src="js/kitchen.js?v=ad32ce5c7b"></script>
-  <script src="js/island.js?v=fa58bf9b4f"></script>
-  <script src="js/counter.js?v=55e1f597d2"></script>
-  <script src="js/fridge.js?v=769b11c3cb"></script>
-  <script src="js/cabinets.js?v=b6e2c0326a"></script>
-  <script src="js/dishwasher.js?v=9fd1cf5636"></script>
+  <script src="js/island.js?v=49442f0eb3"></script>
+  <script src="js/counter.js?v=dfda11038b"></script>
+  <script src="js/fridge.js?v=d91fae2dbe"></script>
+  <script src="js/cabinets.js?v=56ffd080dd"></script>
+  <script src="js/dishwasher.js?v=175a035fb1"></script>
   <script src="js/levels.js?v=05afa3b7de"></script>
   <script src="js/scores.js?v=938e8fb784"></script>
   <script src="js/world.js?v=1937498283"></script>
@@ -84,10 +85,10 @@
        question of - badges after ui.js, the roster after scores.js. -->
   <script src="js/badges.js?v=5263744954"></script>
   <script src="js/achievements.js?v=4dafc5cad6"></script>
-  <script src="js/scene_title.js?v=de01879c92"></script>
-  <script src="js/scene_porch.js?v=fd336857d8"></script>
-  <script src="js/scene_stands.js?v=f3ee6721fc"></script>
-  <script src="js/scene_levelselect.js?v=2cedc0fc5a"></script>
+  <script src="js/scene_title.js?v=eac9a26278"></script>
+  <script src="js/scene_porch.js?v=7c9f80f831"></script>
+  <script src="js/scene_stands.js?v=065c75df39"></script>
+  <script src="js/scene_levelselect.js?v=f8fc6593a3"></script>
   <script src="js/scene_charselect.js?v=ea3fc63fb7"></script>
   <script src="js/scene_play.js?v=405457a498"></script>
   <script src="js/scene_scores.js?v=7c08d41d03"></script>

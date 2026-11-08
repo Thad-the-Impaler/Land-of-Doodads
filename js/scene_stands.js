@@ -110,6 +110,23 @@ var StandsScene = (function () {
      bench from then on rather than a hole in the title screen */
   var CACHE = {}, FAILED = {};
 
+  /* THE TOYS' STATE - pokes, the beach ball, the hype and its show, the
+     shooting stars, the moon - reset on every enter(). See "the toys". */
+  var visitPokes = 0, pokedIds = {}, denyCool = 0, lastPoked = null;
+  var plate = null;                /* { a, t }: the doodad cam            */
+  var camFlash = 0;                /* the bulbs going gold as the cam cuts */
+  var hoverA = null, hoverT = 0;
+  var dood = [];                   /* last frame's doodad rects, for hover */
+  var ball = null, rally = 0, rallyT = 0;
+  var hype = 0, hypeIdle = 0, hypeDrip = 0, refractory = 0, lastShow = -99, showT = 0;
+  var pyro = [], rockets = [], stars = [], starCool = 0, moonCool = 0;
+  var confetti = [];
+  var stationCool = {};
+  var hiRect = null;
+  var hintT = 0, hints = 0, rings = [], toyTapped = false;
+  var tickerPlea = false;
+  var TOY_FAIL = {};
+
   /* ------------------------------------------------------ small tools */
 
   function px(c, col, x, y, w, h) {
@@ -878,6 +895,10 @@ var StandsScene = (function () {
       }
     }
     var parts = [n + ' DOODADS IN THE STANDS'];
+    /* the one line of the ticker that says the stands can be played with,
+       and what it says once they have been played with rather a lot */
+    if (tickerPlea) parts.push('PLEASE STOP POKING THE DOODADS');
+    else parts.push(UI.touch() ? 'POKE SOMEBODY' : 'POKE SOMEBODY · ▲ FOR THE WAVE · ▼ FOR THE BALL');
     if (names.length) parts.push('TONIGHT: ' + names.join(' · '));
     parts.push('PLEASE DO NOT CLIMB ON THE FURNITURE');
     var str = parts.join('   ★   ') + '   ★   ';
@@ -1629,56 +1650,12 @@ var StandsScene = (function () {
     c.save();
     c.beginPath(); c.rect(0, 0, TV_SW, TV_SH); c.clip();
     try {
-      if (m.drawPreview) m.drawPreview(c, 0, 0, TV_SW, TV_SH, t, false);
-      else coopCard(c, 0, 0, TV_SW, TV_SH, t);
+      Cover.draw(m, c, 0, 0, TV_SW, TV_SH, t, false);
       c.restore();
     } catch (e) {
       offAir[lv.id] = true;
       L.pic = makeCanvas(TV_SW, TV_SH);
     }
-  }
-
-  /* THE COOP'S CARD, copied from js/tv.js (which copied it from the level
-     select) rather than reached for: the Coop is the one level with no
-     drawPreview of its own, and a shared helper between three screens is
-     a helper that gets changed for one of them. */
-  function coopCard(c, x, y, w, h, tt) {
-    var Q = Coop.PREVIEW, s = tt * 24, i, k;
-    var ceil = y + 6, floor = y + h - 9;
-    c.fillStyle = Q.back; c.fillRect(x, y, w, h);
-    for (i = -1; i < w / 11 + 1; i++) {
-      var sx = Math.round(x + i * 11 - (s * 0.25) % 11);
-      c.fillStyle = (i % 2) ? Q.backAlt : Q.back; c.fillRect(sx, y, 10, h);
-      c.fillStyle = Q.seam; c.fillRect(sx, y, 1, h);
-    }
-    Tint.rect(c, x, y, w, Math.round(h * 0.5), Q.air, 1);
-    Tint.rect(c, x, y + h - 30, w, 30, Q.gloom, 3);
-    c.fillStyle = Q.beam; c.fillRect(x, y, w, 6);
-    c.fillStyle = Q.beamDark; c.fillRect(x, y + 4, w, 2);
-    c.fillStyle = Q.ground; c.fillRect(x, floor, w, y + h - floor);
-    Tint.rect(c, x, floor, w, y + h - floor, Q.groundDark, 7);
-    c.fillStyle = Q.groundHi; c.fillRect(x, floor, w, 1);
-    var period = 40, span = floor - ceil;
-    for (k = 0; k < 4; k++) {
-      var ox = Math.round(x + w + 12 - ((s + k * period) % (period * 4)));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var gapY = Math.round(ceil + 6 + ((k * 17) % Math.max(1, span - gapH - 12)));
-      planklet(c, ox, ceil, gapY - ceil, Q);
-      planklet(c, ox, gapY + gapH, floor - gapY - gapH, Q);
-    }
-    var bx = Math.round(x + w * 0.32), by = Math.round(y + h / 2 + Math.sin(tt * 3.1) * (h * 0.16));
-    c.fillStyle = '#20150c'; c.fillRect(bx - 3, by - 3, 7, 7);
-    c.fillStyle = '#c9873c'; c.fillRect(bx - 2, by - 2, 5, 5);
-    c.fillStyle = '#eab873'; c.fillRect(bx - 2, by - 2, 3, 1);
-    c.fillStyle = '#f3cc84'; c.fillRect(bx + 3, by, 2, 1);
-  }
-
-  function planklet(c, x, y, h, Q) {
-    if (h <= 0) return;
-    c.fillStyle = Q.beam; c.fillRect(x, y, 10, h);
-    c.fillStyle = Q.beamLight; c.fillRect(x + 1, y, 2, h);
-    c.fillStyle = Q.beamDark; c.fillRect(x, y, 1, h); c.fillRect(x + 9, y, 1, h);
   }
 
   /* the whiteboard's second doodle, the one the marker draws while you
@@ -1744,6 +1721,10 @@ var StandsScene = (function () {
     this.flip = false; this.turnT = -1; this.turnTo = false; this.holdT = 0;
     this.sqx = 1; this.duckT = 0; this.shiverT = 0;
     this.flight = null;
+    /* the toys: pokes running, a flyer's loop, and a beat between headers */
+    this.ix = Doodads.indexOf(d.id);
+    this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
+    this.loop = null; this.ballCool = 0;
   }
 
   Actor.prototype.flap = function () { this.flapTimer = 0.28; };
@@ -1782,7 +1763,7 @@ var StandsScene = (function () {
   }
 
   function hop(a, apex) {
-    if (!a || a.flight || a.hy !== 0) return;
+    if (!a || a.flight || a.loop || a.hy !== 0) return;
     var cap = liftCap(a);
     a.flap();
     apex = Math.min(apex, cap);
@@ -1793,7 +1774,7 @@ var StandsScene = (function () {
   }
 
   function attempt(a, sym) {
-    if (!a || a.flight || a.hy !== 0) return;
+    if (!a || a.flight || a.loop || a.hy !== 0) return;
     a.maxLift = liftCap(a);
     a.hv = -120; a.hy = -0.01; a.hops = 3; a.attempt = true;
     a.flap();
@@ -1808,7 +1789,7 @@ var StandsScene = (function () {
      the flip. */
 
   function turn(a, face, hold) {
-    if (!a || a.flight || a.turnT >= 0) return;
+    if (!a || a.flight || a.loop || a.turnT >= 0) return;
     if (face === a.flip && !hold) return;
     a.turnT = 0;
     a.turnTo = (face === a.flip || flipFits(a, face)) ? face : a.flip;
@@ -1887,6 +1868,7 @@ var StandsScene = (function () {
   function updateFlyer(a, dt) {
     a.timer -= dt;
     if (a.flight) { stepFlight(a, dt); return; }
+    if (a.loop) { stepLoop(a, dt); return; }
     var lifting = stepLift(a, dt);
     a.x = damp(a.x, a.st.x + a.seatX, 0.02, dt);
     a.y = seatY(a) - 2 + Math.sin(t * 2.4 + a.bobPhase) * 2 + a.hy;
@@ -2141,12 +2123,12 @@ var StandsScene = (function () {
      porch's three limits, which are what keep thirty doodads from being
      a racket. A speaker is anything with x, y and r: a doodad, or a
      station's anchor (the Cupman). */
-  function say(actor, symbol) {
+  function say(actor, symbol, quiet) {
     if (!actor) return;
     for (var i = bubbles.length - 1; i >= 0; i--) if (bubbles[i].actor === actor) bubbles.splice(i, 1);
     bubbles.push({ actor: actor, symbol: symbol, life: 1.2 });
     if (bubbles.length > 5) bubbles.shift();
-    if (chirpCooldown <= 0) { Audio3.play('chirp'); chirpCooldown = 0.45; }
+    if (!quiet && chirpCooldown <= 0) { Audio3.play('chirp'); chirpCooldown = 0.45; }
   }
 
   /* The porch's hysteresis, and one rule of this screen's own: a bubble
@@ -2269,12 +2251,12 @@ var StandsScene = (function () {
     if (!done) chant();
   }
 
-  function idle(a) { return a && !a.flight && a.hy === 0 && a.turnT < 0 && a.holdT <= 0; }
+  function idle(a) { return a && !a.flight && !a.loop && a.hy === 0 && a.turnT < 0 && a.holdT <= 0; }
 
   function flyoverBeat() {
     var flyers = [], others = [], i;
     for (i = 0; i < stage.length; i++) {
-      if (stage[i].mode === 'hover' && !stage[i].flight) flyers.push(stage[i]);
+      if (stage[i].mode === 'hover' && !stage[i].flight && !stage[i].loop) flyers.push(stage[i]);
       else if (stage[i].mode !== 'hover') others.push(stage[i]);
     }
     if (!flyers.length || !others.length) return false;
@@ -2362,9 +2344,16 @@ var StandsScene = (function () {
      with one flicker, and the wave once all three are lit. It waits for
      the wipe, like the porch's wave, or it would happen behind it. */
   function lightsUp() {
+    strikeBanks(0);
+    later(1.5, wave);
+  }
+
+  /* the three banks struck left to right, each with its one flicker -
+     the opening's, and the moon's when it gives the lights back */
+  function strikeBanks(after) {
     for (var i = 0; i < 3; i++) {
       (function (k) {
-        later(0.3 + k * 0.32, function () {
+        later(after + 0.3 + k * 0.32, function () {
           banks[k] = 0;
           Audio3.play('thud');
           later(0.04, function () { banks[k] = 6; });
@@ -2372,7 +2361,625 @@ var StandsScene = (function () {
         });
       })(i);
     }
-    later(1.5, wave);
+  }
+
+  /* ------------------------------------------------------- the toys
+
+     THE STANDS ARE THE BIGGEST TOY IN THE GAME. Everything the coop and the
+     porch do, the stands do: poke a doodad and it answers - differently the
+     second and third time, and it sulks after that - and the scoreboard's
+     DOODAD CAM cuts to it, name and tagline; hover a cursor along a row
+     and the crowd turns to look. And then the stands' own:
+
+       - every piece of furniture is its level, and a tap does its trick;
+       - the scoreboard drops a BEACH BALL into the crowd, which bounces off
+         heads (they bop it back up) until it rolls out on the lawn - tap
+         it to keep it up, or press ▼;
+       - everything the crowd enjoys fills the HYPE meter, and a full meter
+         is THE SHOW: the wave, the bulbs racing, the crowd roaring and
+         fireworks over the trees in the last-poked doodad's colours;
+       - tap the sky for a shooting star, the moon for a power cut, ▲ for
+         the wave.
+
+     None of it can reach the menu. Every rectangle here is pushed BEFORE
+     the boards (Input tests last-pushed-first, so the boards stay on top),
+     none of them carries an action, and while the floodlights are dark
+     there are no toy rectangles at all. Every toy runs through toy(), which
+     puts it away for the visit the first time it throws, the way liveCall
+     turns a station into a bench. Copied from the coop title rather than
+     shared, like logoLine. */
+
+  var HYPE_FULL = 20;
+  var BALL_R = 5, LAWN = 213;
+  var BALL_COL = [UI.C.red, UI.C.ink, UI.C.gold, UI.C.ink, '#4a7fc0', UI.C.ink];
+
+  function toy(name, fn) {
+    if (TOY_FAIL[name]) return;
+    try { fn(); }
+    catch (e) {
+      TOY_FAIL[name] = true;
+      if (window.console) console.warn('stands: the ' + name + ' toy is put away for now', e);
+    }
+  }
+
+  function dark() { return banks[0] + banks[1] + banks[2] > 0; }
+
+  function actorByIx(ix) {
+    for (var i = 0; i < stage.length; i++) if (stage[i].ix === ix) return stage[i];
+    return null;
+  }
+
+  function stationByI(i) {
+    var tr = tiers[(i / 8) | 0];
+    return tr ? tr.stations[i % 8] || null : null;
+  }
+
+  /* the rectangle a poke has to land in: the sprite's own reaches, which
+     swap when it faces the other way, never smaller than 30 square */
+  function rectOf(a) {
+    var L = a.flip ? a.R : a.L, R = a.flip ? a.L : a.R;
+    var x = a.x - L, y = a.y - a.up, w = L + R, h = a.up + a.foot;
+    if (w < 30) { x -= (30 - w) / 2; w = 30; }
+    if (h < 30) { y -= (30 - h) / 2; h = 30; }
+    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  }
+
+  function inside(r, x, y) { return r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
+
+  /* THE DOODAD CAM cuts to somebody: the bulbs blink gold and, when a
+     poke rather than a passing cursor did it, the board ticks */
+  function showPlate(a, secs, quiet) {
+    if (!plate || plate.a !== a) { camFlash = 0.1; if (!quiet) Audio3.play('tick'); }
+    if (!plate || plate.a !== a || plate.t < secs) plate = { a: a, t: secs };
+  }
+
+  function touchedToy() {
+    toyTapped = true;
+    rings.length = 0;
+    if (!Save.get('titlePoked', false)) Save.set('titlePoked', true);
+  }
+
+  /* ---- HYPE: everything the crowd enjoys adds to it, it drains a point
+     every 0.8s after four quiet seconds, and full is the show */
+  function hypeUp(n) {
+    if (refractory > 0 || showT > 0) return;
+    hype = Math.min(HYPE_FULL, hype + n);
+    hypeIdle = 0;
+    if (hype >= HYPE_FULL && t - lastShow >= 30) theShow();
+  }
+
+  /* ---- POKE: 1 a hop (!), 2 a bigger one facing the finger, or a loop
+     for a flyer (?), 3 its own voice or a go at flying, and the neighbours
+     turn round (♪ / ★), 4+ a sulk: it ducks and looks away (#). Every poke
+     flaps and bops first, whatever it is in the middle of - the wave, a
+     flyover - so a touch always answers. */
+  function poke(a, at) {
+    if (!a) return;
+    var d = Doodads.list[a.ix], first = !pokedIds[a.id];
+    var tx = at ? at.x : a.x;
+    a.pokes = Math.min(6, a.pokes + 1);
+    a.pokeT = 2.5;
+    visitPokes++;
+    pokedIds[a.id] = true;
+    lastPoked = d;
+    a.flap();
+    Audio3.play('bop');
+    showPlate(a, 2.2);
+    hypeUp(first ? 2 : 1);
+    if (a.pokes === 1) { hop(a, a.mode === 'hover' ? 7 : 9); say(a, '!'); }
+    else if (a.pokes === 2) {
+      if (a.mode === 'hover') startLoop(a);
+      else { turnToward(a, tx, 1.5); hop(a, 14); }
+      say(a, '?');
+    } else if (a.pokes === 3) {
+      if (d.voice && a.voiceCool <= 0) {
+        Audio3.play(d.voice);
+        a.voiceCool = 12;
+        a.shiverT = 0.6;
+        showPlate(a, 3, true);
+        say(a, '♪', true);
+      } else if (!a.flight && !a.loop && a.hy === 0) attempt(a, '★');
+      else say(a, '★');
+      neighbours(a);
+    } else {
+      a.duckT = 0.5;
+      turn(a, tx >= a.x, 1.5);
+      say(a, '#');
+      if (denyCool <= 0) { Audio3.play('deny'); denyCool = 0.6; }
+    }
+    if (visitPokes >= 30 && !tickerPlea) { tickerPlea = true; T.ticker = bakeTicker(stage.length); }
+  }
+
+  /* up to two doodads near the one being poked turn to it and wonder */
+  function neighbours(a) {
+    var n = 0;
+    for (var i = 0; i < stage.length && n < 2; i++) {
+      var o = stage[i];
+      if (o === a || Math.abs(o.x - a.x) > 70 || Math.abs(o.y - a.y) > 40) continue;
+      (function (o, d) { later(d, function () { turnToward(o, a.x, 1.4); say(o, '?'); }); })(o, n ? 0.5 : 0.3);
+      n++;
+    }
+  }
+
+  /* A FLYER'S LOOP-THE-LOOP: up and over a 12 px circle, the whole bird
+     turning with it, the way it is facing, in 0.65s - a small one if a
+     big one would put its head above the scoreboard's shadow, and a hop
+     if not even that fits. Drawn over everybody, like a flyover. */
+  function startLoop(a) {
+    var R = 12;
+    if (a.y - 2 * R - a.up < HEAD) R = 6;
+    if (a.y - 2 * R - a.up < HEAD) { hop(a, 7); return; }
+    if (a.turnT >= 0) { a.turnT = -1; a.sqx = 1; }
+    a.holdT = 0;
+    a.loop = { t: 0, dur: 0.65, cx: a.x, cy: a.y - R, R: R, f: a.flip ? -1 : 1 };
+    Audio3.play('spin');
+  }
+
+  function stepLoop(a, dt) {
+    var L = a.loop;
+    L.t += dt;
+    var k = clamp(L.t / L.dur, 0, 1), th = TAU * k;
+    a.x = L.cx + L.f * L.R * Math.sin(th);
+    a.y = L.cy + L.R * Math.cos(th);
+    a.angle = -L.f * th;
+    a.flapTimer = (Math.floor(L.t / 0.08) % 2) ? -0.01 : 0.05;
+    if (k >= 1) { a.loop = null; a.angle = 0; }
+  }
+
+  /* ---- THE FURNITURE: a tap is that level's trick. A trick already
+     running ticks and its sitters look at the finger; a bench or a dust
+     sheet has no trick, so whoever is sitting on it jumps instead. */
+  function tapStation(st, at) {
+    if ((stationCool[st.id] || 0) > 0) return;
+    stationCool[st.id] = 0.25;
+    var i, L = LIVE[st.paint];
+    if (L && L.event && !FAILED[st.id]) {
+      if (liveCall(st, 'event') !== false) { hypeUp(1); return; }
+      Audio3.play('tick');
+      for (i = 0; i < st.who.length; i++) turnToward(st.who[i], at ? at.x : st.x + st.w / 2, 1.0);
+      return;
+    }
+    Audio3.play('bop');
+    for (i = 0; i < st.who.length; i++) { hop(st.who[i], 7); say(st.who[i], '!'); }
+  }
+
+  /* ---- THE BEACH BALL. One at a time. It drops out of the scoreboard
+     where it was tapped, onto whoever on the top tier sits nearest, falls
+     with a little drag, and bounces off any head it lands on - the doodad
+     bops it, higher the harder it came down, and sideways by where on the
+     head it struck - and off the sides and the top of the screen.
+
+     Every tier has five stations of 96 with their seats in the same two
+     places, so the gaps between the seats line up all the way down the
+     stands, and a ball tested against a head's radius alone fell straight
+     through all four tiers to the lawn. So a head is as wide as its sprite
+     plus a little, which closes the gap between two neighbours, and
+     whoever a falling ball is about to come down beside jumps up to meet
+     it.
+
+     On the lawn it bounces, rolls, rests two seconds and fades. It flies
+     in front of everything, the scoreboard included, so it is drawn on the
+     foreground; its lowest is row 218 and the boards start at 220, so it
+     never touches the menu. */
+  function launchBall(x) {
+    x = clamp(x, 110, 370);
+    var top = tiers.length ? tiers[tiers.length - 1] : null, aim = null, i;
+    for (i = 0; i < stage.length; i++) {
+      var a = stage[i];
+      if (a.st.tier !== top || a.flight || a.loop) continue;
+      if (Math.abs(a.x - x) < 40 && (!aim || Math.abs(a.x - x) < Math.abs(aim.x - x))) aim = a;
+    }
+    if (aim) x = aim.x + rand(-6, 6);
+    ball = { x: x, y: 30, vx: rand(-25, 25), vy: -60,
+             spin: 0, age: 0, rest: 0, fade: 0 };
+    rally = 0;
+    Audio3.play('pop');
+    chaseFast = Math.max(chaseFast, 0.6);
+  }
+
+  /* a ball still in the air is in play; one on the lawn can be replaced */
+  function inPlay() { return ball && !ball.fade && ball.y < LAWN; }
+
+  function batBall(vx, vy) {
+    var b = ball;
+    b.vx = vx; b.vy = vy; b.rest = 0; b.fade = 0;
+    Audio3.play('bop');
+    rally++; rallyT = 1.2;
+    hypeUp(1);
+  }
+
+  function stepBall(dt) {
+    var b = ball, i;
+    if (!b) return;
+    b.age += dt;
+    if (b.fade > 0 || b.age > 30) {
+      b.fade += dt;
+      if (b.fade >= 0.4) ball = null;
+      return;
+    }
+    b.vy += 320 * dt;                /* a beach ball: light, so it floats */
+    b.vx *= 1 - 0.15 * dt;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.spin += b.vx * 0.12 * dt;
+    if (b.x < 6) { b.x = 6; b.vx = Math.abs(b.vx) * 0.8; }
+    else if (b.x > VW - 6) { b.x = VW - 6; b.vx = -Math.abs(b.vx) * 0.8; }
+    if (b.y < 8) { b.y = 8; b.vy = Math.abs(b.vy) * 0.6; }
+    if (b.vy > 0) {
+      var reach = null, rd = 1e9;
+      for (i = 0; i < stage.length; i++) {
+        var a = stage[i];
+        if (a.ballCool > 0) continue;
+        var hw = (a.L + a.R) / 2 + BALL_R + 4, hh = a.r * 0.9 + BALL_R;
+        var dx = (b.x - a.x) / hw, dy = (b.y - (a.y - a.up * 0.5)) / hh;
+        if (dx * dx + dy * dy < 1) { header(a); reach = null; break; }
+        /* about to come down beside this one: the nearest such jumps for it */
+        var above = (a.y - a.up) - b.y;
+        if (above > 6 && above < 40 && Math.abs(b.x - a.x) < hw + 6 && Math.abs(b.x - a.x) < rd && idle(a)) {
+          rd = Math.abs(b.x - a.x); reach = a;
+        }
+      }
+      if (reach && reach.mode !== 'hover') hop(reach, 12);
+    }
+    if (b.y >= LAWN) {
+      b.y = LAWN;
+      if (Math.abs(b.vy) > 70) { b.vy = -Math.abs(b.vy) * 0.45; Audio3.play('thunk'); rally = 0; }
+      else {
+        b.vy = 0;
+        b.vx *= Math.pow(0.5, dt / 0.5);
+        if (Math.abs(b.vx) < 3) { b.vx = 0; b.rest += dt; if (b.rest > 2) b.fade = 0.0001; }
+      }
+    }
+  }
+
+  function header(a) {
+    var b = ball;
+    b.vy = -clamp(130 + Math.abs(b.vy) * 0.3, 130, 200);
+    b.vx = clamp(b.vx + (b.x - a.x) * 5, -120, 120);
+    a.ballCool = 0.25;
+    if (a.mode === 'hover') a.flap(); else hop(a, 8);
+    Audio3.play('bop');
+    rally++; rallyT = 1.2;
+    hypeUp(1);
+  }
+
+  /* a pixel beach ball: six gores round its valve, turning as it goes */
+  function drawBall(ctx) {
+    var b = ball;
+    if (!b) return;
+    var cx = Math.round(b.x), cy = Math.round(b.y), R = BALL_R, ga = ctx.globalAlpha, dy, dx;
+    if (b.fade > 0) ctx.globalAlpha = ga * clamp(1 - b.fade / 0.4, 0, 1);
+    for (dy = -R; dy <= R; dy++) {
+      var half = Math.round(Math.sqrt(R * R + R - dy * dy));
+      for (dx = -half; dx <= half; dx++) {
+        var col;
+        if (dx === -half || dx === half || dy === -R || dy === R) col = UI.C.shadow;
+        else col = BALL_COL[(((Math.floor((Math.atan2(dy, dx) + b.spin) / TAU * 6)) % 6) + 6) % 6];
+        ctx.fillStyle = col;
+        ctx.fillRect(cx + dx, cy + dy, 1, 1);
+      }
+    }
+    px(ctx, UI.C.ink, cx, cy, 1, 1);
+    px(ctx, '#fffaf0', cx - 2, cy - 3, 2, 1);
+    ctx.globalAlpha = ga;
+  }
+
+  /* ---- THE SHOW, when the hype is full: the wave, the bulbs racing, the
+     crowd roaring twice, five rockets from behind the stands, alternating
+     sides, bursting in gold and the last-poked doodad's own colour, a
+     shower of confetti over the whole crowd, the crowd starring, and a
+     flyover. The scoreboard says so. Eight quiet seconds after, and thirty
+     before the next.
+
+     With four rooms open the sky is a strip, and the sound toggle and the
+     HI panel sit in its two corners, so the fireworks are a PITCH-SIDE
+     show: the rockets go up off the lawn in front of the stands and burst
+     over the field, between the crowd and us, which is where a stadium
+     sets them off anyway. They and the confetti are drawn in front of the
+     crowd and behind the scoreboard and the boards. */
+  function theShow() {
+    var k;
+    lastShow = t; showT = 3.5;
+    wave();
+    chaseFast = 4.5;
+    Audio3.play('cheer');
+    later(1.3, function () { Audio3.play('cheer'); });
+    for (k = 0; k < 5; k++) (function (k) { later(0.2 + k * 0.5, function () { rocket(k); }); })(k);
+    for (k = 0; k < 6; k++) {
+      later(0.3 + k * 0.5, function () {
+        var pool = stage.slice();
+        for (var i = 0; i < 3 && pool.length; i++) say(pool.splice((Math.random() * pool.length) | 0, 1)[0], '★', i > 0);
+      });
+    }
+    later(0.6, flyoverBeat);
+    for (k = 0; k < 8; k++) later(k * 0.22, function () { for (var i = 0; i < 14; i++) confetto(); });
+  }
+
+  /* five rockets off the lawn, spread across the field left, right, left
+     of centre, right of centre, middle, each bursting about row 80 */
+  var ROCKET_X = [70, 410, 160, 320, 240];
+  function rocket(k) {
+    rockets.push({ x: ROCKET_X[k % 5] + rand(-25, 25), y: GROUND - 2, vy: rand(-250, -230), t: 0, fuse: rand(0.62, 0.72) });
+    Audio3.play('fizzle');
+  }
+
+  /* one scrap of confetti off the top of the screen, tumbling - a 3x2
+     scrap seen flat, then edge on - and drifting as it falls, gone at the
+     lawn */
+  var CONFETTI = [UI.C.gold, UI.C.red, UI.C.ink, '#4a7fc0', UI.C.green];
+  function confetto() {
+    if (confetti.length >= 120) return;
+    var d = lastPoked;
+    confetti.push({ x: rand(0, VW), y: rand(-14, -2), vy: rand(34, 58), ph: rand(0, TAU), sw: rand(10, 20),
+                    col: d && chance(0.3) ? d.accentLight : choose(CONFETTI) });
+  }
+
+  function burst(x, y) {
+    var d = lastPoked, cols = [UI.C.gold, d ? d.accentLight : UI.C.ink, UI.C.ink];
+    for (var i = 0; i < 24; i++) {
+      if (pyro.length >= 120) break;
+      var ang = i / 24 * TAU + rand(-0.1, 0.1), sp = rand(38, 70);
+      pyro.push({ x: x, y: y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0.9, max: 0.9,
+                  col: cols[i % 3], s: i % 2 === 0 ? 2 : 1, trail: true });
+    }
+    Audio3.play('blast');
+  }
+
+  /* ---- A SHOOTING STAR, from wherever the sky was tapped, out and down
+     past the end of the scoreboard. The two on the top tier nearest it
+     turn to watch it go. */
+  function shootStar(x, y) {
+    if (starCool > 0 || stars.length >= 3) return;
+    starCool = 0.6;
+    stars.push({ x: x, y: y, vx: x < VW / 2 ? -230 : 230, vy: 95, life: 0.45 });
+    Audio3.play('star');
+    var top = tiers.length ? tiers[tiers.length - 1] : null, near = [], i;
+    for (i = 0; i < stage.length; i++) if (stage[i].st.tier === top && Math.abs(stage[i].x - x) < 120) near.push(stage[i]);
+    near.sort(function (p, q) { return Math.abs(p.x - x) - Math.abs(q.x - x); });
+    for (i = 0; i < 2 && i < near.length; i++) {
+      (function (a, d) { later(d, function () { turnToward(a, x, 1.6); say(a, '★'); }); })(near[i], i * 0.2);
+    }
+    hypeUp(1);
+  }
+
+  /* ---- THE MOON PUTS THE LIGHTS OUT: a power cut - the floodlights die
+     together, the fireflies come up, three of the crowd wonder aloud in
+     the dark - and then the banks are struck again left to right, the
+     opening's own strike without its wave */
+  function moonOut() {
+    if (moonCool > 0 || dark()) return;
+    moonCool = 12;
+    Audio3.play('tvOff');
+    var steps = [[0.0, 5], [0.08, 10], [0.16, 14]];
+    for (var k = 0; k < steps.length; k++) {
+      (function (v, d) { later(d, function () { banks[0] = banks[1] = banks[2] = v; }); })(steps[k][1], steps[k][0]);
+    }
+    var pool = stage.slice();
+    for (var i = 0; i < 3 && pool.length; i++) {
+      (function (a, d) { later(d, function () { say(a, '?'); }); })(pool.splice((Math.random() * pool.length) | 0, 1)[0], 0.2 + i * 0.3);
+    }
+    strikeBanks(1.1);
+    hypeUp(2);
+  }
+
+  function stepSky(dt) {
+    var i, r, s;
+    if (starCool > 0) starCool -= dt;
+    if (moonCool > 0) moonCool -= dt;
+    for (i = stars.length - 1; i >= 0; i--) {
+      s = stars[i];
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      if (s.life <= 0) stars.splice(i, 1);
+    }
+    for (i = rockets.length - 1; i >= 0; i--) {
+      r = rockets[i];
+      r.t += dt; r.vy += 120 * dt; r.y += r.vy * dt;
+      if (r.t >= r.fuse) { burst(r.x, r.y); rockets.splice(i, 1); }
+    }
+    for (i = confetti.length - 1; i >= 0; i--) {
+      s = confetti[i];
+      s.y += s.vy * dt;
+      s.x += Math.cos(t * 3 + s.ph) * s.sw * dt;
+      if (s.y > GROUND) confetti.splice(i, 1);
+    }
+    for (i = pyro.length - 1; i >= 0; i--) {
+      s = pyro[i];
+      s.life -= dt; s.vy += 60 * dt; s.x += s.vx * dt; s.y += s.vy * dt;
+      if (s.life <= 0) pyro.splice(i, 1);
+    }
+  }
+
+  /* THE SHOW over the field, on the foreground in front of the crowd and
+     under the scoreboard and the boards: the rockets with their sparking
+     tails, the bursts, and the confetti */
+  function drawShow(ctx) {
+    var ga = ctx.globalAlpha, i;
+    for (i = 0; i < rockets.length; i++) {
+      var r = rockets[i], rx = Math.round(r.x), ry = Math.round(r.y);
+      px(ctx, UI.C.goldDark, rx, ry + 1, 1, 6);
+      if (Math.floor(t * 30) % 2) px(ctx, UI.C.gold, rx + (Math.floor(t * 50) % 3) - 1, ry + 7, 1, 1);
+      px(ctx, UI.C.ink, rx, ry, 1, 1);
+    }
+    /* each spark streaks: a dim pixel where it was a moment ago */
+    for (i = 0; i < pyro.length; i++) {
+      var p = pyro[i];
+      ctx.globalAlpha = ga * clamp(p.life / p.max * 1.4, 0, 1);
+      if (p.trail) px(ctx, UI.C.goldDark, Math.round(p.x - p.vx * 0.06), Math.round(p.y - p.vy * 0.06), 1, 1);
+      px(ctx, p.col, Math.round(p.x), Math.round(p.y), p.s, p.s);
+    }
+    ctx.globalAlpha = ga;
+    for (i = 0; i < confetti.length; i++) {
+      var c = confetti[i], flat = Math.sin(t * 9 + c.ph) > 0;
+      px(ctx, c.col, Math.round(c.x), Math.round(c.y), flat ? 3 : 1, 2);
+    }
+  }
+
+  /* a shooting star, in the sky behind the stands */
+  function drawSky(ctx) {
+    var ga = ctx.globalAlpha, i, k;
+    for (i = 0; i < stars.length; i++) {
+      var s = stars[i], len = Math.sqrt(s.vx * s.vx + s.vy * s.vy), ux = s.vx / len, uy = s.vy / len;
+      ctx.globalAlpha = ga * clamp(s.life / 0.15, 0, 1);
+      for (k = 8; k >= 1; k--) {
+        px(ctx, k < 4 ? UI.C.gold : UI.C.goldDark, Math.round(s.x - ux * 2 * k), Math.round(s.y - uy * 2 * k), 1, 1);
+      }
+      px(ctx, UI.C.ink, Math.round(s.x), Math.round(s.y), 2, 2);
+    }
+    ctx.globalAlpha = ga;
+  }
+
+  /* ---- what the toys listen to, and where. Nothing at all while the
+     floodlights are dark - the opening, or the moon's power cut. */
+  function pushToyTargets() {
+    var i, j, r, a;
+    dood.length = 0;
+    if (dark()) return;
+    /* the sky and the lawn, under everything; the footer strip left out */
+    hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
+    /* the furniture, back tier first, so the tier in front wins where a
+       lawn-standing piece runs down behind it */
+    for (i = tiers.length - 1; i >= 0; i--) {
+      for (j = 0; j < tiers[i].stations.length; j++) {
+        var st = tiers[i].stations[j];
+        hot.push({ x: st.x, y: st.tread - PROP_UP, w: st.w, h: PROP_UP + st.h, id: 'station', i: i * 8 + j });
+      }
+    }
+    /* the crowd in draw order, so the row in front wins in the class photo,
+       and anybody in the air over everybody */
+    for (var pass = 0; pass < 2; pass++) {
+      for (i = 0; i < stage.length; i++) {
+        a = stage[i];
+        if (!!(a.flight || a.loop) !== (pass === 1)) continue;
+        r = rectOf(a);
+        hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
+        dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
+      }
+    }
+    hot.push({ x: SB_X, y: SB_Y, w: SB_W, h: SB_H + 3, id: 'sb' });
+    hot.push({ x: 432, y: 20, w: 28, h: 26, id: 'moon' });
+    /* the ball flies in front of the scoreboard, so it is tested first */
+    if (ball && !ball.fade) hot.push({ x: Math.round(ball.x) - 13, y: Math.round(ball.y) - 13, w: 26, h: 26, id: 'ball' });
+  }
+
+  /* a cursor along a row: each doodad flaps and turns to it as it
+     arrives, and after a moment the doodad cam cuts to it, without the
+     tick - against last frame's rectangles, so a doodad that hops out from
+     under a still cursor stops being hovered */
+  function hover(dt) {
+    var p = Input.pointer(), a = null;
+    if (p && p.kind === 'mouse' && !dark()) {
+      for (var i = dood.length - 1; i >= 0; i--) if (inside(dood[i], p.x, p.y)) { a = dood[i].a; break; }
+    }
+    if (a !== hoverA) {
+      hoverA = a; hoverT = 0;
+      if (a) { a.flap(); turnToward(a, p.x, 1.2); }
+    } else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2, true); }
+  }
+
+  /* THE TOUCH HINT, the coop's: until somebody on this device has touched
+     a toy, five seconds after the lights and every six after (four a visit
+     at most) the idle doodad nearest the middle gets two gold rings and
+     says "!" */
+  function hint(dt) {
+    if (!UI.touch() || toyTapped || hints >= 4 || t < 5 || dark()) return;
+    hintT -= dt;
+    if (hintT > 0) return;
+    hintT = 6;
+    if (Save.get('titlePoked', false)) { hints = 4; return; }
+    var best = null;
+    for (var i = 0; i < stage.length; i++) {
+      var a = stage[i];
+      if (!idle(a)) continue;
+      if (!best || Math.abs(a.x - VW / 2) < Math.abs(best.x - VW / 2)) best = a;
+    }
+    if (!best) return;
+    hints++;
+    rings.push({ a: best, t: 0 }, { a: best, t: -0.3 });
+    say(best, '!');
+  }
+
+  function updateToys(dt) {
+    var i, k;
+    if (denyCool > 0) denyCool -= dt;
+    if (camFlash > 0) camFlash -= dt;
+    if (rallyT > 0) rallyT -= dt;
+    if (plate && (plate.t -= dt) <= 0) plate = null;
+    for (k in stationCool) if (stationCool[k] > 0) stationCool[k] -= dt;
+    for (i = 0; i < stage.length; i++) {
+      var a = stage[i];
+      if (a.pokeT > 0 && (a.pokeT -= dt) <= 0) a.pokes = 0;
+      if (a.voiceCool > 0) a.voiceCool -= dt;
+      if (a.ballCool > 0) a.ballCool -= dt;
+    }
+    for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
+    if (refractory > 0) refractory -= dt;
+    if (showT > 0 && (showT -= dt) <= 0) { hype = 0; refractory = 8; }
+    if (hype > 0 && showT <= 0) {
+      hypeIdle += dt;
+      if (hypeIdle > 4) {
+        hypeDrip += dt;
+        if (hypeDrip >= 0.8) { hypeDrip = 0; hype--; }
+      } else hypeDrip = 0;
+    }
+    stepBall(dt);
+    stepSky(dt);
+    hover(dt);
+    hint(dt);
+  }
+
+  /* The taps and keys, read after the lock like the menu's own. UP and
+     DOWN are free - the menu is a row - so ▲ (and the spacebar, which is
+     'up') starts the wave and ▼ drops or bats the ball. hit, not nav: a
+     held key does not repeat a toy. Keys wait for the lights, as taps do. */
+  function readToys(tg) {
+    if (!dark()) {
+      if (Input.hit('up')) {
+        if (t - lastWave >= 6) { Audio3.play('whistle'); wave(); hypeUp(3); }
+        else chant();
+      }
+      if (Input.hit('down')) {
+        if (!inPlay()) launchBall(240 + rand(-40, 40));
+        else batBall(ball.vx + rand(-40, 40), -200);
+      }
+    }
+    if (!tg) return;
+    var at = Input.tapPos();
+    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i), at); }
+    else if (tg.id === 'station') { var st = stationByI(tg.i); if (st) { touchedToy(); tapStation(st, at); } }
+    else if (tg.id === 'ball' && ball && at) { touchedToy(); batBall(clamp((ball.x - at.x) * 8, -140, 140), -210); }
+    else if (tg.id === 'sb' && at) {
+      touchedToy();
+      if (!inPlay()) launchBall(at.x);
+      else { chaseFast = Math.max(chaseFast, 1); Audio3.play('ding'); }
+    } else if (tg.id === 'moon') { touchedToy(); moonOut(); }
+    else if (tg.id === 'bg' && at && at.y < 56 && !inside(hiRect, at.x, at.y)) { touchedToy(); shootStar(at.x, at.y); }
+  }
+
+  function drawRings(ctx) {
+    var ga = ctx.globalAlpha;
+    for (var i = 0; i < rings.length; i++) {
+      var g = rings[i];
+      if (g.t < 0) continue;
+      var k = g.t / 0.6;
+      ctx.globalAlpha = ga * (1 - k);
+      ring(ctx, Math.round(g.a.x), Math.round(g.a.y), Math.round(4 + k * (g.a.r + 6)), UI.C.gold);
+    }
+    ctx.globalAlpha = ga;
+  }
+
+  /* a one-pixel circle, the midpoint way, so it stays crisp */
+  function ring(ctx, cx, cy, r, col) {
+    var x = r, y = 0, e = 1 - r;
+    ctx.fillStyle = col;
+    while (x >= y) {
+      ctx.fillRect(cx + x, cy + y, 1, 1); ctx.fillRect(cx - x, cy + y, 1, 1);
+      ctx.fillRect(cx + x, cy - y, 1, 1); ctx.fillRect(cx - x, cy - y, 1, 1);
+      ctx.fillRect(cx + y, cy + x, 1, 1); ctx.fillRect(cx - y, cy + x, 1, 1);
+      ctx.fillRect(cx + y, cy - x, 1, 1); ctx.fillRect(cx - y, cy - x, 1, 1);
+      y++;
+      if (e < 0) e += 2 * y + 1;
+      else { x--; e += 2 * (y - x) + 1; }
+    }
   }
 
   /* ----------------------------------------------------- lifecycle */
@@ -2383,6 +2990,14 @@ var StandsScene = (function () {
     chirpCooldown = 0; chaseFast = 0; lastWave = -99;
     directorTimer = 4;
     menuIndex = (params && params.menu) || 0;
+    visitPokes = 0; pokedIds = {}; denyCool = 0; lastPoked = null;
+    plate = null; camFlash = 0; hoverA = null; hoverT = 0; dood.length = 0;
+    ball = null; rally = 0; rallyT = 0;
+    hype = 0; hypeIdle = 0; hypeDrip = 0; refractory = 0; lastShow = -99; showT = 0;
+    pyro.length = 0; rockets.length = 0; stars.length = 0; starCool = 0; moonCool = 0;
+    confetti.length = 0;
+    stationCool = {};
+    hintT = 0; hints = 0; rings.length = 0; toyTapped = false; tickerPlea = false;
 
     /* the same silent banking the porch does on the way in: an
        achievement earned somewhere with no banner to show it in */
@@ -2448,6 +3063,7 @@ var StandsScene = (function () {
       stepTurn(a, dt);
       BEHAVIOUR[a.mode](a, dt);
     }
+    toy('toys', function () { updateToys(dt); });
 
     /* the first frame the curtain is off */
     if (litPending && !Game.locked()) { litPending = false; litOnce = true; lightsUp(); }
@@ -2455,6 +3071,7 @@ var StandsScene = (function () {
 
     if (Game.locked()) return;
     var tg = Input.tapped();
+    toy('taps', function () { readToys(tg); });
     if (tg && tg.id === 'menu') menuIndex = tg.i;
     if (tg && tg.id === 'sound') {
       var muted = Audio3.toggleMute();
@@ -2485,6 +3102,7 @@ var StandsScene = (function () {
     ctx.globalAlpha = ga * (0.85 - tw);
     px(ctx, UI.C.ink, 412, 44, 1, 1);
     ctx.globalAlpha = ga;
+    toy('sky', function () { drawSky(ctx); });
 
     ctx.drawImage(T.ground.canvas, 0, GROUND - 2);
 
@@ -2500,7 +3118,7 @@ var StandsScene = (function () {
       }
       for (k = 0; k < stage.length; k++) {
         var a = stage[k];
-        if (a.st.tier !== tr || a.flight) continue;
+        if (a.st.tier !== tr || a.flight || a.loop) continue;
         var lift = clamp(-a.hy / 30, 0, 1);
         var w = Math.round(a.r * (a.mode === 'hover' ? 1.1 : 1.5) * (1 - lift * 0.4));
         Tint.rect(ctx, Math.round(a.x - w / 2), tr.tread, w, 2, '#1a120c', a.mode === 'hover' ? 6 : Math.round(11 - lift * 6));
@@ -2521,8 +3139,8 @@ var StandsScene = (function () {
 
   function drawChars(ctx) {
     var i;
-    for (i = 0; i < stage.length; i++) if (!stage[i].flight) drawActor(ctx, stage[i]);
-    for (i = 0; i < stage.length; i++) if (stage[i].flight) drawActor(ctx, stage[i]);
+    for (i = 0; i < stage.length; i++) if (!stage[i].flight && !stage[i].loop) drawActor(ctx, stage[i]);
+    for (i = 0; i < stage.length; i++) if (stage[i].flight || stage[i].loop) drawActor(ctx, stage[i]);
   }
 
   function drawActor(ctx, a) {
@@ -2535,18 +3153,24 @@ var StandsScene = (function () {
   function drawFg(ctx) {
     var i, ga = ctx.globalAlpha;
     hot.length = 0;
+    /* the toys' rectangles first, so every board pushed below lies on top */
+    toy('targets', pushToyTargets);
 
     /* the stands before the floodlights strike */
     for (i = 0; i < 3; i++) if (banks[i] > 0) Tint.rect(ctx, 160 * i, 0, 160, GROUND + 2, '#06060a', banks[i]);
 
+    /* the fireflies come up brighter in the dark */
+    var glow = dark() ? 2 : 1;
     for (i = 0; i < flies.length; i++) {
       var f = flies[i];
-      ctx.globalAlpha = ga * (0.2 + 0.5 * (0.5 + 0.5 * Math.sin(t * 1.9 + f.ph)));
+      ctx.globalAlpha = ga * Math.min(1, glow * (0.2 + 0.5 * (0.5 + 0.5 * Math.sin(t * 1.9 + f.ph))));
       px(ctx, UI.C.gold, Math.round(f.x), Math.round(f.y), 1, 1);
     }
     ctx.globalAlpha = ga;
 
+    toy('show', function () { drawShow(ctx); });
     drawScoreboard(ctx);
+    toy('ball', function () { drawBall(ctx); });
 
     /* THE MENU, the porch's three boards along the lawn */
     for (var m = 0; m < MENU.length; m++) {
@@ -2583,11 +3207,13 @@ var StandsScene = (function () {
     }
 
     var best = Scores.table(Game.room(), Game.level())[0];
+    hiRect = null;
     if (best) {
       var hi = 'HI  ' + best.name + '  ' + best.score;
       var hw = Font.measure(hi, 1) + 10;
       UI.panel(ctx, VW - hw - 6, 5, hw, 13, { fill: UI.C.darker, edge: UI.C.inkFaint });
       UI.text(ctx, hi, VW - 11, 8, { align: 'right', colour: UI.C.gold });
+      hiRect = { x: VW - hw - 6, y: 5, w: hw, h: 13 };
     }
 
     for (i = 0; i < bubbles.length; i++) {
@@ -2599,9 +3225,10 @@ var StandsScene = (function () {
       drawBubble(ctx, sx, sy, bb.symbol);
     }
     ctx.globalAlpha = ga;
+    toy('rings', function () { drawRings(ctx); });
 
-    UI.footer(ctx, '◀ ▶ CHOOSE   ENTER SELECT   M SOUND   F FULLSCREEN',
-                   'CLICK A BOARD   F FULLSCREEN');
+    UI.footer(ctx, '◀ ▶ CHOOSE   ENTER SELECT   ▲ WAVE   ▼ BALL   M SOUND   F FULLSCREEN',
+                   'CLICK A BOARD   OR POKE ANYTHING   F FULLSCREEN');
   }
 
   /* THE SCOREBOARD, on its two posts over the stands: a frame of bulbs
@@ -2616,29 +3243,76 @@ var StandsScene = (function () {
     ctx.fillStyle = '#1a1714'; ctx.fillRect(x, y + h - 1, w, 1);
     ctx.fillStyle = UI.C.darker; ctx.fillRect(x + 4, y + 4, w - 8, h - 7);
 
+    /* the hotter the crowd, the more of the frame is lit: one bulb in
+       three, then one in two, then all of them; and all of them, for a
+       blink, whenever the doodad cam cuts */
     var step = Math.floor(t / (chaseFast > 0 ? 0.08 : 0.25));
-    for (i = 0; x + 6 + i * 8 < x + w - 4; i++, n++) bulb(ctx, x + 6 + i * 8, y + 1, n, step);
+    var every = camFlash > 0 ? 1 : 3 - Math.floor(hype / 10);
+    for (i = 0; x + 6 + i * 8 < x + w - 4; i++, n++) bulb(ctx, x + 6 + i * 8, y + 1, n, step, every);
     for (i = 0; y + 9 + i * 8 < y + h - 4; i++, n++) {
-      bulb(ctx, x + 1, y + 9 + i * 8, n, step);
-      bulb(ctx, x + w - 3, y + 9 + i * 8, n + 1, step);
+      bulb(ctx, x + 1, y + 9 + i * 8, n, step, every);
+      bulb(ctx, x + w - 3, y + 9 + i * 8, n + 1, step, every);
     }
 
-    logoLine(ctx, 'LAND OF DOODADS', VW / 2, y + 7, 3, t * 1.6);
+    if (!TOY_FAIL.cam && drawCam(ctx, x, y)) { /* the cam has the board */ }
+    else logoLine(ctx, 'LAND OF DOODADS', VW / 2, y + 7, 3, t * 1.6);
 
     ctx.fillStyle = UI.C.inkFaint; ctx.fillRect(x + 6, y + 31, w - 12, 1);
+
+    /* THE HYPE METER, at the ticker's left end while there is any hype to
+       show: ten cells, one per two points, dim through the quiet after a
+       show. The ticker gives up its first 66 px to it and scrolls on
+       behind as if nothing had happened. */
+    var meter = !TOY_FAIL.toys && (hype > 0 || refractory > 0), x0 = meter ? x + 71 : x + 5;
+    if (meter) {
+      UI.text(ctx, 'HYPE', x + 5, y + 33, { colour: UI.C.inkDim, shadow: null });
+      var lit = refractory > 0 ? 0 : Math.ceil(hype / 2);
+      for (i = 0; i < 10; i++) px(ctx, i < lit ? UI.C.gold : UI.C.inkFaint, x + 30 + i * 4, y + 34, 3, 5);
+    }
     if (T.ticker) {
       var tk = T.ticker.canvas, tw = tk.width;
       var off = Math.floor((t * 24) % tw);
       ctx.save();
-      ctx.beginPath(); ctx.rect(x + 5, y + 33, w - 10, 7); ctx.clip();
+      ctx.beginPath(); ctx.rect(x0, y + 33, x + w - 5 - x0, 7); ctx.clip();
       for (var tx = x + 5 - off; tx < x + w - 5; tx += tw) ctx.drawImage(tk, tx, y + 33);
       ctx.restore();
     }
   }
 
-  function bulb(ctx, x, y, i, step) {
-    ctx.fillStyle = (i + step) % 3 === 0 ? UI.C.gold : UI.C.goldDark;
+  function bulb(ctx, x, y, i, step, every) {
+    ctx.fillStyle = (i + step) % (every || 3) === 0 ? UI.C.gold : UI.C.goldDark;
     ctx.fillRect(x, y, 2, 2);
+  }
+
+  /* THE DOODAD CAM, in the logo's place on the scoreboard: THE CROWD GOES
+     WILD through the show; otherwise whoever was just poked or is under
+     the cursor - their name in their own light colour, the colour the
+     select screen prints it in, the tagline under it and the camera's red
+     light in the corner; otherwise the count of a rally of three or more.
+     Returns false when the logo should have the board. */
+  function drawCam(ctx, x, y) {
+    var ok = false;
+    toy('cam', function () {
+      if (showT > 0.3) {
+        UI.text(ctx, 'THE CROWD GOES WILD', VW / 2, y + 12,
+                { align: 'center', scale: 2, colour: Math.floor(t * 8) % 2 ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow });
+        ok = true;
+        return;
+      }
+      var d = plate ? Doodads.list[plate.a.ix] : null;
+      if (d) {
+        UI.text(ctx, d.name, VW / 2, y + 8, { align: 'center', scale: 2, colour: d.accentLight || UI.C.gold, shadow: UI.C.shadow });
+        UI.text(ctx, d.tagline, VW / 2, y + 23, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
+        if (Math.floor(t * 4) % 2) px(ctx, UI.C.red, x + 8, y + 10, 2, 2);
+        ok = true;
+        return;
+      }
+      if (ball && rally >= 3 && rallyT > 0) {
+        UI.text(ctx, 'RALLY ' + rally, VW / 2, y + 12, { align: 'center', scale: 2, colour: UI.C.gold, shadow: UI.C.shadow });
+        ok = true;
+      }
+    });
+    return ok;
   }
 
   /* The coop title's three-pass logo, copied as the porch copied it.
@@ -2661,7 +3335,11 @@ var StandsScene = (function () {
            targets: function () { return hot; },
            /* for a headless check: live references, read them only. And a
               station's trick on demand, by level id. */
-           inspect: function () { return { tiers: tiers, stage: stage, failed: FAILED, offAir: offAir, t: t }; },
+           inspect: function () {
+             return { tiers: tiers, stage: stage, failed: FAILED, offAir: offAir, t: t,
+                      ball: ball, hype: hype, showT: showT, refractory: refractory, plate: plate,
+                      rally: rally, pyro: pyro, stars: stars, banks: banks, toyFail: TOY_FAIL };
+           },
            fire: function (id) {
              for (var i = 0; i < tiers.length; i++) {
                for (var j = 0; j < tiers[i].stations.length; j++) {
@@ -2670,5 +3348,6 @@ var StandsScene = (function () {
              }
              return null;
            },
-           wave: wave };
+           wave: wave,
+           show: function () { theShow(); } };
 })();

@@ -84,6 +84,12 @@ var Audio3 = (function () {
     src.start(t0);
   }
 
+  /* one struck bar of a toy glockenspiel, for the title logo's letters */
+  function note(f) {
+    tone({ from: f, dur: 0.22, type: 'triangle', vol: 0.10 });
+    noise({ freq: 3000, dur: 0.015, vol: 0.04 });
+  }
+
   var SFX = {
     flap:    function () { tone({ from: 300, to: 620, dur: 0.09, type: 'square', vol: 0.13 });
                            noise({ freq: 1800, dur: 0.07, vol: 0.07 }); },
@@ -449,7 +455,34 @@ var Audio3 = (function () {
     /* and letting him down: a splash, then the water running off */
     wash:    function () { noise({ freq: 900, dur: 0.14, vol: 0.14, q: 0.8 });
                            noise({ freq: 2200, dur: 0.5, vol: 0.06, q: 0.5, delay: 0.1 });
-                           tone({ from: 520, to: 260, dur: 0.3, type: 'triangle', vol: 0.08 }); }
+                           tone({ from: 520, to: 260, dur: 0.3, type: 'triangle', vol: 0.08 }); },
+
+    /* ---- the title screens' toys ---- */
+    /* a shooting star over the stands: a thin falling whistle, and the faint
+       fizz of it burning out at the end */
+    star:    function () { tone({ from: 2600, to: 700, dur: 0.45, type: 'sine', vol: 0.05 });
+                           noise({ freq: 4000, dur: 0.08, vol: 0.03, delay: 0.3 }); },
+    /* the porch's whoosh, the Land rushing past: a swell of air that falls
+       away as it goes by */
+    whoosh:  function () { noise({ freq: 2400, dur: 0.55, vol: 0.10, q: 0.6, attack: 0.12 });
+                           noise({ freq: 700, dur: 0.4, vol: 0.05, q: 0.5, attack: 0.08, delay: 0.1 }); },
+    /* THE CROWD GOES WILD, in the stands: a roar that swells and rolls away,
+       a brighter hiss of cheering over it, and a whoop riding on top */
+    cheer:   function () { noise({ freq: 1100, dur: 1.3, vol: 0.12, q: 0.4, attack: 0.18 });
+                           noise({ freq: 2800, dur: 1.0, vol: 0.05, q: 0.7, attack: 0.12, delay: 0.08 });
+                           tone({ from: 700, to: 1250, dur: 0.22, type: 'square', vol: 0.05, delay: 0.15 });
+                           tone({ from: 900, to: 1500, dur: 0.18, type: 'square', vol: 0.04, delay: 0.45 }); },
+    /* THE LOGO'S EIGHT NOTES, a C major scale from middle C's octave up, one
+       per letter of LAND OF DOODADS: a struck triangle with a tick of noise
+       for the mallet, so the letters sound like a toy glockenspiel */
+    note1:   function () { note(523); },
+    note2:   function () { note(587); },
+    note3:   function () { note(659); },
+    note4:   function () { note(698); },
+    note5:   function () { note(784); },
+    note6:   function () { note(880); },
+    note7:   function () { note(988); },
+    note8:   function () { note(1047); }
   };
 
   /* ---------------------------------------------------------- samples

@@ -186,9 +186,10 @@ var Bar = (function () {
     ceil: ['▲ THE LEDGE ▲', 'THE HALF WALL IS SOLID']
   };
 
-  /* the thirteen colours a generic cover would use. This bay paints its
-     own, but the table stays honest: wall field, white stacks, charcoal
-     ground, cork as the falling thing. */
+  /* the thirteen colours a generic cover would use. The bay's cover is
+     COVER (below), but the table stays honest - the TV and the stands
+     read its back: wall field, white stacks, charcoal ground, cork as
+     the falling thing. */
   var PREVIEW = {
     back: P.wall, backAlt: P.wallTooth, seam: P.railShade,
     beam: P.potWhite, beamDark: P.potShade, beamLight: P.potHi,
@@ -2334,218 +2335,41 @@ var Bar = (function () {
 
   /* ----------------------------------------------------- the cover
 
-     118x114 on the big card, 82x94 on the side ones; the caller has
-     clipped to the box. The level's proportions: the lid band a tenth
-     (the kitchen sliver and the ledge), the wall to 86% with the rail
-     at 70%, the bar top the last 14%. The humidifier stands bottom
-     left - it is the slow layer and does not move - with a box and a
-     planter stack sliding past, a cork tumbling down, a record falling
-     purple, a pinecone on the bar, and THE MIST breathing in and out
-     over the lane on a seven second cycle, clipped to the lane the way
-     the level clips it. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k, n;
-    var kitH = Math.max(3, Math.round(h * 0.04));
-    var LEDGE = big ? [H.ledgeLit, H.ledge, H.ledge, H.ledgeLit, H.ledgeShade, P.outline, P.outline]
-                    : [H.ledgeLit, H.ledge, H.ledgeLit, H.ledgeShade, P.outline, P.outline];
-    var wallY = y + kitH + LEDGE.length;
-    var barY = y + Math.round(h * 0.86);
-    var railY = y + Math.round(h * 0.70);
-    var lane = barY - wallY;
-
-    /* 1. the kitchen sliver, its lamp */
-    ctx.fillStyle = H.cabinet; ctx.fillRect(x, y, w, kitH);
-    for (i = 4; i < w; i += 10) { ctx.fillStyle = H.cabinetShade; ctx.fillRect(x + i, y, 1, kitH); }
-    ctx.fillStyle = H.steel; ctx.fillRect(x + Math.round(w * 0.12), y, 9, kitH);
-    Tint.rect(ctx, x, y, w, kitH, P.night, 4);
-    var lx = x + Math.round(w * 0.68);
-    Tint.rect(ctx, lx - 7, y, 17, kitH, H.lampGlow, 4);
-    ctx.fillStyle = H.lampGlass; ctx.fillRect(lx, y + kitH - 3, 3, 3); ctx.fillRect(lx + 1, y, 1, kitH - 3);
-    ctx.fillStyle = H.lampCore;  ctx.fillRect(lx + 1, y + kitH - 2, 1, 1);
-
-    /* 2. the ledge */
-    for (i = 0; i < LEDGE.length; i++) { ctx.fillStyle = LEDGE[i]; ctx.fillRect(x, y + kitH + i, w, 1); }
-    ctx.fillStyle = H.ledgeShade;
-    ctx.fillRect(x + (w * 31) % 50, y + kitH + 2, 9, 1);
-    ctx.fillRect(x + (w * 17) % 60 + 40, y + kitH + 3, 12, 1);
-
-    /* 3. the wall, its tooth, the rail */
-    ctx.fillStyle = P.wall; ctx.fillRect(x, wallY, w, barY - wallY);
-    for (n = 0; n < (w * lane) / 60; n++) {
-      var th = hash(4901 + n * 7919 + w * 13);
-      ctx.fillStyle = (th >>> 20) & 1 ? P.wallTooth : P.wallToothDark;
-      ctx.fillRect(x + th % w, wallY + (th >>> 9) % lane, 1, 1);
-    }
-    var RAIL = big ? [P.railLit, P.rail, P.railShade, P.outline] : [P.railLit, P.rail, P.outline];
-    for (i = 0; i < RAIL.length; i++) { ctx.fillStyle = RAIL[i]; ctx.fillRect(x, railY + i, w, 1); }
-    Tint.rect(ctx, x, railY + RAIL.length, w, 2, P.void, 3);
-    Tint.rect(ctx, x, wallY, w, 3, H.void, 4);
-
-    /* 4. THE HUMIDIFIER, bottom left, standing on the bar, its ring and
-       its glow lit while the card's mist is coming */
-    var cyc = wrap(t / 7, 1);
-    hummer(ctx, x + Math.round(w * 0.07), barY, big, cyc > 0.08 && cyc < 0.70);
-
-    /* 5. two stacks sliding past: a box stack, a planter, a box */
-    var period = big ? 46 : 38;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(lane * 0.36);
-      var gapY = Math.round(wallY + 6 + ((i * 23) % Math.max(1, lane - gapH - 14)));
-      stacklet(ctx, ox, wallY, gapY - wallY, i === 1, false);
-      stacklet(ctx, ox, gapY + gapH, barY - gapY - gapH, i === 1, true);
-    }
-
-    /* 6. a cork on its way down, end over end, and the record */
-    var cy0 = wallY + Math.round(wrap(s * 1.4, lane - 6));
-    var cxx = x + Math.round(w * 0.55);
-    var side = Math.floor(s * 0.4) % 2;
-    ctx.fillStyle = P.outline;
-    if (side) {
-      ctx.fillRect(cxx - 1, cy0 - 1, 7, 5);
-      ctx.fillStyle = P.corkLit; ctx.fillRect(cxx, cy0, 5, 1);
-      ctx.fillStyle = P.cork;    ctx.fillRect(cxx, cy0 + 1, 4, 2);
-      ctx.fillStyle = P.wine;    ctx.fillRect(cxx + 4, cy0 + 1, 1, 2);
-    } else {
-      ctx.fillRect(cxx - 1, cy0 - 1, 5, 7);
-      ctx.fillStyle = P.corkLit; ctx.fillRect(cxx, cy0, 3, 1);
-      ctx.fillStyle = P.cork;    ctx.fillRect(cxx, cy0 + 1, 3, 3);
-      ctx.fillStyle = P.wine;    ctx.fillRect(cxx, cy0 + 4, 3, 1);
-    }
-    var ry = wallY + Math.round(wrap(s * 0.9 + 30, lane - 8)) + 3;
-    var rx = x + Math.round(w * 0.3) + 8 + Math.round(Math.sin(t * 2.2) * 3);
-    Tint.rect(ctx, rx - 4, ry - 4, 9, 9, P.labelPurple, 4);
-    Tint.rect(ctx, rx - 6, ry - 6, 13, 13, P.labelPurple, 2);
-    ctx.fillStyle = P.outline; ctx.fillRect(rx - 3, ry - 2, 7, 5); ctx.fillRect(rx - 2, ry - 3, 5, 7);
-    ctx.fillStyle = P.vinyl;   ctx.fillRect(rx - 2, ry - 1, 5, 3); ctx.fillRect(rx - 1, ry - 2, 3, 5);
-    ctx.fillStyle = P.labelPurple; ctx.fillRect(rx, ry, 1, 1);
-    ctx.fillStyle = P.labelHi; ctx.fillRect(rx - 1, ry - 1, 1, 1);
-
-    /* 7. the bar top band, and the shelf under it */
-    var BAND = [P.barArris, H.charLit, H.char, H.char, H.char, H.char, H.charDeep, H.charLit, H.charLit];
-    for (i = 0; i < BAND.length && barY + i < y + h; i++) {
-      ctx.fillStyle = BAND[i]; ctx.fillRect(x, barY + i, w, 1);
-    }
-    for (i = 0; i < 5; i++) {
-      ctx.fillStyle = P.distress;
-      ctx.fillRect(x + (hash(5177 + i * 31 + w) % w), barY + 2 + i % 4, 4 + i, 1);
-    }
-    var shelfY = barY + BAND.length;
-    if (shelfY < y + h) {
-      ctx.fillStyle = H.void; ctx.fillRect(x, shelfY, w, y + h - shelfY);
-      ctx.fillStyle = P.pegPurple; ctx.fillRect(x + Math.round(w * 0.42), shelfY + 1, 2, 2);
-      ctx.fillStyle = P.pegRed;    ctx.fillRect(x + Math.round(w * 0.52), shelfY + 1, 2, 2);
-      ctx.fillStyle = P.pegBlue;   ctx.fillRect(x + Math.round(w * 0.60), shelfY + 1, 2, 2);
-    }
-
-    /* 8. the pinecone on the bar, glowing jade */
-    var px0 = x + Math.round(w * 0.78), py0 = barY - 5;
-    var pulse = 0.7 + 0.3 * Math.sin(t * 2.6);
-    var gr = 7 + pulse * 2;
-    var g = ctx.createRadialGradient(px0, py0, 1, px0, py0, gr);
-    g.addColorStop(0, 'rgba(147,216,189,' + (0.40 * pulse).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(47,107,98,0)');
-    ctx.fillStyle = g; ctx.fillRect(px0 - gr, py0 - gr, gr * 2, gr * 2);
-    ctx.fillStyle = P.outline; ctx.fillRect(px0 - 4, py0 - 4, 9, 9); ctx.fillRect(px0 - 1, py0 - 6, 3, 2);
-    ctx.fillStyle = P.cone;    ctx.fillRect(px0 - 3, py0 - 3, 7, 7); ctx.fillRect(px0, py0 - 5, 1, 2);
-    ctx.fillStyle = P.coneShade; ctx.fillRect(px0 - 2, py0 + 2, 6, 1); ctx.fillRect(px0 + 2, py0 - 1, 2, 3);
-    ctx.fillStyle = P.coneLit;
-    ctx.fillRect(px0 - 2, py0 - 2, 1, 1); ctx.fillRect(px0, py0 - 2, 1, 1);
-    ctx.fillRect(px0 - 1, py0, 1, 1); ctx.fillRect(px0 + 1, py0, 1, 1); ctx.fillRect(px0 - 2, py0 + 1, 1, 1);
-
-    /* 9. THE MIST, on the level's own cycle squeezed into seven seconds:
-       the ring lights, a column climbs out of the nozzle and billows, the
-       lane fogs over, and it clears - clipped to the lane between the
-       ledge's outline and the bar's arris, the fairness the level keeps */
-    var ph = wrap(t / 7, 1);
-    var plumeK = Math.sin(Math.PI * clamp((ph - 0.18) / 0.50, 0, 1));
-    var fogK = Math.sin(Math.PI * clamp((ph - 0.26) / 0.66, 0, 1));
-    fogK *= fogK;
-    var hx0 = x + Math.round(w * 0.07), hw0 = big ? 26 : 19, hh0 = big ? 30 : 22;
-    var nzx = hx0 + hw0 / 2, nzy = barY - hh0;
-    ctx.save();
-    ctx.beginPath(); ctx.rect(x, wallY, w, lane); ctx.clip();
-    if (fogK > 0.01) {
-      /* the haze over the whole lane, thicker low down, and three soft
-         clouds drifting through it */
-      Tint.rect(ctx, x, wallY, w, lane, P.mist, Math.round(fogK * 12));
-      Tint.rect(ctx, x, wallY + Math.round(lane * 0.45), w, lane - Math.round(lane * 0.45), P.mist, Math.round(fogK * 3));
-      for (i = 0; i < 3; i++) {
-        var mr = w * (0.24 + i * 0.05);
-        var mx = x + wrap(w * 0.2 + i * (w * 0.4) - s * 0.5, w + 40) - 20;
-        var my = wallY + lane * (0.55 + 0.15 * Math.sin(i * 2.1));
-        var mg = ctx.createRadialGradient(mx, my, 1, mx, my, mr);
-        mg.addColorStop(0, 'rgba(221,225,227,' + (0.45 * fogK).toFixed(3) + ')');
-        mg.addColorStop(1, 'rgba(221,225,227,0)');
-        ctx.fillStyle = mg; ctx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
-      }
-    }
-    if (plumeK > 0.01) {
-      /* the column out of the nozzle, widening as it climbs */
-      for (i = 0; i < 5; i++) {
-        var pk = i / 4, pr = 2 + pk * (big ? 13 : 10);
-        var py = nzy - 2 - pk * lane * 0.42;
-        var px = nzx + Math.sin(t * 1.3 + i) * pk * 3;
-        var pg = ctx.createRadialGradient(px, py, 0.5, px, py, pr);
-        pg.addColorStop(0, 'rgba(236,240,242,' + (0.75 * plumeK * (1 - pk * 0.45)).toFixed(3) + ')');
-        pg.addColorStop(1, 'rgba(221,225,227,0)');
-        ctx.fillStyle = pg; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
-      }
-    }
-    ctx.restore();
-
-    /* 10. the doodad flying it, the Couch's exact block */
-    var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.void, 5);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 11. THE LIGHT, in miniature, and in RAMPS: the level's light is a
-       baked sheet with no edges in it, so the card's is too - warmth
-       down off the ledge, night coming up off the bar, the two side
-       columns - each a linear gradient rather than a flat band, so the
-       card does not carry the three hard stripes the level got rid of */
-    var lg = ctx.createLinearGradient(0, wallY, 0, wallY + lane * 0.35);
-    lg.addColorStop(0, 'rgba(255,227,160,0.14)'); lg.addColorStop(1, 'rgba(255,227,160,0)');
-    ctx.fillStyle = lg; ctx.fillRect(x, wallY, w, Math.round(lane * 0.35));
-    var ng = ctx.createLinearGradient(0, wallY + lane * 0.45, 0, barY);
-    ng.addColorStop(0, 'rgba(42,36,31,0)'); ng.addColorStop(1, 'rgba(42,36,31,0.26)');
-    ctx.fillStyle = ng; ctx.fillRect(x, Math.round(wallY + lane * 0.45), w, barY - Math.round(wallY + lane * 0.45));
-    Tint.rect(ctx, x, barY + 1, w, y + h - barY - 1, H.void, 4);
-    var vig = Math.max(6, Math.round(w * 0.12));
-    var vl = ctx.createLinearGradient(x, 0, x + vig, 0);
-    vl.addColorStop(0, 'rgba(21,17,13,0.26)'); vl.addColorStop(1, 'rgba(21,17,13,0)');
-    ctx.fillStyle = vl; ctx.fillRect(x, y, vig, h);
-    var vr = ctx.createLinearGradient(x + w, 0, x + w - vig, 0);
-    vr.addColorStop(0, 'rgba(21,17,13,0.26)'); vr.addColorStop(1, 'rgba(21,17,13,0)');
-    ctx.fillStyle = vr; ctx.fillRect(x + w - vig, y, vig, h);
+     The bay's painters for its cover (js/cover.js lays it out and times
+     it), in the level's proportions: the kitchen sliver and the ledge for
+     the lid, the cream wall with its chair rail, the bar top and the open
+     shelf for the band, and the box and planter stacks for the columns.
+     THE HUMIDIFIER stands on the bar in an open span, riding the wall as
+     it does in the game, and the mist goes by where it is on the card:
+     the ring lights as it comes in, a column climbs out of the nozzle,
+     the lane fogs over and clears again before it leaves - a fog over the
+     stacks and the corks that never covers the doodad, and is clipped to
+     the lane the way the level clips it. The pinecone glows on the bar in
+     another span, and a cork, or the record, comes down. */
+  function cardRect(ctx, col, x, y, w, h) {
+    if (w > 0 && h > 0) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
   }
 
-  /* THE HUMIDIFIER IN A COVER: the level's sprite reduced - a dome
-     that is round across the top and steep at the sides (a superellipse,
-     so it is a bell and not a hill), its upper left lit, a scatter of
-     white flecks, the dark nozzle, the LED ring, the white base - and,
-     while the card is about to mist, the ring lit and the cool glow. */
-  function hummer(ctx, x, foot, big, lit) {
-    var dw = big ? 26 : 19, dh = big ? 22 : 16, bh = big ? 7 : 5;
+  /* THE HUMIDIFIER IN A COVER: the level's sprite reduced, dw across with
+     a dome dh and a base bh tall - a dome that is round across the top
+     and steep at the sides (a superellipse, so it is a bowl and not a
+     hill), its upper left lit, a scatter of white flecks, the dark nozzle,
+     the LED ring, the white base - and, while the card is about to mist,
+     the ring lit and the cool glow. x is its outline's left column and
+     foot its last row; it is dw + 2 across. */
+  function hummer(ctx, x, foot, dw, dh, bh, lit) {
     var top = foot - bh - dh, i, hw, row, R = dw / 2;
-    var cx = x + R;
+    var cx = x + 1 + R;
     if (lit) {
       var g = ctx.createRadialGradient(cx, top + dh * 0.7, 1, cx, top + dh * 0.7, dw);
       g.addColorStop(0, 'rgba(159,215,232,0.30)');
       g.addColorStop(1, 'rgba(159,215,232,0)');
-      ctx.fillStyle = g; ctx.fillRect(cx - dw, top - 4, dw * 2, dh + bh + 4);
+      ctx.fillStyle = g; ctx.fillRect(Math.round(cx - dw), top - 4, dw * 2, dh + bh + 4);
     }
     var HW = [];
     for (i = 0; i < dh; i++) {
       var yy = 1 - (i + 0.5) / dh;
-      HW.push(Math.max(1, Math.round(R * Math.pow(1 - Math.pow(yy, 2.4), 1 / 2.4))));
+      HW.push(Math.max(1, Math.round(R * Math.pow(1 - Math.pow(yy, 2.2), 1 / 2.2))));
     }
     /* the outline: a pixel round every row, and the row above the top */
     ctx.fillStyle = P.outline;
@@ -2561,9 +2385,9 @@ var Bar = (function () {
       ctx.fillStyle = P.humDomeShade; ctx.fillRect(Math.round(cx + hw * 0.5), row, hw - Math.round(hw * 0.5), 1);
       if (lit && i > dh * 0.5) { Tint.rect(ctx, l, row, hw * 2, 1, P.ringLit, 6); }
     }
-    for (i = 0; i < (big ? 9 : 6); i++) {
+    for (i = 0; i < Math.round(dw * 0.3); i++) {
       var hh = hash(8811 + i * 37);
-      var fy = 3 + (hh >>> 8) % (dh - 4), fw = HW[fy];
+      var fy = Math.min(dh - 1, 3 + (hh >>> 8) % Math.max(1, dh - 4)), fw = HW[fy];
       ctx.fillStyle = P.humSpeck;
       ctx.fillRect(Math.round(cx - fw + 1 + hh % Math.max(1, fw * 2 - 2)), top + fy, 1, 1);
     }
@@ -2573,46 +2397,365 @@ var Bar = (function () {
     ctx.fillStyle = P.humBase;      ctx.fillRect(x + 1, foot - bh, dw, bh);
     ctx.fillStyle = P.humDomeLit;   ctx.fillRect(x + 2, foot - bh, dw - 6, 1);
     ctx.fillStyle = P.humBaseShade; ctx.fillRect(x + 1, foot - 2, dw, 2); ctx.fillRect(x + dw - 3, foot - bh, 4, bh);
-    ctx.fillStyle = P.humNozzle;
-    ctx.fillRect(Math.round(cx) - 4, foot - 3, 1, 1); ctx.fillRect(Math.round(cx) - 1, foot - 3, 1, 1);
-    ctx.fillRect(Math.round(cx) + 2, foot - 3, 1, 1);
+    if (bh >= 5) {
+      ctx.fillStyle = P.humNozzle;
+      ctx.fillRect(Math.round(cx) - 4, foot - 3, 1, 1); ctx.fillRect(Math.round(cx) - 1, foot - 3, 1, 1);
+      ctx.fillRect(Math.round(cx) + 2, foot - 3, 1, 1);
+    }
   }
 
-  /* one stack inside a cover. `pot` picks the planter; `up` says which
-     end faces the gap (the cap goes there) */
-  function stacklet(ctx, x, y, h, pot, up) {
-    if (h <= 0) return;
-    var cy, ch, i;
-    for (cy = up ? y : y + h; up ? cy < y + h : cy > y; cy += up ? 11 : -11) {
-      ch = up ? Math.min(11, y + h - cy) : Math.min(11, cy - y);
-      var ty = up ? cy : cy - ch;
-      ctx.fillStyle = P.outline; ctx.fillRect(x, ty, 10, ch);
-      if (ch < 3) continue;
-      if (pot) {
-        ctx.fillStyle = P.potWhite; ctx.fillRect(x + 1, ty + 1, 8, ch - 2);
-        ctx.fillStyle = P.potHi;    ctx.fillRect(x + 1, ty + 1, 1, ch - 2);
-        ctx.fillStyle = P.potShade; ctx.fillRect(x + 8, ty + 1, 1, ch - 2);
-        ctx.fillStyle = P.potCell;
-        for (i = 0; i < ch - 3; i += 3) { ctx.fillRect(x + 3, ty + 2 + i, 1, 1); ctx.fillRect(x + 6, ty + 2 + i, 1, 1); }
-        ctx.fillStyle = P.potDeep;  ctx.fillRect(x + 1, up ? ty + ch - 2 : ty + 1, 8, 1);
-      } else {
-        ctx.fillStyle = P.boxWood;  ctx.fillRect(x + 1, ty + 1, 8, ch - 2);
-        ctx.fillStyle = P.boxHi;    ctx.fillRect(x + 1, ty + 1, 1, ch - 2);
-        ctx.fillStyle = P.boxShade; ctx.fillRect(x + 8, ty + 1, 1, ch - 2);
-        ctx.fillStyle = P.boxDeep;  ctx.fillRect(x + 1, up ? ty + 3 : ty + ch - 4, 8, 1);
-        if (ch > 7) { ctx.fillStyle = P.brass; ctx.fillRect(x + 3, up ? ty + ch - 4 : ty + 2, 3, 2); }
-      }
-    }
-    /* the cap across the mouth */
-    var by = up ? y : y + h - 3;
-    ctx.fillStyle = P.outline; ctx.fillRect(x - 2, by, 14, 3);
-    ctx.fillStyle = pot ? P.potWhite : P.boxWood; ctx.fillRect(x - 1, by + (up ? 1 : 0), 12, 2);
-    ctx.fillStyle = pot ? P.potHi : P.boxHi;     ctx.fillRect(x - 1, up ? by + 1 : by + 1, 12, 1);
-    if (pot && up) {
-      ctx.fillStyle = H.leafLit; ctx.fillRect(x + 2, by - 2, 1, 2); ctx.fillRect(x + 7, by - 2, 1, 2);
-      ctx.fillStyle = H.leaf;    ctx.fillRect(x + 4, by - 3, 2, 3);
+  /* the humidifier's size in a span: the level's 70 x 61 at the card's
+     scale, never wider than the span less the caps either side */
+  function cardHum(S, sp) {
+    var pr = Math.max(1, Math.round(4 * S.k));
+    var dw = Math.min(sp.x1 - sp.x0 - pr * 2 - 4, Math.max(10, Math.round(HUM_W * S.k)));
+    var mid = Math.round((sp.x0 + sp.x1) / 2);
+    return { dw: dw, dh: Math.round(dw * 0.6), bh: Math.max(2, Math.round(dw * 0.27)),
+             x: mid - Math.round((dw + 2) / 2), mid: mid,
+             /* where it is on the card: 0 coming in on the right, 1 at the left edge */
+             u: (S.x + S.w - mid) / S.w };
+  }
+
+  /* one row of a box course, r rows from its lid end: the outline, the
+     lit arris, the lid, the lid's seam and its lit lip, the body with
+     its grain-lit left and shaded right, the brass plaque low down */
+  function boxRow(ctx, x, yy, w, r, cl, two, k) {
+    var wood = two ? P.boxWood2 : P.boxWood, lit = two ? P.boxLit2 : P.boxLit, hi = two ? P.boxHi2 : P.boxHi;
+    if (r === 0 || r === cl - 1) { cardRect(ctx, P.outline, x, yy, w, 1); return; }
+    var seam = Math.max(2, Math.round(8 * k));
+    var col = (r === 1 || r === seam + 1) ? hi : (r === seam ? P.boxDeep : (r === cl - 2 ? P.boxShade : wood));
+    cardRect(ctx, P.outline, x, yy, w, 1);
+    cardRect(ctx, col, x + 1, yy, w - 2, 1);
+    if (col !== wood) return;
+    cardRect(ctx, hi, x + 1, yy, 1, 1);
+    cardRect(ctx, lit, x + 2, yy, 1, 1);
+    cardRect(ctx, P.boxShade, x + w - 3, yy, 2, 1);
+    var pl = Math.round(cl * 0.68);
+    if (cl >= 8 && w >= 8 && (r === pl || r === pl + 1)) {
+      cardRect(ctx, P.brass, x + Math.round(w * 0.36), yy, 3, 1);
+      if (r === pl) cardRect(ctx, P.brassLit, x + Math.round(w * 0.36), yy, 1, 1);
     }
   }
+
+  /* one row of a planter course, r rows from its rim: the rolled rim,
+     the bellied body with its cells, the bottom rim, the three feet with
+     the wall showing between them */
+  function potRow(ctx, x, yy, w, r, cl) {
+    if (r === 0) { cardRect(ctx, P.outline, x, yy, w, 1); return; }
+    var feet = w >= 10;
+    if (r <= 2) {
+      cardRect(ctx, P.outline, x, yy, w, 1);
+      cardRect(ctx, r === 1 ? P.potHi : P.potShade, x + 1, yy, w - 2, 1);
+      return;
+    }
+    if (r === cl - 1) {
+      if (!feet) { cardRect(ctx, P.outline, x + 1, yy, w - 2, 1); return; }
+      for (var f = 0; f < POT_FEET.length; f++) {
+        cardRect(ctx, P.outline, x + Math.round(POT_FEET[f][0] * w / 34) - 1, yy, Math.max(1, Math.round(POT_FEET[f][1] * w / 34)) + 2, 1);
+      }
+      return;
+    }
+    if (r === cl - 2) {
+      if (!feet) { cardRect(ctx, P.outline, x + 1, yy, w - 2, 1); cardRect(ctx, P.potDeep, x + 2, yy, w - 4, 1); return; }
+      for (var g = 0; g < POT_FEET.length; g++) {
+        var fx = x + Math.round(POT_FEET[g][0] * w / 34), fw = Math.max(1, Math.round(POT_FEET[g][1] * w / 34));
+        cardRect(ctx, P.outline, fx - 1, yy, fw + 2, 1);
+        cardRect(ctx, P.potWhite, fx, yy, fw, 1);
+      }
+      return;
+    }
+    if (r === cl - 3) {
+      cardRect(ctx, P.outline, x + 1, yy, w - 2, 1);
+      cardRect(ctx, P.potDeep, x + 2, yy, w - 4, 1);
+      return;
+    }
+    var ins = (r === 3 || r === cl - 4) && w >= 8 ? 1 : 0;
+    var hline = feet && (r - 3) % 3 === 2;
+    cardRect(ctx, P.outline, x + ins, yy, w - ins * 2, 1);
+    cardRect(ctx, hline ? P.potCell : P.potWhite, x + 1 + ins, yy, w - 2 - ins * 2, 1);
+    cardRect(ctx, hline ? P.potCell : P.potHi, x + 1 + ins, yy, 1, 1);
+    cardRect(ctx, hline ? P.potDeep : P.potShade, x + w - 2 - ins - (w >= 10 ? 1 : 0), yy, w >= 10 ? 2 : 1, 1);
+    if (feet && !hline) {
+      cardRect(ctx, P.potCell, x + Math.round(w * 0.36), yy, 1, 1);
+      cardRect(ctx, P.potCell, x + Math.round(w * 0.64), yy, 1, 1);
+    }
+  }
+
+  var COVER = {
+    halo: P.void,
+    ink: P.outline,
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, wallY = S.top, barY = S.floor, lane = S.lane, i;
+      /* the wall, its tooth riding at the wall's parallax */
+      cardRect(ctx, P.wall, x, S.y, w, S.h);
+      var W2 = w * 2, ws = S.s * WALL_PAR;
+      for (i = 0; i < (W2 * lane) / 60; i++) {
+        var th = hash(4901 + i * 7919);
+        var tx = Math.round(wrap((th % W2) - ws, W2));
+        if (tx >= w) continue;
+        ctx.fillStyle = (th >>> 20) & 1 ? P.wallTooth : P.wallToothDark;
+        ctx.fillRect(x + tx, wallY + (th >>> 9) % lane, 1, 1);
+      }
+      /* the chair rail */
+      var railY = S.y + Math.round(RAIL_Y * S.k);
+      var RAIL = S.k > 0.4 ? [P.railLit, P.rail, P.railShade, P.outline]
+               : (S.k > 0.2 ? [P.railLit, P.rail, P.outline] : [P.railLit, P.outline]);
+      for (i = 0; i < RAIL.length; i++) cardRect(ctx, RAIL[i], x, railY + i, w, 1);
+      Tint.rect(ctx, x, railY + RAIL.length, w, 2, P.void, 3);
+      Tint.rect(ctx, x, wallY, w, 3, H.void, 4);
+      /* THE LIGHT, in miniature, and in RAMPS, under the stacks as the
+         level lays its light sheet: the level's light has no edges in
+         it, so the card's has none - warmth down off the ledge, night
+         coming up off the bar, the two side columns - each a linear
+         gradient rather than a flat band */
+      var lg = ctx.createLinearGradient(0, wallY, 0, wallY + lane * 0.35);
+      lg.addColorStop(0, 'rgba(255,227,160,0.14)'); lg.addColorStop(1, 'rgba(255,227,160,0)');
+      ctx.fillStyle = lg; ctx.fillRect(x, wallY, w, Math.round(lane * 0.35));
+      var ny = Math.round(wallY + lane * 0.45);
+      var ng = ctx.createLinearGradient(0, ny, 0, barY);
+      ng.addColorStop(0, 'rgba(42,36,31,0)'); ng.addColorStop(1, 'rgba(42,36,31,0.26)');
+      ctx.fillStyle = ng; ctx.fillRect(x, ny, w, barY - ny);
+      var vig = Math.max(6, Math.round(w * 0.12));
+      var vl = ctx.createLinearGradient(x, 0, x + vig, 0);
+      vl.addColorStop(0, 'rgba(21,17,13,0.26)'); vl.addColorStop(1, 'rgba(21,17,13,0)');
+      ctx.fillStyle = vl; ctx.fillRect(x, S.y, vig, S.h);
+      var vr = ctx.createLinearGradient(x + w, 0, x + w - vig, 0);
+      vr.addColorStop(0, 'rgba(21,17,13,0.26)'); vr.addColorStop(1, 'rgba(21,17,13,0)');
+      ctx.fillStyle = vr; ctx.fillRect(x + w - vig, S.y, vig, S.h);
+    },
+
+    /* the box and planter stacks: two woods of spirit box and the white
+       cell pot, one column one kind, laid from the gap outward so the
+       course cut short is the one going into the ledge or the bar */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var k = S.k, v = hash(p.i) % 100, pot = v >= 55, two = v >= 30 && v < 55, up = end === 'top', i, r;
+      var hc = Math.min(h, Math.max(3, Math.round(9 * k))), pr = Math.max(1, Math.round(4 * k));
+      var sw = Math.max(1, Math.round(4 * k)), rw = Math.max(2, Math.round(8 * k));
+      var capY = up ? y + h - hc : y, bodyY = up ? y : y + hc, bodyH = h - hc;
+      /* the shadows on the wall first: the hard strip and its soft ramp */
+      if (bodyH > 0) {
+        Tint.rect(ctx, x + w, bodyY, sw, bodyH, P.void, 6);
+        Tint.rect(ctx, x + w + sw, bodyY, rw, bodyH, P.void, 3);
+        Tint.rect(ctx, x + w + sw + rw, bodyY, rw, bodyH, P.void, 1);
+      }
+      Tint.rect(ctx, x + w + pr, capY, sw, hc, P.void, 6);
+      Tint.rect(ctx, x + w + pr + sw, capY, rw, hc, P.void, 3);
+      /* the courses, from the cap outward; a hanging stack is the
+         standing one flipped, lid-down and mouth-down */
+      var cl = pot ? Math.max(5, Math.round(38 * k)) : Math.max(6, Math.round(44 * k));
+      for (var c0 = 0; c0 < bodyH; c0 += cl) {
+        for (r = 0; r < cl && c0 + r < bodyH; r++) {
+          var yy = up ? bodyY + bodyH - 1 - c0 - r : bodyY + c0 + r;
+          if (pot) potRow(ctx, x, yy, w, r, cl);
+          else boxRow(ctx, x, yy, w, r, cl, two, k);
+        }
+      }
+      /* THE CAP across the mouth: a box lying on its side, or the top
+         pot's rim - each the standing way up and mirrored for a hanging
+         stack, so both present the same face to the gap */
+      var wood = two ? P.boxWood2 : P.boxWood;
+      var ROWS = [P.outline, pot ? P.potHi : (two ? P.boxHi2 : P.boxHi)];
+      for (i = 2; i < hc - 1; i++) ROWS.push(pot ? P.potWhite : wood);
+      ROWS.push(pot ? P.potShade : P.boxShade);
+      if (up) ROWS.reverse();
+      var cx0 = x - pr, cw = w + pr * 2;
+      for (i = 0; i < hc; i++) {
+        var cut = (i === 0 || i === hc - 1) ? 1 : 0;
+        cardRect(ctx, P.outline, cx0 + cut, capY + i, cw - cut * 2, 1);
+        if (ROWS[i] === P.outline) continue;
+        cardRect(ctx, ROWS[i], cx0 + 1, capY + i, cw - 2, 1);
+        if (ROWS[i] === wood) {
+          var lp = Math.max(2, Math.round(8 * k));
+          cardRect(ctx, two ? P.boxLit2 : P.boxLit, cx0 + 1, capY + i, lp, 1);
+          cardRect(ctx, P.boxDeep, cx0 + 1 + lp, capY + i, 1, 1);
+          cardRect(ctx, P.brass, cx0 + Math.round(cw * 0.6), capY + i, 2, 1);
+        }
+      }
+      /* and the peace lily out of a standing planter's rim */
+      if (pot && !up) {
+        var lh = Math.max(1, Math.round(3 * k * 2.4));
+        cardRect(ctx, H.leafLit, x + 2, y - lh + 1, 1, lh - 1);
+        cardRect(ctx, H.leafLit, x + w - 3, y - lh + 1, 1, lh - 1);
+        cardRect(ctx, H.leaf, x + Math.round(w / 2) - 1, y - lh, 2, lh);
+      }
+    },
+
+    /* the kitchen sliver beyond the half wall, at its parallax, and the
+       ledge in front of it at the lane's - its last row the kill line */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, band = S.top - S.y, kitH = Math.round(band / 2), n = band - kitH, i, m;
+      var q = S.k * 2.4, ko = wrap(Math.round(S.s * KITCHEN_PAR), w);
+      cardRect(ctx, H.cabinet, x, S.y, w, kitH);
+      for (i = 4 - wrap(ko, 10); i < w; i += 10) cardRect(ctx, H.cabinetShade, x + i, S.y, 1, kitH);
+      for (m = 0; m <= 1; m++) cardRect(ctx, H.steel, x - ko + m * w + Math.round(w * 0.12), S.y, Math.round(9 * q), kitH);
+      Tint.rect(ctx, x, S.y, w, kitH, P.night, 4);
+      for (m = 0; m <= 1; m++) {
+        var lx = x - ko + m * w + Math.round(w * 0.68);
+        Tint.rect(ctx, lx - 7, S.y, 17, kitH, H.lampGlow, 4);
+        cardRect(ctx, H.lampGlass, lx, S.y + kitH - 3, 3, 3);
+        cardRect(ctx, H.lampGlass, lx + 1, S.y, 1, kitH - 3);
+        cardRect(ctx, H.lampCore, lx + 1, S.y + kitH - 2, 1, 1);
+      }
+      var LEDGE = n >= 5 ? [H.ledgeLit] : (n >= 2 ? [H.ledgeLit] : []);
+      while (LEDGE.length < n - 3) LEDGE.push(H.ledge);
+      if (n >= 3) LEDGE.push(H.ledgeShade);
+      if (n >= 4) LEDGE.push(P.outline);
+      LEDGE.push(P.outline);
+      for (i = 0; i < LEDGE.length; i++) cardRect(ctx, LEDGE[i], x, S.y + kitH + i, w, 1);
+      /* the grey wash's shade dashes, riding with the ledge */
+      if (n >= 4) {
+        for (m = 0; m < 2; m++) {
+          var dh = hash(733 + m * 131);
+          var dx = Math.round(wrap((dh % w) - S.s, w));
+          cardRect(ctx, H.ledgeShade, x + dx, S.y + kitH + 1 + m, Math.round((9 + m * 3) * q), 1);
+        }
+      }
+    },
+
+    /* the bar top - its lit arris (the kill edge), the charcoal slab and
+       its dry-brush distress, its lit front edge - and the open shelf
+       under it with its pegs */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, bot = S.y + S.h, d = bot - S.floor, i;
+      var nb = Math.min(9, Math.max(3, d - Math.max(1, Math.round(d * 0.25))));
+      var BAND = [P.barArris, H.charLit];
+      while (BAND.length < nb - 2) BAND.push(H.char);
+      BAND.push(H.charDeep); BAND.push(H.charLit);
+      if (nb === 3) BAND = [P.barArris, H.char, H.charDeep];
+      for (i = 0; i < nb; i++) cardRect(ctx, BAND[i], x, S.floor + i, w, 1);
+      for (i = 0; i < 5; i++) {
+        var dh = hash(5177 + i * 31);
+        cardRect(ctx, P.distress, x + Math.round(wrap((dh % w) - S.s, w)), S.floor + 2 + i % Math.max(1, nb - 4), 4 + i, 1);
+      }
+      var shelfY = S.floor + nb;
+      cardRect(ctx, H.void, x, shelfY, w, bot - shelfY);
+      var po = wrap(Math.round(S.s), w), PEG = [[0.42, P.pegPurple], [0.52, P.pegRed], [0.60, P.pegBlue]];
+      for (var m = 0; m <= 1; m++) {
+        for (i = 0; i < PEG.length; i++) cardRect(ctx, PEG[i][1], x - po + m * w + Math.round(w * PEG[i][0]), shelfY + 1, 2, Math.min(2, bot - shelfY - 1));
+      }
+      Tint.rect(ctx, x, S.floor + 1, w, d - 1, H.void, 4);
+    },
+
+    /* THE HUMIDIFIER on the bar in every other open span, its ring lit
+       while its mist is coming; the PINECONE glowing in the ones between */
+    props: function (ctx, S) {
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i], kind = wrap(sp.i, 4);
+        if (kind === 0) {
+          var M = cardHum(S, sp);
+          Tint.rect(ctx, M.x, S.floor - 2, M.dw + 2, 2, H.void, 6);
+          hummer(ctx, M.x, S.floor - 1, M.dw, M.dh, M.bh, M.u > 0.05 && M.u < 0.7);
+        } else if (kind === 2) {
+          var px = Math.round((sp.x0 + sp.x1) / 2), small = S.k < 0.3, py = S.floor - (small ? 4 : 5);
+          var pulse = 0.7 + 0.3 * Math.sin(S.t * 2.6), gr = (small ? 5 : 7) + pulse * 2;
+          var g = ctx.createRadialGradient(px, py, 1, px, py, gr);
+          g.addColorStop(0, 'rgba(147,216,189,' + (0.40 * pulse).toFixed(3) + ')');
+          g.addColorStop(1, 'rgba(47,107,98,0)');
+          ctx.fillStyle = g; ctx.fillRect(Math.round(px - gr), Math.round(py - gr), Math.round(gr * 2), Math.round(gr * 2));
+          if (small) {
+            cardRect(ctx, P.outline, px - 3, py - 3, 7, 7); cardRect(ctx, P.outline, px - 1, py - 4, 2, 1);
+            cardRect(ctx, P.cone, px - 2, py - 2, 5, 5);
+            cardRect(ctx, P.coneShade, px - 1, py + 1, 4, 1); cardRect(ctx, P.coneShade, px + 1, py - 1, 1, 2);
+            cardRect(ctx, P.coneLit, px - 1, py - 1, 1, 1); cardRect(ctx, P.coneLit, px, py, 1, 1);
+          } else {
+            cardRect(ctx, P.outline, px - 4, py - 4, 9, 9); cardRect(ctx, P.outline, px - 1, py - 6, 3, 2);
+            cardRect(ctx, P.cone, px - 3, py - 3, 7, 7); cardRect(ctx, P.cone, px, py - 5, 1, 2);
+            cardRect(ctx, P.coneShade, px - 2, py + 2, 6, 1); cardRect(ctx, P.coneShade, px + 2, py - 1, 2, 3);
+            ctx.fillStyle = P.coneLit;
+            ctx.fillRect(px - 2, py - 2, 1, 1); ctx.fillRect(px, py - 2, 1, 1);
+            ctx.fillRect(px - 1, py, 1, 1); ctx.fillRect(px + 1, py, 1, 1); ctx.fillRect(px - 2, py + 1, 1, 1);
+          }
+        }
+      }
+    },
+
+    /* a cork end over end, or - every third drop - the record */
+    drop: function (ctx, d, S) {
+      var cx = d.x, cy = d.y, tiny = S.k < 0.2;
+      if (wrap(d.i >> 1, 3) === 1) {
+        Tint.rect(ctx, cx - 4, cy - 4, 9, 9, P.labelPurple, 4);
+        if (!tiny) Tint.rect(ctx, cx - 6, cy - 6, 13, 13, P.labelPurple, 2);
+        var o = tiny ? 2 : 3;
+        cardRect(ctx, P.outline, cx - o, cy - o + 1, o * 2 + 1, o * 2 - 1); cardRect(ctx, P.outline, cx - o + 1, cy - o, o * 2 - 1, o * 2 + 1);
+        cardRect(ctx, P.vinyl, cx - o + 1, cy - o + 2, o * 2 - 1, o * 2 - 3); cardRect(ctx, P.vinyl, cx - o + 2, cy - o + 1, o * 2 - 3, o * 2 - 1);
+        cardRect(ctx, P.labelPurple, cx, cy, 1, 1);
+        if (!tiny) cardRect(ctx, P.labelHi, cx - 1, cy - 1, 1, 1);
+        return;
+      }
+      var side = Math.floor(d.f * 6) % 2;
+      if (tiny) {
+        if (side) { cardRect(ctx, P.outline, cx - 2, cy - 1, 5, 3); cardRect(ctx, P.cork, cx - 1, cy, 2, 1); cardRect(ctx, P.wine, cx + 1, cy, 1, 1); }
+        else { cardRect(ctx, P.outline, cx - 1, cy - 2, 3, 5); cardRect(ctx, P.corkLit, cx, cy - 1, 1, 1); cardRect(ctx, P.cork, cx, cy, 1, 1); cardRect(ctx, P.wine, cx, cy + 1, 1, 1); }
+        return;
+      }
+      if (side) {
+        cardRect(ctx, P.outline, cx - 3, cy - 2, 7, 5);
+        cardRect(ctx, P.corkLit, cx - 2, cy - 1, 5, 1);
+        cardRect(ctx, P.cork, cx - 2, cy, 4, 2);
+        cardRect(ctx, P.wine, cx + 2, cy, 1, 2);
+      } else {
+        cardRect(ctx, P.outline, cx - 2, cy - 3, 5, 7);
+        cardRect(ctx, P.corkLit, cx - 1, cy - 2, 3, 1);
+        cardRect(ctx, P.cork, cx - 1, cy - 1, 3, 3);
+        cardRect(ctx, P.wine, cx - 1, cy + 2, 3, 1);
+      }
+    },
+
+    /* THE MIST, off the humidifier's place on the card - the ring lights
+       as it comes in, the column climbs and billows, the lane fogs over
+       and clears before it goes - over the stacks and whatever is
+       falling, under the doodad, and clipped to the lane between the
+       ledge's outline and the bar's arris, the fairness the level keeps */
+    over: function (ctx, S) {
+      var M = null, i;
+      for (i = 0; i < S.spans.length && !M; i++) {
+        if (wrap(S.spans[i].i, 4) !== 0) continue;
+        var c = cardHum(S, S.spans[i]);
+        if (c.u >= 0 && c.u <= 1) M = c;
+      }
+      if (!M) return;
+      var plumeK = Math.sin(Math.PI * clamp((M.u - 0.08) / 0.5, 0, 1));
+      var fogK = Math.sin(Math.PI * clamp((M.u - 0.18) / 0.72, 0, 1));
+      fogK *= fogK;
+      if (fogK <= 0.01 && plumeK <= 0.01) return;
+      var x = S.x, w = S.w, wallY = S.top, lane = S.lane;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, wallY, w, lane); ctx.clip();
+      if (fogK > 0.01) {
+        /* the haze over the whole lane, thicker low down, and three soft
+           clouds drifting through it. Never more than about half: at
+           three-quarters white the stacks went altogether and for two
+           seconds in eight the card was a blank, which is the fog doing
+           its job in a bay and a cover not doing its own. */
+        Tint.rect(ctx, x, wallY, w, lane, P.mist, Math.round(fogK * 7));
+        Tint.rect(ctx, x, wallY + Math.round(lane * 0.45), w, lane - Math.round(lane * 0.45), P.mist, Math.round(fogK * 3));
+        for (i = 0; i < 3; i++) {
+          var mr = w * (0.24 + i * 0.05);
+          var mx = x + wrap(w * 0.2 + i * (w * 0.4) - S.s * 0.5, w + 40) - 20;
+          var my = wallY + lane * (0.55 + 0.15 * Math.sin(i * 2.1));
+          var mg = ctx.createRadialGradient(mx, my, 1, mx, my, mr);
+          mg.addColorStop(0, 'rgba(221,225,227,' + (0.32 * fogK).toFixed(3) + ')');
+          mg.addColorStop(1, 'rgba(221,225,227,0)');
+          ctx.fillStyle = mg; ctx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+        }
+      }
+      if (plumeK > 0.01) {
+        /* the column out of the nozzle, widening as it climbs */
+        var nzy = S.floor - 1 - M.bh - M.dh;
+        for (i = 0; i < 5; i++) {
+          var pk = i / 4, pr = 2 + pk * Math.round(M.dw * 0.45);
+          var py = nzy - 2 - pk * lane * 0.42;
+          var px = M.mid + Math.sin(S.t * 1.3 + i) * pk * 3;
+          var pg = ctx.createRadialGradient(px, py, 0.5, px, py, pr);
+          pg.addColorStop(0, 'rgba(236,240,242,' + (0.75 * plumeK * (1 - pk * 0.45)).toFixed(3) + ')');
+          pg.addColorStop(1, 'rgba(221,225,227,0)');
+          ctx.fillStyle = pg; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+        }
+      }
+      ctx.restore();
+    }
+  };
 
   /* ---------------------------------------------------- generation */
 
@@ -2774,7 +2917,7 @@ var Bar = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: DiningRoom.END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: true,
     BOON_NAMES: [BOON_NAME],
@@ -2783,7 +2926,6 @@ var Bar = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld, drawOverlay: drawOverlay,

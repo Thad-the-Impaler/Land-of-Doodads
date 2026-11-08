@@ -77,7 +77,7 @@
      drawDropSplat / stepDrop             spawnDrops returns on its first
                                           line while `warp` is set, so no
                                           'drop' can exist in a stay.
-     drawPreview / PREVIEW /              read off `lv.art` by the select
+     COVER / PREVIEW /                    read off `lv.art` by the select
      drawMenuBackdrop / END_MIN /         screen and the title scene. This
      BOON_NAME                            module is in no level entry, so
                                           nothing ever holds it as lv.art.

@@ -852,16 +852,14 @@ var TV = (function () {
      the middle of a widescreen picture, black either side, because that
      is what an old show on a new set looks like (A3).
 
-     THE COOP HAS NO COVER OF ITS OWN: the level select paints it from
-     its generic card in the Coop's own PREVIEW colours, and coopCard
-     below is that card, line for line, so CH 11 is the picture a player
-     has seen on the first card of the first room.
+     Every cover is laid out by js/cover.js, so CH 11 is the picture a
+     player has seen on the first card of the first room.
 
      All fourteen were rendered at 96x72 and looked at, small-card flag
      and big: every one reads at that size, so every one runs at it, with
      the small card's flag (its doodad is the smaller block). */
   var RERUNS = [
-    [11, '1-1', 'THE COOP', null, 'bw'],
+    [11, '1-1', 'THE COOP', Coop, 'bw'],
     [12, '1-2', 'THE GARDEN', Garden, 'sepia'],
     [13, '1-3', 'THE DECK', Deck, 'seventies'],
     [14, '1-4', 'THE CANOPY', Canopy, 'phosphor'],
@@ -1342,54 +1340,6 @@ var TV = (function () {
      tube looks like. The glow and the tune-in static scale with it. */
   var PU_SCALE = 1.25;
 
-  /* THE COOP'S CARD - the level select's generic cover in the Coop's
-     colours, which is what the first card of the first room shows */
-  function coopCard(c, x, y, w, h, t) {
-    var Q = Coop.PREVIEW, s = t * 24, i, k;
-    var ceil = y + 6, floor = y + h - 9;
-    c.fillStyle = Q.back; c.fillRect(x, y, w, h);
-    for (i = -1; i < w / 11 + 1; i++) {
-      var sx = Math.round(x + i * 11 - (s * 0.25) % 11);
-      c.fillStyle = (i % 2) ? Q.backAlt : Q.back; c.fillRect(sx, y, 10, h);
-      c.fillStyle = Q.seam; c.fillRect(sx, y, 1, h);
-    }
-    Tint.rect(c, x, y, w, Math.round(h * 0.5), Q.air, 1);
-    Tint.rect(c, x, y + h - 30, w, 30, Q.gloom, 3);
-    c.fillStyle = Q.beam; c.fillRect(x, y, w, 6);
-    c.fillStyle = Q.beamDark; c.fillRect(x, y + 4, w, 2);
-    c.fillStyle = Q.ground; c.fillRect(x, floor, w, y + h - floor);
-    Tint.rect(c, x, floor, w, y + h - floor, Q.groundDark, 7);
-    c.fillStyle = Q.groundHi; c.fillRect(x, floor, w, 1);
-    var period = 40, span = floor - ceil;
-    for (k = 0; k < 4; k++) {
-      var ox = Math.round(x + w + 12 - ((s + k * period) % (period * 4)));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var gapY = Math.round(ceil + 6 + ((k * 17) % Math.max(1, span - gapH - 12)));
-      planklet(c, ox, ceil, gapY - ceil, Q);
-      planklet(c, ox, gapY + gapH, floor - gapY - gapH, Q);
-    }
-    for (var n = 0; n < 3; n++) {
-      var nx = Math.round(x + w - ((s + n * 53) % (w + 30)));
-      if (nx < x || nx > x + w - 2) continue;
-      c.fillStyle = Q.spike; c.fillRect(nx, floor - 5, 1, 5); c.fillRect(nx + 2, floor - 7, 1, 7);
-      c.fillStyle = Q.spikeHi; c.fillRect(nx + 2, floor - 8, 2, 1);
-    }
-    var bx = Math.round(x + w * 0.32), by = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    c.fillStyle = '#20150c'; c.fillRect(bx - 3, by - 3, 7, 7);
-    c.fillStyle = '#c9873c'; c.fillRect(bx - 2, by - 2, 5, 5);
-    c.fillStyle = '#eab873'; c.fillRect(bx - 2, by - 2, 3, 1);
-    c.fillStyle = '#f3cc84'; c.fillRect(bx + 3, by, 2, 1);
-    Tint.rect(c, x, y, w, h, Q.air, 1);
-  }
-
-  function planklet(c, x, y, h, Q) {
-    if (h <= 0) return;
-    c.fillStyle = Q.beam; c.fillRect(x, y, 10, h);
-    c.fillStyle = Q.beamLight; c.fillRect(x + 1, y, 2, h);
-    c.fillStyle = Q.beamDark; c.fillRect(x, y, 1, h); c.fillRect(x + 9, y, 1, h);
-  }
-
   /* One bay's cover into a little canvas at time t, inside its own
      save/clip, and a bay whose cover throws is taken off the air (its own
      PREVIEW.back from then on) rather than taking this bay down with it.
@@ -1406,8 +1356,7 @@ var TV = (function () {
     c.save();
     c.beginPath(); c.rect(0, 0, w, h); c.clip();
     try {
-      if (mod) mod.drawPreview(c, 0, 0, w, h, t, big);
-      else coopCard(c, 0, 0, w, h, t);
+      Cover.draw(mod, c, 0, 0, w, h, t, big);
       c.restore();
     } catch (e) {
       offAir[r[0]] = true;
@@ -2307,128 +2256,167 @@ var TV = (function () {
 
   /* ================================================== THE COVER
 
-     118x114 on the big card, 82x94 on the small ones, already clipped by
-     the caller. The bay in miniature: the woven wall over the top rail
-     and under the bottom one, and between them the set ON - cycling three
-     reruns in their looks (the Coop in black and white, the Canopy in
-     green phosphor, the Ceiling in CGA), four seconds each with a burst of
-     static between, its scanlines and its channel number - with two marble
-     columns and their white caps sliding past in front, a dead pixel
-     tumbling out of the picture, a lime glowing on the screen (big card)
-     and the doodad flying it. */
+     The TV's painters for its cover (js/cover.js lays it out and times
+     it). The bay in miniature: the set ON behind everything - cycling
+     three reruns in their looks (the Coop in black and white, the Canopy
+     in green phosphor, the Ceiling in CGA), four seconds each with a
+     burst of static between, its scanlines and, on the big card, its
+     channel number - the lane is the glass itself, as PIC_H is in the
+     bay, so the woven wall and the two white rails take the bands.
+     Marble columns with white caps go past in front of the picture, a
+     lime glows in it on the big card, and a dead pixel tumbles out of
+     it onto the bottom rail. */
   var COVER_RUNS = [[11, 'bw'], [14, 'phosphor'], [34, 'cga']];
+  function coverRun(t) { return COVER_RUNS[wrap(Math.floor(t / 4), COVER_RUNS.length)]; }
 
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var lidH = Math.round(h * 0.09), gndH = Math.round(h * 0.11);
-    var py = y + lidH + 4, ph = h - lidH - gndH - 8, gy = py + ph;
-    var i, k;
-
-    /* 1. the picture: a rerun at half the card's resolution, doubled */
-    var seg = Math.floor(t / 4), within = t - seg * 4;
-    var run = COVER_RUNS[wrap(seg, COVER_RUNS.length)];
-    var r = rerunOf(run[0]);
-    var lw = Math.ceil(w / 2), lh = Math.ceil(ph / 2);
-    T.cover = paintCover(T.cover, lw, lh, r, t, false);
-    ctx.drawImage(T.cover.canvas, 0, 0, lw, lh, x, py, lw * 2, lh * 2);
-    look(ctx, run[1], x, py, w, ph, false);
-    op(ctx, 'multiply', CAP, 1, x, py, w, ph);
-    if (within < 0.3) {
-      var f = Math.floor(t * 30), hs = hash(f * 7 + 11);
-      ctx.globalAlpha = 0.9 * (1 - within / 0.3);
-      ctx.drawImage(T.snowA.canvas, hs % (VW - w), (hs >>> 9) % (PIC_H - ph), w, ph, x, py, w, ph);
-      ctx.globalAlpha = 1;
-    }
-
-    /* 2. a lime on the screen, in the picture, under the scanlines */
-    if (big) {
-      var lx = x + Math.round(w * 0.64), ly = py + Math.round(ph * 0.42 + Math.sin(t * 1.3) * ph * 0.22);
-      var pulse = 0.72 + 0.28 * Math.sin(t * 2.6);
-      var g = ctx.createRadialGradient(lx, ly, 1, lx, ly, 13);
-      g.addColorStop(0, 'rgba(214,255,122,' + (0.5 * pulse).toFixed(3) + ')');
-      g.addColorStop(1, 'rgba(95,143,34,0)');
-      ctx.fillStyle = g; ctx.fillRect(lx - 13, ly - 13, 26, 26);
-      ctx.globalAlpha = 0.55;
-      var lm = T.pu.sour.img, lhx = lm.w >> 1, lhy = lm.h >> 1;
-      ctx.drawImage(T.pu.sour.red.canvas, lx - lhx - 1, ly - lhy);
-      ctx.drawImage(T.pu.sour.blue.canvas, lx - lhx + 1, ly - lhy);
-      ctx.globalAlpha = 1;
-      ctx.drawImage(lm.canvas, lx - lhx, ly - lhy);
-    }
-    ctx.drawImage(T.scan.canvas, 0, 0, w, ph, x, py, w, ph);
-
-    /* 3. two marble columns with white caps going past, keyed on their
-       slot's identity and not their position (the Mantle's lesson: a
-       column hashed on where it is boils as it slides) */
-    var s = t * 22, period = big ? 46 : 38;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var id = i + 3 * Math.floor((s + i * period) / (period * 3));
-      var gapH = Math.round(ph * 0.40), room = Math.max(1, ph - gapH - 14);
-      var gapY = Math.round(py + 7 + ((hash(id * 13 + 5) % 100) / 100) * room);
-      pvColumn(ctx, ox, py - 4, gapY - py + 4, true, id * 2);
-      pvColumn(ctx, ox, gapY + gapH, gy + 4 - gapY - gapH, false, id * 2 + 1);
-    }
-
-    /* the set's own number, on top, the way the OSD is in the bay */
-    Font.draw(ctx, 'CH ' + run[0], x + w - 4, py + 3, { scale: 1, colour: P.osd, shadow: P.osdShadow, align: 'right' });
-
-    /* 4. a dead pixel tumbling down out of the picture, right third */
-    var pf = Math.floor(s / 4) % 8;
-    var pw2 = Math.max(1, Math.round(PIX_W[pf] * 0.5));
-    var pxx = x + Math.round(w * 0.82);
-    var pyy = Math.round(py + 2 + wrap(s * 1.5, ph - 8));
-    ctx.fillStyle = P.pxOutline; ctx.fillRect(pxx - Math.floor(pw2 / 2) - 1, pyy - 1, pw2 + 2, 7);
-    if (pw2 <= 1) { ctx.fillStyle = P.pxWhite; ctx.fillRect(pxx, pyy, 1, 5); }
-    else {
-      var third = Math.max(1, Math.round(pw2 / 3)), o0 = pxx - Math.floor(pw2 / 2);
-      ctx.fillStyle = pf < 4 ? P.pxRed : P.pxBlue; ctx.fillRect(o0, pyy, third, 5);
-      ctx.fillStyle = P.pxGreen; ctx.fillRect(o0 + third, pyy, third, 5);
-      ctx.fillStyle = pf < 4 ? P.pxBlue : P.pxRed; ctx.fillRect(o0 + third * 2, pyy, pw2 - third * 2, 5);
-    }
-
-    /* 5. the doodad flying it */
-    var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(py + ph / 2 + Math.sin(t * 3.1) * (ph * 0.2));
-    var sz = big ? 8 : 6;
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 6. the frame and the wall, last, over the columns' ends: the woven
-       wall above, the top rail with its outline on the kill line, the
-       bottom rail with its lit arris, the wall below */
-    var wx = wrap(Math.round(s), 96);
-    for (k = -96; k < w + 96; k += 96) {
-      ctx.drawImage(T.weave.canvas, 0, 20, 96, lidH, x + k - wx, y, 96, lidH);
-      ctx.drawImage(T.weave.canvas, 0, 4, 96, gndH, x + k - wx, gy + 4, 96, gndH);
-    }
-    var TOP = [P.railLit, P.rail, P.railIn, P.outline];
-    for (i = 0; i < 4; i++) { ctx.fillStyle = TOP[i]; ctx.fillRect(x, y + lidH + i, w, 1); }
-    var BOT = [P.railLit, P.rail, P.rail, P.railLip];
-    for (i = 0; i < 4; i++) { ctx.fillStyle = BOT[i]; ctx.fillRect(x, gy + i, w, 1); }
-    Tint.rect(ctx, x, gy + 4, w, 2, P.void, 5);
+  /* a cap's rows at card size, the far side first and the gap's edge
+     last: the outline on the kill edge and the lit arris just inside it
+     are kept at every size, the rail's face fills what is left */
+  function capRows(n, far, face, lit, edge) {
+    if (n <= 2) return [lit, edge];
+    var rows = n >= 4 ? [far] : [];
+    while (rows.length < n - 2) rows.push(face);
+    rows.push(lit, edge);
+    return rows;
   }
 
-  /* one little marble column, a crop of the real weave, with its white
-     cap on the end that faces the gap */
-  function pvColumn(ctx, x, y, h, capBottom, key) {
-    if (h <= 0) return;
-    var sx = hash(key * 7 + 3) % 84, sy = hash(key * 5 + 1) % 48;
-    var done = 0;
-    while (done < h) {
-      var take = Math.min(h - done, 48 - sy);
-      ctx.drawImage(T.weave.canvas, sx, sy, 12, take, x, y + done, 12, take);
-      done += take; sy = 0;
+  var COVER = {
+    ink: P.outline,
+    /* The picture: the rerun painted at half the card's resolution into
+       the TV's own little buffer and blown up two to one, in its look,
+       under the set's multiply, a burst of static as each programme
+       starts. The lime goes into the picture here too, in the even spans
+       - a broadcast thing is ON the glass, so it sits under the
+       scanlines like the rest of the programme, and the columns pass in
+       front of it - before the scanlines go over the lot. */
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, py = S.top, ph = S.lane, t = S.t, i;
+      ctx.fillStyle = P.glass; ctx.fillRect(x, S.y, w, S.h);
+      ctx.save();
+      var seg = Math.floor(t / 4), within = t - seg * 4, run = coverRun(t);
+      var lw = Math.ceil(w / 2), lh = Math.ceil(ph / 2);
+      T.cover = paintCover(T.cover, lw, lh, rerunOf(run[0]), t, false);
+      ctx.drawImage(T.cover.canvas, 0, 0, lw, lh, x, py, lw * 2, lh * 2);
+      look(ctx, run[1], x, py, w, ph, false);
+      op(ctx, 'multiply', CAP, 1, x, py, w, ph);
+      if (within < 0.3) {
+        var f = Math.floor(t * 30), hs = hash(f * 7 + 11);
+        ctx.globalAlpha = 0.9 * (1 - within / 0.3);
+        ctx.drawImage(T.snowA.canvas, hs % (VW - w), (hs >>> 9) % (PIC_H - ph), w, ph, x, py, w, ph);
+        ctx.globalAlpha = 1;
+      }
+      /* the lime, drifting on the glass the way a broadcast pickup does
+         (not a doodad's bob), its glow pulsing and its red and blue twins
+         either side for the misconvergence. It is gone the moment the
+         doodad reaches it, which is what catching one looks like - a
+         lime left on behind him read as him wearing it. */
+      if (S.big) {
+        var lm = T.pu.sour.img, lhx = lm.w >> 1, lhy = lm.h >> 1;
+        var reach = S.doodad.x + (S.doodad.size >> 1) + 1;
+        for (i = 0; i < S.spans.length; i++) {
+          var sp = S.spans[i];
+          if (wrap(sp.i, 2)) continue;
+          var lx = Math.round((sp.x0 + sp.x1) / 2);
+          if (lx - lhx <= reach) continue;
+          var ly = py + Math.round(ph * 0.42) + Math.round(Math.sin(t * 1.3 + sp.i) * ph * 0.08);
+          var pulse = 0.72 + 0.28 * Math.sin(t * 2.6);
+          var g = ctx.createRadialGradient(lx, ly, 1, lx, ly, 13);
+          g.addColorStop(0, 'rgba(214,255,122,' + (0.5 * pulse).toFixed(3) + ')');
+          g.addColorStop(1, 'rgba(95,143,34,0)');
+          ctx.fillStyle = g; ctx.fillRect(lx - 13, ly - 13, 26, 26);
+          ctx.globalAlpha = 0.55;
+          ctx.drawImage(T.pu.sour.red.canvas, lx - lhx - 1, ly - lhy);
+          ctx.drawImage(T.pu.sour.blue.canvas, lx - lhx + 1, ly - lhy);
+          ctx.globalAlpha = 1;
+          ctx.drawImage(lm.canvas, lx - lhx, ly - lhy);
+        }
+      }
+      ctx.drawImage(T.scan.canvas, 0, 0, w, ph, x, py, w, ph);
+      ctx.restore();
+    },
+    /* One marble column, a crop of the real weave keyed on the column and
+       not its position (the Mantle's lesson: a column hashed on where it
+       is boils as it slides), with bakeColumn's own light down its two
+       edges, a length of the white rail for a cap, and its hard shadow
+       on the picture beside it. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var ch = Math.max(2, Math.round(9 * S.k)), ov = Math.max(1, Math.round(4 * S.k));
+      var key = p.i * 2 + (end === 'top' ? 0 : 1), i;
+      var sx = hash(key * 7 + 3) % (96 - w), sy = hash(key * 5 + 1) % 48, done = 0;
+      while (done < h) {
+        var take = Math.min(h - done, 48 - sy);
+        ctx.drawImage(T.weave.canvas, sx, sy, w, take, x, y + done, w, take);
+        done += take; sy = 0;
+      }
+      ctx.fillStyle = rgba('#ffffff', 0.16); ctx.fillRect(x + 1, y, 1, h);
+      ctx.fillStyle = rgba(P.void, 0.18);    ctx.fillRect(x + w - 2, y, 1, h);
+      if (w >= 12) { ctx.fillStyle = rgba(P.void, 0.10); ctx.fillRect(x + w - 3, y, 1, h); }
+      ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+      /* the cap: its outline on the gap's edge, the lit arris inside it */
+      var rows = capRows(Math.min(ch, h), P.outline, P.rail, P.railLit, P.outline), n = rows.length;
+      var cy = end === 'top' ? y + h - n : y;
+      for (i = 0; i < n; i++) {
+        ctx.fillStyle = rows[end === 'top' ? i : n - 1 - i];
+        ctx.fillRect(x - ov, cy + i, w + ov * 2, 1);
+      }
+      /* standing in front of the glass: its shadow, beside the column */
+      if (end === 'top') Tint.rect(ctx, x + w, y, ov, h - n, P.void, 7);
+      else Tint.rect(ctx, x + w, y + n, ov, h - n, P.void, 7);
+    },
+    /* the woven wall above the set and the top rail, its outline the
+       last row - the kill line - sliding with the frame at the lane's
+       pace, as the bay's lid does */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, d = S.top - S.y, k;
+      var rr = Math.min(d, Math.max(2, Math.round(7 * S.k)));
+      var wx = wrap(Math.round(S.s), 96);
+      for (k = -96; k < w + 96; k += 96) ctx.drawImage(T.weave.canvas, 0, 20, 96, d, x + k - wx, S.y, 96, d);
+      var rows = [P.railLit];
+      while (rows.length < rr - 2) rows.push(P.rail);
+      if (rr >= 3) rows.push(rr >= 4 ? P.railIn : P.rail);
+      rows.push(P.outline);
+      for (k = 0; k < rr; k++) { ctx.fillStyle = rows[k]; ctx.fillRect(x, S.top - rr + k, w, 1); }
+    },
+    /* the bottom rail with its lit arris on the floor line, the woven
+       wall under it in the frame's shadow */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, d = S.y + S.h - S.floor, k;
+      var rr = Math.min(d, Math.max(2, Math.round(7 * S.k)));
+      var wx = wrap(Math.round(S.s), 96);
+      for (k = -96; k < w + 96; k += 96) ctx.drawImage(T.weave.canvas, 0, 4, 96, d - rr, x + k - wx, S.floor + rr, 96, d - rr);
+      var rows = [P.railLit];
+      while (rows.length < rr - 1) rows.push(P.rail);
+      rows.push(P.railLip);
+      for (k = 0; k < rr; k++) { ctx.fillStyle = rows[k]; ctx.fillRect(x, S.floor + k, w, 1); }
+      Tint.rect(ctx, x, S.floor + rr, w, 2, P.void, 5);
+    },
+    /* the Mantle's dead pixel at card size, a red, a green and a blue
+       stripe turning about the vertical, and the spot it throws on the
+       bottom rail - darker and tighter as it comes down */
+    drop: function (ctx, d, S) {
+      var pf = Math.floor(S.t * 6) % 8;
+      var pw2 = Math.max(1, Math.round(PIX_W[pf] * S.k)), hh = Math.max(3, Math.round(9 * S.k));
+      var o0 = d.x - Math.floor(pw2 / 2), top = d.y - Math.floor(hh / 2);
+      var sw = Math.max(1, Math.round((5 - 3 * d.f) * S.k * 2));
+      Tint.rect(ctx, d.x - sw, S.floor + 1, sw * 2 + 1, 2, P.void, 6 + 9 * d.f);
+      ctx.fillStyle = P.pxRed;   ctx.fillRect(d.x - 1, S.floor + 1, 1, 1);
+      ctx.fillStyle = P.pxGreen; ctx.fillRect(d.x, S.floor + 1, 1, 1);
+      ctx.fillStyle = P.pxBlue;  ctx.fillRect(d.x + 1, S.floor + 1, 1, 1);
+      ctx.fillStyle = P.pxOutline; ctx.fillRect(o0 - 1, top - 1, pw2 + 2, hh + 2);
+      if (pw2 <= 1) { ctx.fillStyle = P.pxWhite; ctx.fillRect(o0, top, 1, hh); return; }
+      var third = Math.max(1, Math.round(pw2 / 3));
+      ctx.fillStyle = pf < 4 ? P.pxRed : P.pxBlue; ctx.fillRect(o0, top, third, hh);
+      ctx.fillStyle = P.pxGreen; ctx.fillRect(o0 + third, top, Math.min(third, pw2 - third), hh);
+      if (pw2 > third * 2) { ctx.fillStyle = pf < 4 ? P.pxBlue : P.pxRed; ctx.fillRect(o0 + third * 2, top, pw2 - third * 2, hh); }
+    },
+    /* the set's own number on top, the way the OSD is in the bay */
+    front: function (ctx, S) {
+      if (!S.big) return;
+      Font.draw(ctx, 'CH ' + coverRun(S.t)[0], S.x + S.w - 4, S.top + 3,
+                { scale: 1, colour: P.osd, shadow: P.osdShadow, align: 'right' });
     }
-    ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 11, y, 1, h);
-    var cy = capBottom ? y + h - 4 : y;
-    ctx.fillStyle = P.outline; ctx.fillRect(x - 2, cy, 16, 4);
-    ctx.fillStyle = P.rail;    ctx.fillRect(x - 2, cy + 1, 16, 2);
-    ctx.fillStyle = P.railLit; ctx.fillRect(x - 2, capBottom ? cy + 2 : cy + 1, 16, 1);
-  }
+  };
 
   /* ================================================== GENERATION */
 
@@ -2617,14 +2605,13 @@ var TV = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: true,
     BOON_NAMES: [BOON_NAME], GOLD_GIFT: true,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon, makeMeet: makeMeet,
     stepDrop: stepDrop, stepWorld: stepWorld, stepScreen: stepScreen,

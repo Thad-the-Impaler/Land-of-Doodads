@@ -97,7 +97,7 @@ var Input = (function () {
     held[action] = true;
     pressAction(action);
     /* a key means the pads are in the way rather than in use */
-    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null;
+    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null; lastAt = null;
     Audio3.unlock();
   }
 
@@ -196,7 +196,7 @@ var Input = (function () {
     pressAction(action);
     /* a button means the on-screen pads are in the way rather than in use,
        the same thing a keypress means */
-    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null;
+    pointerSeen = false; pointerKind = null; hoverAction = null; hoverTarget = null; lastAt = null;
     /* It will not always work: a browser wants a real user gesture before
        it will start an audio context, and a gamepad press is not one of
        them. Asked anyway, because the first KEY press or tap of the session
@@ -330,6 +330,18 @@ var Input = (function () {
      behind them, and the game walked off to another screen in the dark. */
   var blocked = false;
   var hoverTarget = null;         /* the target the cursor is over; mouse only */
+  /* WHERE, as well as WHAT. A target says which thing was pressed; the title
+     screens' toys also need to know where on it - a ball batted on its left
+     flies right, feed lands where the finger did - so the press keeps its
+     virtual position beside `tapped`, and the pointer keeps its last one.
+     Both are read-only to scenes, and both are thrown away the moment a key
+     says the pointer is not in use, exactly as hoverTarget is. */
+  var tapAt = null;               /* {x, y} of this frame's press, with tapped */
+  var lastAt = null;              /* {x, y} the cursor or a finger was last at */
+  /* and which of them it was. Not pointerKind, which a cursor only claims
+     with a CLICK: a desktop player who has only moved the mouse is still
+     pointing, and the title's doodads should notice the cursor going by. */
+  var lastKind = null;
 
   var touchMode = 'menu';
   var pointerSeen = false;        /* is anything pointing, so draw the pads  */
@@ -390,6 +402,7 @@ var Input = (function () {
   function beginPoint(id, clientX, clientY) {
     var v = Screen.toVirtual(clientX, clientY);
     if (!v) return false;
+    lastAt = { x: v.x, y: v.y };
     var z = zoneAt(v.x, v.y);
     if (!z) return false;
     /* A pad IS its action. A target may carry one too - a board labelled
@@ -399,7 +412,7 @@ var Input = (function () {
        unchosen card mean "this one" rather than "go". */
     points[id] = z.a || null;
     if (z.a) pressAction(z.a);
-    if (z.id) tapped = z;
+    if (z.id) { tapped = z; tapAt = { x: v.x, y: v.y }; }
     return true;
   }
 
@@ -410,6 +423,7 @@ var Input = (function () {
     if (!(id in points)) return;
     var v = Screen.toVirtual(clientX, clientY);
     if (!v) return;
+    lastAt = { x: v.x, y: v.y };
     var z = zoneAt(v.x, v.y);
     var now = z ? (z.a || null) : null;
     if (now === points[id]) return;
@@ -420,6 +434,7 @@ var Input = (function () {
 
   function onTouchStart(e) {
     usePointer('touch');
+    lastKind = 'touch';
     touchGuard = TOUCH_GUARD;
     Audio3.unlock();
     for (var i = 0; i < e.changedTouches.length; i++) {
@@ -431,6 +446,7 @@ var Input = (function () {
   }
 
   function onTouchMove(e) {
+    lastKind = 'touch';
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
       movePoint(t.identifier, t.clientX, t.clientY);
@@ -455,6 +471,7 @@ var Input = (function () {
   function onMouseDown(e) {
     if (e.button !== 0 || touchGuard > 0) return;
     usePointer('mouse');
+    lastKind = 'mouse';
     Audio3.unlock();
     if (!beginPoint(MOUSE, e.clientX, e.clientY)) return;
     rebuildTouchHeld();
@@ -467,6 +484,7 @@ var Input = (function () {
     if (touchGuard > 0) return;
     var v = Screen.toVirtual(e.clientX, e.clientY);
     var z = v ? zoneAt(v.x, v.y) : null;
+    if (v) { lastAt = { x: v.x, y: v.y }; lastKind = 'mouse'; }
     /* only the drawn pads light up - the rest-of-screen zone is the whole
        playfield, and lighting that up would mean lighting up everything */
     hoverAction = (z && !z.rest) ? z.a : null;
@@ -491,6 +509,7 @@ var Input = (function () {
     delete points[MOUSE];
     hoverAction = null;
     hoverTarget = null;
+    lastAt = null;
     rebuildTouchHeld();
   }
 
@@ -529,7 +548,7 @@ var Input = (function () {
     document.addEventListener('mouseout', onMouseOut);
     window.addEventListener('blur', function () {
       held = {}; downCodes = {};
-      points = {}; touchHeld = {}; hoverAction = null; hoverTarget = null;
+      points = {}; touchHeld = {}; hoverAction = null; hoverTarget = null; lastAt = null;
     });
   }
 
@@ -557,6 +576,7 @@ var Input = (function () {
     typed.length = 0;
     /* a tap is an edge, like a fresh key press: it lasts one frame */
     tapped = null;
+    tapAt = null;
   }
 
   function setTextMode(on) {
@@ -614,6 +634,21 @@ var Input = (function () {
        use it to move the selection or to navigate directly. Sliding a finger
        across the screen does NOT produce one - only a press does. */
     tapped: function () { return tapped; },
+    /* Where that press landed, in virtual pixels, or null - the same frame
+       and the same edge as tapped(), for a scene that cares where on a
+       target it was pressed as well as which one. */
+    tapPos: function () { return tapAt; },
+    /* The last place the cursor or a finger was, { x, y, down, kind }, or
+       null once a key, a blur or the cursor leaving the window says nobody
+       is pointing. `down` is whether anything is pressed right now; a
+       finger that has lifted leaves its last position with down false.
+       `kind` is 'mouse' or 'touch', whichever put it there. */
+    pointer: function () {
+      if (!lastAt) return null;
+      var down = false;
+      for (var id in points) { down = true; break; }
+      return { x: lastAt.x, y: lastAt.y, down: down, kind: lastKind };
+    },
     /* True while the cursor rests on a target with this id (and this i, if
        one is given), so a board can light up under a mouse. Always false on
        a phone, which cannot hover. */

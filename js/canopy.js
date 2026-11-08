@@ -179,7 +179,9 @@ var Canopy = (function () {
     power: ['LIMES', 'SOUR SHRINKS YOU']
   };
 
-  /* the colours js/scene_levelselect.js paints its generic preview with */
+  /* the colours the contract publishes for a level's little window. The
+     cover itself is COVER, below; tv.js and the stands still read
+     PREVIEW.back. */
   var PREVIEW = {
     back: P.skyMid,      backAlt: P.skyPale,     seam: P.skyDeep,
     beam: P.barkDark,    beamDark: P.barkDeep,   beamLight: P.barkMid,
@@ -1586,176 +1588,332 @@ var Canopy = (function () {
 
   /* ------------------------------------------------- the cover art
 
-     The little window on the level select. It must read at a glance as
-     BLUE, BRIGHT, a dark trunk with a gap, fruit - if it reads as green
-     it has failed, and the test is to look at it beside the Garden's
-     card. The caller has already clipped to the box, so nothing here
-     clips or restores. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var canopy = y + Math.round(h * 0.14);
-    var floorY = y + h - Math.round(h * 0.16);
-    var i, k;
+     The Canopy's painters for its cover (js/cover.js lays it out and
+     times it). It must read at a glance as BLUE, BRIGHT, a dark trunk
+     with a gap, fruit - if it reads as green it has failed, and the test
+     is to look at it beside the Garden's card. So: the far side of the
+     crown with the sky picking through it, a hazed bough crossing behind,
+     sprays hanging in from the top and foliage massed on the limb, the
+     near-black trunks for columns, the leaf band and the limb, the
+     level's dead twig spurs in the open spans and an apple or an orange
+     coming down. */
 
-    /* sky, deeper at the top, with the sun blazing in the corner */
-    ctx.fillStyle = P.skyMid; ctx.fillRect(x, y, w, h);
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.35), P.skyDeep, 5);
-    Tint.rect(ctx, x, y + h - 30, w, 30, P.skyPale, 6);
-    Tint.rect(ctx, x + 1, y + 1, 22, 18, P.sunGlare, 3);
-    Tint.rect(ctx, x + 4, y + 4, 16, 12, P.sunGlare, 7);
-
-    /* The far side of the crown, filling the card the way it fills the
-       level. The cover used to be an open blue field with one bough across
-       it, which sold a level that no longer exists: in play the sky is 13%
-       of the frame and arrives as chinks. Two hashed passes of 2x2 blocks,
-       the second offset, leave irregular gaps for the sky rather than a
-       grid - a single pass on a 2px lattice reads as gingham. */
-    for (var fy = y; fy < y + h; fy += 2) {
-      for (var fx = x; fx < x + w; fx += 2) {
-        var fn = (Math.imul(fx - x + 7, 2246822519) ^ Math.imul(fy - y + 13, 3266489917)) >>> 0;
-        var v = (fn >>> 13) % 100;
-        if (v < 17) continue;                       /* this one stays sky */
-        ctx.fillStyle = v < 38 ? P.leafWall : (v < 62 ? P.leafFar
-                      : (v < 82 ? P.leafShade : P.leafHaze));
-        ctx.fillRect(fx, fy, 2, 2);
-      }
-    }
-    /* a paler wash low down, so the card has the same depth gradient the
-       level does and the trunks still read against it */
-    Tint.rect(ctx, x, y + Math.round(h * 0.45), w, h - Math.round(h * 0.45), P.leafHaze, 4);
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.30), P.leafDeep, 4);
-
-    /* a background bough crossing behind everything, drifting as it goes.
-       It is painted in barkLit and barkMid, which puts it lighter than
-       the trunks by construction rather than by a haze pass. */
-    var span = w + 16;
-    var bx0 = x + w + 8 - ((s * 0.3) % span);
-    for (i = 0; i <= span / 2; i++) {
-      var bk = i / (span / 2);
-      var pbx = Math.round(lerp(bx0, bx0 - span, bk));
-      var pby = Math.round(lerp(canopy - 2, floorY - 10, bk));
-      if (pbx < x - 2 || pbx > x + w) continue;
-      ctx.fillStyle = P.barkLit; ctx.fillRect(pbx, pby, 2, 6);
-      ctx.fillStyle = P.barkMid; ctx.fillRect(pbx, pby + 4, 2, 2);
-    }
-
-    /* the canopy across the top. The leaf positions come off a cheap hash
-       rather than a modulus: `i % k` marches along in a sawtooth and the
-       band reads as a comb. */
-    ctx.fillStyle = P.leafDeep; ctx.fillRect(x, y, w, canopy - y);
-    for (i = 0; i < 14; i++) {
-      var n = (i * 1103515245) >>> 0;
-      var lx = x + (n >>> 17) % Math.max(1, w - 4);
-      var ly = y + 1 + ((n >>> 9) % Math.max(1, canopy - y - 3));
-      leafSmall(ctx, lx, ly, (n >>> 5) % 3 ? P.leafMid : P.leafHi, (n & 1) ? 1 : -1);
-    }
-    ctx.fillStyle = P.skyWhite;
-    for (i = 0; i < 6; i++) {
-      var cn = (i * 2654435761) >>> 0;
-      ctx.fillRect(x + (cn >>> 18) % Math.max(1, w - 2), y + (cn >>> 11) % Math.max(1, canopy - y - 2), 2, 1);
-    }
-    ctx.fillStyle = P.barkLit; ctx.fillRect(x, canopy - 4, w, 1);
-    ctx.fillStyle = P.barkMid; ctx.fillRect(x, canopy - 3, w, 2);
-
-    /* two or three sprays hanging out of it, one carrying an orange */
-    /* `sv`, not `v`: a `var v` four hundred lines up in this same
-       function is the lattice sample at the top of drawPreview, and var is
-       function-scoped - one variable holding two meanings, which works only
-       because the first use is finished before this loop starts. */
-    for (var sv = 0; sv < 3; sv++) {
-      var vx = Math.round(x + ((sv * 37 - s * 0.5) % (w + 14)) - 7);
-      if (vx < x - 2 || vx > x + w) continue;
-      var vlen = 8 + (sv % 3) * 5;
-      ctx.fillStyle = P.stem; ctx.fillRect(vx, canopy, 1, vlen);
-      ctx.fillStyle = P.leafSun; ctx.fillRect(vx - 2, canopy + vlen - 3, 5, 3);
-      if (sv === 1) {
-        ctx.fillStyle = P.orangeMid; ctx.fillRect(vx - 1, canopy + vlen, 3, 3);
-        ctx.fillStyle = P.orangeLit; ctx.fillRect(vx - 1, canopy + vlen, 1, 1);
-      }
-    }
-
-    /* Foliage massed on the limb, its tops poking up into the sky. The
-       heights come off a cheap hash rather than a modulus: `i % k` marches
-       along in a sawtooth and the band reads as a comb. The mass below is
-       laid in from floorY+5 so nothing fringes out under the bark. */
-    ctx.fillStyle = P.leafShade; ctx.fillRect(x, floorY + 5, w, y + h - floorY - 5);
-    for (var band = 0; band < 3; band++) {
-      for (i = 0; i < w / 4 + 2; i++) {
-        var hn = (i * 1103515245 + band * 12345) >>> 0;
-        var px2 = x + ((i * 5 + band * 3) % (w + 4)) - 2;
-        var ph = 3 + (hn >>> 16) % 7;
-        ctx.fillStyle = ((hn >>> 6) % 3) ? P.leafMid : P.leafHi;
-        ctx.fillRect(px2, floorY + band * 2 - ph, 3, ph);
-      }
-    }
-    ctx.fillStyle = P.barkPale; ctx.fillRect(x, floorY, w, 1);
-    ctx.fillStyle = P.barkLit;  ctx.fillRect(x, floorY + 1, w, 1);
-    ctx.fillStyle = P.barkMid;  ctx.fillRect(x, floorY + 2, w, 2);
-    ctx.fillStyle = P.outline;  ctx.fillRect(x, floorY + 4, w, 1);
-
-    /* the dark trunks sliding past, with a gap you could fly through */
-    var period = big ? 46 : 38;
-    var vspan = floorY - canopy;
-    for (k = 0; k < 3; k++) {
-      var ox = Math.round(x + w + 10 - ((s + k * period) % (period * 3)));
-      if (ox < x - 12 || ox > x + w + 2) continue;
-      var gapH = Math.round(vspan * 0.36);
-      /* the three gaps have to sit clear of the canopy band AND clear of
-         each other, or two of the trunks read as one unbroken pole and
-         the card stops saying "there is a gap you fly through" */
-      var gapY = Math.round(canopy + 6 + ((k * 9 + 5) % Math.max(1, vspan - gapH - 14)));
-      trunk(ctx, ox, canopy, gapY - canopy);
-      trunk(ctx, ox, gapY + gapH, floorY - gapY - gapH);
-    }
-
-    /* an apple and an orange falling in turn, and a pomegranate dangling */
-    var ty = y + 6 + ((s * 1.6) % Math.max(1, floorY - y - 10));
-    ctx.fillStyle = P.appleMid; ctx.fillRect(x + Math.round(w * 0.72), Math.round(ty), 3, 3);
-    ctx.fillStyle = P.barkDark; ctx.fillRect(x + Math.round(w * 0.72) + 1, Math.round(ty) - 1, 1, 1);
-    var ty2 = y + 6 + ((s * 1.6 + (floorY - y - 10) * 0.5) % Math.max(1, floorY - y - 10));
-    ctx.fillStyle = P.orangeMid; ctx.fillRect(x + Math.round(w * 0.55), Math.round(ty2), 3, 3);
-    ctx.fillStyle = P.orangeLit; ctx.fillRect(x + Math.round(w * 0.55), Math.round(ty2), 1, 1);
-    var pmx = x + Math.round(w * 0.86);
-    ctx.fillStyle = P.stem;    ctx.fillRect(pmx + 1, canopy, 1, 4);
-    ctx.fillStyle = P.pomMid;  ctx.fillRect(pmx, canopy + 4, 3, 3);
-    ctx.fillStyle = P.pomLit;  ctx.fillRect(pmx, canopy + 4, 1, 1);
-    ctx.fillStyle = P.pomDeep; ctx.fillRect(pmx + 1, canopy + 7, 1, 1);
-
-    /* The doodad. Its halo is DARK here: against a bright sky a dark edge
-       is what separates it, which is the same trick the Garden plays with
-       wall-shadow against pale stucco, the other way up. It is laid down
-       tight to the sprite rather than as the Garden's loose square: over
-       flat stucco a big soft square has no visible corners, but over flat
-       blue it reads as a rectangle somebody left on the card. One pixel
-       proud of the outline all round is all it takes here. */
-    var bx = Math.round(x + w * 0.3);
-    var by = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, bx - sz / 2 - 2, by - sz / 2 - 2, sz + 4, sz + 4, P.leafDeep, 6);
-    ctx.fillStyle = P.outline;  ctx.fillRect(bx - sz / 2 - 1, by - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(bx - sz / 2, by - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(bx - sz / 2, by - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(bx + sz / 2 - 2, by - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(bx + sz / 2, by, 2, 1);
-
-    Tint.rect(ctx, x, y, w, h, P.sunGlare, 1);
+  /* an integer hash, so a painter can pick a variant off an index rather
+     than off Math.random: a cover is redrawn in the middle of a run */
+  function hash(n) {
+    n = Math.imul(n ^ (n >>> 15), 0x2c1b3c6d);
+    n = Math.imul(n ^ (n >>> 12), 0x297a2d39);
+    return (n ^ (n >>> 15)) >>> 0;
   }
 
-  /* one little dark trunk inside a cover */
-  function trunk(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.outline;  ctx.fillRect(x, y, 1, h);
-    ctx.fillStyle = P.barkMid;  ctx.fillRect(x + 1, y, 2, h);
-    ctx.fillStyle = P.barkDark; ctx.fillRect(x + 3, y, 4, h);
-    ctx.fillStyle = P.barkDeep; ctx.fillRect(x + 7, y, 1, h);
-    ctx.fillStyle = P.outline;  ctx.fillRect(x + 8, y, 1, h);
-    for (var ly = y + 3; ly < y + h; ly += 11) {
-      ctx.fillStyle = P.lichenGrey; ctx.fillRect(x + 1, ly, 1, 1);
-    }
-    for (var ry = y + 6; ry < y + h; ry += 13) {
-      ctx.fillStyle = P.barkDeep; ctx.fillRect(x + 1, ry, 7, 1);
+  /* a positive modulo, for indices that run negative as a cover slides */
+  function wrap(v, m) { return ((v % m) + m) % m; }
+
+  /* One dead twig spur at card scale: the level's drawSpur, thinner, and
+     `len` already cut short of the doodad's line by the caller. */
+  function coverSpur(ctx, S, x, base, len, down, n) {
+    var dir = down ? 1 : -1, wide = S.k >= 0.3 ? 2 : 1;
+    var bend = (n % 628) / 100, phase = ((n >>> 10) % 628) / 100;
+    var forkAt = Math.round(len * (0.55 + ((n >>> 4) % 26) / 100));
+    for (var i = 0; i < len; i++) {
+      var k = i / len;
+      /* the sway is zero at the root and a pixel either way at the tip */
+      var off = Math.round(Math.sin(k * 2.0 + bend) * k * 1.6)
+              + Math.round(Math.sin(S.t * 1.7 + phase) * k * 1.4);
+      var y = base + dir * i;
+      ctx.fillStyle = i === len - 1 ? P.outline : (i < len * 0.3 ? P.twigDark : P.twigMid);
+      ctx.fillRect(x + off, y, wide, 1);
+      if (wide > 1 && i < len - 1) { ctx.fillStyle = P.twigLit; ctx.fillRect(x + off, y, 1, 1); }
+      if (i === forkAt) {
+        ctx.fillStyle = P.twigMid;
+        for (var s = 0; s < 3; s++) ctx.fillRect(x + off + wide + s, y + dir * s, 1, 1);
+        /* one dry leaf still clinging on, on one twig in three */
+        if ((n >>> 20) % 3 === 0) { ctx.fillStyle = P.leafDry; ctx.fillRect(x + off + wide + 2, y + dir * 3, 2, 1); }
+      }
     }
   }
+
+  var COVER = {
+    /* Its halo is DARK and tight here: against bright sky and pale leaf a
+       dark edge is what separates the doodad, and a big soft square over
+       open blue reads as a rectangle somebody left on the card. One pixel
+       proud of the outline all round is all it takes. */
+    halo: { colour: P.leafDeep, pad: 1, strength: 6 },
+    ink: P.outline,
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, q = S.k * 2.4, i, c, n, v, off, step;
+      function Q(a) { return Math.max(1, Math.round(a * q)); }
+
+      /* the sky, deeper at the top, with the sun blazing in the corner.
+         It does not scroll: everything else slides past the sun. */
+      ctx.fillStyle = P.skyMid; ctx.fillRect(x, y, w, h);
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.35), P.skyDeep, 5);
+      Tint.rect(ctx, x, y + h - Q(30), w, Q(30), P.skyPale, 6);
+      Tint.rect(ctx, x + 1, y + 1, Q(22), Q(18), P.sunGlare, 3);
+      Tint.rect(ctx, x + Q(4), y + Q(4), Q(16), Q(12), P.sunGlare, 7);
+
+      /* The far side of the crown, filling the card the way it fills the
+         level: in play the sky is an eighth of the frame and arrives as
+         chinks. 2x2 blocks hashed off their column AND row in wall space,
+         so the pattern drifts with the far wall and never boils; one in
+         six stays sky. */
+      off = Math.floor(S.s * 0.14);
+      for (var row = 0; row * 2 < h; row++) {
+        for (c = Math.floor(off / 2) - 1; c * 2 - off < w; c++) {
+          n = (Math.imul(c * 2 + 7, 2246822519) ^ Math.imul(row * 2 + 13, 3266489917)) >>> 0;
+          v = (n >>> 13) % 100;
+          if (v < 17) continue;
+          ctx.fillStyle = v < 38 ? P.leafWall : (v < 62 ? P.leafFar : (v < 82 ? P.leafShade : P.leafHaze));
+          ctx.fillRect(x + c * 2 - off, y + row * 2, 2, 2);
+        }
+      }
+      /* paler low down and deeper up top, the level's depth gradient */
+      Tint.rect(ctx, x, y + Math.round(h * 0.45), w, h - Math.round(h * 0.45), P.leafHaze, 4);
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.30), P.leafDeep, 4);
+
+      /* A background bough crossing behind everything, down from the top
+         right at about thirty degrees - never near vertical, so it never
+         reads as a column. Two copies a span apart, so one is always
+         coming on as the other goes off. barkLit and barkMid put it
+         lighter than the trunks by construction. */
+      var span = w + 16, run = Math.round(span / 2), b0 = S.top - 2, b1 = S.floor - Q(10);
+      var bx0 = x + w + 8 - wrap(S.s * 0.38, span), ph = Q(6);
+      for (var copy = 0; copy < 2; copy++) {
+        var ex = bx0 + copy * span;
+        for (i = 0; i <= run; i++) {
+          var bk = i / run, pbx = Math.round(lerp(ex, ex - span, bk)), pby = Math.round(lerp(b0, b1, bk));
+          if (pbx < x - 2 || pbx > x + w) continue;
+          ctx.fillStyle = P.barkLit; ctx.fillRect(pbx, pby, 2, ph);
+          ctx.fillStyle = P.barkMid; ctx.fillRect(pbx, pby + ph - Math.min(2, ph - 1), 2, Math.min(2, ph - 1));
+        }
+      }
+
+      /* sprays hanging in from the leaf band, one in three with an orange */
+      off = S.s * 0.52;
+      step = Math.round((w + 14) / 3);
+      for (c = Math.floor(off / step) - 1; c * step - off < w + 3; c++) {
+        var vx = Math.round(x + c * step - off), vlen = Q(8 + (hash(c + 77) % 3) * 5);
+        ctx.fillStyle = P.stem;    ctx.fillRect(vx, S.top, 1, vlen);
+        ctx.fillStyle = P.leafSun; ctx.fillRect(vx - Q(2), S.top + vlen - Q(3), Q(5), Q(3));
+        if (wrap(c, 3) === 1) {
+          ctx.fillStyle = P.orangeMid; ctx.fillRect(vx - 1, S.top + vlen, Q(3), Q(3));
+          ctx.fillStyle = P.orangeLit; ctx.fillRect(vx - 1, S.top + vlen, 1, 1);
+        }
+      }
+
+      /* Foliage massed on the limb, its tops poking up out of the bark.
+         The heights come off a hash of the stalk's own index: a modulus
+         marches along in a sawtooth and the band reads as a comb. */
+      step = Math.max(3, Q(5));
+      for (var band = 0; band < 3; band++) {
+        var bo = band * 3;
+        for (c = Math.floor((off - bo) / step) - 1; c * step + bo - off < w + 3; c++) {
+          n = hash(c * 3 + band + 900);
+          var sh = Q(3 + (n >>> 16) % 7);
+          ctx.fillStyle = (n >>> 6) % 3 ? P.leafMid : P.leafHi;
+          ctx.fillRect(Math.round(x + c * step + bo - off), S.floor + band - sh, 3, sh);
+        }
+      }
+
+      /* the level's own bands: deeper leaf just under the top and just
+         over the limb, which the trunks stand in */
+      Tint.rect(ctx, x, S.top, w, Math.round(40 * S.k), P.leafDeep, 3);
+      Tint.rect(ctx, x, S.floor - Math.round(50 * S.k), w, Math.round(50 * S.k), P.leafDeep, 3);
+    },
+    /* A section of the dark trunk: the darkest thing on the card, which
+       is the whole reason this level reads. The lit face is only barkMid
+       and the body barkDark, darker than anything behind it. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var q = S.k * 2.4, capH = Math.max(2, Math.round(9 * S.k)), pr = Math.max(1, Math.round(4 * S.k));
+      var top = end === 'top', body = h - capH, by = top ? y : y + capH;
+      var deep = Math.max(1, Math.round(w * 0.22)), seed = p.i * 2 + (top ? 0 : 1), j, n, ly;
+      Tint.rect(ctx, x + w, by, Math.max(1, Math.round(4 * S.k)), body, P.shade, 6);
+      ctx.fillStyle = P.barkMid;  ctx.fillRect(x + 1, y, 2, h);
+      ctx.fillStyle = P.barkDark; ctx.fillRect(x + 3, y, w - 4 - deep, h);
+      ctx.fillStyle = P.barkDeep; ctx.fillRect(x + w - 1 - deep, y, deep, h);
+      if (body > 3) {
+        /* grain: deep streaks on the body, dark ones on the lit face */
+        for (j = 0; j < 6; j++) {
+          n = hash(seed * 61 + j * 17);
+          var face = j < 2, gl = Math.min(body, 2 + (n >>> 16) % Math.max(1, Math.round(5 * q)));
+          ctx.fillStyle = face ? P.barkDark : P.barkDeep;
+          ctx.fillRect(face ? x + 1 + n % 2 : x + 3 + n % Math.max(1, w - 4 - deep), by + (n >>> 8) % Math.max(1, body - gl + 1), 1, gl);
+        }
+        /* bark ridges across it, counted from the cap so a part one lands
+           against the band, and lichen on the lit half */
+        var rstep = Math.max(5, Math.round(21 * S.k)), lstep = Math.max(4, Math.round(11 * q));
+        for (j = 1; j * rstep < body; j++) {
+          var ry = top ? y + body - j * rstep : by + j * rstep;
+          ctx.fillStyle = P.barkDeep; ctx.fillRect(x + 1, ry, w - 2, 1);
+          ctx.fillStyle = P.barkMid;  ctx.fillRect(x + 1, ry + 1, (w >> 1) - 1, 1);
+        }
+        for (j = 0; (j + 0.5) * lstep < body; j++) {
+          n = hash(seed * 29 + j * 5 + 3);
+          ly = top ? y + body - Math.round((j + 0.5) * lstep) : by + Math.round((j + 0.5) * lstep);
+          ctx.fillStyle = n % 4 ? P.lichenGrey : P.lichenPale;
+          ctx.fillRect(x + 1 + n % Math.max(1, (w >> 1) - 1), ly, 1 + (n >>> 8) % 2, 1);
+        }
+      }
+      ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+      /* A knot with a tuft in it and one apple on the tuft, on one trunk in
+         three, in the longer of its two halves. Decoration, as in the level. */
+      var tH = p.gapY - S.top, bH = S.floor - p.gapY - p.gapH;
+      if (hash(p.i + 5) % 3 === 1 && (top ? tH >= bH : bH > tH) && body > capH + 8 && w >= 9) {
+        var kx = x + (w >> 1) - 1, ky = by + (body >> 1) - 1;
+        ctx.fillStyle = P.barkDeep; ctx.fillRect(kx - 1, ky - 1, 4, 4);
+        ctx.fillStyle = P.knotDark; ctx.fillRect(kx, ky, 2, 2);
+        ctx.fillStyle = P.leafHi;   ctx.fillRect(kx + 3, ky - 1, 2, 1);
+        ctx.fillStyle = P.appleMid; ctx.fillRect(kx + 3, ky + 1, 1, 1);
+      }
+      /* one sawn stub off its side, the pale heartwood on the cut end */
+      if (body > capH + 6 && w >= 9) {
+        n = hash(seed * 13 + 1);
+        var side = n & 1, sl = Math.max(2, Math.round(6 * S.k)), sy = by + 2 + (n >>> 4) % (body - 4);
+        var sx = side ? x + w : x - sl;
+        ctx.fillStyle = P.barkMid;  ctx.fillRect(sx, sy, sl, 1);
+        ctx.fillStyle = P.barkDark; ctx.fillRect(sx, sy + 1, sl, 1);
+        ctx.fillStyle = P.woodCut;  ctx.fillRect(side ? sx + sl - 1 : sx, sy, 1, 2);
+      }
+      /* THE KNUCKLE where the bough forked: blunt and swollen, its corners
+         left unpainted so it reads rounded rather than as a brick, the lit
+         row facing into the gap and two leaf tufts bursting out of it */
+      var cx = x - pr, cw = w + pr * 2, cy = top ? y + h - capH : y;
+      var rows = capH >= 4 ? [P.outline, P.barkDeep, P.barkMid, P.outline]
+               : (capH === 3 ? [P.barkDeep, P.barkMid, P.outline] : [P.barkMid, P.outline]);
+      for (j = 4; j < capH; j++) rows.splice(1, 0, P.barkDark);
+      for (j = 0; j < capH; j++) {
+        var c = top ? rows[j] : rows[capH - 1 - j], edge = j === 0 || j === capH - 1;
+        ctx.fillStyle = c; ctx.fillRect(cx + (edge ? 1 : 0), cy + j, cw - (edge ? 2 : 0), 1);
+        if (!edge && capH >= 3) { ctx.fillStyle = P.outline; ctx.fillRect(cx, cy + j, 1, 1); ctx.fillRect(cx + cw - 1, cy + j, 1, 1); }
+      }
+      if (capH >= 3) {
+        var my = cy + (capH >> 1), t = hash(p.i + 31);
+        if (t & 1) { ctx.fillStyle = P.leafHi;  ctx.fillRect(cx + 1, my, 2, 1); }
+        if (t & 2) { ctx.fillStyle = P.leafSun; ctx.fillRect(cx + cw - 3, my, 2, 1); }
+      }
+    },
+    /* the leaf mass across the top with the sky through it, the bough on
+       its underside, tips hanging out of it, and a split pomegranate */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, d = S.top - S.y, q = S.k * 2.4, off = Math.floor(S.s), c, n, step;
+      ctx.fillStyle = P.leafDeep; ctx.fillRect(x, S.y, w, d);
+      var bough = d >= 8 ? 5 : 4, leaf = d - bough;
+      if (leaf >= 2) {
+        step = 4;
+        for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+          n = hash(c + 1414);
+          var lx = x + c * step - off, lyy = S.y + (n >>> 8) % Math.max(1, leaf - 1);
+          if (n % 7 === 0) { ctx.fillStyle = P.skyWhite; ctx.fillRect(lx, lyy, 2, 1); continue; }
+          if (n % 3 === 0) continue;
+          ctx.fillStyle = (n >>> 4) % 3 === 0 ? P.leafHi : ((n >>> 4) % 3 === 1 ? P.leafMid : P.leafShade);
+          ctx.fillRect(lx, lyy, 3, 1);
+          if (leaf >= 3) ctx.fillRect(lx + 1, lyy + 1, 2, 1);
+        }
+      }
+      var b = S.top - bough;
+      ctx.fillStyle = P.barkLit;  ctx.fillRect(x, b, w, 1);
+      ctx.fillStyle = P.barkMid;  ctx.fillRect(x, b + 1, w, bough - 3);
+      ctx.fillStyle = P.barkDark; ctx.fillRect(x, S.top - 2, w, 1);
+      ctx.fillStyle = P.outline;  ctx.fillRect(x, S.top - 1, w, 1);
+      /* the shade the bough casts down out of the leaves */
+      Tint.rect(ctx, x, S.top, w, Math.round(10 * S.k), P.leafDeep, 5);
+      /* leaf tips and twig stubs hanging below the bough */
+      step = Math.max(4, Math.round(9 * q));
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        n = hash(c + 2222);
+        ctx.fillStyle = n % 3 ? P.leafMid : P.twigMid;
+        ctx.fillRect(x + c * step - off + (n >>> 8) % step, S.top, 1, 1 + (n >>> 4) % 2);
+      }
+      /* the pomegranate, hanging off its stalk once a card and a bit */
+      step = Math.round(w * 1.2);
+      var drop = Math.max(2, Math.round(4 * q)), pz = Math.max(2, Math.round(4 * q));
+      for (c = Math.floor(off / step) - 1; c * step - off < w + pz; c++) {
+        var px = x + c * step - off + Math.round(step * 0.6);
+        ctx.fillStyle = P.stem;    ctx.fillRect(px + (pz >> 1), S.top, 1, drop);
+        ctx.fillStyle = P.outline; ctx.fillRect(px - 1, S.top + drop + 1, pz + 2, pz - 2); ctx.fillRect(px, S.top + drop, pz, pz);
+        fruitDot(ctx, px, S.top + drop, pz, P.pomMid, P.pomLit, P.pomDeep);
+        if (pz >= 4) { ctx.fillStyle = P.arilPink; ctx.fillRect(px + pz - 2, S.top + drop + 1, 1, 1); }
+      }
+    },
+    /* the limb you would stand on: lit on top, foliage in shadow under it */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, d = S.y + S.h - f, off = Math.floor(S.s), c, n, step, r;
+      var lit = d >= 7 ? 2 : 1, midEnd = Math.max(1 + lit + 1, Math.round(14 * S.k));
+      ctx.fillStyle = P.leafDeep; ctx.fillRect(x, f, w, d);
+      ctx.fillStyle = P.barkPale; ctx.fillRect(x, f, w, 1);
+      ctx.fillStyle = P.barkLit;  ctx.fillRect(x, f + 1, w, lit);
+      ctx.fillStyle = P.barkMid;  ctx.fillRect(x, f + 1 + lit, w, midEnd - 1 - lit);
+      r = midEnd;
+      ctx.fillStyle = P.barkDark; ctx.fillRect(x, f + r, w, 1); r++;
+      if (d >= 7) { ctx.fillStyle = P.barkDeep; ctx.fillRect(x, f + r, w, 1); r++; }
+      ctx.fillStyle = P.outline;  ctx.fillRect(x, f + r, w, 1); r++;
+      /* grain, moss on the crest and a wobbling ridge of bark now and then */
+      step = 6;
+      for (c = Math.floor(off / step) - 1; c * step - off < w; c++) {
+        n = hash(c + 3131);
+        if (n % 2 && midEnd > 3) { ctx.fillStyle = P.barkDark; ctx.fillRect(x + c * step - off, f + 2 + lit + (n >>> 8) % Math.max(1, midEnd - 2 - lit), 2 + (n >>> 4) % 3, 1); }
+      }
+      step = Math.max(12, Math.round(72 * S.k));
+      for (c = Math.floor(off / step) - 1; c * step - off < w + 3; c++) {
+        var mx = x + c * step - off;
+        ctx.fillStyle = P.moss;     ctx.fillRect(mx, f + 1, 3, 1);
+        ctx.fillStyle = P.leafHi;   ctx.fillRect(mx + 1, f + 1, 1, 1);
+        if (hash(c + 77) % 2) continue;
+        for (var ry = 1 + lit; ry < r - 1; ry++) {
+          ctx.fillStyle = P.barkDark; ctx.fillRect(mx + Math.round(step / 2) + Math.round(Math.sin(ry * 0.8)), f + ry, 1, 1);
+        }
+      }
+      if (d - r >= 2) {
+        for (c = Math.floor(off / 5) - 1; c * 5 - off < w; c++) {
+          n = hash(c + 919);
+          if (n % 3) continue;
+          ctx.fillStyle = P.leafShade; ctx.fillRect(x + c * 5 - off, f + r + (n >>> 8) % (d - r), 3, 1);
+        }
+        Tint.rect(ctx, x, f + r, w, d - r, P.shade, 4);
+      }
+    },
+    /* THE TWIG SPURS, the level's own hazard: clusters of thin dead twigs
+       off the boughs, in the even spans. A cluster grows from whichever
+       bough leaves it the longer reach short of the doodad's line, so it
+       sways right up to the player's path and never into it; the gaps
+       climb and fall by turns, so that comes out floor, ceiling, floor. */
+    props: function (ctx, S) {
+      var q = S.k * 2.4, collar = Math.max(1, Math.round(2 * q));
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var up = sp.line.top - S.top - collar, down = S.floor - collar - sp.line.bottom;
+        var hang = up > down, room = Math.max(up, down) - 3;
+        var dx = Math.max(2, Math.round(6 * q)), seed = hash(sp.i + 4040);
+        var count = Math.min(3 + seed % 3, Math.floor((sp.x1 - sp.x0 - 7) / dx) + 1);
+        var x0 = Math.round((sp.x0 + sp.x1) / 2) - Math.round((count - 1) * dx / 2) - 1;
+        var base = hang ? S.top + collar : S.floor - 1 - collar;
+        for (var j = 0; j < count; j++) {
+          var n = hash(seed + j * 977);
+          var len = Math.min(room, Math.round(S.lane * (0.16 + 0.08 * ((n >>> 4) % 3))));
+          if (len < 3) continue;
+          var tx = x0 + j * dx;
+          ctx.fillStyle = P.barkDark;
+          ctx.fillRect(tx - 1, hang ? S.top : S.floor - collar, Math.max(3, Math.round(4 * q)), collar);
+          coverSpur(ctx, S, tx, base, len, hang, n);
+        }
+      }
+    },
+    /* apples and oranges, strictly by turns, as the level drops them */
+    drop: function (ctx, d, S) {
+      var z = Math.max(3, Math.round(9 * S.k)), x0 = d.x - (z >> 1), y0 = d.y - (z >> 1);
+      var apple = wrap(d.i, 4) === 1;
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(x0 - 1, y0, z + 2, z); ctx.fillRect(x0, y0 - 1, z, z + 2);
+      if (apple) fruitDot(ctx, x0, y0, z, P.appleMid, P.appleLit, P.appleDeep);
+      else fruitDot(ctx, x0, y0, z, P.orangeMid, P.orangeLit, P.orangeDeep);
+      /* the apple's stalk, the orange's calyx: the other tell */
+      ctx.fillStyle = apple ? P.barkDark : P.stem;
+      ctx.fillRect(x0 + (z >> 1), y0 - (apple ? 2 : 1), 1, apple ? 2 : 1);
+    },
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.sunGlare, 1); }
+  };
 
   /* ---------------------------------------------------- generation */
 
@@ -1892,14 +2050,13 @@ var Canopy = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     build: function () { build(); buildSprites(); },
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor

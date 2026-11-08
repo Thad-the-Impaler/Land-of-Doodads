@@ -438,8 +438,9 @@ var Fort = (function () {
     ceil:     ['▲ THE ROOF PANEL ▲',   'CARDBOARD IS STILL SOLID']
   };
 
-  /* the thirteen colours the generic cover would use. This bay paints its
-     own (drawPreview), but the table stays honest. */
+  /* the thirteen colours the generic cover would use. This bay's cover
+     has painters of its own (see COVER), but the table stays honest:
+     tv.js and the stands read PREVIEW.back. */
   var PREVIEW = {
     back: P.kraftIn, backAlt: P.kraftDeep, seam: P.kraftShade,
     beam: P.kraftPlank, beamDark: P.kraftPlankShade, beamLight: P.kraftPlankLit,
@@ -2833,66 +2834,58 @@ var Fort = (function () {
 
   /* ================================================== the cover art
 
-     118x114 on the big card, 82x94 on the side ones, in the Whiteboard's
-     numbered steps, everything as a fraction of w and h so one function
-     draws both, and animated off s = t * 22. Everything on it is a thing
-     the level actually does: a dim room over a cardboard skyline, the
-     blue strip, the inside of the fort in shadow with its print, holes,
+     The Fort's painters for its cover (js/cover.js lays it out and times
+     it), in the Whiteboard's manner. Everything on it is a thing the
+     level actually does: a dim room over a cardboard skyline, the blue
+     strip, the inside of the fort in shadow with its print, holes,
      connectors and one GREEN chamber, the roof edge with its connectors
-     hanging under it, two planks sliding past, a biscuit tumbling - and
-     the signature, a crimson Cupman on the rug turning to face the
-     doodad, three aim dots running out of his pistol, and a yellow pellet
-     crossing the card. The caller has clipped and saved; nothing here
-     saves or restores except the one clip round the green pool. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var roofY = y + Math.round(h * 0.09);
-    var floorY = y + Math.round(h * 0.86);
-    var i, k, px, py;
+     hanging under it, kraft planks with their biscuits, a biscuit
+     tumbling - and the signature, a crimson Cupman on the rug turning to
+     face the doodad, three aim dots running out of his pistol, and a
+     yellow pellet popping on the plank in its way. */
 
-    /* 1. the dim room, the strip, and the room over the fort: a shutter's
-       slats, and the Mantle's chimney breast with the dark television on
-       it rising over the skyline - the room's own furniture, as the room
-       tile has it (round 1 had a white ladder here; it left the bay) */
-    ctx.fillStyle = P.roomDeep; ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = P.roomWall; ctx.fillRect(x, roofY, w, floorY - roofY);
-    var stripY = y + Math.round(h * 0.04);
-    ctx.fillStyle = P.ledBlue; ctx.fillRect(x, stripY, w, 2);
-    ctx.fillStyle = P.ledBlueCore;
-    for (i = 2; i < w; i += 6) ctx.fillRect(x + i, stripY, 1, 1);
-    Tint.rect(ctx, x, stripY + 2, w, 3, P.ledBlueDeep, 6);
-    var shX = x + Math.round(w * 0.14), shW = Math.round(w * 0.3);
+  /* the room beyond the fort, one copy of it from `ox`: a shutter's
+     slats, and the Mantle's chimney breast with the dark television on
+     it rising over the skyline - the room's own furniture, as the room
+     tile has it */
+  function coverRoom(ctx, S, ox) {
+    var y = S.y, w = S.w, h = S.h, q = S.k * 2.4, py;
+    var shX = ox + Math.round(w * 0.14), shW = Math.round(w * 0.3);
     var shY0 = y + Math.round(h * 0.13), shY1 = y + Math.round(h * 0.3);
     ctx.fillStyle = dim(C.shutterMid, 0.5);
     for (py = shY0; py < shY1; py += 3) ctx.fillRect(shX, py, shW, 1);
     ctx.fillStyle = dim(C.shutterShade, 0.5);
     ctx.fillRect(shX + Math.round(shW / 2), shY0, 1, shY1 - shY0);
     /* the breast runs from the roofline to the floor in 1px courses of
-       two stones, and the near wall's lit panel covers its lower part;
-       the set hangs on it at the shutters' height */
-    var tvX = x + Math.round(w * 0.66), tvW = big ? 16 : 12, tvH = big ? 7 : 5;
-    var stX = tvX - 1, stW = tvW + 2;
-    for (py = roofY + 1; py < floorY; py++) {
-      ctx.fillStyle = (py & 1) ? dim(M.stoneCream, 0.62) : dim(M.stoneGrey, 0.62);
+       two stones; the set hangs on it at the shutters' height */
+    var tvW = Math.max(6, Math.round(16 * q)), tvH = Math.max(3, Math.round(7 * q));
+    var tvX = ox + Math.round(w * 0.66), stX = tvX - 1, stW = tvW + 2;
+    var cream = dim(M.stoneCream, 0.62), grey = dim(M.stoneGrey, 0.62), joint = dim(M.stoneJoint, 0.3);
+    for (py = S.top; py < S.floor; py++) {
+      ctx.fillStyle = (py & 1) ? cream : grey;
       ctx.fillRect(stX, py, stW, 1);
       /* one joint per course, wandering, so the stripes are stone */
-      ctx.fillStyle = dim(M.stoneJoint, 0.3);
+      ctx.fillStyle = joint;
       ctx.fillRect(stX + (py * 7) % stW, py, 1, 1);
     }
     ctx.fillStyle = M.screenDeep;        ctx.fillRect(tvX, shY0, tvW, tvH);
     ctx.fillStyle = dim(M.bezelHi, 0.2); ctx.fillRect(tvX, shY0, tvW, 1);
+  }
 
-    /* 2. the near wall, the inside of the fort, in shadow: two printed
-       panels with scalloped tops at two heights, and a doorway */
+  /* the near wall, the inside of the fort, in shadow, one copy of it from
+     `ox`: two printed panels with scalloped tops at two heights, the
+     second one the GREEN chamber breathing, and then a doorway */
+  function coverPanels(ctx, S, ox) {
+    var y = S.y, w = S.w, h = S.h, fl = S.floor, i, k, py;
     var pw = Math.round(w * 0.42);
     var panels = [
-      { x: x, top: y + Math.round(h * 0.38), lit: false },
-      { x: x + pw, top: y + Math.round(h * 0.52), lit: true }
+      { x: ox, top: y + Math.round(h * 0.38), lit: false },
+      { x: ox + pw, top: y + Math.round(h * 0.52), lit: true }
     ];
     for (k = 0; k < 2; k++) {
-      var p = panels[k], ph = floorY - p.top;
-      var face = p.lit ? mix(P.kraftIn, P.ledGreenDim, 0.25) : P.kraftIn;
-      ctx.fillStyle = face; ctx.fillRect(p.x, p.top, pw, ph);
+      var p = panels[k], ph = fl - p.top;
+      ctx.fillStyle = p.lit ? mix(P.kraftIn, P.ledGreenDim, 0.25) : P.kraftIn;
+      ctx.fillRect(p.x, p.top, pw, ph);
       ctx.fillStyle = P.kraftInLit; ctx.fillRect(p.x, p.top + 1, pw, 1);
       ctx.fillStyle = P.outline;    ctx.fillRect(p.x, p.top, pw, 1);
       /* the scallops: a bite every 6px along the roof edge */
@@ -2925,181 +2918,250 @@ var Fort = (function () {
       ctx.fillStyle = P.foamLit; ctx.fillRect(p.x + pw - 1, p.top - 2, 2, 1);
     }
     /* the oval badge on the first panel */
-    var bgx = panels[0].x + Math.round(pw * 0.42), bgy = panels[0].top + Math.round((floorY - panels[0].top) * 0.5);
+    var bgx = panels[0].x + Math.round(pw * 0.42), bgy = panels[0].top + Math.round((fl - panels[0].top) * 0.5);
     ctx.fillStyle = P.printIn;  ctx.fillRect(bgx, bgy, 9, 5);
     ctx.fillStyle = P.badgeIn;  ctx.fillRect(bgx + 1, bgy + 1, 7, 3);
     ctx.fillStyle = mix(P.badgeMark, P.printIn, 0.3); ctx.fillRect(bgx + 3, bgy + 2, 4, 1);
     /* dashes down the seam between them */
     ctx.fillStyle = P.foam;
-    for (py = panels[1].top + 4; py < floorY - 2; py += 8) ctx.fillRect(x + pw - 1, py, 3, 1);
-    /* the green chamber's pool, and the light spilling out at its foot */
+    for (py = panels[1].top + 4; py < fl - 2; py += 8) ctx.fillRect(ox + pw - 1, py, 3, 1);
+    /* the green chamber's pool, breathing, and the light spilling out at
+       its foot */
+    var gp = panels[1];
     ctx.save();
-    ctx.beginPath(); ctx.rect(panels[1].x, panels[1].top, pw, floorY - panels[1].top); ctx.clip();
-    var gcx = panels[1].x + pw / 2, gcy = (panels[1].top + floorY) / 2;
+    ctx.beginPath(); ctx.rect(gp.x, gp.top, pw, fl - gp.top); ctx.clip();
+    var gcx = gp.x + pw / 2, gcy = (gp.top + fl) / 2;
     var g = ctx.createRadialGradient(gcx, gcy, 1, gcx, gcy, pw * 0.6);
-    var breath = 0.75 + 0.25 * Math.sin(t * 1.4);
+    var breath = 0.75 + 0.25 * Math.sin(S.t * 1.4);
     g.addColorStop(0, 'rgba(94,240,122,' + (0.34 * breath).toFixed(3) + ')');
     g.addColorStop(1, 'rgba(94,240,122,0)');
-    ctx.fillStyle = g; ctx.fillRect(panels[1].x, panels[1].top, pw, floorY - panels[1].top);
+    ctx.fillStyle = g; ctx.fillRect(gp.x, gp.top, pw, fl - gp.top);
     ctx.restore();
-    Tint.rect(ctx, panels[1].x - 3, floorY - 3, pw + 6, 3, P.ledGreen, 5);
+    Tint.rect(ctx, gp.x - 3, fl - 3, pw + 6, 3, P.ledGreen, 5);
+  }
 
-    /* 3. the roofline: the kill line as the roof panel's edge, with two
-       connectors hanging under it */
-    ctx.fillStyle = P.kraftLit; ctx.fillRect(x, roofY - 3, w, 1);
-    ctx.fillStyle = P.kraft;    ctx.fillRect(x, roofY - 2, w, 2);
-    ctx.fillStyle = P.outline;  ctx.fillRect(x, roofY, w, 1);
-    ctx.fillStyle = P.foam;
-    ctx.fillRect(x + Math.round(w * 0.25), roofY + 1, 4, 2); ctx.fillRect(x + Math.round(w * 0.75), roofY + 1, 4, 2);
-
-    /* 7. the floor - laid before the things that stand on it: the grey
-       geometric rug with a hint of its lozenges, the pale boards under it
-       with their seams crawling, and the box of panels in the foreground
-       crawling faster */
-    var rugH = Math.round((y + h - floorY) * 0.55);
-    ctx.fillStyle = P.geoGrey;  ctx.fillRect(x, floorY, w, rugH);
-    ctx.fillStyle = P.geoLight; ctx.fillRect(x, floorY, w, 1);
-    for (i = 0; i < w; i += 8) {
-      ctx.fillStyle = P.geoDark;
-      if (floorY + 2 < floorY + rugH) ctx.fillRect(x + i, floorY + 2, 1, 1);
-      if (floorY + 4 < floorY + rugH) ctx.fillRect(x + i + 4, floorY + 4, 1, 1);
-      ctx.fillStyle = P.geoLight;
-      if (floorY + 3 < floorY + rugH) ctx.fillRect(x + i + 2, floorY + 3, 1, 1);
-    }
-    ctx.fillStyle = P.woodPale; ctx.fillRect(x, floorY + rugH, w, y + h - floorY - rugH);
-    ctx.fillStyle = P.woodSeam;
-    for (i = 0; i < w / 12; i++) ctx.fillRect(x + wrap(i * 13 - s, w), floorY + rugH + 1, 1, y + h - floorY - rugH - 1);
-    var boxX = x + wrap(-s * 1.35, w + 40) - 30;
-    ctx.fillStyle = P.panelYellow; ctx.fillRect(boxX + 4, y + h - 6, 4, 3); ctx.fillRect(boxX + 16, y + h - 7, 4, 4);
-    ctx.fillStyle = P.panelBlue;   ctx.fillRect(boxX + 10, y + h - 6, 4, 3);
-    ctx.fillStyle = P.boxBrown;    ctx.fillRect(boxX, y + h - 3, 30, 3);
-    ctx.fillStyle = P.kraftLit;    ctx.fillRect(boxX, y + h - 3, 30, 1);
-
-    /* 7b. THE AMMO BAG on the rug, left of the bird's lane, before the
-       planks so a plank sliding by passes in front of it: the navy base
-       band, the cream body in its outline, the two straps running up into
-       a 1px handle arch, and the heap on the rim - two pellet yellows with
-       a pellet's dark ring between them. No glow on the card. Two straps
-       where the brief allowed one: one strap was a bucket, two are a
-       tote */
-    var gbx = x + Math.round(w * 0.12), gbw = big ? 9 : 7, gbh = big ? 6 : 5;
-    var gtop = floorY - 1 - gbh, gs0 = gbx + (big ? 2 : 1), gs1 = gbx + gbw - (big ? 3 : 2), gmid = gbx + (gbw >> 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(gbx - 1, gtop - 1, gbw + 2, gbh + 2);
-    ctx.fillStyle = P.bagCream; ctx.fillRect(gbx, gtop, gbw, gbh);
-    ctx.fillStyle = P.bagNavy;
-    ctx.fillRect(gbx, floorY - 2, gbw, 1);
-    ctx.fillRect(gs0, gtop - 2, 1, gbh + 1); ctx.fillRect(gs1, gtop - 2, 1, gbh + 1);
-    ctx.fillRect(gs0, gtop - 3, gs1 - gs0 + 1, 1);
-    ctx.fillStyle = CP.pelletYellow || '#ffc21a'; ctx.fillRect(gmid - 1, gtop - 1, 1, 1); ctx.fillRect(gmid + 1, gtop - 1, 1, 1);
-    ctx.fillStyle = CP.ring || '#1a1410';         ctx.fillRect(gmid, gtop - 1, 1, 1);
-
-    /* 4. two planks sliding past, caps on their mouths */
-    var period = big ? 46 : 38;
-    var span = floorY - roofY;
-    for (k = 0; k < 3; k++) {
-      var ox = Math.round(x + w + 10 - wrap(s + k * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.36);
-      var room = Math.max(1, span - gapH - 20);
-      var gapY = Math.round(roofY + 10 + (k * room) / 2);
-      pvColumn(ctx, ox, roofY + 1, gapY - roofY - 1);
-      pvColumn(ctx, ox, gapY + gapH, floorY - gapY - gapH);
-      ctx.fillStyle = P.outline;  ctx.fillRect(ox - 2, gapY - 3, 13, 3); ctx.fillRect(ox - 2, gapY + gapH, 13, 3);
-      ctx.fillStyle = P.kraftPlank; ctx.fillRect(ox - 1, gapY - 2, 11, 1); ctx.fillRect(ox - 1, gapY + gapH + 1, 11, 1);
-      ctx.fillStyle = P.foam;     ctx.fillRect(ox + 1, gapY - 1, 2, 1); ctx.fillRect(ox + 6, gapY - 1, 2, 1);
-      ctx.fillRect(ox + 1, gapY + gapH, 2, 1); ctx.fillRect(ox + 6, gapY + gapH, 2, 1);
-    }
-
-    /* 6. a biscuit tumbling down the right third, its height cycling the
-       way the twelve real frames do, with its hard offset shadow */
-    var bx = x + Math.round(w * 0.86);
-    var by = Math.round(roofY + 2 + wrap(s * 1.2, floorY - roofY - 10));
-    var bh = [7, 6, 4, 2, 4, 6][Math.floor(t * 9) % 6];
-    ctx.fillStyle = P.shade;   ctx.fillRect(bx + 2, by + 2, 7, bh);
-    ctx.fillStyle = P.foam;    ctx.fillRect(bx, by, 7, bh);
-    ctx.fillStyle = P.outline; ctx.fillRect(bx, by, 1, bh); ctx.fillRect(bx + 6, by, 1, bh);
-    ctx.fillStyle = P.foamRim; ctx.fillRect(bx + 1, by, 5, 1);
-
-    /* 8. the doodad flying it: THE HOUSE BIRD, the same one every cover
-       draws (js/desk.js, js/mantle.js) - the body, the eye, the beak, and
-       the bob of h*0.15 on a 3.1 sine. Round 1 drew it here with no beak
-       and a 2px bob, and the owner noticed. Its halo is PALE - the plan
-       asked for the Whiteboard's dark one, but that card is a white board
-       and this one is a dark room, and a dark halo on a dark wall drew a
+  var COVER = {
+    /* PALE, where the Whiteboard's is dark: that card is a white board and
+       this one is a dark room, and a dark halo on a dark wall drew a
        picture frame round the bird */
-    var dxp = Math.round(x + w * 0.3);
-    var dyp = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dxp - sz / 2 - 2, dyp - sz / 2 - 2, sz + 4, sz + 4, P.rugLit, 3);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dxp - sz / 2 - 1, dyp - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dxp - sz / 2, dyp - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dxp - sz / 2, dyp - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dxp + sz / 2 - 2, dyp - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dxp + sz / 2, dyp, 2, 1);
+    halo: { colour: P.rugLit, pad: 1, strength: 3 },
+    ink: P.outline,
 
-    /* 5. THE SIGNATURE, on a three-second loop: he faces the doodad from
-       0 to 1.0, three aim dots run out of the muzzle from 1.0 to 1.5, a
-       yellow pellet with its dark ring crosses the card from 1.5 to 2.4,
-       and he turns back from 2.4 to 3.0 */
-    var phase = t % 3;
-    var cx = x + Math.round(w * 0.62), baseY = floorY;
-    var face = phase < 2.4 ? -1 : 1;
-    /* the gun is held LOW and FORWARD, out past his side at the lower
-       third of the cup, as js/cupmen.js now holds it in the game: at
-       (4, 5) up it sat on the edge of his face at eye height */
-    var hx = cx + face * (big ? 5 : 4), hy = baseY - (big ? 3 : 2);
-    var mx = hx + face * (big ? 7 : 5);
-    Tint.rect(ctx, cx - (big ? 5 : 4), baseY - 1, big ? 10 : 8, 1, P.shade, 8);
-    if (typeof Cupmen !== 'undefined' && Cupmen.drawPixelCup && Cupmen.drawPixelGun) {
-      Cupmen.drawPixelCup(ctx, cx, baseY, 'crimson', face, big);
-      Cupmen.drawPixelGun(ctx, hx, hy, 'crimson', face, face < 0);
-    } else {
-      /* never throw on a card: a flat cup with its eyes, if the Cupmen are
-         not there to draw themselves */
-      var cw = big ? 8 : 6, chh = big ? 9 : 7;
-      for (i = 0; i < chh; i++) {
-        var iw = Math.round(cw * (0.6 + 0.4 * i / (chh - 1)));
-        ctx.fillStyle = P.cupRedLit; ctx.fillRect(cx - Math.floor(iw / 2), baseY - chh + i, iw, 1);
+    /* the room at its own 0.12 and the fort's inside at 0.30, the two
+       paces the level gives them */
+    back: function (ctx, S) {
+      var x = S.x, w = S.w;
+      ctx.fillStyle = P.roomDeep; ctx.fillRect(x, S.y, w, S.h);
+      ctx.fillStyle = P.roomWall; ctx.fillRect(x, S.top, w, S.floor - S.top);
+      var RW = w + 40, o = wrap(Math.round(S.s * 0.12), RW);
+      coverRoom(ctx, S, x - o);
+      coverRoom(ctx, S, x - o + RW);
+      o = wrap(Math.round(S.s * 0.30), w);
+      coverPanels(ctx, S, x - o);
+      coverPanels(ctx, S, x - o + w);
+    },
+
+    /* One half of a plank: the plank's own warm kraft against the cool
+       wall, its cast shadow first so the connectors standing proud of its
+       edges sit on top of it, a bitten outline, two holes, and a course
+       seam every 48 rows of the level's - counted from the free end, so
+       the short course lands against the band and never at the mouth -
+       with a connector proud across it at both edges. The printed variant
+       carries a dot of print per course, the plain one a scratch. The cap
+       is the panel's end seen square on: the brightest bar on the plank,
+       outlined all round, with its two biscuits in their slots on the
+       face that looks into the gap. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var top = end === 'top', i, r;
+      Tint.rect(ctx, x + w, y, Math.max(1, Math.round(6 * S.k)), h, P.void, 8);
+      ctx.fillStyle = P.kraftPlank;    ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = P.kraftPlankLit; ctx.fillRect(x + 1, y, 1, h);
+      ctx.fillStyle = P.outline;
+      for (r = 0; r < h; r++) if (r % 5 !== 2) { ctx.fillRect(x, y + r, 1, 1); ctx.fillRect(x + w - 1, y + r, 1, 1); }
+      ctx.fillStyle = P.holeDark;
+      if (h > 8) ctx.fillRect(x + 3, y + Math.round(h * 0.3), 1, 1);
+      if (h > 14) ctx.fillRect(x + w - 4, y + Math.round(h * 0.7), 1, 1);
+      var hc = Math.max(2, Math.round(9 * S.k)), pr = Math.max(1, Math.round(4 * S.k));
+      var cs = Math.max(8, Math.round(48 * S.k)), printed = hash(p.i * 7 + 1) % 100 < 58;
+      for (i = 1; ; i++) {
+        var sy = top ? y + h - hc - cs * i : y + hc + cs * i;
+        if (sy < y + 2 || sy > y + h - 3) break;
+        ctx.fillStyle = P.outline;       ctx.fillRect(x, sy, w, 1);
+        ctx.fillStyle = P.kraftPlankLit; ctx.fillRect(x + 1, sy + 1, w - 2, 1);
+        /* the connector across the seam, two pixels proud each side */
+        ctx.fillStyle = P.foamLit;  ctx.fillRect(x - 2, sy - 1, 3, 1); ctx.fillRect(x + w - 1, sy - 1, 3, 1);
+        ctx.fillStyle = P.foam;     ctx.fillRect(x - 2, sy, 3, 1);     ctx.fillRect(x + w - 1, sy, 3, 1);
+        ctx.fillStyle = P.foamDeep; ctx.fillRect(x - 2, sy + 1, 3, 1); ctx.fillRect(x + w - 1, sy + 1, 3, 1);
+        /* and the course's own mark, halfway along it */
+        var my = top ? sy + (cs >> 1) : sy - (cs >> 1);
+        if (my > y + 1 && my < y + h - 3) {
+          if (printed) { ctx.fillStyle = P.printIn; ctx.fillRect(x + (w >> 1) - 1, my, 2, 2); }
+          else { ctx.fillStyle = P.kraftPlankShade; ctx.fillRect(x + 3, my, 2, 1); ctx.fillRect(x + 5, my + 1, 1, 1); }
+        }
       }
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(cx + face * 2 - 1, baseY - chh + 2, 1, 1); ctx.fillRect(cx + face * 2 + 1, baseY - chh + 2, 1, 1);
-      ctx.fillStyle = CP.gunBlue || '#1f4fb8'; ctx.fillRect(Math.min(hx, mx), hy - 1, Math.abs(mx - hx) + 1, 2);
-    }
-    if (phase >= 1.0 && phase < 1.5) {
-      var nd = 1 + Math.min(2, Math.floor((phase - 1.0) / 0.5 * 3));
-      ctx.fillStyle = CP.flash || '#fff1b0';
-      for (i = 1; i <= nd; i++) ctx.fillRect(mx + face * i * 4, hy - 1, 1, 1);
-    }
-    if (phase >= 1.5 && phase < 2.4) {
-      var q = (phase - 1.5) / 0.9;
-      px = Math.round(mx + face * q * (w * 0.5));
-      py = hy - 1;
-      ctx.fillStyle = CP.ring || '#1a1410';      ctx.fillRect(px - 1, py - 1, 3, 3);
-      ctx.fillStyle = CP.pelletYellow || '#ffc21a'; ctx.fillRect(px - 1, py, 3, 1); ctx.fillRect(px, py - 1, 1, 3);
-      ctx.fillStyle = CP.pelletYellowHi || '#fff3b0'; ctx.fillRect(px, py - 1, 1, 1);
-    }
+      /* the cap */
+      hc = Math.min(hc, h);
+      var cy = top ? y + h - hc : y, face = top ? cy + hc - 1 : cy, cw = w + pr * 2;
+      ctx.fillStyle = P.outline; ctx.fillRect(x - pr, cy, cw, hc);
+      ctx.fillStyle = mix(P.kraftPlank, P.kraftPlankLit, 0.55);
+      if (hc >= 3) ctx.fillRect(x - pr + 1, cy + 1, cw - 2, hc - 2);
+      else ctx.fillRect(x - pr + 1, face, cw - 2, 1);
+      /* the bites along the gap face, and the two biscuits in their slots */
+      if (hc >= 4) {
+        ctx.fillStyle = P.kraftPlankMid;
+        for (i = 2; i < cw - 3; i += 5) ctx.fillRect(x - pr + i, top ? face - 1 : face + 1, 2, 1);
+      }
+      var bh = Math.min(2, hc - 1);
+      ctx.fillStyle = P.foam;
+      ctx.fillRect(x + 1, top ? face - bh + 1 : face, 2, bh); ctx.fillRect(x + w - 3, top ? face - bh + 1 : face, 2, bh);
+      ctx.fillStyle = P.foamSlot;
+      ctx.fillRect(x + 1, face, 2, 1); ctx.fillRect(x + w - 3, face, 2, 1);
+    },
 
-    /* 9. and the room is lit green, not lamp-warm */
-    Tint.rect(ctx, x, y, w, h, P.ledGreen, 1);
-  }
+    /* the strip, and the roof panel's edge with the kill line under it -
+       and a connector hanging under the edge at every span's middle,
+       never on a plank */
+    ceiling: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, top = S.top, band = top - y, i;
+      ctx.fillStyle = P.roomDeep; ctx.fillRect(x, y, w, band);
+      var sy = y + (band >= 8 ? 1 : 0), sh = band >= 6 ? 2 : 1;
+      ctx.fillStyle = P.ledBlue; ctx.fillRect(x, sy, w, sh);
+      ctx.fillStyle = P.ledBlueCore;
+      for (i = 2; i < w; i += 6) ctx.fillRect(x + i, sy, 1, 1);
+      var rows = band >= 6 ? [P.kraftLit, P.kraft, P.kraft, P.outline] : [P.kraft, P.kraft, P.outline];
+      if (top - rows.length > sy + sh) Tint.rect(ctx, x, sy + sh, w, top - rows.length - sy - sh, P.ledBlueDeep, 6);
+      for (i = 0; i < rows.length; i++) { ctx.fillStyle = rows[i]; ctx.fillRect(x, top - rows.length + i, w, 1); }
+      var cw = Math.max(2, Math.round(4 * S.k * 2.4)), ch = S.k < 0.3 ? 1 : 2;
+      for (i = 0; i < S.spans.length; i++) {
+        var mx = Math.round((S.spans[i].x0 + S.spans[i].x1) / 2) - (cw >> 1);
+        ctx.fillStyle = P.foam;    ctx.fillRect(mx, top, cw, ch);
+        ctx.fillStyle = P.foamRim; ctx.fillRect(mx + 1, top + ch - 1, cw - 2, 1);
+      }
+    },
 
-  /* One plank inside a cover: nine pixels of the plank's own warm kraft,
-     so the cover's planks are the bay's, with a bitten outline,
-     two holes, and a connector standing proud across a seam. */
-  function pvColumn(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.kraftPlank;    ctx.fillRect(x, y, 9, h);
-    ctx.fillStyle = P.kraftPlankLit; ctx.fillRect(x + 1, y, 1, h);
-    ctx.fillStyle = P.outline;
-    for (var i = 0; i < h; i++) if (i % 5 !== 2) { ctx.fillRect(x - 1, y + i, 1, 1); ctx.fillRect(x + 9, y + i, 1, 1); }
-    ctx.fillStyle = P.holeDark;
-    if (h > 8) ctx.fillRect(x + 3, y + Math.round(h * 0.3), 1, 1);
-    if (h > 14) ctx.fillRect(x + 6, y + Math.round(h * 0.7), 1, 1);
-    if (h > 12) {
-      var sy = y + Math.round(h / 2);
-      ctx.fillStyle = P.outline; ctx.fillRect(x, sy, 9, 1);
-      ctx.fillStyle = P.foam;    ctx.fillRect(x - 2, sy - 1, 2, 3); ctx.fillRect(x + 9, sy - 1, 2, 3);
-    }
-  }
+    /* the grey geometric rug with a hint of its lozenges, the pale boards
+       under it with their seams crawling, and the box of panels in the
+       foreground crawling faster, at the level's 1.35 */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, d = S.y + S.h - f, rugH = Math.round(d * 0.55), i;
+      var off = Math.round(S.s);
+      ctx.fillStyle = P.geoGrey;  ctx.fillRect(x, f, w, rugH);
+      ctx.fillStyle = P.geoLight; ctx.fillRect(x, f, w, 1);
+      for (i = Math.floor(off / 8) - 1; i * 8 - off < w; i++) {
+        var lx = x + i * 8 - off;
+        ctx.fillStyle = P.geoDark;
+        if (rugH > 2) ctx.fillRect(lx, f + 2, 1, 1);
+        if (rugH > 4) ctx.fillRect(lx + 4, f + 4, 1, 1);
+        ctx.fillStyle = P.geoLight;
+        if (rugH > 3) ctx.fillRect(lx + 2, f + 3, 1, 1);
+      }
+      ctx.fillStyle = P.woodPale; ctx.fillRect(x, f + rugH, w, d - rugH);
+      ctx.fillStyle = P.woodSeam;
+      for (i = 0; i < w / 12; i++) ctx.fillRect(x + wrap(i * 13 - off, w), f + rugH + 1, 1, d - rugH - 1);
+      if (d < 8) return;
+      var Y = S.y + S.h, boxX = x + wrap(-Math.round(S.s * 1.35), w + 40) - 30;
+      ctx.fillStyle = P.panelYellow; ctx.fillRect(boxX + 4, Y - 6, 4, 3); ctx.fillRect(boxX + 16, Y - 7, 4, 4);
+      ctx.fillStyle = P.panelBlue;   ctx.fillRect(boxX + 10, Y - 6, 4, 3);
+      ctx.fillStyle = P.boxBrown;    ctx.fillRect(boxX, Y - 3, 30, 3);
+      ctx.fillStyle = P.kraftLit;    ctx.fillRect(boxX, Y - 3, 30, 1);
+    },
+
+    /* A bay holds ONE floor thing, the ammo bag or a Cupman, so the even
+       spans take turns: the bag in one, THE SIGNATURE in the next. The
+       Cupman's turn is keyed to where his span is on the card - facing
+       away as he comes in, then round to face the doodad with the pistol
+       carried, then up level - and once he is aiming he fires on his own
+       clock (S.t, so every card fires at one rate): three aim dots run
+       out of the muzzle, a yellow pellet with its dark ring goes, and it
+       POPS on the plank in its way, which is what a floor shooter's shot
+       does in the bay most of the time. It flies along the rug, under
+       anything the doodad's line can reach. */
+    props: function (ctx, S) {
+      var big = S.big, i, k;
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var span = sp.x1 - sp.x0, fl = S.floor;
+        if (wrap(sp.i, 4) === 2) {
+          /* THE AMMO BAG on the rug: the navy base band, the cream body in
+             its outline, two straps running up into a 1px handle arch, and
+             the heap on the rim - two pellet yellows with a pellet's dark
+             ring between them. No glow on the card. */
+          var gbw = big ? 9 : 7, gbh = big ? 6 : 5;
+          var gbx = Math.round((sp.x0 + sp.x1) / 2) - (gbw >> 1);
+          var gtop = fl - 1 - gbh, gs0 = gbx + (big ? 2 : 1), gs1 = gbx + gbw - (big ? 3 : 2), gmid = gbx + (gbw >> 1);
+          ctx.fillStyle = P.outline;  ctx.fillRect(gbx - 1, gtop - 1, gbw + 2, gbh + 2);
+          ctx.fillStyle = P.bagCream; ctx.fillRect(gbx, gtop, gbw, gbh);
+          ctx.fillStyle = P.bagNavy;
+          ctx.fillRect(gbx, fl - 2, gbw, 1);
+          ctx.fillRect(gs0, gtop - 2, 1, gbh + 1); ctx.fillRect(gs1, gtop - 2, 1, gbh + 1);
+          ctx.fillRect(gs0, gtop - 3, gs1 - gs0 + 1, 1);
+          ctx.fillStyle = CP.pelletYellow || '#ffc21a'; ctx.fillRect(gmid - 1, gtop - 1, 1, 1); ctx.fillRect(gmid + 1, gtop - 1, 1, 1);
+          ctx.fillStyle = CP.ring || '#1a1410';         ctx.fillRect(gmid, gtop - 1, 1, 1);
+          continue;
+        }
+        var cx = sp.x0 + Math.round(span * 0.62);
+        var u = (S.x + S.w - cx) / S.w;
+        var face = u < 0.25 ? 1 : -1, aim = u >= 0.45;
+        /* the gun is held LOW and FORWARD, out past his side at the lower
+           third of the cup, as js/cupmen.js holds it in the game */
+        var hx = cx + face * (big ? 5 : 4), hy = fl - (big ? 3 : 2);
+        var mx = hx + face * (big ? 7 : 5);
+        Tint.rect(ctx, cx - (big ? 5 : 4), fl - 1, big ? 10 : 8, 1, P.shade, 8);
+        if (typeof Cupmen !== 'undefined' && Cupmen.drawPixelCup && Cupmen.drawPixelGun) {
+          Cupmen.drawPixelCup(ctx, cx, fl, 'crimson', face, big);
+          Cupmen.drawPixelGun(ctx, hx, hy, 'crimson', face, aim);
+        } else {
+          /* never throw on a card: a flat cup with its eyes, if the Cupmen
+             are not there to draw themselves */
+          var cw = big ? 8 : 6, chh = big ? 9 : 7;
+          for (k = 0; k < chh; k++) {
+            var iw = Math.round(cw * (0.6 + 0.4 * k / (chh - 1)));
+            ctx.fillStyle = P.cupRedLit; ctx.fillRect(cx - Math.floor(iw / 2), fl - chh + k, iw, 1);
+          }
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(cx + face * 2 - 1, fl - chh + 2, 1, 1); ctx.fillRect(cx + face * 2 + 1, fl - chh + 2, 1, 1);
+          ctx.fillStyle = CP.gunBlue || '#1f4fb8'; ctx.fillRect(Math.min(hx, mx), hy - 1, Math.abs(mx - hx) + 1, 2);
+        }
+        if (!aim) continue;
+        var cyc = wrap(S.t / 1.6 + (hash(sp.i * 13 + 5) % 1000) / 1000, 1);
+        var py = hy - 1, wall = sp.x0;
+        if (cyc < 0.35) {
+          var nd = 1 + Math.min(2, Math.floor(cyc / 0.35 * 3));
+          ctx.fillStyle = CP.flash || '#fff1b0';
+          for (k = 1; k <= nd; k++) if (mx - k * 4 > wall + 1) ctx.fillRect(mx - k * 4, py, 1, 1);
+        } else if (cyc < 0.6) {
+          var px = Math.round(mx - (mx - wall - 2) * (cyc - 0.35) / 0.25);
+          ctx.fillStyle = CP.ring || '#1a1410';           ctx.fillRect(px - 1, py - 1, 3, 3);
+          ctx.fillStyle = CP.pelletYellow || '#ffc21a';   ctx.fillRect(px - 1, py, 3, 1); ctx.fillRect(px, py - 1, 1, 3);
+          ctx.fillStyle = CP.pelletYellowHi || '#fff3b0'; ctx.fillRect(px, py - 1, 1, 1);
+        } else if (cyc < 0.78) {
+          /* the pop: a star of yellow spitting off the plank's face */
+          var pp = cyc < 0.69 ? 1 : 2;
+          ctx.fillStyle = CP.pelletYellow || '#ffc21a';
+          ctx.fillRect(wall, py, 1, 1);
+          ctx.fillRect(wall + pp, py - pp, 1, 1); ctx.fillRect(wall + pp, py + pp, 1, 1); ctx.fillRect(wall + pp + 1, py, 1, 1);
+          ctx.fillStyle = CP.flash || '#fff1b0'; ctx.fillRect(wall + 1, py, 1, 1);
+        }
+      }
+    },
+
+    /* a black foam biscuit tumbling, its height cycling the way the
+       twelve real frames do, with its hard offset shadow, matte - one row
+       of the strip's light along its top and no gloss */
+    drop: function (ctx, d, S) {
+      var bw = Math.max(5, Math.round(7 * S.k * 2.4));
+      var bh = Math.max(1, Math.round([7, 6, 4, 2, 4, 6][Math.floor(d.f * 12) % 6] * bw / 7));
+      var x0 = d.x - (bw >> 1), y0 = d.y - (bh >> 1);
+      ctx.fillStyle = P.shade;   ctx.fillRect(x0 + 2, y0 + 2, bw, bh);
+      ctx.fillStyle = P.foam;    ctx.fillRect(x0, y0, bw, bh);
+      ctx.fillStyle = P.outline; ctx.fillRect(x0, y0, 1, bh); ctx.fillRect(x0 + bw - 1, y0, 1, bh);
+      ctx.fillStyle = P.foamRim; ctx.fillRect(x0 + 1, y0, bw - 2, 1);
+    },
+
+    /* and the room is lit green, not lamp-warm */
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.ledGreen, 1); }
+  };
 
   /* ====================================================== generation */
 
@@ -3301,7 +3363,7 @@ var Fort = (function () {
      stands still; the engine only moves a boon a level steps). Three keys
      absent is three places nobody can put code that never runs. */
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
@@ -3310,7 +3372,6 @@ var Fort = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon, makeGift: makeGift,
     stepDrop: stepDrop,

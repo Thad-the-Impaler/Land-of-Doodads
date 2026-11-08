@@ -337,8 +337,9 @@ var Mantle = (function () {
     ceil:  ['▲ THE SCREEN ENDS HERE ▲', 'THE TOP BEZEL IS SOLID']
   };
 
-  /* the thirteen colours the generic level-select window would use.
-     This bay paints its own cover below; the table stays honest. */
+  /* the thirteen colours the generic cover would use. This bay paints
+     its own (see COVER); the table stays honest - the TV and the stands
+     read `back` off it. */
   var PREVIEW = {
     back: P.screenMid, backAlt: P.screenLo, seam: P.screenDeep,
     beam: P.stoneCream, beamDark: P.stoneDark, beamLight: P.stoneWhite,
@@ -2088,234 +2089,290 @@ var Mantle = (function () {
 
   /* ------------------------------------------------------ the cover art
 
-     The little live window on the level select: 118x114 on the big card,
-     82x94 on the side ones. The generic cover is the Coop's shapes
-     recoloured, which reads as neither level, so this paints the bay's
-     own and nothing else: a dark panel with the room low in it, the
-     stone band, the black shelf, two stone pilasters with shelf caps
-     sliding past, a remote firing, and a dead pixel coming apart on the
-     way down. The caller has already clipped to the box, so nothing
-     here clips, saves or restores. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var shelfY = y + h - Math.round(h * 0.17);   /* the black mantle   */
-    var lidY = y + Math.round(h * 0.09);         /* the TV's top bezel */
-    var stoneY = shelfY - 13;                    /* three 4px courses  */
-    var i;
+     The Mantle's painters for its cover. js/cover.js lays it out, times
+     it and paints the doodad; this says what the bay looks like: a dark
+     panel with the room low in it, the stone band, the black shelf,
+     stone pilasters with shelf caps for columns, a remote firing, and a
+     dead pixel coming apart on the way down.
 
-    /* 1. The glass, and almost nothing in it. Two thirds of this card
-       is a switched-off television, which is the single truest thing
-       about the level: the eye should go to the stone and the red line
-       and find nothing anywhere else. */
-    ctx.fillStyle = P.screenMid; ctx.fillRect(x, y, w, h);
-    Tint.rect(ctx, x, y, w, Math.round(h * 0.40), P.screenDeep, 7);
+     NO HALO behind the doodad. Every other cover in the game puts a
+     square of its own air behind the bird, because a tan doodad on
+     sunlit stucco or on a brown fence disappears. On a switched-off
+     television it is the brightest thing on the card already, and the
+     tint only ever read as a box it was sitting in. */
 
-    /* the room low down in it: the sofa's slab, the line where the
-       floor starts, and one amber pendant. Three shapes, no detail -
-       any more and the panel stops being glass and becomes a window. */
-    var rf = y + Math.round(h * 0.58);
-    ctx.fillStyle = P.reflWall;    ctx.fillRect(x, rf - 14, w, 14);
-    ctx.fillStyle = P.reflCouch;   ctx.fillRect(x + 5, rf - 12, Math.round(w * 0.52), 12);
-    ctx.fillStyle = P.reflCushion; ctx.fillRect(x + 8, rf - 10, Math.round(w * 0.22), 5);
-    ctx.fillStyle = P.reflFloor;   ctx.fillRect(x, rf, w, stoneY - rf - 2);
-    ctx.fillStyle = P.reflFloorHi; ctx.fillRect(x, rf, w, 1);
-    /* the room's own night, which in the bay itself is two of the four
-       ramps LivingRoom bakes into its light sheet - it was five flat
-       Tints once and the whole room was rebuilt to stop it being. Two
-       flat steps is the right answer HERE and nowhere else: this card
-       is 118px wide, it is never flown through, and nobody has ever
-       read a ruled line on a thumbnail. Without them the reflected
-       floor is the brightest field on the card and the stone band under
-       it has nothing to stand off. */
-    Tint.rect(ctx, x, rf - 6, w, stoneY - rf + 6, P.void, 5);
-    Tint.rect(ctx, x, rf + 6, w, stoneY - rf - 6, P.void, 4);
+  /* the stone band's course on a card: the level's 6 rows would leave
+     it three pixels, a lit row and a joint with nothing between them */
+  function coverCourse(S) { return Math.max(2, Math.round(4 * S.k * 2.4)); }
 
-    var lx = x + Math.round(w * 0.72);
-    Tint.rect(ctx, lx - 6, y + Math.round(h * 0.18), 13, 18, P.lampWarm, 2);
-    ctx.fillStyle = P.reflLamp;   ctx.fillRect(lx - 2, y + Math.round(h * 0.24), 5, 6);
-    ctx.fillStyle = P.reflLampHi; ctx.fillRect(lx - 1, y + Math.round(h * 0.26), 3, 2);
+  var COVER = {
+    ink: P.outline,
 
-    /* 2. the panel's bottom bezel, and the stone band under it */
-    ctx.fillStyle = P.bezelDark; ctx.fillRect(x, stoneY - 2, w, 2);
-    ctx.fillStyle = P.bezelHi;   ctx.fillRect(x, stoneY - 2, w, 1);
-    for (var crs = 0; crs < 3; crs++) {
-      var cy = stoneY + crs * 4;
-      var step = 11 + crs * 3;
-      for (i = -1; i <= Math.ceil(w / step); i++) {
-        var sx = x + Math.round(wrap(i * step - s * 0.18 + crs * 5, w + step * 2)) - step;
-        var px0 = Math.max(x, sx), pw = Math.min(sx + step - 1, x + w) - px0;
-        if (pw <= 0) continue;
-        ctx.fillStyle = STONES[wrap(i + crs * 5, STONES.length)];
-        ctx.fillRect(px0, cy, pw, 3);
-        ctx.fillStyle = P.stoneLit;   ctx.fillRect(px0, cy, pw, 1);
-        ctx.fillStyle = P.stoneJoint; ctx.fillRect(px0, cy + 3, pw, 1);
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, q = S.k * 2.4, n, c;
+      var crs = coverCourse(S), bez = crs >= 3 ? 2 : 1;
+      var stoneY = S.floor - crs * 3;
+
+      /* The glass, and almost nothing in it. Two thirds of this card is
+         a switched-off television, which is the single truest thing
+         about the level: the eye should go to the stone and the red line
+         and find nothing anywhere else. */
+      ctx.fillStyle = P.screenMid; ctx.fillRect(x, y, w, h);
+      Tint.rect(ctx, x, y, w, Math.round(h * 0.40), P.screenDeep, 7);
+
+      /* The room low down in it: the sofa's slab, the line where the
+         floor starts, and one amber pendant - three shapes, no detail,
+         or the panel stops being glass and becomes a window. The slab
+         and the lamp ride the glass's own twelfth of the lane. */
+      var rf = S.top + Math.round(S.lane * 0.58);
+      var wallH = Math.round(14 * q), slabH = Math.round(12 * q);
+      ctx.fillStyle = P.reflWall;    ctx.fillRect(x, rf - wallH, w, wallH);
+      ctx.fillStyle = P.reflFloor;   ctx.fillRect(x, rf, w, stoneY - bez - rf);
+      ctx.fillStyle = P.reflFloorHi; ctx.fillRect(x, rf, w, 1);
+      var every = Math.round(w * 1.4), o = Math.round(wrap(S.s * 0.08, every));
+      for (n = 0; n < 2; n++) {
+        var ox = x - o + n * every;
+        ctx.fillStyle = P.reflCouch;   ctx.fillRect(ox + Math.round(5 * q), rf - slabH, Math.round(w * 0.52), slabH);
+        ctx.fillStyle = P.reflCushion;
+        ctx.fillRect(ox + Math.round(8 * q), rf - Math.round(10 * q), Math.round(w * 0.22), Math.round(5 * q));
+        var lx = ox + Math.round(w * 0.72), ly = S.top + Math.round(S.lane * 0.2);
+        var gw = Math.round(13 * q), gh = Math.round(18 * q);
+        Tint.rect(ctx, lx - (gw >> 1), ly - (gh >> 1), gw, gh, P.lampWarm, 2);
+        var lw = Math.max(2, Math.round(5 * q)), lh = Math.max(2, Math.round(6 * q));
+        ctx.fillStyle = P.reflLamp;   ctx.fillRect(lx - (lw >> 1), ly - (lh >> 1), lw, lh);
+        var hw = Math.max(1, Math.round(3 * q)), hh = Math.max(1, Math.round(2 * q));
+        ctx.fillStyle = P.reflLampHi; ctx.fillRect(lx - (hw >> 1), ly - (lh >> 1) + Math.round(2 * q), hw, hh);
       }
-    }
+      /* The room's own night, which in the bay itself is two of the four
+         ramps LivingRoom bakes into its light sheet. Two flat steps are
+         the right answer HERE and nowhere else: a card is never flown
+         through, and nobody has ever read a ruled line on a thumbnail.
+         Without them the reflected floor is the brightest field on the
+         card and the stone band under it has nothing to stand off. */
+      var six = Math.round(6 * q);
+      Tint.rect(ctx, x, rf - six, w, stoneY - rf + six, P.void, 5);
+      Tint.rect(ctx, x, rf + six, w, stoneY - rf - six, P.void, 4);
 
-    /* 3. the shelf the whole bay stands on, with its lit arris */
-    ctx.fillStyle = P.mantleGloss; ctx.fillRect(x, shelfY, w, 1);
-    ctx.fillStyle = P.mantleTop;   ctx.fillRect(x, shelfY + 1, w, 2);
-    ctx.fillStyle = P.mantleDeep;  ctx.fillRect(x, shelfY + 3, w, 1);
-    ctx.fillStyle = P.mantleFace;  ctx.fillRect(x, shelfY + 4, w, y + h - shelfY - 4);
-    ctx.fillStyle = P.mantleScuff;
-    ctx.fillRect(x + wrap(Math.round(s) * 3, w), shelfY + 2, 2, 1);
-    ctx.fillRect(x + wrap(Math.round(s) * 3 + 37, w), shelfY + 1, 1, 1);
-
-    /* 4. two pilasters with their black caps going past. The gaps walk
-       in thirds of the room rather than off a modulus - the Deck's
-       lesson: `(i * 19) % room` put all three in the same band on the
-       narrow card and it read as scaffolding. */
-    var period = big ? 46 : 38;
-    var span = shelfY - lidY;
-    var firstOx = 0;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
-      if (i === 0) firstOx = ox;
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var room = Math.max(1, span - gapH - 18);
-      var gapY = Math.round(lidY + 8 + (i * room) / 3);
-      /* WHICH PILASTER THIS IS, and the whole of the "the pillars are
-         glitchy with the brick pattern" bug. pvColumn used to hash its
-         courses on `ox`, which is WHERE THE COLUMN IS ON THE CARD - and
-         ox walks one pixel left every 45ms, so every time it ticked, all
-         eight courses were re-rolled at once. Measured on the big card:
-         the column's whole colouring changed on 37% of frames, 7.85 of
-         its 8 courses moved on each one, and a course that moved jumped
-         42 of luminance, the palette running #d2cbbf down to #5f5346.
-         That is 22 recolours a second on a 12px column of near-white
-         stone, which is exactly what sparkling stone looks like.
-
-         The key has to be the column's IDENTITY, not its position: the
-         slot index plus the number of times that slot has wrapped, so a
-         pilaster carries one number for the whole of its pass across the
-         card and the next one to appear in the same slot gets a new one.
-         The two halves get id*2 and id*2+1 rather than the same key,
-         because keyed on ox they shared it and the stack above a gap was
-         the stack below it re-run from the top. */
-      var id = i + 3 * Math.floor((s + i * period) / (period * 3));
-      pvColumn(ctx, ox, lidY + 2, gapY - lidY - 2, false, id * 2);
-      pvColumn(ctx, ox, gapY + gapH, shelfY - gapY - gapH, true, id * 2 + 1);
-    }
-
-    /* 5. A remote standing on the shelf between two pilasters - which
-       is where the spawner actually puts them - blinking its cue and
-       then firing. On for 0.7 of every 2.6 seconds, which is a shade
-       more generous than the real 0.21 of a period: a card that is
-       dark for five sixths of its cycle does not say what the level is. */
-    var mx = firstOx + Math.round(period / 2);
-    if (mx > x + 3 && mx < x + w - 5) {
-      var ph = t % 2.6;
-      var shot = ph > 1.9;
-      var arming = !shot && ph > 1.4;
-      var blen = Math.min(Math.round(span * 0.38), shelfY - lidY - 6);
-      ctx.fillStyle = P.remoteBody; ctx.fillRect(mx - 2, shelfY - 10, 5, 10);
-      ctx.fillStyle = P.remoteLit;  ctx.fillRect(mx - 2, shelfY - 10, 1, 10);
-      ctx.fillStyle = P.remoteKey;  ctx.fillRect(mx - 1, shelfY - 7, 3, 1);
-      ctx.fillRect(mx - 1, shelfY - 5, 3, 1);
-      ctx.fillStyle = P.remoteRed;  ctx.fillRect(mx - 1, shelfY - 3, 2, 1);
-      if (shot) {
-        var by = shelfY - 11 - blen;
-        Tint.rect(ctx, mx - 2, by, 1, blen, P.laserHalo, 8);
-        Tint.rect(ctx, mx + 2, by, 1, blen, P.laserHalo, 8);
-        ctx.fillStyle = P.laserEdge; ctx.fillRect(mx - 1, by, 3, blen);
-        ctx.fillStyle = P.laser;
-        for (i = wrap(Math.floor(s), 4); i < blen; i += 4) ctx.fillRect(mx - 1, by + i, 3, 2);
-        ctx.fillStyle = P.laserCore; ctx.fillRect(mx, by, 1, blen);
-      } else if (arming) {
-        ctx.fillStyle = Math.floor(t * 8) % 2 ? P.aimHot : P.aim;
-        for (i = 3; i < blen; i += 3) ctx.fillRect(mx, shelfY - 11 - i, 1, 1);
+      /* The panel's bottom bezel, and the stone band under it, sliding
+         at the wall's 0.22: three courses of ledger stone, pieces one to
+         a cell with the joint hashed inside it, so they run long and
+         short as the wall's do and keep their colour as they slide. One
+         rust piece in an armful, as in Mantle ref 2. */
+      ctx.fillStyle = P.bezelDark; ctx.fillRect(x, stoneY - bez, w, bez);
+      ctx.fillStyle = P.bezelHi;   ctx.fillRect(x, stoneY - bez, w, 1);
+      var cell = Math.max(5, Math.round(29 * S.k)), woff = Math.round(S.s * 0.22);
+      for (c = 0; c < 3; c++) {
+        var cy = stoneY + c * crs, off = woff + c * 7;
+        for (n = Math.floor(off / cell) - 1; n * cell - off < w + cell; n++) {
+          var j0 = x + n * cell - off + Math.round(cell * 0.25) + hash(c * 1009 + n) % Math.max(1, cell >> 1);
+          var j1 = x + (n + 1) * cell - off + Math.round(cell * 0.25) + hash(c * 1009 + n + 1) % Math.max(1, cell >> 1);
+          var hv = hash(c * 7919 + n * 31 + 5);
+          ctx.fillStyle = (c === 1 && wrap(n, 8) === 3) ? P.stoneRust : STONES[hv % STONES.length];
+          ctx.fillRect(j0 + 1, cy, j1 - j0 - 1, crs - 1);
+          ctx.fillStyle = P.stoneLit;   ctx.fillRect(j0 + 1, cy, j1 - j0 - 1, 1);
+          ctx.fillStyle = P.stoneJoint; ctx.fillRect(j0, cy, 1, crs);
+        }
+        ctx.fillStyle = P.stoneJoint; ctx.fillRect(x, cy + crs - 1, w, 1);
       }
-      ctx.fillStyle = (shot || (arming && Math.floor(t * 8) % 2)) ? P.led : P.ledOff;
-      ctx.fillRect(mx, shelfY - 11, 1, 1);
-    }
+      /* and the whole wall stands back a step behind the action */
+      Tint.rect(ctx, x, y, w, h, P.void, 3);
+    },
 
-    /* 6. a dead pixel tumbling down the right third, stepping through
-       the same eight widths the real one does */
-    var pf = Math.floor(s / 4) % 8;
-    var pw2 = Math.max(1, Math.round(PIX_W[pf] * 0.5));
-    var pxx = x + Math.round(w * 0.80);
-    var pyy = Math.round(lidY + 4 + wrap(s * 1.5, stoneY - lidY - 10));
-    ctx.fillStyle = P.pxOutline;
-    ctx.fillRect(pxx - Math.floor(pw2 / 2) - 1, pyy - 1, pw2 + 2, 7);
-    if (pw2 <= 1) {
-      ctx.fillStyle = P.pxWhite; ctx.fillRect(pxx, pyy, 1, 5);
-    } else {
-      var third = Math.max(1, Math.round(pw2 / 3));
-      var o0 = pxx - Math.floor(pw2 / 2);
-      ctx.fillStyle = pf < 4 ? P.pxRed : P.pxBlue;   ctx.fillRect(o0, pyy, third, 5);
-      ctx.fillStyle = P.pxGreen;                     ctx.fillRect(o0 + third, pyy, third, 5);
-      ctx.fillStyle = pf < 4 ? P.pxBlue : P.pxRed;   ctx.fillRect(o0 + third * 2, pyy, pw2 - third * 2, 5);
-    }
-
-    /* 7. The doodad flying it, and NO halo behind it. Every other cover
-       in the game puts a square of its own air behind the bird, because
-       a tan doodad on sunlit stucco or on a brown fence disappears. On
-       a switched-off television it is the brightest thing on the card
-       already, and the tint only ever read as a box it was sitting in. */
-    var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 8. and the top of the television across the top of the card -
-       stone in shadow, then the bezel's hard line, which in this room is
-       the thing that ends runs. The level's own band, see bakeTop. */
-    ctx.fillStyle = P.stoneCream; ctx.fillRect(x, y, w, lidY - y);
-    for (i = 0; i * 9 < w; i++) {
-      ctx.fillStyle = (i & 1) ? P.stoneGreyGreen : P.stoneWhite;
-      ctx.fillRect(x + i * 9, y, 8, Math.max(1, lidY - y - 4));
-    }
-    /* the same five sixteenths the band itself takes, so the card's lid
-       sits under its pillars exactly the way the level's does */
-    Tint.rect(ctx, x, y, w, lidY - y, P.void, 5);
-    ctx.fillStyle = P.bezelDark;  ctx.fillRect(x, lidY - 3, w, 1);
-    ctx.fillStyle = P.bezelHi;    ctx.fillRect(x, lidY - 2, w, 1);
-    ctx.fillStyle = P.bezel;      ctx.fillRect(x, lidY - 1, w, 1);
-    ctx.fillStyle = P.outline;    ctx.fillRect(x, lidY, w, 1);
-    Tint.rect(ctx, x, lidY + 1, w, 4, R.crownShade, 5);
-    Tint.rect(ctx, x, y, w, h, P.lampWarm, 1);
-  }
-
-  /* One little stone pilaster inside a cover. `capTop` says the black
-     shelf goes on its upper end - the arris always faces the gap, here
-     as in the room. The courses take their colour off a hash rather than
-     off a counter: a three-colour cycle up a 12px column is a ladder, and
-     the first pass of this card was four white ladders sliding past.
-
-     `key` is WHICH PILASTER AND WHICH HALF, handed down by drawPreview,
-     and it is the half of the hash that must not change while the thing
-     is on screen. It used to be `x`, the column's position on the card,
-     and the stone boiled at 22Hz as it slid - see the comment at the call
-     site. Both halves of the hash are now odd 32-bit multipliers, so
-     consecutive keys separate as well as consecutive course rows do. */
-  function pvColumn(ctx, x, y, h, capTop, key) {
-    if (h <= 0) return;
-    var i, n, hgt;
-    for (i = 0; i < h; i += 4) {
-      n = (Math.imul(i + 11, 2654435761) ^ Math.imul(key + 3, 2246822519)) >>> 0;
-      hgt = Math.min(3, h - i);
-      ctx.fillStyle = STONES[(n >>> 13) % STONES.length];
-      ctx.fillRect(x, y + i, 12, hgt);
-      ctx.fillStyle = P.stoneLit;   ctx.fillRect(x, y + i, 12, 1);
-      if (i + 3 < h) { ctx.fillStyle = P.stoneJoint; ctx.fillRect(x, y + i + 3, 12, 1); }
-      /* one course in three is two pieces rather than one */
-      if ((n >>> 3) % 3 === 0) {
-        ctx.fillStyle = P.stoneJoint;
-        ctx.fillRect(x + 3 + ((n >>> 7) % 6), y + i, 1, hgt);
+    /* THE STONE PILASTER, in courses from the shelf return at the mouth
+       of the gap. The courses take their colour off a hash of the course
+       AND THE COLUMN'S IDENTITY - p.i and which half - never its x: a
+       cover once keyed them on where the column was on the card, and the
+       stone re-rolled every time it slid a pixel, 22 times a second on a
+       12px column of near-white stone, which is exactly what sparkling
+       stone looks like. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var top = end === 'top';
+      var capH = Math.max(2, Math.round(9 * S.k)), proud = Math.max(1, Math.round(4 * S.k));
+      var ch = Math.max(3, Math.round(9 * S.k));
+      var key = p.i * 2 + (top ? 0 : 1), rust = hash(p.i * 5 + 1) & 1 ? 2 + hash(p.i) % 3 : -1;
+      var c, d, cy, hv;
+      ctx.fillStyle = P.stoneJoint; ctx.fillRect(x, y, w, h);
+      for (c = 0, d = capH; d < h; c++, d += ch) {
+        cy = top ? y + h - d - ch : y + d;
+        hv = (Math.imul(c + 11, 2654435761) ^ Math.imul(key + 3, 2246822519)) >>> 0;
+        ctx.fillStyle = (c === rust && !top) ? P.stoneRust : STONES[(hv >>> 13) % STONES.length];
+        ctx.fillRect(x, cy, w, ch - 1);
+        ctx.fillStyle = P.stoneLit; ctx.fillRect(x, cy, w, 1);
+        /* one course in three is two pieces rather than one */
+        if ((hv >>> 3) % 3 === 0) {
+          ctx.fillStyle = P.stoneJoint;
+          ctx.fillRect(x + 3 + (hv >>> 7) % Math.max(1, w - 6), cy, 1, ch - 1);
+        }
+        /* a fleck of some other stone */
+        if (ch >= 4 && (hv >>> 9) % 2 === 0) {
+          ctx.fillStyle = STONES[(hv >>> 17) % STONES.length];
+          ctx.fillRect(x + 1 + (hv >>> 21) % Math.max(1, w - 2), cy + 1 + (hv >>> 25) % (ch - 2), 1, 1);
+        }
       }
-    }
-    ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + 11, y, 1, h);
-    var cy = capTop ? y : y + h - 5;
-    ctx.fillStyle = P.mantleFace;  ctx.fillRect(x - 2, cy, 16, 5);
-    ctx.fillStyle = P.mantleTop;   ctx.fillRect(x - 2, capTop ? cy + 1 : cy + 3, 16, 1);
-    ctx.fillStyle = P.mantleGloss; ctx.fillRect(x - 2, capTop ? cy : cy + 4, 16, 1);
-    ctx.fillStyle = P.outline;     ctx.fillRect(x - 2, capTop ? cy + 4 : cy, 16, 1);
-  }
+      ctx.fillStyle = P.outline; ctx.fillRect(x, y, 1, h); ctx.fillRect(x + w - 1, y, 1, h);
+
+      /* The SHELF RETURN: the black mantle mitred round the mouth of the
+         gap, its gloss arris on the gap's edge because the arris is the
+         edge that kills, and on a screen this dark it is the only part
+         of the pillar you can find in a hurry. */
+      var rows = capH >= 4 ? [P.mantleGloss, P.mantleTop, P.mantleFace, P.outline]
+               : capH === 3 ? [P.mantleGloss, P.mantleFace, P.outline] : [P.mantleGloss, P.outline];
+      var capY = top ? y + h - capH : y, r;
+      for (r = 0; r < capH; r++) {
+        ctx.fillStyle = rows[r];
+        ctx.fillRect(x - proud, top ? y + h - 1 - r : y + r, w + proud * 2, 1);
+      }
+      ctx.fillStyle = P.outline;
+      ctx.fillRect(x - proud, capY, 1, capH); ctx.fillRect(x + w + proud - 1, capY, 1, capH);
+      if (capH >= 3) {
+        ctx.fillStyle = P.mantleScuff;
+        ctx.fillRect(x + 2 + hash(key + 9) % Math.max(1, w - 4), top ? y + h - 2 : y + 1, 2, 1);
+      }
+      Tint.rect(ctx, x + w, y, proud, h, P.void, 7);
+    },
+
+    /* The top of the television: stone in shadow, then the bezel's hard
+       line, which in this room is the thing that ends runs - the level's
+       own band (bakeTop), and the shadow it throws down the glass over
+       the tops of the pilasters, as drawCeiling lays the room's strip. */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, y = S.y, d = S.top - S.y, q = S.k * 2.4, n, c;
+      var hard = d >= 6 ? 4 : 3, sr = d - hard;
+      var bez = hard === 4 ? [P.bezelDark, P.bezelHi, P.bezel, P.outline] : [P.bezelHi, P.bezel, P.outline];
+      ctx.fillStyle = P.stoneCream; ctx.fillRect(x, y, w, sr);
+      var pp = Math.max(4, Math.round(9 * q)), cc = sr >= 6 ? 3 : sr, off = Math.round(S.s);
+      for (c = 0; c * cc < sr; c++) {
+        var cy = y + sr - (c + 1) * cc, o = off + c * (pp >> 1);
+        for (n = Math.floor(o / pp); n * pp - o < w; n++) {
+          var hv = hash(c * 4001 + n * 17 + 3);
+          ctx.fillStyle = hv % 3 ? (hv % 3 === 1 ? P.stoneWhite : P.stoneGreyGreen) : P.stoneCream;
+          ctx.fillRect(x + n * pp - o, Math.max(y, cy), pp - 1, cy < y ? cc + cy - y : cc);
+          if (cy >= y) { ctx.fillStyle = P.stoneLit; ctx.fillRect(x + n * pp - o, cy, pp - 1, 1); }
+        }
+      }
+      /* the five sixteenths the band itself takes, so the card's lid
+         sits under its pillars exactly the way the level's does */
+      Tint.rect(ctx, x, y, w, sr, P.void, 5);
+      for (n = 0; n < hard; n++) { ctx.fillStyle = bez[n]; ctx.fillRect(x, y + sr + n, w, 1); }
+      Tint.rect(ctx, x, S.top, w, Math.max(2, Math.round(4 * q)), R.crownShade, 5);
+    },
+
+    /* the shelf the whole bay stands on, with its lit arris, and the
+       dark it throws up into the stone over the pilasters' feet */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, fy = S.floor, d = S.y + S.h - S.floor, q = S.k * 2.4, n;
+      var up = Math.max(2, Math.round(5 * q));
+      Tint.rect(ctx, x, fy - up, w, up, P.void, 4);
+      ctx.fillStyle = P.mantleGloss; ctx.fillRect(x, fy, w, 1);
+      ctx.fillStyle = P.mantleTop;   ctx.fillRect(x, fy + 1, w, 2);
+      ctx.fillStyle = P.mantleDeep;  ctx.fillRect(x, fy + 3, w, 1);
+      ctx.fillStyle = P.mantleFace;  ctx.fillRect(x, fy + 4, w, d - 4);
+      var pitch = Math.max(9, Math.round(37 * q * 0.6)), off = Math.round(S.s);
+      ctx.fillStyle = P.mantleScuff;
+      for (n = Math.floor(off / pitch); n * pitch - off < w; n++) {
+        var hv = hash(n * 13 + 7);
+        ctx.fillRect(x + n * pitch - off + hv % pitch, fy + 1 + (hv >>> 8) % 2, 1 + (hv >>> 12) % 2, 1);
+      }
+    },
+
+    /* THE REMOTE, in the even spans: standing on the shelf or hung
+       nose-down in its clip under the bezel, by turns, running the
+       level's own cycle on the clock - the LED's two blinks, the dotted
+       aim, the shot, the fade. Its reach is the level's 38% of the lane,
+       cut short of the doodad's line through that span, so the card
+       never shows a shot the doodad flew into. */
+    props: function (ctx, S) {
+      var q = S.k * 2.4, i, k;
+      var rw = Math.max(3, Math.round(5 * q)), rh = Math.max(6, Math.round(10 * q));
+      var a = ctx.globalAlpha;
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var hx = Math.round((sp.x0 + sp.x1) / 2), hv = hash(sp.i * 23 + 9);
+        var p = wrap(S.t / 2.6 + (hv % 1000) / 1000, 1), lit = ledLit(p);
+        var onCeil = wrap(sp.i, 4) === 2, base, dir, J, l = hx - (rw >> 1);
+        if (!onCeil) {
+          /* on the shelf, its foot leaning a pixel back */
+          var fy = S.floor - 1;
+          ctx.fillStyle = P.outline;
+          ctx.fillRect(l - 1, fy - rh, rw + 2, rh + 1);
+          ctx.fillRect(l - 2, fy - (rh >> 1) + 1, 1, rh >> 1);
+          ctx.fillStyle = P.remoteBody; ctx.fillRect(l, fy - rh + 1, rw, rh);
+          ctx.fillStyle = P.remoteBody; ctx.fillRect(l - 1, fy - (rh >> 1) + 1, 1, rh >> 1);
+          ctx.fillStyle = P.remoteLit;  ctx.fillRect(l, fy - rh + 1, 1, rh >> 1);
+          ctx.fillStyle = P.remoteKey;
+          ctx.fillRect(hx - 1, fy - rh + Math.round(rh * 0.35), 2, 1);
+          ctx.fillRect(hx - 1, fy - rh + Math.round(rh * 0.55), 2, 1);
+          ctx.fillStyle = P.remoteRed;  ctx.fillRect(hx - 1, fy - 2, 2, 1);
+          ctx.fillStyle = P.remoteDark; ctx.fillRect(l, fy - rh + 1, rw, 1);
+          ctx.fillStyle = lit ? P.led : P.ledOff; ctx.fillRect(hx, fy - rh + 1, 1, 1);
+          base = fy - rh - 1; dir = -1;
+          J = Math.min(Math.round(S.lane * 0.38), base - sp.line.bottom - 1);
+        } else {
+          /* nose-down out of a sprung clip screwed under the bezel */
+          var cw = rw + 2, ch = Math.max(2, Math.round(3 * q)), bh = Math.max(3, Math.round(6 * q));
+          var bw = Math.max(3, rw - 2), bl = hx - (bw >> 1);
+          ctx.fillStyle = P.outline;    ctx.fillRect(bl - 1, S.top + ch - 1, bw + 2, bh + 1);
+          ctx.fillStyle = P.remoteBody; ctx.fillRect(bl, S.top + ch - 1, bw, bh);
+          ctx.fillStyle = P.remoteLit;  ctx.fillRect(bl, S.top + ch - 1, 1, bh);
+          ctx.fillStyle = P.remoteRed;  ctx.fillRect(hx - 1, S.top + ch + (bh >> 1) - 1, 2, 1);
+          ctx.fillStyle = P.caddy;      ctx.fillRect(hx - (cw >> 1), S.top, cw, ch);
+          ctx.fillStyle = P.caddyLit;   ctx.fillRect(hx - (cw >> 1), S.top, cw, 1);
+          ctx.fillStyle = P.outline;    ctx.fillRect(hx - (cw >> 1), S.top + ch - 1, cw, 1);
+          ctx.fillStyle = lit ? P.led : P.ledOff; ctx.fillRect(hx, S.top + ch + bh - 2, 1, 1);
+          base = S.top + ch + bh; dir = 1;
+          J = Math.min(Math.round(S.lane * 0.38), sp.line.top - base - 1);
+        }
+        if (J < 2) continue;
+        var tip = dir > 0 ? base : base - J;
+        if (p >= 0.58 && p < 0.62) {
+          /* the aim: dull, then hot for the last beat - "this one, now" */
+          ctx.fillStyle = p < 0.60 ? P.aim : P.aimHot;
+          for (k = 2; k < J; k += 3) ctx.fillRect(hx, base + dir * k, 1, 1);
+        } else if (p >= 0.62 && p < 0.86) {
+          var jl = Math.round(J * Math.min(1, (p - 0.62) / 0.02));
+          tip = dir > 0 ? base : base - jl;
+          Tint.rect(ctx, hx - 2, tip, 1, jl, P.laserHalo, 8);
+          Tint.rect(ctx, hx + 2, tip, 1, jl, P.laserHalo, 8);
+          /* bands walking out of the emitter, so it reads as a signal
+             travelling rather than as a bar of red paint */
+          var tick = Math.floor(S.t * 12);
+          for (k = 0; k < jl; k += 2) {
+            var bhh = Math.min(2, jl - k);
+            ctx.fillStyle = wrap((k >> 1) - tick, 3) === 0 ? P.laser : P.laserEdge;
+            ctx.fillRect(hx - 1, dir > 0 ? base + k : base - k - bhh, 3, bhh);
+          }
+          ctx.fillStyle = P.laserCore; ctx.fillRect(hx, tip, 1, jl);
+          ctx.fillRect(hx, base + (dir > 0 ? 0 : -1), 1, 1);
+        } else if (p >= 0.86 && p < 0.92) {
+          /* the shot is over: one thin column going out */
+          ctx.globalAlpha = a * (1 - (p - 0.86) / 0.06);
+          ctx.fillStyle = P.laserEdge; ctx.fillRect(hx, tip, 1, J);
+          ctx.globalAlpha = a;
+        }
+      }
+    },
+
+    /* A dead pixel, tumbling: the level's eight widths, a cosine sampled
+       eight times, and the stripes stay VERTICAL the whole way round -
+       a pixel is a red, a green and a blue stripe side by side, and what
+       turning it does is squash them, not tilt them. Two or three flips
+       on the way down. */
+    drop: function (ctx, d, S) {
+      var q = S.k * 2.4, f = Math.floor(d.f * 20 + d.i) % 8;
+      var pw = Math.max(1, Math.round(PIX_W[f] * 0.5 * q)), ph = Math.max(3, Math.round(5 * q));
+      var o0 = d.x - (pw >> 1), py = d.y - (ph >> 1);
+      ctx.fillStyle = P.pxOutline; ctx.fillRect(o0 - 1, py - 1, pw + 2, ph + 2);
+      if (pw <= 1) { ctx.fillStyle = P.pxWhite; ctx.fillRect(o0, py, 1, ph); return; }
+      var third = Math.max(1, Math.round(pw / 3));
+      ctx.fillStyle = f < 4 ? P.pxRed : P.pxBlue;  ctx.fillRect(o0, py, third, ph);
+      ctx.fillStyle = P.pxGreen;                   ctx.fillRect(o0 + third, py, Math.min(third, pw - third), ph);
+      if (pw > third * 2) { ctx.fillStyle = f < 4 ? P.pxBlue : P.pxRed; ctx.fillRect(o0 + third * 2, py, pw - third * 2, ph); }
+    },
+
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, P.lampWarm, 1); }
+  };
 
   /* ------------------------------------------------------- generation */
 
@@ -2543,7 +2600,7 @@ var Mantle = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
@@ -2552,7 +2609,6 @@ var Mantle = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     rectsFor: rectsFor

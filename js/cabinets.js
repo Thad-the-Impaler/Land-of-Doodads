@@ -330,8 +330,9 @@ var Cabinets = (function () {
     twice:  ['▼ TWO IN A ROW ▼',     'BOTH GAPS GO UP TO THE LID']
   };
 
-  /* the thirteen colours a generic cover would use; this bay paints its
-     own, but the table stays honest */
+  /* the thirteen colours a generic cover would use: the TV's reruns and
+     the stands' set read PREVIEW.back, and the cover itself is COVER,
+     below, in the bay's own pigments */
   var PREVIEW = {
     back: P.panelLit, backAlt: P.panelTop, seam: P.cleatShade,
     beam: P.glass, beamDark: P.outline, beamLight: P.glassHi,
@@ -1738,8 +1739,9 @@ var Cabinets = (function () {
      like every mug, its body flaring out to the wide rim.
      CAP A, THE LOVE YOU ENAMEL MUG (ref 6, 17): white enamel, the black
      rim of a camping mug, a word's worth of ink, the handle turned to us.
-     CAP B, THE FLY.IO MUG: navy, its light rim, and the white logo -
-     the little balloon in a rounded square - on the band. */
+     CAP B, THE NAVY MUG (ref 6's Fly.io mug): navy, its light rim, and
+     on the band the game's own mark where the maker's logo was - the
+     doodad off the favicon. */
   function bakeHangCap(navy) {
     var t = makeCanvas(42, 9), c = t.ctx, y;
     var body = navy ? P.navy : P.enamel, shade = navy ? P.navyDeep : P.enamelShade;
@@ -1777,11 +1779,17 @@ var Cabinets = (function () {
     }
     rect(c, 2, 0, 30, 1, navy ? P.navyLine : P.enamelShade);
     if (navy) {
-      /* the Fly.io mark: a white rounded square with the balloon in it */
-      rect(c, 14, 0, 6, 5, '#f4f6fa');
-      dot(c, 14, 0, P.navy); dot(c, 19, 0, P.navy); dot(c, 14, 4, P.navy); dot(c, 19, 4, P.navy);
-      rect(c, 16, 1, 2, 2, P.navy);
-      dot(c, 17, 3, P.navyLit);
+      /* THE DOODADS MARK, where the real mug carries its maker's logo
+         (nothing of a real brand is drawn in this game): the favicon's
+         doodad, pixel for pixel without its border - seven by five, which
+         is the band exactly. Upright on the screen like the logo it
+         replaces, though the mug hangs mouth down: printed the true way
+         up it would be a doodad on its back. */
+      rect(c, 14, 0, 3, 1, '#c9873c');
+      rect(c, 14, 1, 5, 4, '#c9873c');
+      rect(c, 15, 3, 3, 1, '#7a4a1c');
+      dot(c, 17, 1, '#000000');
+      rect(c, 19, 2, 2, 1, '#f3cc84');
     } else {
       /* the handle's top on the band */
       rect(c, 8, 3, 1, 2, shade); rect(c, 13, 3, 1, 2, shade); rect(c, 9, 2, 4, 1, shade);
@@ -2449,24 +2457,24 @@ var Cabinets = (function () {
 
   /* ======================================================= THE COVER
 
-     118 x 114 on the big card, 82 x 94 on the side ones, 72 x 44 in the
-     stands' TV; the caller has clipped. The top tier straight on at the
-     bay's own row fractions: the lid band (11%) - the cream rail, the top
-     board, the dark arris - the panel with the cleat along its top and
-     its fall of light, HIS THINGS standing on the shelf behind the stacks
-     and going by with them (the big card: the ROK press, the French press
-     and the Chemex at their own spacing in A; the small ones: the French
-     press and the decanter), the shelf line and its green edge at 89%,
-     the tier below with three soft rings of light under the glass. Two
-     stacks half a loop apart, the loop running from off the right edge
-     to off the left (the Fridge's cover loop): ribbed tumblers under a
-     black mug stack, tulip glasses under a navy one. A can glass
-     tumbling down the left third with its spot. AND THE LET-GO, on the
-     first stack every time round: the rock as it passes two thirds of
-     the card, the lid's edge white, the block falling onto the dish, the
-     glints, and the gap standing at the lid until the loop carries it
-     off. The card is a window on the scene: the things are at the
-     lane's scale on it, box-filtered down from their own bakes. */
+     The Cabinets' painters for its cover (js/cover.js lays it out and
+     times it, the same on every card). The top tier straight on: the lid
+     - the cream rail, the top board, the dark arris - the panel with the
+     cleat along its top and its fall of light, HIS THINGS standing on the
+     shelf behind the stacks and going by with them (the big card: the
+     ROK press, the French press and the Chemex at their own spacing; the
+     small ones: the French press and the decanter), the shelf line and
+     its green edge, the tier below with three soft rings of light under
+     the glass. The columns are the bay's: ribbed tumblers or tulips under
+     the white dish, a block of black mugs - one in five the navy - over
+     the LOVE YOU mug or the Fly.io one. A can glass tumbles down with its
+     spot. AND THE LET-GO, the bay's own hazard, which is a thing a
+     hanging stack does, so it lives in `pillar`: on one column in three
+     the block rocks as it comes in, the lid's edge flashing and glass
+     dust sifting off it, holds while he is under it, and lets go onto
+     the dish once he is past - never before. The card is a window on the
+     scene: the things are at the lane's scale on it, box-filtered down
+     from their own bakes. */
   var COVER_THINGS = [['rok', 'frenchPress', 'chemex'], ['frenchPress', 'decanter']];
   T.cover = {};
   /* a bake shrunk by area: each pixel the average of what it covers,
@@ -2511,130 +2519,203 @@ var Cabinets = (function () {
     return t;
   }
 
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k;
-    var lidH = Math.max(3, Math.round(h * 0.11));
-    var shelfY = y + Math.round(h * 0.89);
-    var top = y + lidH, lane = shelfY - top, kk = lane / LANE_H;
-    var sw = Math.max(6, Math.round(34 * kk)), loop = w + sw + 14;
-    /* the panel: the cleat along its top, the light falling down it */
-    for (i = top; i < shelfY; i++) rect(ctx, x, i, w, 1, mix(P.panelTop, P.panelLit, (i - top) / Math.max(1, lane)));
-    var cleatH = Math.max(1, Math.round(14 * kk));
-    rect(ctx, x, top, w, cleatH, P.cleat);
-    rect(ctx, x, top + cleatH - 1, w, 1, P.cleatShade);
-    /* his things on the shelf, at 1.0 with the stacks */
-    var row = coverRow(lane, loop, big), off = wrap(s, loop);
-    for (var tx = x - off; tx < x + w; tx += loop) ctx.drawImage(row.canvas, Math.round(tx), top);
+  /* a 5-row cap squeezed to n rows, the row at the gap's edge first: the
+     first, the last, and the ones between evenly spaced; at two rows the
+     edge and the colour behind it, so a cap never goes to a bare line */
+  function squeeze(rows, n) {
+    if (n >= rows.length) return rows;
+    if (n === 2) return [rows[0], rows[2]];
+    var out = [];
+    for (var j = 0; j < n; j++) out.push(rows[Math.round(j * (rows.length - 1) / (n - 1))]);
+    return out;
+  }
+  /* the caps, gap's edge first: the white dish; the LOVE YOU mug with its
+     camping mug's black rim; the Fly.io mug with its light one */
+  var COVER_DISH = [P.outline, P.dishHi, P.dish, P.dishShade, P.outline];
+  var COVER_LOVE = [P.enamelRim, P.enamelShade, P.enamel, P.enamel, P.enamel];
+  var COVER_FLY = [P.navyLit, P.navyRim, P.navyDeep, P.navy, P.navy];
+
+  /* THE LET-GO on a cover, worked out off where the column is against
+     the doodad and nothing else, so `pillar` and `ceiling` agree on it.
+     m is cover.js's own margin; `ahead` is how far the column is wholly
+     right of his reach, `past` how far wholly left. Null for a column
+     that never lets go, or one still a stack and a half away. Every
+     third column lets go - a hash left runs of seven without one, and a
+     card can go fifteen seconds on a run like that. */
+  function letGo(p, S) {
+    if (((p.i % 3) + 3) % 3 !== 0) return null;
+    var m = Math.ceil(S.doodad.size / 2) + 1;
+    var ahead = p.x - m - S.doodad.x, past = S.doodad.x - m - (p.x + S.pw);
+    if (past > 0) return { fall: clamp(past / (S.pw * 1.2), 0, 1), past: past };
+    if (ahead > 0) return ahead < 1.5 * S.period ? { tell: true } : null;
+    return { hold: true };
+  }
+
+  var COVER = {
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, top = S.top, lane = S.lane, i;
+      /* the panel: the cleat along its top, the light falling down it */
+      rect(ctx, x, S.y, w, S.h, P.panelTop);
+      for (i = top; i < S.floor; i++) rect(ctx, x, i, w, 1, mix(P.panelTop, P.panelLit, (i - top) / Math.max(1, lane)));
+      var cleatH = Math.max(1, Math.round(14 * lane / LANE_H));
+      rect(ctx, x, top, w, cleatH, P.cleat);
+      rect(ctx, x, top + cleatH - 1, w, 1, P.cleatShade);
+      /* his things on the shelf, going by at 1.0 with the stacks */
+      var loop = w + S.pw + 14, row = coverRow(lane, loop, S.big), off = wrap(S.s, loop);
+      for (var tx = x - off; tx < x + w; tx += loop) ctx.drawImage(row.canvas, Math.round(tx), top);
+    },
+
+    /* Standing, the glasses under the white dish: ribbed tumblers, or on
+       an odd column the tulips, each rim a white line and the band under
+       it stepping in a pixel a side. Hanging, the block of mugs over the
+       cap mug, the one in five navy; and on one column in three, the
+       let-go. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var ch = Math.max(2, Math.round(9 * S.k)), ov = Math.max(1, Math.round(4 * S.k));
+      var sh = w <= 9 ? 1 : 2, r, rows, ry;
+      if (end === 'bottom') {
+        Tint.rect(ctx, x + w, y, ov, h, P.void, 5);
+        if (p.i & 1) {
+          /* THE TULIPS: the box gives back a pixel a side under each rim */
+          var tp = Math.max(3, Math.round(13 * S.k * 1.1));
+          for (ry = y + ch; ry < y + h; ry += tp) {
+            rect(ctx, x, ry, w, 1, P.glassEdge);
+            rect(ctx, x + 1, ry, w - 2, 1, P.glassHi);
+            var bh = Math.min(tp - 1, y + h - ry - 1);
+            if (bh <= 0) continue;
+            rect(ctx, x + 1, ry + 1, w - 2, bh, P.glassEdge);
+            rect(ctx, x + 2, ry + 1, w - 4, bh, P.glass);
+            rect(ctx, x + w - 2 - sh, ry + 1, sh, bh, P.glassShade);
+            if (bh >= 3) dot(ctx, x + w - 3 - sh, ry + 2, P.glassLite);
+          }
+          if (ch < h) rect(ctx, x + 3, y + ch + 1, 1, h - ch - 1, P.glassLite);
+        } else {
+          /* THE RIBBED TUMBLERS */
+          rect(ctx, x, y, w, h, P.glassEdge);
+          rect(ctx, x + 1, y, w - 2, h, P.glass);
+          rect(ctx, x + w - 1 - sh, y, sh, h, P.glassShade);
+          var st = Math.max(3, Math.round(12 * S.k));
+          for (ry = y + ch; ry < y + h; ry += st) rect(ctx, x + 1, ry, w - 2, 1, P.glassHi);
+          rect(ctx, x + 2, y + ch, 1, Math.max(0, h - ch), P.glassLite);
+        }
+        /* the white dish across the mouth */
+        rows = squeeze(COVER_DISH, ch);
+        for (r = 0; r < ch && r < h; r++) rect(ctx, x - ov, y + r, w + 2 * ov, 1, rows[r]);
+        return;
+      }
+
+      /* THE MUG BLOCK, and where it is in its let-go */
+      var L = letGo(p, S), dx = 0, dy = 0;
+      if (L && L.tell) dx = Math.round(Math.sin(S.t * 11));
+      if (L && L.fall !== undefined) dy = Math.round(L.fall * L.fall * p.gapH);
+      var navy = hash(p.i * 11 + 23) % 5 === 0, fly = !navy && (hash(p.i * 11) & 1) === 1;
+      var bx = x + dx, by = y + dy, cb = by + h - ch;          /* cb: the cap's first row */
+      Tint.rect(ctx, bx + w, by, ov, h, P.void, 5);
+      rect(ctx, bx, by, w, h, navy ? P.navy : P.mug);
+      rect(ctx, bx + 2, by, 1, Math.max(0, h - ch), navy ? P.navyLit : P.mugLit);
+      /* the mugs' rims, a mug's height apart counted up from the cap mug */
+      var mp = Math.max(3, Math.round(14 * S.k));
+      for (ry = cb - mp; ry >= by; ry -= mp) rect(ctx, bx, ry, w, 1, navy ? P.navyRim : P.mugRim);
+      /* the cap mug's body above its rim, standing in for the block's
+         lowest band */
+      var band = Math.min(Math.max(1, Math.round(5 * S.k)), cb - by);
+      if (band > 0) {
+        rect(ctx, bx, cb - band, w, band, fly ? P.navyLine : P.outline);
+        rect(ctx, bx + 1, cb - band, w - 2, band, fly ? P.navy : P.enamel);
+        rect(ctx, bx + 1, cb - band, 1, band, fly ? P.navyLit : '#ffffff');
+      }
+      /* the cap mug, its rim at the mouth */
+      rows = squeeze(fly ? COVER_FLY : COVER_LOVE, ch);
+      for (r = 0; r < ch; r++) rect(ctx, bx - ov, by + h - 1 - r, w + 2 * ov, 1, rows[r]);
+      if (S.big && ch >= 4) {
+        if (fly) rect(ctx, bx + Math.floor(w / 2) - 1, by + h - 3, 2, 2, '#c9873c');   /* the doodad mark, in its orange */
+        else for (var ix = bx + Math.floor(w / 2); ix < bx + w - 1; ix += 2) dot(ctx, ix, by + h - 3, P.ink);
+      }
+      /* a falling or landed block shows its top mug's foot */
+      if (dy > 0) rect(ctx, bx + 1, by, w - 2, 1, navy ? P.navyLine : P.mugLine);
+      if (!L) return;
+      if (L.tell) {
+        /* glass dust sifting off the lid either side of the column */
+        var a = ctx.globalAlpha, fallH = Math.max(4, Math.round(h * 0.6));
+        for (var i = 0; i < 6; i++) {
+          var hh = hash(p.i * 31 + i * 7919), ph = wrap(S.t * 30 + i * 9, fallH);
+          var sx = i & 1 ? x + w + 1 + hh % 3 : x - 2 - hh % 3, sy = S.top + 1 + Math.round(ph);
+          ctx.globalAlpha = a * (1 - (ph / fallH) * (ph / fallH));
+          rect(ctx, sx, sy, 2, 1, P.glassHi);
+          dot(ctx, sx + ((hh >>> 8) & 1), sy + 1, P.glassEdge);
+        }
+        ctx.globalAlpha = a;
+      } else if (L.fall >= 1 && L.past < S.pw * 1.6) {
+        /* the glints off the dish as it lands */
+        var g = L.past - S.pw * 1.2, dish = p.gapY + p.gapH;
+        for (var q = 0; q < 4; q++) {
+          dot(ctx, x - 2 + Math.round(q * (w + 4) / 3) + Math.round(g * (q < 2 ? -0.3 : 0.3)),
+              dish - 2 - Math.round(g * 0.4), P.glassHi);
+        }
+      }
+    },
+
+    /* the lid: the cream rail, the top board, the dark arris - and over
+       a stack that is letting go, the crack of light along its edge */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, lidH = S.top - S.y;
+      rect(ctx, x, S.y, w, lidH, K.cabinet);
+      rect(ctx, x, S.y, w, 1, K.cabinetLit);
+      var boardH = Math.max(2, Math.round(lidH * 0.4));
+      rect(ctx, x, S.top - boardH - 1, w, 1, K.cabinetShade);
+      rect(ctx, x, S.top - boardH, w, 1, P.boardLit);
+      rect(ctx, x, S.top - boardH + 1, w, boardH - 2, P.board);
+      rect(ctx, x, S.top - 1, w, 1, P.arris);
+      for (var i = 0; i < S.pillars.length; i++) {
+        var p = S.pillars[i], L = letGo(p, S);
+        if (!L || L.fall !== undefined) continue;
+        var cx = p.x + (L.tell ? Math.round(Math.sin(S.t * 11)) : 0);
+        rect(ctx, cx - 2, S.top - 1, S.pw + 4, 1, L.tell && (Math.floor(S.t * 18) & 1) ? P.boardLit : P.glassHi);
+      }
+    },
+
     /* the shelf underfoot: its kill row, the green edge, then the tier
        below and three soft rings of light under the glass */
-    rect(ctx, x, shelfY, w, y + h - shelfY, P.panelMid);
-    rect(ctx, x, shelfY, w, 1, P.shelfLine);
-    if (shelfY + 3 < y + h) { rect(ctx, x, shelfY + 1, w, 1, P.gEdge0); rect(ctx, x, shelfY + 2, w, 1, P.gEdge2); }
-    if (shelfY + 4 < y + h) rect(ctx, x, shelfY + 3, w, 1, P.under);
-    var bandY = shelfY + 4, bandH = y + h - bandY;
-    if (bandH >= 4) {
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, b = S.y + S.h, i;
+      rect(ctx, x, f, w, b - f, P.panelMid);
+      rect(ctx, x, f, w, 1, P.shelfLine);
+      if (f + 3 < b) { rect(ctx, x, f + 1, w, 1, P.gEdge0); rect(ctx, x, f + 2, w, 1, P.gEdge2); }
+      if (f + 4 < b) rect(ctx, x, f + 3, w, 1, P.under);
+      var bandY = f + 4, bandH = b - bandY;
+      if (bandH < 4) return;
       var RINGS = [[0.18, 0.40, 7], [0.52, 0.62, 5], [0.80, 0.35, 6]];
       for (i = 0; i < RINGS.length; i++) {
-        var rx = x + Math.round(wrap(RINGS[i][0] * w - s * PAR_PANEL, w + 16)) - 8;
-        var ry = bandY + Math.round(RINGS[i][1] * (bandH - 2)), ra = big ? RINGS[i][2] : RINGS[i][2] - 1;
+        var rx = x + Math.round(wrap(RINGS[i][0] * w - S.s * PAR_PANEL, w + 16)) - 8;
+        var ry = bandY + Math.round(RINGS[i][1] * (bandH - 2)), ra = S.big ? RINGS[i][2] : RINGS[i][2] - 1;
         Tint.rect(ctx, rx - ra + 1, ry - 1, ra * 2 - 2, 2, P.ringGlow, 3);
         Tint.rect(ctx, rx - ra + 2, ry + 1, ra * 2 - 4, 1, P.ring, 6);
         Tint.rect(ctx, rx - ra, ry, 1, 1, P.ring, 4); Tint.rect(ctx, rx + ra - 1, ry, 1, 1, P.ring, 4);
       }
-    }
-    /* the lid: the cream rail, the top board, the dark arris */
-    rect(ctx, x, y, w, lidH, K.cabinet);
-    rect(ctx, x, y, w, 1, K.cabinetLit);
-    var boardH = Math.max(2, Math.round(lidH * 0.4));
-    rect(ctx, x, y + lidH - boardH - 1, w, 1, K.cabinetShade);
-    rect(ctx, x, y + lidH - boardH, w, 1, P.boardLit);
-    rect(ctx, x, y + lidH - boardH + 1, w, boardH - 2, P.board);
-    rect(ctx, x, y + lidH - 1, w, 1, P.arris);
+    },
 
-    /* the two stacks */
-    var gapH = Math.round(lane * 0.40);
-    for (i = 0; i < 2; i++) {
-      var p = wrap(s + i * loop / 2, loop);
-      var sx0 = Math.round(x + w + 10 - p);
-      if (sx0 < x - sw - 4 || sx0 > x + w + 2) continue;
-      var gapY = top + Math.round(lane * (i ? 0.30 : 0.36));
-      /* the let-go, on stack 0, on its own place along the loop */
-      var lgP = w + 10 - w * 0.66, rockEnd = lgP + 0.55 * 22, fallEnd = rockEnd + 0.40 * 22;
-      var landed = i === 0 && p >= fallEnd, falling = i === 0 && p >= rockEnd && !landed;
-      var rocking = i === 0 && p >= lgP && p < rockEnd;
-      var hH = gapY - top;
-      var dish = gapY + gapH;
-      if (landed) {
-        stacklet(ctx, sx0, dish + 1, shelfY - dish - 1, sw, false, i);
-        mugBlock(ctx, sx0, dish - hH, hH, sw, i);
-        if (p < fallEnd + 10) {
-          for (k = 0; k < 4; k++) dot(ctx, sx0 - 2 + k * (sw + 4) / 3 + Math.round((p - fallEnd) * (k < 2 ? -0.3 : 0.3)),
-                                   dish - 2 - Math.round((p - fallEnd) * 0.4), P.glassHi);
-        }
-      } else if (falling) {
-        stacklet(ctx, sx0, dish, shelfY - dish, sw, false, i);
-        var fk = (p - rockEnd) / (fallEnd - rockEnd);
-        mugBlock(ctx, sx0, top + Math.round(gapH * fk * fk), hH, sw, i);
+    /* a can glass, upright and on its side by turns as it tumbles - at a
+       card's scale a glass is a few pixels - and its spot on the shelf */
+    drop: function (ctx, d, S) {
+      var ex = d.x, ey = d.y, sp = Math.max(2, Math.round(5 - 3 * d.f));
+      Tint.rect(ctx, ex - sp, S.floor - 1, sp * 2 + 1, 2, P.void, 6 + Math.round(8 * d.f));
+      if (S.k < 0.2) {
+        rect(ctx, ex - 1, ey - 2, 3, 4, P.glassEdge);
+        rect(ctx, ex, ey - 1, 1, 2, P.glassHi);
+        return;
+      }
+      if (Math.floor(S.t * 5) & 1) {
+        rect(ctx, ex - 3, ey - 2, 7, 5, P.glassEdge);
+        rect(ctx, ex - 2, ey - 1, 5, 3, P.glass);
+        rect(ctx, ex - 2, ey - 1, 1, 3, P.glassHi);
       } else {
-        var dx = rocking ? Math.round(1.4 * Math.sin((p - lgP) * 1.1)) : 0;
-        stacklet(ctx, sx0, dish, shelfY - dish, sw, false, i);
-        mugBlock(ctx, sx0 + dx, top + (rocking && p - lgP > 4 ? 1 : 0), hH, sw, i);
-        if (rocking) {
-          var fl = Math.floor(p) & 1;
-          rect(ctx, sx0 + dx - 2, top - 1, sw + 4, 1, fl ? P.glassHi : P.boardLit);
-          if (p - lgP > 4) rect(ctx, sx0 + dx, top, sw, 1, P.glassHi);
-        }
+        rect(ctx, ex - 2, ey - 3, 5, 7, P.glassEdge);
+        rect(ctx, ex - 1, ey - 2, 3, 5, P.glass);
+        rect(ctx, ex - 1, ey - 2, 3, 1, P.glassHi);
       }
     }
-
-    /* a can glass on a 2.6 s loop, and its spot */
-    var ek = wrap(t / 2.6, 1), ey = top + Math.round(ek * (lane - 6)), ex = x + Math.round(w * 0.30);
-    var sp = Math.max(2, Math.round(5 - ek * 3));
-    Tint.rect(ctx, ex - sp, shelfY - 1, sp * 2 + 1, 2, P.void, 6 + Math.round(8 * ek));
-    /* at the card's scale, a glass is a few pixels: upright and on its
-       side by turns as it tumbles */
-    if (Math.floor(t * 5) & 1) {
-      rect(ctx, ex - 3, ey - 2, 7, 5, P.glassEdge);
-      rect(ctx, ex - 2, ey - 1, 5, 3, P.glass);
-      rect(ctx, ex - 2, ey - 1, 1, 3, P.glassHi);
-    } else {
-      rect(ctx, ex - 2, ey - 3, 5, 7, P.glassEdge);
-      rect(ctx, ex - 1, ey - 2, 3, 5, P.glass);
-      rect(ctx, ex - 1, ey - 2, 3, 1, P.glassHi);
-    }
-
-    /* the doodad, the Couch's block */
-    var ddx = Math.round(x + w * 0.2), ddy = Math.round(y + h * 0.52 + Math.sin(t * 3.1) * (h * 0.12));
-    var sz = big ? 8 : 6;
-    rect(ctx, ddx - sz / 2 - 1, ddy - sz / 2 - 1, sz + 2, sz + 2, P.outline);
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz, sz, '#c9873c');
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz - 2, 1, '#eab873');
-    dot(ctx, ddx + sz / 2 - 2, ddy - 1, P.outline);
-    rect(ctx, ddx + sz / 2, ddy, 2, 1, '#f3cc84');
-  }
-
-  /* one standing stack on a cover: pale glass bands with dark joints and
-     the white dish on top */
-  function stacklet(ctx, x, y, h, w, hang, v) {
-    if (h <= 0) return;
-    rect(ctx, x, y, w, h, P.glassEdge);
-    rect(ctx, x + 1, y, w - 2, h, P.glass);
-    rect(ctx, x + w - 3, y, 2, h, P.glassShade);
-    var step = v ? 5 : 4;
-    for (var cy = 3; cy < h; cy += step) rect(ctx, x + 1, y + cy, w - 2, 1, P.glassHi);
-    rect(ctx, x + 2, y + 3, 1, h - 3, P.glassLite);
-    rect(ctx, x - 2, y, w + 4, 3, P.outline);
-    rect(ctx, x - 1, y + 1, w + 2, 1, P.dish);
-  }
-  /* and a block of mugs, top at y, h tall, the cap mug at its foot */
-  function mugBlock(ctx, x, y, h, w, v) {
-    if (h <= 0) return;
-    rect(ctx, x, y, w, h, v ? P.navy : P.mug);
-    for (var cy = h - 7; cy > 0; cy -= 5) rect(ctx, x, y + cy, w, 1, v ? P.navyRim : P.mugRim);
-    rect(ctx, x + 2, y, 1, h - 3, v ? P.navyLit : P.mugLit);
-    rect(ctx, x - 2, y + h - 3, w + 4, 3, P.outline);
-    rect(ctx, x - 1, y + h - 3, w + 2, 2, v ? P.navyLit : P.enamel);
-  }
+  };
 
   /* ==================================================== GENERATION */
 
@@ -3025,14 +3106,13 @@ var Cabinets = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld,

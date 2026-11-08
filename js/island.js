@@ -221,8 +221,9 @@ var Island = (function () {
     ceil:  LivingRoom.WARN_CEIL
   };
 
-  /* the thirteen colours a generic cover would use; this bay paints its
-     own (drawPreview), but the table stays honest */
+  /* the thirteen colours a generic cover would use; this bay's COVER
+     paints its own, but the table stays honest (the TV and the stands
+     read PREVIEW.back) */
   var PREVIEW = {
     back: K.cabinetShade, backAlt: K.cabinet, seam: K.cabinetLine,
     beam: K.enamel, beamDark: K.enamelDeep, beamLight: K.enamelHi,
@@ -1941,168 +1942,231 @@ var Island = (function () {
 
   /* ======================================================= THE COVER
 
-     118x114 on the big card, 82x94 on the side ones; the caller has
-     clipped. A live miniature of THIS view at the bay's own row
-     fractions: the lid band with a pendant, the ceiling plane with its
-     cans, the cream wall with the glass uppers and a shutter panel, the
-     machines on the counter line, and the quartz taking the bottom of
-     the card with THE BLACK GLASS in it (the one black thing) carrying
-     the red pot, and ONE COLUMN OF FIRE standing up from it (the one
-     orange thing) between a stack of Dutch ovens and a hanging chimney,
-     a skillet tumbling down. Each layer at its own parallax. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k;
-    var killY = y + Math.round(h * 0.089);
-    var crownY = y + Math.round(h * 0.237);
-    var upT = y + Math.round(h * 0.352), upB = y + Math.round(h * 0.585);
-    var noseY = y + Math.round(h * 0.704), edgeY = y + Math.round(h * 0.719);
-    var floorY = y + Math.round(h * 0.896);
-    var lidY = killY + 2;
+     The Island's painters for its cover (js/cover.js lays it out and
+     times it). A live miniature of THIS view at the bay's own row
+     fractions, re-based on the lane: the lid band with its pendants, the
+     ceiling plane with its cans, the cream wall with the glass uppers
+     and a shutter panel, the machines on the counter line, and the
+     quartz taking the bottom of the card. The columns are the bay's
+     own: the hood's steel chimneys hanging with the glass canopy for a
+     cap, and the stacks of red Dutch ovens standing with the big lid on
+     top. In the open spans THE BLACK GLASS lies in the stone (the one
+     black thing) and fires ONE COLUMN OF FIRE (the one orange thing),
+     and a skillet tumbles down. Each layer at its own parallax. */
 
-    /* 1. the ceiling plane and its cans, at 0.25 */
-    for (i = y; i < crownY; i++) rect(ctx, x, i, w, 1, mix(K.plasterDim, K.plasterMid, (i - y) / Math.max(1, crownY - y)));
-    for (k = 0; k < 3; k++) {
-      var cx0 = x + Math.round(wrap(k * 47 + 20 - s * 0.25, w + 20)) - 10;
-      Tint.rect(ctx, cx0 - 5, crownY - 7, 11, 4, K.plasterLit, 6);
-      rect(ctx, cx0 - 1, crownY - 6, 3, 1, K.lampCore);
-    }
-    /* 2. the wall, the uppers, the shutters, the splash and the counter */
-    rect(ctx, x, crownY, w, noseY - crownY, K.wallShade);
-    rect(ctx, x, crownY, w, 1, K.crown);
-    var span = Math.round(w * 1.6);
-    for (k = -1; k < 2; k++) {
-      var gx0 = x + Math.round(wrap(w * 0.1 - s * 0.25, span)) + k * span;
-      for (i = 0; i < 4; i++) {
-        rect(ctx, gx0 + i * 7, upT, 7, upB - upT, K.cabinetShade);
-        rect(ctx, gx0 + i * 7 + 1, upT + 1, 5, upB - upT - 2, K.glassDark);
-        rect(ctx, gx0 + i * 7 + 1, upT + Math.round((upB - upT) * 0.45), 5, 1, K.glassShelf);
-        rect(ctx, gx0 + i * 7 + (i % 2 ? 1 : 5), upB - 6, 1, 3, K.pullLit);
-      }
-      var sx0 = gx0 + 40, sw = Math.round(w * 0.3), shT = upT + 3;
-      rect(ctx, sx0 - 1, shT - 1, sw + 2, noseY - 3 - shT + 1, K.cabinet);
-      for (i = shT; i < noseY - 3; i += 2) { rect(ctx, sx0, i, sw, 1, K.shutter); rect(ctx, sx0, i + 1, sw, 1, K.shutterNight); }
-      for (i = 0; i < 4; i++) rect(ctx, sx0 + Math.round(i * sw / 4), shT, 1, noseY - 3 - shT, K.shutterShade);
-      /* the machines: the espresso, the pot, the fryer */
-      rect(ctx, gx0 + 2, noseY - 6, 5, 6, K.steel);
-      rect(ctx, gx0 + 10, noseY - 6, 5, 6, K.steel); rect(ctx, gx0 + 10, noseY - 7, 5, 1, K.blackGlass);
-      rect(ctx, gx0 + 18, noseY - 5, 6, 5, K.blackGlass); rect(ctx, gx0 + 18, noseY - 3, 6, 1, K.steel);
-    }
-    for (i = upB; i < noseY; i++) if ((i - upB) % 2 === 0) Tint.rect(ctx, x, i, w, 1, K.splashPearl, 4);
-    Tint.rect(ctx, x, y, w, noseY - y, P.evening, 3);
-    rect(ctx, x, noseY, w, 1, K.quartzHi);
-    rect(ctx, x, noseY + 1, w, edgeY - noseY - 1, K.cabinetShade);
+  /* a row of the lane, as a fraction of it */
+  function laneRow(S, f) { return S.top + Math.round(S.lane * f); }
 
-    /* 3. the island's quartz, the lane and the band */
-    for (i = edgeY; i < y + h; i++) {
-      var row = EDGE_Y + Math.round((i - edgeY) / Math.max(1, (y + h) - edgeY) * (VH - EDGE_Y - 1));
-      rect(ctx, x, i, w, 1, quartzColour(row));
-    }
-    for (i = 0; i < 4; i++) {
-      var vx = x + Math.round(wrap(i * 37 - s, w + 20)) - 10;
-      rect(ctx, vx, edgeY + 5 + i * 3, 9, 1, K.vein);
-    }
-
-    rect(ctx, x, floorY, w, 1, mix(K.quartzShade, K.quartzDeep, 0.3));
-
-    /* 4. the stove, a pillar either side of it, sliding at 1.0 */
-    var period = big ? 92 : 76, trip = wrap(s, period), base = x + w + 10 - trip;
-    var stx = Math.round(base - period * 0.5);
-    /* THE COOKTOP IN THE FLOOR, as in the bay: the black glass straddling
-       the kill line - a sliver behind it, the rest in front - its rings
-       as flat dashes, the centre one glowing up before the fire */
-    var cw = big ? 22 : 18;
-    rect(ctx, stx - cw + 2, floorY - 1, (cw - 2) * 2, 1, K.blackGlassLit);
-    rect(ctx, stx - cw + 1, floorY, (cw - 1) * 2, 2, K.blackGlass);
-    rect(ctx, stx - cw, floorY + 2, cw * 2, 2, K.blackGlass);
-    rect(ctx, stx - cw, floorY + 4, cw * 2, 1, K.blackGlassDeep);
-    rect(ctx, stx - cw + 3, floorY, 9, 1, K.blackGlassLit);
-    rect(ctx, stx - cw + 3, floorY + 2, 7, 1, K.blackGlassHi);
-    rect(ctx, stx + cw - 10, floorY + 2, 7, 1, K.blackGlassHi);
-    var fire = clamp(Math.sin(t * 2.2) * 1.4 + 0.2, 0, 1), ch = Math.round((floorY - lidY) * 0.55 * fire);
-    var tell = fire > 0 ? 1 : clamp(Math.sin(t * 2.2) * 1.4 + 1.2, 0, 1);
-    rect(ctx, stx - 4, floorY + 2, 8, 1, tell < 0.05 ? K.blackGlassHi : (tell < 0.6 ? FX.heatEdge : FX.hotHi));
-    if (tell >= 0.6) { rect(ctx, stx - 5, floorY + 1, 10, 1, FX.hot); Tint.rect(ctx, stx - 7, floorY, 14, 4, FX.hot, 6); }
-    /* the column, pulsing up and down with t, out of its ring */
-    if (ch > 0) {
-      rect(ctx, stx - 4, floorY - ch, 1, ch, FX.heatEdge);
-      rect(ctx, stx + 3, floorY - ch, 1, ch, FX.heatEdge);
-      rect(ctx, stx - 3, floorY - ch, 6, ch, FX.hot);
-      rect(ctx, stx - 2, floorY - ch + 1, 4, ch - 1, FX.hotMid);
-      rect(ctx, stx - 1, floorY - ch + 2, 2, ch - 2, FX.hotHi);
-      rect(ctx, stx - 3, floorY, 6, 2, FX.hotHi);
-      dot(ctx, stx - 2, floorY - ch - 2, FX.hot); dot(ctx, stx + 1, floorY - ch - 3, FX.hotMid);
-      Tint.rect(ctx, stx - 12, floorY - 6, 24, 6, FX.hot, 4);
-    }
-    /* a stack of pots on the left of it, a chimney on the right */
-    var lx = Math.round(stx - period * 0.5), gapY = lidY + Math.round((floorY - lidY) * 0.30), gapH = Math.round((floorY - lidY) * 0.38);
-    for (k = 0; k < 2; k++) {
-      var px0 = k ? Math.round(stx + period * 0.5) : lx;
-      if (px0 < x - 16 || px0 > x + w + 4) continue;
-      var gy = k ? gapY - 6 : gapY;
-      /* the hanging chimney */
-      rect(ctx, px0, lidY, 10, gy - lidY, P.outline);
-      rect(ctx, px0 + 1, lidY, 8, gy - lidY - 2, '#a3a8aa');
-      rect(ctx, px0 + 1, lidY, 2, gy - lidY - 2, K.steelLit);
-      rect(ctx, px0 - 2, gy - 3, 14, 1, P.hoodGlass); rect(ctx, px0 - 1, gy - 2, 12, 1, K.steel);
-      /* the pots, whole ones from the stone up: a knob, the lid, the
-         body with its lit band and its handles, the foot, the ring under */
-      var py0 = gy + gapH, unit = big ? 9 : 8, yb2 = floorY;
-      while (yb2 - unit >= py0 + 3) {
-        var uy = yb2 - unit;
-        rect(ctx, px0 - 1, uy, 12, unit, P.outline);
-        rect(ctx, px0 + 4, uy, 2, 1, K.steelLit);
-        rect(ctx, px0 + 1, uy + 1, 8, 1, K.enamelHi);
-        rect(ctx, px0, uy + 2, 10, unit - 4, K.enamel);
-        rect(ctx, px0 + 2, uy + 2, 2, unit - 4, K.enamelHi);
-        rect(ctx, px0 + 8, uy + 2, 2, unit - 4, K.enamelMid);
-        rect(ctx, px0, uy + unit - 2, 10, 1, K.enamelDeep);
-        rect(ctx, px0 - 2, uy + 3, 1, 2, K.enamelMid); rect(ctx, px0 + 11, uy + 3, 1, 2, K.enamelDeep);
-        yb2 = uy;
-      }
-      rect(ctx, px0, py0 + 3, 10, yb2 - py0 - 3, K.enamelMid);
-      /* the cap: the big lid */
-      rect(ctx, px0 - 3, py0, 16, 3, P.outline);
-      rect(ctx, px0 - 2, py0, 14, 2, K.enamel); rect(ctx, px0 - 1, py0, 12, 1, K.enamelHi);
-      rect(ctx, px0 + 4, py0 - 1, 2, 1, K.steelLit);
-    }
-    /* 5. a skillet tumbling down */
-    var fkx = x + Math.round(w * 0.74);
-    var fky = lidY + 6 + Math.round(wrap(s * 1.6, floorY - lidY - 12));
-    var fr = Math.floor(t * 6) % 4;
-    if (fr === 0) { rect(ctx, fkx - 3, fky, 7, 2, P.iron); rect(ctx, fkx - 7, fky, 4, 1, P.iron); }
-    else if (fr === 1) { for (i = 0; i < 6; i++) dot(ctx, fkx - 3 + i, fky - 3 + i, P.iron); dot(ctx, fkx - 4, fky - 4, P.iron); }
-    else if (fr === 2) { rect(ctx, fkx, fky - 3, 2, 7, P.iron); rect(ctx, fkx, fky - 7, 1, 4, P.iron); }
-    else { for (i = 0; i < 6; i++) dot(ctx, fkx + 3 - i, fky - 3 + i, P.iron); dot(ctx, fkx + 4, fky - 4, P.iron); }
-    Tint.rect(ctx, fkx - 4, floorY + 1, 8, 1, P.shadeCool, 4);
-
-    /* 6. THE LID, the house's ceiling band in miniature */
-    rect(ctx, x, y, w, killY - 2 - y, K.plasterMid);
-    var pp = Math.round(w * 0.55);
-    for (k = -1; k < 3; k++) {
-      var lpx = x + Math.round(wrap(w * 0.3 - s, pp)) + k * pp;
-      if (lpx < x - 12 || lpx > x + w + 12) continue;
-      Tint.rect(ctx, lpx - 9, y, 19, killY - 2 - y, K.plasterLit, 7);
-      Tint.rect(ctx, lpx - 9, lidY, 19, 4, K.lampGlow, 3);
-      rect(ctx, lpx, y, 1, 3, K.lampRod);
-      rect(ctx, lpx - 1, y + 3, 3, 3, P.outline);
-      rect(ctx, lpx - 1, y + 3, 3, 2, K.lampGlass);
-      dot(ctx, lpx, y + 4, K.lampCore);
-    }
-    rect(ctx, x, killY - 2, w, 1, K.crown);
-    rect(ctx, x, killY - 1, w, 1, K.crownShade);
-    rect(ctx, x, killY, w, 2, P.outline);
-
-    /* 7. the doodad flying it, the Couch's block, high over the fire */
-    var ddx = Math.round(x + w * 0.3);
-    var ddy = Math.round(y + h * 0.40 + Math.sin(t * 3.1) * (h * 0.12));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, ddx - sz, ddy - sz, sz * 2, sz * 2, P.void, 5);
-    rect(ctx, ddx - sz / 2 - 1, ddy - sz / 2 - 1, sz + 2, sz + 2, P.outline);
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz, sz, '#c9873c');
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz - 2, 1, '#eab873');
-    dot(ctx, ddx + sz / 2 - 2, ddy - 1, P.outline);
-    rect(ctx, ddx + sz / 2, ddy, 2, 1, '#f3cc84');
+  /* a cap's rows at card size, the far side first and the gap's edge
+     last: the outline on the gap's edge and the lit row just inside it
+     are kept at every size, the face fills what is left */
+  function capRows(n, far, face, lit, edge) {
+    if (n <= 2) return [lit, edge];
+    var rows = n >= 4 ? [far] : [];
+    while (rows.length < n - 2) rows.push(face);
+    rows.push(lit, edge);
+    return rows;
   }
+
+  var COVER = {
+    halo: P.void,
+    ink: P.outline,
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, s = S.s, i, k;
+      var crownY = laneRow(S, 0.183), upT = laneRow(S, 0.326), upB = laneRow(S, 0.615);
+      var noseY = laneRow(S, 0.762), edgeY = laneRow(S, 0.781);
+
+      /* 1. the ceiling plane and its cans, at the wall's pace */
+      for (i = y; i < crownY; i++) rect(ctx, x, i, w, 1, mix(K.plasterDim, K.plasterMid, (i - y) / Math.max(1, crownY - y)));
+      for (k = 0; k < 3; k++) {
+        var cx0 = x + Math.round(wrap(k * 47 + 20 - s * WALL_PAR, w + 20)) - 10;
+        Tint.rect(ctx, cx0 - 5, crownY - 7, 11, 4, K.plasterLit, 6);
+        rect(ctx, cx0 - 1, crownY - 6, 3, 1, K.lampCore);
+      }
+      /* 2. the wall, the uppers, the shutters, the splash and the counter */
+      rect(ctx, x, crownY, w, noseY - crownY, K.wallShade);
+      rect(ctx, x, crownY, w, 1, K.crown);
+      var span = Math.round(w * 1.6), dw = Math.max(4, Math.round(7 * S.k * 2.4));
+      for (k = -1; k < 2; k++) {
+        var gx0 = x + Math.round(wrap(w * 0.1 - s * WALL_PAR, span)) + k * span;
+        for (i = 0; i < 4; i++) {
+          rect(ctx, gx0 + i * dw, upT, dw, upB - upT, K.cabinetShade);
+          rect(ctx, gx0 + i * dw + 1, upT + 1, dw - 2, upB - upT - 2, K.glassDark);
+          rect(ctx, gx0 + i * dw + 1, upT + Math.round((upB - upT) * 0.45), dw - 2, 1, K.glassShelf);
+          rect(ctx, gx0 + i * dw + (i % 2 ? 1 : dw - 2), upB - 6, 1, 3, K.pullLit);
+        }
+        var sx0 = gx0 + dw * 4 + 12, sw = Math.round(w * 0.3), shT = upT + 3;
+        rect(ctx, sx0 - 1, shT - 1, sw + 2, noseY - 3 - shT + 1, K.cabinet);
+        for (i = shT; i < noseY - 3; i += 2) { rect(ctx, sx0, i, sw, 1, K.shutter); rect(ctx, sx0, i + 1, sw, 1, K.shutterNight); }
+        for (i = 0; i < 4; i++) rect(ctx, sx0 + Math.round(i * sw / 4), shT, 1, noseY - 3 - shT, K.shutterShade);
+        /* the machines: the espresso, the pot, the fryer */
+        rect(ctx, gx0 + 2, noseY - 6, 5, 6, K.steel);
+        rect(ctx, gx0 + 10, noseY - 6, 5, 6, K.steel); rect(ctx, gx0 + 10, noseY - 7, 5, 1, K.blackGlass);
+        rect(ctx, gx0 + 18, noseY - 5, 6, 5, K.blackGlass); rect(ctx, gx0 + 18, noseY - 3, 6, 1, K.steel);
+      }
+      for (i = upB; i < noseY; i++) if ((i - upB) % 2 === 0) Tint.rect(ctx, x, i, w, 1, K.splashPearl, 4);
+      Tint.rect(ctx, x, y, w, noseY - y, P.evening, 3);
+      rect(ctx, x, noseY, w, 1, K.quartzHi);
+      rect(ctx, x, noseY + 1, w, edgeY - noseY - 1, K.cabinetShade);
+
+      /* 3. the island's quartz, down through the floor band - the band is
+         the same stone - with its veins sliding at the lane's pace */
+      for (i = edgeY; i < y + h; i++) {
+        var row = EDGE_Y + Math.round((i - edgeY) / Math.max(1, (y + h) - edgeY) * (VH - EDGE_Y - 1));
+        rect(ctx, x, i, w, 1, quartzColour(row));
+      }
+      for (i = 0; i < 4; i++) {
+        var vx = x + Math.round(wrap(i * 37 - s, w + 20)) - 10;
+        rect(ctx, vx, edgeY + Math.round((5 + i * 3) * S.k * 2.4), Math.max(4, Math.round(9 * S.k * 2.4)), 1, K.vein);
+      }
+    },
+    /* A hanging column is the hood's stainless chimney with the glass
+       canopy for its cap; a standing one is the stack of Dutch ovens
+       with the big lid on top - whole pots from the stone up, each one
+       above the first a pixel off true (planStack's "nobody stacks cast
+       iron straight"), and the base never moves. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var ch = Math.min(h, Math.max(2, Math.round(9 * S.k))), ov = Math.max(1, Math.round(4 * S.k)), i, rows, n;
+      if (end === 'top') {
+        var body = h - ch, lit = Math.max(1, Math.round(w / 3));
+        rect(ctx, x, y, w, h, P.outline);
+        rect(ctx, x + 1, y, w - 2, h, '#a3a8aa');
+        rect(ctx, x + 1, y, 1, h, K.steelLit);
+        rect(ctx, x + 2, y, 2, h, K.steel);
+        rect(ctx, x + 4, y, lit - 3, h, mix(K.steel, K.steelLit, 0.55));
+        var sh = w >= 12 ? 2 : 1;
+        rect(ctx, x + w - 1 - sh * 2, y, sh, h, K.steelShade);
+        rect(ctx, x + w - 1 - sh, y, sh, h, K.steelDeep);
+        /* the telescoping seam, at its own row on each chimney */
+        if (body > 6) {
+          var sy = y + 2 + hash(p.i * 17 + 5) % (body - 5);
+          rect(ctx, x + 1, sy, w - 2, 1, K.steelDeep);
+          rect(ctx, x + 1, sy + 1, w - 2, 1, K.steelLit);
+        }
+        /* the canopy: the glass seen nearly edge-on, the steel under it,
+           the outline on the gap's edge */
+        rows = capRows(ch, P.hoodGlass, P.hoodGlassClear, K.steel, P.outline); n = rows.length;
+        rows[0] = P.hoodGlass;
+        for (i = 0; i < n; i++) {
+          var inset = (rows[i] === K.steel || i === n - 1) ? 1 : 0;
+          rect(ctx, x - ov + inset, y + h - n + i, w + (ov - inset) * 2, 1, rows[i]);
+        }
+        Tint.rect(ctx, x + w, y, ov, body, P.void, 6);
+        return;
+      }
+      /* the Dutch ovens, whole ones from the stone up */
+      var unit = Math.max(5, Math.round(21 * S.k)), yb = y + h, j = 0, under = y + ch;
+      while (yb - unit >= under + 3) {
+        var uy = yb - unit, px = x + (j === 0 ? 0 : (hash(p.i * 13 + j) % 3) - 1);
+        rect(ctx, px - 1, uy, w + 2, unit, P.outline);
+        rect(ctx, px + (w >> 1) - 1, uy, 2, 1, K.steelLit);
+        rect(ctx, px + 1, uy + 1, w - 2, 1, K.enamelHi);
+        rect(ctx, px, uy + 2, w, unit - 4, K.enamel);
+        rect(ctx, px + 2, uy + 2, 2, unit - 4, K.enamelHi);
+        rect(ctx, px + w - 4, uy + 2, 2, unit - 4, K.enamelMid);
+        rect(ctx, px, uy + unit - 2, w, 1, K.enamelDeep);
+        if (unit >= 7) { rect(ctx, px - 2, uy + 3, 1, 2, K.enamelMid); rect(ctx, px + w + 1, uy + 3, 1, 2, K.enamelDeep); }
+        yb = uy; j++;
+      }
+      /* the top pot, cut to whatever is left under the lid */
+      if (yb > under) {
+        rect(ctx, x - 1, under, w + 2, yb - under, P.outline);
+        rect(ctx, x, under, w, yb - under, K.enamelMid);
+        rect(ctx, x + 2, under, 2, yb - under, K.enamel);
+      }
+      /* the big lid: the dome lit along its top, the outline under it,
+         and the knob let into its crown */
+      rect(ctx, x - ov, y, w + ov * 2, ch, P.outline);
+      rect(ctx, x - ov + 1, y, w + ov * 2 - 2, ch - 1, K.enamel);
+      rect(ctx, x - ov + 2, y, w + ov * 2 - 4, 1, K.enamelHi);
+      rect(ctx, x + (w >> 1) - 1, y - 1, 2, 1, K.steelLit);
+      Tint.rect(ctx, x + w + 1, y + ch, ov, h - ch, P.void, 6);
+    },
+    /* THE LID, the house's ceiling band in miniature: the plaster, a
+       pendant on its rod every so often riding with the lid, the crown
+       and its shade, and the outline on the kill line */
+    ceiling: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, d = S.top - S.y, k;
+      var ol = d >= 6 ? 2 : 1, plaster = Math.max(1, d - ol - 2);
+      rect(ctx, x, y, w, plaster, K.plasterMid);
+      var pp = Math.round(w * 0.55);
+      for (k = -1; k < 3; k++) {
+        var lpx = x + Math.round(wrap(w * 0.3 - S.s, pp)) + k * pp;
+        if (lpx < x - 12 || lpx > x + w + 12) continue;
+        Tint.rect(ctx, lpx - 9, y, 19, plaster, K.plasterLit, 7);
+        Tint.rect(ctx, lpx - 9, S.top, 19, Math.max(2, Math.round(4 * S.k * 2.4)), K.lampGlow, 3);
+        var gh = Math.min(3, plaster - 1);
+        if (gh >= 2) {
+          rect(ctx, lpx, y, 1, plaster - gh, K.lampRod);
+          rect(ctx, lpx - 1, y + plaster - gh, 3, gh, P.outline);
+          rect(ctx, lpx - 1, y + plaster - gh, 3, gh - 1, K.lampGlass);
+          dot(ctx, lpx, y + plaster - gh + 1, K.lampCore);
+        } else dot(ctx, lpx, y + plaster - 1, K.lampCore);
+      }
+      rect(ctx, x, S.top - ol - 2, w, 1, K.crown);
+      rect(ctx, x, S.top - ol - 1, w, 1, K.crownShade);
+      rect(ctx, x, S.top - ol, w, ol, P.outline);
+    },
+    /* the kill row: one row a value step darker - the stone under it is
+       already there, painted by `back` */
+    floor: function (ctx, S) {
+      rect(ctx, S.x, S.floor, S.w, 1, mix(K.quartzShade, K.quartzDeep, 0.3));
+    },
+    /* THE STOVE, in the even spans: the cooktop's black glass lying in
+       the stone under the span's middle, straddling the kill row as in
+       the bay, its rings as flat dashes, the centre one glowing up before
+       the fire. Its column never climbs into the doodad's line. */
+    props: function (ctx, S) {
+      var fy = S.floor;
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (wrap(sp.i, 2)) continue;
+        var stx = Math.round((sp.x0 + sp.x1) / 2);
+        var cw = Math.max(5, Math.min(Math.round(0.30 * (sp.x1 - sp.x0)), Math.round(62 * S.k)));
+        var dl = Math.max(2, Math.round(cw * 0.35)), rw = Math.max(2, Math.round(cw * 0.3));
+        rect(ctx, stx - cw + 2, fy - 1, (cw - 2) * 2, 1, K.blackGlassLit);
+        rect(ctx, stx - cw + 1, fy, (cw - 1) * 2, 2, K.blackGlass);
+        rect(ctx, stx - cw, fy + 2, cw * 2, 2, K.blackGlass);
+        rect(ctx, stx - cw, fy + 4, cw * 2, 1, K.blackGlassDeep);
+        rect(ctx, stx - cw + 2, fy, dl + 1, 1, K.blackGlassLit);
+        rect(ctx, stx - cw + 2, fy + 2, dl, 1, K.blackGlassHi);
+        rect(ctx, stx + cw - 2 - dl, fy + 2, dl, 1, K.blackGlassHi);
+        /* the phase off the span, so two stoves on one card are never in step */
+        var wave = Math.sin(S.t * 2.2 + sp.i * 1.7);
+        var fire = clamp(wave * 1.4 + 0.2, 0, 1);
+        var tell = fire > 0 ? 1 : clamp(wave * 1.4 + 1.2, 0, 1);
+        rect(ctx, stx - rw, fy + 2, rw * 2, 1, tell < 0.05 ? K.blackGlassHi : (tell < 0.6 ? FX.heatEdge : FX.hotHi));
+        if (tell >= 0.6) { rect(ctx, stx - rw - 1, fy + 1, rw * 2 + 2, 1, FX.hot); Tint.rect(ctx, stx - rw - 3, fy, rw * 2 + 6, 4, FX.hot, 6); }
+        /* the column, pulsing up and down out of its ring: its embers
+           three rows over its top stay under the doodad's line */
+        var reach = Math.max(0, fy - sp.line.bottom - 4), colH = Math.round(reach * fire);
+        if (colH < 3) continue;
+        var fw = Math.max(4, 2 * Math.round(S.pw * 0.25)), hw = fw >> 1, ct = fy - colH;
+        rect(ctx, stx - hw, ct, 1, colH, FX.heatEdge);
+        rect(ctx, stx + hw - 1, ct, 1, colH, FX.heatEdge);
+        rect(ctx, stx - hw + 1, ct, fw - 2, colH, FX.hot);
+        if (fw >= 6) rect(ctx, stx - hw + 2, ct + 1, fw - 4, colH - 1, FX.hotMid);
+        rect(ctx, stx - 1, ct + 2, 2, colH - 2, FX.hotHi);
+        rect(ctx, stx - hw + 1, fy, fw - 2, 2, FX.hotHi);
+        dot(ctx, stx - 2, ct - 2, FX.hot); dot(ctx, stx + 1, ct - 3, FX.hotMid);
+        var pool = Math.max(2, Math.round(6 * S.k * 2.4));
+        Tint.rect(ctx, stx - cw, fy - pool, cw * 2, pool, FX.hot, 4);
+      }
+    },
+    /* a skillet tumbling end over end through four frames, and its
+       shadow on the stone tightening as it comes down */
+    drop: function (ctx, d, S) {
+      var fr = Math.floor(S.t * 6) % 4, x = d.x, y = d.y, i;
+      var L = S.k >= 0.3 ? 3 : 2, H = S.k >= 0.3 ? 4 : 2;
+      var sw = Math.max(2, Math.round((8 - 4 * d.f) * S.k * 2.4));
+      Tint.rect(ctx, x - (sw >> 1), S.floor + 1, sw, 1, P.shadeCool, 4);
+      if (fr === 0) { rect(ctx, x - L, y, L * 2 + 1, 2, P.iron); rect(ctx, x - L - H, y, H, 1, P.iron); }
+      else if (fr === 1) { for (i = 0; i < L * 2; i++) dot(ctx, x - L + i, y - L + i, P.iron); dot(ctx, x - L - 1, y - L - 1, P.iron); }
+      else if (fr === 2) { rect(ctx, x, y - L, 2, L * 2 + 1, P.iron); rect(ctx, x, y - L - H, 1, H, P.iron); }
+      else { for (i = 0; i < L * 2; i++) dot(ctx, x + L - i, y - L + i, P.iron); dot(ctx, x + L + 1, y - L - 1, P.iron); }
+    }
+  };
 
   /* ===================================================== GENERATION */
 
@@ -2541,14 +2605,13 @@ var Island = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld,

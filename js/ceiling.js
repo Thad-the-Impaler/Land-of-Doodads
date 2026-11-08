@@ -1963,11 +1963,17 @@ var Ceiling = (function () {
 
   /* ------------------------------------------------------- the cover
 
-     118x114 on the big card, 82x94 on the side ones; the caller has
-     clipped. The level in one picture: the lid and its mirror with the
-     pendants hanging both ways, the dusk field and its fold, two soffit
-     columns sliding past, a tuft of lint, the hot feather zigzagging, the
-     noodles, and the pole coming up to have a look. */
+     The bay's painters for its cover (js/cover.js lays it out and times
+     it). The level in one picture: the lid and its mirror with the
+     pendants hanging both ways, the dusk field running away to the far
+     crown with the kitchen under it, soffit columns - plain, with a
+     skylight well, or with a register - noodles hanging in one open span
+     and THE POLE coming up for a look in another, lint drifting down, and
+     now and then the hot feather. */
+  function cardRect(ctx, col, x, y, w, h) {
+    if (w > 0 && h > 0) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
+  }
+
   function miniPendant(ctx, px, gy, up) {
     /* gy = the glass's first row (down) or last row (up) */
     var d = up ? -1 : 1, i;
@@ -1980,39 +1986,6 @@ var Ceiling = (function () {
     for (i = 0; i < 4; i++) ctx.fillRect(px - 2 + (i === 3 ? 1 : 0), gy + i * d, i === 3 ? 3 : 5, 1);
     ctx.fillStyle = P.lampCore;    ctx.fillRect(px, gy + d, 1, 1);
     ctx.fillStyle = P.lampCrackle; ctx.fillRect(px + 1, gy + 2 * d, 1, 1);
-  }
-
-  /* one soffit column inside a cover: the column's own five faces at a
-     tenth of the width, the lip at the gap end, and - on the skylight
-     kind - the well as a little framed window at the lid end, the way the
-     level cuts it, and NOT as a stripe */
-  function miniSoffit(ctx, x, y, h, sky, up) {
-    if (h <= 0) return;
-    /* the column's two planes at a third of the width: outline, warm face,
-       the arris, the lavender return, outline */
-    ctx.fillStyle = P.outline;     ctx.fillRect(x, y, 11, h);
-    ctx.fillStyle = P.soffitLit;   ctx.fillRect(x + 1, y, 1, h);
-    ctx.fillStyle = P.soffitFace;  ctx.fillRect(x + 2, y, 4, h);
-    ctx.fillStyle = P.arris;       ctx.fillRect(x + 6, y, 1, h);
-    ctx.fillStyle = P.lavLit;      ctx.fillRect(x + 7, y, 1, h);
-    ctx.fillStyle = P.lavMid;      ctx.fillRect(x + 8, y, 1, h);
-    ctx.fillStyle = P.lavShade;    ctx.fillRect(x + 9, y, 1, h);
-    if (sky && h >= 14) {
-      /* the well: a framed patch of dusk filling the face */
-      var wh = Math.min(h - 6, 18), wy = up ? y + h - 3 - wh : y + 3;
-      ctx.fillStyle = P.soffitDeep; ctx.fillRect(x + 1, wy, 6, wh);
-      ctx.fillStyle = P.wellLit;    ctx.fillRect(x + 2, wy + 1, 4, wh - 2);
-      ctx.fillStyle = P.sky;        ctx.fillRect(x + 3, wy + 2, 2, wh - 4);
-      ctx.fillStyle = P.skyDeep;    ctx.fillRect(x + 3, up ? wy + wh - 4 : wy + 2, 2, 2);
-    }
-    /* the bevelled lip at the gap end, the arris stepping across it */
-    var cy = up ? y : y + h - 3;
-    ctx.fillStyle = P.outline;     ctx.fillRect(x - 2, cy, 15, 3);
-    ctx.fillStyle = P.soffitFace;  ctx.fillRect(x - 1, cy + 1, 8, 1);
-    ctx.fillStyle = P.lavLit;      ctx.fillRect(x + 7, cy + 1, 5, 1);
-    ctx.fillStyle = P.arris;       ctx.fillRect(x + 7, cy + 1, 1, 1);
-    ctx.fillStyle = up ? P.lavShade : P.lavLit; ctx.fillRect(x - 1, up ? cy : cy + 2, 13, 1);
-    Tint.rect(ctx, x + 11, y, 2, h, P.void, 5);
   }
 
   /* one pendant inside a cover, hung from the ceiling at row cy down to
@@ -2031,187 +2004,337 @@ var Ceiling = (function () {
     }
   }
 
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k;
-    var band = Math.round(h * 0.10);
-    var lidY = y + band, botY = y + h - band, midY = y + Math.round(h / 2);
-    var span = botY - lidY;
-
-    /* 1. THE FIELD, as the level has it: the ceiling running away to the
-       far crown at the middle of the card, and under it a strip of the
-       kitchen - the uppers with their glass fronts, the hood rising into
-       the ceiling, the shutters, the splash, the counter, the lowers - with
-       the lamps hanging down in front of it on long rods */
-    var half = midY - lidY, i2;
-    for (i = 0; i <= half; i++) {
-      var kk = i / Math.max(1, half);
-      ctx.fillStyle = kk < 0.5 ? mixHex(P.planeNear, P.planeMid, ease(kk * 2))
-                               : mixHex(P.planeMid, P.planeFar, ease((kk - 0.5) * 2));
-      ctx.fillRect(x, lidY + i, w, 1);
-    }
-    var drift = s * 0.06, kh = botY - midY;
-    var kU = midY + 2, kUB = midY + Math.round(kh * 0.40), kC = midY + Math.round(kh * 0.66);
-    ctx.fillStyle = P.kWall;      ctx.fillRect(x, midY, w, kh);
-    ctx.fillStyle = P.kCrown;     ctx.fillRect(x, midY, w, 1);
-    ctx.fillStyle = P.kCrownShade; ctx.fillRect(x, midY + 1, w, 1);
-    ctx.fillStyle = P.kTile;      ctx.fillRect(x, kUB, w, kC - kUB);
-    for (i = 0; i < 4; i++) {
-      /* a bay of the kitchen every 60 px, drifting slowly: glass uppers,
-         then shutters with the hood in front, by turns */
-      var bx = x + Math.round(wrap(i * 60 - drift, 240)) - 30;
-      if (i % 2 === 0) {
-        ctx.fillStyle = P.kCabDeep; ctx.fillRect(bx, kU, 36, kUB - kU);
-        for (i2 = 0; i2 < 3; i2++) {
-          ctx.fillStyle = P.kCab;  ctx.fillRect(bx + 1 + i2 * 12, kU, 11, kUB - kU - 1);
-          ctx.fillStyle = P.kGlass; ctx.fillRect(bx + 3 + i2 * 12, kU + 2, 7, kUB - kU - 5);
-          ctx.fillStyle = P.kDish; ctx.fillRect(bx + 4 + i2 * 12, kU + 5, 5, 1);
-        }
-      } else {
-        ctx.fillStyle = P.kCab;     ctx.fillRect(bx, kU + 2, 40, kC - kU - 2);
-        for (i2 = kU + 4; i2 < kC - 1; i2 += 2) { ctx.fillStyle = P.kShutterGap; ctx.fillRect(bx + 2, i2, 36, 1); }
-        ctx.fillStyle = P.kSteel;   ctx.fillRect(bx + 17, lidY + Math.round(half * 0.8), 6, midY - lidY - Math.round(half * 0.8) + Math.round(kh * 0.3));
-        ctx.fillStyle = P.kSteelLit; ctx.fillRect(bx + 17, lidY + Math.round(half * 0.8), 1, midY - lidY - Math.round(half * 0.8) + Math.round(kh * 0.3));
-        ctx.fillStyle = P.kHoodGlassLit; ctx.fillRect(bx + 8, midY + Math.round(kh * 0.3), 24, 1);
-      }
-    }
-    ctx.fillStyle = P.kCounter;   ctx.fillRect(x, kC, w, 1);
-    ctx.fillStyle = P.kCounterEdge; ctx.fillRect(x, kC + 1, w, 1);
-    ctx.fillStyle = P.kLower;     ctx.fillRect(x, kC + 2, w, botY - kC - 2);
-    for (i = 0; i < w; i += 9) { ctx.fillStyle = P.kLowerDeep; ctx.fillRect(x + Math.round(wrap(i - drift, w)), kC + 3, 1, botY - kC - 4); }
-    Tint.rect(ctx, x, botY - 4, w, 4, P.void, 5);
-    /* the lamps, hanging from the ceiling down in front of it: near ones
-       on long rods, far ones short */
-    for (i = 0; i < 3; i++) {
-      var lx0 = x + Math.round(wrap(i * 44 + 10 - s * 0.14, w + 20)) - 10;
-      var lx1 = x + Math.round(wrap(i * 29 + 24 - s * 0.07, w + 10)) - 5;
-      miniHangLamp(ctx, lx0, lidY + Math.round(half * 0.30), midY + Math.round(kh * 0.62), 0);
-      miniHangLamp(ctx, lx1, lidY + Math.round(half * 0.72), midY + Math.round(kh * 0.28), 1);
-    }
-    /* a skylight opening in the ceiling */
-    var sx0 = x + Math.round(wrap(70 - s * 0.1, w + 30)) - 15;
-    ctx.fillStyle = P.lavFarEdge; ctx.fillRect(sx0 - 1, lidY + Math.round(half * 0.5) - 1, 14, 4);
-    ctx.fillStyle = P.skyFar;     ctx.fillRect(sx0, lidY + Math.round(half * 0.5), 12, 2);
-
-    /* 2. the lid, and the same rows reversed for the bottom */
-    ctx.fillStyle = P.plasterMid; ctx.fillRect(x, y, w, band - 4); ctx.fillRect(x, botY + 4, w, y + h - botY - 4);
-    var LID = [P.crown, P.plasterLit, P.crownShade, P.outline];
-    for (i = 0; i < 4; i++) {
-      ctx.fillStyle = LID[i];
-      ctx.fillRect(x, lidY - 4 + i, w, 1);
-      ctx.fillRect(x, botY + 3 - i, w, 1);
-    }
-    for (i = 0; i < 2; i++) {
-      var px = x + Math.round(w * (i ? 0.75 : 0.25));
-      Tint.rect(ctx, px - 14, y, 28, band - 4, P.plasterLit, 4);
-      Tint.rect(ctx, px - 14, botY + 4, 28, y + h - botY - 4, P.plasterLit, 4);
-      Tint.rect(ctx, px - 12, lidY, 24, 8, P.lampGlow, 3);
-      Tint.rect(ctx, px - 12, botY - 8, 24, 8, P.lampGlow, 3);
-      miniPendant(ctx, px, lidY - 9, false);
-      miniPendant(ctx, px, botY + 8, true);
-    }
-
-    /* 3. soffit columns sliding past */
-    var period = big ? 46 : 38;
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var gapY = Math.round(lidY + 4 + ((i * 19) % Math.max(1, span - gapH - 10)));
-      miniSoffit(ctx, ox, lidY, gapY - lidY, i === 1, false);
-      miniSoffit(ctx, ox, gapY + gapH, botY - gapY - gapH, i === 1, true);
-    }
-
-    /* 4. a tuft of lint on its way down, lumpy and softly ringed, and its
-       spot on the moulding */
-    var lx = x + Math.round(w * 0.42 + 4 * Math.sin(t * 1.6));
-    var ly = lidY + Math.round((s * 0.8) % Math.max(1, span - 6));
-    ctx.fillStyle = P.lintRing;
-    ctx.fillRect(lx - 1, ly, 6, 3); ctx.fillRect(lx, ly - 1, 4, 5); ctx.fillRect(lx + 2, ly - 2, 2, 1);
-    ctx.fillStyle = P.lint;   ctx.fillRect(lx, ly, 4, 3); ctx.fillRect(lx + 2, ly - 1, 2, 1);
-    ctx.fillStyle = P.lintHi; ctx.fillRect(lx, ly, 2, 1); ctx.fillRect(lx + 2, ly - 1, 1, 1);
-    ctx.fillStyle = P.lintShade; ctx.fillRect(lx + 1, ly + 2, 3, 1);
-    Tint.rect(ctx, lx - 1, botY + 1, 6, 1, P.void, 6);
-
-    /* 5. the hot feather zigzagging down - the one warm thing in the
-       field apart from the lamps, glowing, quill and all */
-    var fx = x + Math.round(w * 0.62 + 6 * Math.sin(t * 4.5));
-    var fy = lidY + 2 + Math.round((s * 1.2) % Math.max(1, span - 10));
-    Tint.rect(ctx, fx - 3, fy - 2, 9, 10, P.hotHi, 4);
-    Tint.rect(ctx, fx - 1, fy, 5, 6, P.hotHi, 3);
-    ctx.fillStyle = P.outline;  ctx.fillRect(fx, fy - 1, 3, 6); ctx.fillRect(fx - 1, fy, 5, 4);
-    ctx.fillStyle = P.hot;      ctx.fillRect(fx, fy, 3, 4); ctx.fillRect(fx + 1, fy - 1, 2, 1);
-    ctx.fillStyle = P.hotHi;    ctx.fillRect(fx + 1, fy - 1, 1, 2);
-    ctx.fillStyle = P.quillHot; ctx.fillRect(fx + 1, fy + 1, 1, 3); ctx.fillRect(fx + 1, fy + 4, 1, 2);
-
-    /* 6. the noodles under the lid */
-    var nx = x + Math.round(w * 0.50);
-    Tint.rect(ctx, nx - 3, lidY + 1, 11, 11, P.lifePale, 3);
-    ctx.fillStyle = P.outline; ctx.fillRect(nx - 1, lidY, 9, 3);
-    ctx.fillStyle = P.noodle;  ctx.fillRect(nx, lidY, 7, 2);
-    var NL = [5, 8, 6];
-    for (i = 0; i < 3; i++) {
-      var sw = Math.round(Math.sin(t * 1.7 + i));
-      for (k = 0; k < NL[i]; k++) {
-        ctx.fillStyle = (k % 3 === 1) ? P.noodleShade : P.noodle;
-        ctx.fillRect(nx + 1 + i * 2 + (k > NL[i] / 2 ? sw : 0) + ((k >> 1) & 1), lidY + 2 + k, 1, 1);
-      }
-    }
-
-    /* 7. THE POLE, coming up for a look. It rides with the columns,
-       half a period behind the third, and it is driven by its own place
-       on the card exactly as the level drives it by its screen x: up out
-       of the bottom on the right, standing in the middle, pulled down as
-       it comes left, gone before the doodad's column. The outer tube with
-       its lit side, the collar, the thinner tube, and the J. */
-    var pax = Math.round(x + w + 10 - wrap(s + 2.5 * period, period * 3));
-    var pu = (pax - x) / w, E;
-    if (pu > 0.96 || pu < 0.16) E = 0;
-    else if (pu > 0.74) E = ease((0.96 - pu) / 0.22);
-    else if (pu > 0.52) E = 1;
-    else E = (pu - 0.16) / 0.36;
-    var pt = botY - Math.round(E * (botY - lidY));
-    if (E > 0.04) {
-      var tubeTop = pt + 5, cly = tubeTop + Math.round((botY - tubeTop) * 0.45);
-      ctx.fillStyle = P.outline;   ctx.fillRect(pax - 2, cly, 5, botY - cly);
-      ctx.fillStyle = P.poleLit;   ctx.fillRect(pax - 1, cly, 1, botY - cly);
-      ctx.fillStyle = P.poleMid;   ctx.fillRect(pax, cly, 2, botY - cly);
-      if (cly > tubeTop) {
-        ctx.fillStyle = P.outline; ctx.fillRect(pax - 1, tubeTop, 4, cly - tubeTop);
-        ctx.fillStyle = P.poleLit; ctx.fillRect(pax, tubeTop, 1, cly - tubeTop);
-        ctx.fillStyle = P.poleShade; ctx.fillRect(pax + 1, tubeTop, 1, cly - tubeTop);
-      }
-      ctx.fillStyle = P.outline; ctx.fillRect(pax - 3, cly - 1, 7, 3);
-      ctx.fillStyle = P.collar;  ctx.fillRect(pax - 2, cly, 5, 1);
-      /* the J, opening left */
-      ctx.fillStyle = P.outline; ctx.fillRect(pax - 5, pt - 1, 8, 4); ctx.fillRect(pax - 5, pt + 2, 3, 3); ctx.fillRect(pax - 1, pt + 2, 4, 4);
-      ctx.fillStyle = P.hook;    ctx.fillRect(pax - 3, pt, 4, 1); ctx.fillRect(pax - 4, pt + 1, 2, 3); ctx.fillRect(pax, pt + 1, 2, 4);
-      ctx.fillStyle = P.hookLit; ctx.fillRect(pax - 3, pt, 3, 1);
-      if (E > 0.97) {
-        ctx.fillStyle = FX.puffHi;
-        ctx.fillRect(pax - 3, lidY, 1, 1); ctx.fillRect(pax + 2, lidY + 1, 1, 1); ctx.fillRect(pax - 1, lidY + 2, 1, 1);
-      }
-    }
-
-    /* 8. the doodad flying it, haloed */
-    var dx = Math.round(x + w * 0.3);
-    var dy = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, P.void, 5);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(dx + sz / 2 - 2, dy - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(dx + sz / 2, dy, 2, 1);
-
-    /* 9. the room's light, in miniature: warmth off both bands, the two
-       side columns of dark - and no wash over the whole card, which made
-       the first cut of it a beige the level never is */
-    Tint.rect(ctx, x, lidY, w, Math.round(span * 0.18), P.lampGlow, 1);
-    Tint.rect(ctx, x, botY - Math.round(span * 0.18), w, Math.round(span * 0.18), P.lampGlow, 1);
-    var vig = Math.max(4, Math.round(w * 0.09));
-    Tint.rect(ctx, x, y, vig, h, P.void, 4);
-    Tint.rect(ctx, x + w - vig, y, vig, h, P.void, 4);
+  /* a tube's pigments across n columns: the outline, the lit side, the
+     metal, its shade, the outline */
+  function tubeCols(n) {
+    if (n <= 2) return [P.outline, P.poleLit];
+    if (n === 3) return [P.outline, P.poleLit, P.outline];
+    if (n === 4) return [P.outline, P.poleLit, P.poleShade, P.outline];
+    var c = [P.outline, P.poleLit];
+    while (c.length < n - 2) c.push(P.poleMid);
+    c.push(P.poleShade); c.push(P.outline);
+    return c;
   }
+
+  /* the soffit's two planes at a column's width: a third of it the cool
+     lavender return, the rest the warm face with its lit edge */
+  function soffitPlanes(w) {
+    var cool = w < 8 ? 2 : Math.max(3, Math.round(w * 0.3));
+    return { cool: cool, warm: w - 3 - cool };
+  }
+
+  var COVER = {
+    halo: P.void,
+    ink: P.outline,
+    /* THE FIELD, as the level has it: the ceiling running away to the far
+       crown, and under it a strip of the kitchen - the uppers with their
+       glass fronts, the hood rising into the ceiling, the shutters, the
+       splash, the counter, the lowers - with the lamps hanging down in
+       front of it on long rods and a skylight cut in the far ceiling */
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, lidY = S.top, botY = S.floor, q = S.k * 2.4, i, n;
+      var midY = S.y + Math.round(WALL_TOP * S.k), half = midY - lidY;
+      for (i = 0; i <= half; i++) {
+        var kk = i / Math.max(1, half);
+        ctx.fillStyle = kk < 0.5 ? mixHex(P.planeNear, P.planeMid, ease(kk * 2))
+                                 : mixHex(P.planeMid, P.planeFar, ease((kk - 0.5) * 2));
+        ctx.fillRect(x, lidY + i, w, 1);
+      }
+      cardRect(ctx, P.planeNear, x, S.y, w, lidY - S.y);
+      var kh = botY - midY, sc = kh / (FLOOR - WALL_TOP);
+      var kU = midY + Math.round((K_UP - CROWN_K) * sc), kUB = midY + Math.round((K_UPB - CROWN_K) * sc);
+      var kC = midY + Math.round((K_CTR - CROWN_K) * sc);
+      cardRect(ctx, P.kWall, x, midY, w, kh);
+      cardRect(ctx, P.kCrown, x, midY, w, 1);
+      cardRect(ctx, P.kCrownShade, x, midY + 1, w, 1);
+      cardRect(ctx, P.kTile, x, kUB, w, kC - kUB);
+      /* a bay of the kitchen every 60 px of the big card, drifting at the
+         kitchen's parallax: glass uppers, then shutters with the hood in
+         front, by turns */
+      var bp = Math.round(60 * q), off = S.s * KIT_PX, n0 = Math.floor(off / bp) - 1;
+      var cw = Math.max(3, Math.round(12 * q));
+      for (n = n0; n * bp - off < w + bp; n++) {
+        var bx = x + Math.round(n * bp - off) - Math.round(30 * q);
+        if (wrap(n, 2) === 0) {
+          cardRect(ctx, P.kCabDeep, bx, kU, cw * 3, kUB - kU);
+          for (i = 0; i < 3; i++) {
+            cardRect(ctx, P.kCab, bx + 1 + i * cw, kU, cw - 1, kUB - kU - 1);
+            cardRect(ctx, P.kGlass, bx + 3 + i * cw, kU + 2, cw - 5, kUB - kU - 5);
+            cardRect(ctx, P.kDish, bx + 4 + i * cw, kU + 5, cw - 7, 1);
+          }
+        } else {
+          var sw = Math.round(40 * q), hx = bx + Math.round(17 * q), hw = Math.max(2, Math.round(6 * q));
+          var hoodY = lidY + Math.round(half * 0.8), hoodB = midY + Math.round(kh * 0.3);
+          cardRect(ctx, P.kCab, bx, kU + 2, sw, kC - kU - 2);
+          for (i = kU + 4; i < kC - 1; i += 2) cardRect(ctx, P.kShutterGap, bx + 2, i, sw - 4, 1);
+          cardRect(ctx, P.kSteel, hx, hoodY, hw, hoodB - hoodY);
+          cardRect(ctx, P.kSteelLit, hx, hoodY, 1, hoodB - hoodY);
+          cardRect(ctx, P.kHoodGlassLit, bx + Math.round(8 * q), hoodB, Math.round(24 * q), 1);
+        }
+      }
+      cardRect(ctx, P.kCounter, x, kC, w, 1);
+      cardRect(ctx, P.kCounterEdge, x, kC + 1, w, 1);
+      cardRect(ctx, P.kLower, x, kC + 2, w, botY - kC - 2);
+      var lo = Math.round(off) % 9;
+      for (i = -lo; i < w; i += 9) cardRect(ctx, P.kLowerDeep, x + i, kC + 3, 1, botY - kC - 4);
+      Tint.rect(ctx, x, botY - 4, w, 4, P.void, 5);
+      /* the lamps, hanging from the ceiling down in front of it: near ones
+         on long rods, far ones short - and on the TV's little cards all of
+         them the far kind, or a near lamp's glass is the doodad's size */
+      var near = S.k < 0.3 ? 1 : 0;
+      for (i = 0; i < 3; i++) {
+        var lx0 = x + Math.round(wrap(i * 44 * q + 10 - S.s * 0.14, w + 20)) - 10;
+        var lx1 = x + Math.round(wrap(i * 29 * q + 24 - S.s * 0.07, w + 10)) - 5;
+        miniHangLamp(ctx, lx0, lidY + Math.round(half * 0.30), midY + Math.round(kh * 0.62), near);
+        miniHangLamp(ctx, lx1, lidY + Math.round(half * 0.72), midY + Math.round(kh * 0.28), 1);
+      }
+      /* a skylight opening in the far ceiling */
+      var sx0 = x + Math.round(wrap(70 * q - S.s * 0.1, w + 30)) - 15, sy0 = lidY + Math.round(half * 0.5);
+      cardRect(ctx, P.lavFarEdge, sx0 - 1, sy0 - 1, Math.round(14 * q), 4);
+      cardRect(ctx, P.skyFar, sx0, sy0, Math.round(12 * q), 2);
+    },
+
+    /* A SOFFIT: the warm face and its lit edge, the arris, the lavender
+       return, a tape joint across both, and one column in two a skylight
+       well or a register at its fixed end; at the gap, the bevelled lip
+       with the arris stepping down it in a diagonal */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var k = S.k, up = end === 'bottom', v = hash(p.i) % 100, F = soffitPlanes(w), i, j;
+      var warm = F.warm, cool = F.cool, ax = x + warm + 1;
+      var hc = Math.min(h, Math.max(3, Math.round(9 * k))), pr = Math.max(1, Math.round(4 * k));
+      var capY = up ? y : y + h - hc, bodyY = up ? y + hc : y, bodyH = h - hc;
+      /* the hard cast shadow on the far wall, beside the column only */
+      if (bodyH > 0) Tint.rect(ctx, x + w, bodyY, Math.max(1, Math.round(4 * k)), bodyH, P.void, 6);
+      if (bodyH > 0) {
+        cardRect(ctx, P.outline, x, bodyY, 1, bodyH);
+        if (warm > 0) cardRect(ctx, P.soffitLit, x + 1, bodyY, 1, bodyH);
+        cardRect(ctx, P.soffitFace, x + 2, bodyY, warm - 1, bodyH);
+        cardRect(ctx, P.arris, ax, bodyY, 1, bodyH);
+        var lit = Math.ceil(cool / 2);
+        cardRect(ctx, P.lavLit, ax + 1, bodyY, lit, bodyH);
+        cardRect(ctx, P.lavMid, ax + 1 + lit, bodyY, cool - lit, bodyH);
+        if (cool >= 3) cardRect(ctx, P.lavShade, ax + cool, bodyY, 1, bodyH);
+        cardRect(ctx, P.outline, x + w - 1, bodyY, 1, bodyH);
+        /* tooth on the warm face, row by row off the column's own index */
+        if (warm > 2) {
+          for (j = 0; j < bodyH; j++) {
+            var th = hash(p.i * 131 + (bodyY + j - S.top));
+            if (th % 7 === 0) cardRect(ctx, P.soffitTooth, x + 2 + (th >>> 8) % (warm - 1), bodyY + j, 1, 1);
+          }
+        }
+        /* the drywall tape joint, a dark line with its lit lip, measured
+           from the fixed end */
+        var jr = Math.max(8, Math.round(40 * k));
+        if (bodyH > jr + 3) {
+          var jy = up ? y + h - 1 - jr - 1 : y + jr;
+          cardRect(ctx, P.soffitShade, x + 2, jy, warm - 1, 1);
+          cardRect(ctx, P.soffitLit, x + 2, jy + 1, warm - 1, 1);
+          cardRect(ctx, P.lavShade, ax + 1, jy, cool, 1);
+          cardRect(ctx, P.lavLit, ax + 1, jy + 1, cool - 1, 1);
+        }
+        /* THE SKYLIGHT WELL across the warm face at the fixed end - a
+           framed patch of dusk, deepest at the far end - or THE REGISTER */
+        if (v >= 45 && v < 80) {
+          var pad = Math.max(1, Math.round(5 * k));
+          var wh = Math.min(Math.round(84 * k), bodyH - 2 * pad);
+          if (wh >= Math.max(6, Math.round(20 * k)) && warm >= 3) {
+            var wy = up ? y + h - pad - wh : y + pad;
+            cardRect(ctx, P.soffitDeep, x + 1, wy, warm, wh);
+            cardRect(ctx, P.wellLit, x + 2, wy + 1, warm - 2, wh - 2);
+            cardRect(ctx, P.sky, x + 3, wy + 2, warm - 4, wh - 4);
+            cardRect(ctx, P.skyDeep, x + 3, up ? wy + wh - 4 : wy + 2, warm - 4, Math.min(2, wh - 4));
+            if (warm >= 6 && wh >= 12) cardRect(ctx, P.skyGleam, x + warm - 2, wy + 4, 1, 2);
+          }
+        } else if (v >= 80) {
+          var rpad = Math.max(2, Math.round(8 * k));
+          var rw = Math.min(warm - 1, Math.max(3, Math.round(18 * k))), rh = Math.max(3, Math.round(12 * k));
+          if (bodyH >= rh + 2 * rpad && rw >= 3) {
+            var rx = x + 1 + Math.floor((warm - rw) / 2), ry = up ? y + h - rpad - rh : y + rpad;
+            cardRect(ctx, P.regFace, rx, ry, rw, rh);
+            cardRect(ctx, P.soffitLit, rx, ry, rw, 1); cardRect(ctx, P.soffitLit, rx, ry, 1, rh);
+            cardRect(ctx, P.plasterShade, rx, ry + rh - 1, rw, 1); cardRect(ctx, P.plasterShade, rx + rw - 1, ry, 1, rh);
+            for (j = ry + 2; j < ry + rh - 1; j += 2) cardRect(ctx, P.outline, rx + 1, j, rw - 2, 1);
+          }
+        }
+      }
+      /* THE CAP, the bevelled lip: the outline round it; from the column
+         side, the lip (warm face and lavender), the arris where it turns
+         under, the cool underside; the arris stepping a pixel right a row
+         toward the gap; its gap-side corners chamfered */
+      var n = hc - 2, lipN = n <= 2 ? 1 : Math.ceil((n - 1) / 2);
+      for (i = 0; i < hc; i++) {
+        var gapSide = up ? i === 0 : i === hc - 1, colSide = up ? i === hc - 1 : i === 0;
+        var cut = gapSide ? 1 : (colSide ? 1 : 0);
+        cardRect(ctx, P.outline, x - pr + cut, capY + i, w + pr * 2 - cut * 2, 1);
+        if (gapSide || colSide) continue;
+        var r = up ? hc - 2 - i : i - 1;                /* rows in from the column side */
+        var wc, cc;
+        if (r < lipN) { wc = r === 0 ? P.soffitLit : P.soffitFace; cc = r === 0 ? P.lavLit : P.lavMid; }
+        else if (r === lipN && n >= 3) { wc = P.arris; cc = P.lavLit; }
+        else { wc = P.lavLit; cc = P.lavMid; }
+        var dx = ax + r;
+        cardRect(ctx, wc, x - pr + 1, capY + i, dx - (x - pr + 1), 1);
+        cardRect(ctx, cc, dx + 1, capY + i, x + w + pr - 2 - dx, 1);
+        cardRect(ctx, P.arris, dx, capY + i, 1, 1);
+      }
+    },
+
+    /* the lid: the plaster, its moulding, two pendants riding with it and
+       the light they pool on the plaster and the air under it */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, lidY = S.top, band = lidY - S.y, i;
+      cardRect(ctx, P.plasterMid, x, S.y, w, band - 4);
+      var LID = [P.crown, P.plasterLit, P.crownShade, P.outline];
+      for (i = 0; i < 4; i++) cardRect(ctx, LID[i], x, lidY - 4 + i, w, 1);
+      var pitch = Math.round(w / 2), po = wrap(Math.round(S.s), pitch);
+      for (i = 0; i <= 2; i++) {
+        var px = x + Math.round(w * 0.25) - po + i * pitch;
+        if (px < x - 16 || px > x + w + 16) continue;
+        Tint.rect(ctx, px - 14, S.y, 28, band - 4, P.plasterLit, 4);
+        Tint.rect(ctx, px - 12, lidY, 24, Math.round(8 * S.k * 2.4), P.lampGlow, 3);
+        miniPendant(ctx, px, lidY - 9, false);
+      }
+    },
+
+    /* the mirror: the same moulding reversed, the same plaster, the
+       pendants standing up off it - the folded ceiling, as lethal */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, botY = S.floor, bot = S.y + S.h, i;
+      cardRect(ctx, P.plasterMid, x, botY + 4, w, bot - botY - 4);
+      var LID = [P.crown, P.plasterLit, P.crownShade, P.outline];
+      for (i = 0; i < 4; i++) cardRect(ctx, LID[i], x, botY + 3 - i, w, 1);
+      var pitch = Math.round(w / 2), po = wrap(Math.round(S.s), pitch);
+      for (i = 0; i <= 2; i++) {
+        var px = x + Math.round(w * 0.25) - po + i * pitch, gh = Math.round(8 * S.k * 2.4);
+        if (px < x - 16 || px > x + w + 16) continue;
+        Tint.rect(ctx, px - 14, botY + 4, 28, bot - botY - 4, P.plasterLit, 4);
+        Tint.rect(ctx, px - 12, botY - gh, 24, gh, P.lampGlow, 3);
+        miniPendant(ctx, px, botY + 8, true);
+      }
+    },
+
+    /* THE POLE coming up out of the folded ceiling in every other open
+       span, and THE NOODLES hanging off the lid in the ones between */
+    props: function (ctx, S) {
+      var q = S.k * 2.4, k = S.k, i, j;
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i], kind = wrap(sp.i, 4), mid = Math.round((sp.x0 + sp.x1) / 2);
+        if (kind === 2) {
+          /* the noodles: a lump of them caught on the lid, three strands
+             hanging and swaying, glowing the spare life's jade */
+          var nx = mid - 3, ns = Math.max(0.5, q), NL = [5, 8, 6];
+          Tint.rect(ctx, nx - 3, S.top + 1, 11, Math.round(11 * ns), P.lifePale, 3);
+          cardRect(ctx, P.outline, nx - 1, S.top, 9, 3);
+          cardRect(ctx, P.noodle, nx, S.top, 7, 2);
+          for (j = 0; j < 3; j++) {
+            var sw = Math.round(Math.sin(S.t * 1.7 + j)), nl = Math.max(2, Math.round(NL[j] * ns));
+            for (var r = 0; r < nl; r++) {
+              cardRect(ctx, (r % 3 === 1) ? P.noodleShade : P.noodle,
+                       nx + 1 + j * 2 + (r > nl / 2 ? sw : 0) + ((r >> 1) & 1), S.top + 2 + r, 1, 1);
+            }
+          }
+          continue;
+        }
+        if (kind !== 0) continue;
+        /* THE POLE, driven by its own place on the card exactly as the
+           level drives it by its screen x: up out of the bottom on the
+           right, standing with two taps on the plaster in the middle,
+           pulled down as it comes left and gone at a fifth of the card.
+           Coming down past the doodad's column it is held under the
+           doodad's line across this span - it shuts the bottom of the
+           lane as it goes and never meets the doodad. */
+        var pax = mid, pu = (pax - S.x) / S.w, E;
+        if (pu > 0.92 || pu <= 0.22) E = 0;
+        else if (pu > 0.73) E = ease((0.92 - pu) / 0.19);
+        else if (pu > 0.52) {
+          var tp = (0.73 - pu) / 0.21;
+          E = 1 - ((tp > 0.3 && tp < 0.45) || (tp > 0.65 && tp < 0.8) ? 1 / S.lane : 0);
+        } else E = (pu - 0.22) / 0.30;
+        var big = k >= 0.3, hw = big ? 8 : 5;
+        var reach = S.doodad.x + Math.ceil(S.doodad.size / 2) + Math.ceil(hw / 2) + 2;
+        var eMax = (S.floor - sp.line.bottom - 3) / S.lane;
+        E = Math.min(E, eMax + (1 - eMax) * clamp((pax - reach) / (S.w * 0.2), 0, 1));
+        if (E <= 0.04) continue;
+        var top = Math.max(S.top + 1, S.floor - Math.round(E * S.lane));
+        var ow = Math.max(3, Math.round(12 * k)), iw = Math.max(2, ow - 1);
+        var collarY = top + Math.round((14 + POLE_U * E) * k), oc = tubeCols(ow), ic = tubeCols(iw);
+        var ox = pax - Math.floor(ow / 2), ix = pax - Math.floor(iw / 2);
+        /* its narrow shadow on the far wall, the outer tube down into the
+           folded ceiling and the hole it comes out of, the inner tube */
+        Tint.rect(ctx, ox + ow, collarY + 1, 2, S.floor - collarY - 1, P.void, 5);
+        var holeY = S.floor + Math.max(2, Math.round(6 * k));
+        for (j = 0; j < oc.length; j++) cardRect(ctx, oc[j], ox + j, collarY, 1, holeY - collarY);
+        cardRect(ctx, P.hole, pax - Math.round(5 * q), holeY, Math.round(12 * q), 2);
+        cardRect(ctx, P.plasterLit, pax - Math.round(5 * q), holeY + 2, Math.round(12 * q), 1);
+        var tubeTop = top + (big ? 5 : 2);
+        for (j = 0; j < ic.length; j++) cardRect(ctx, ic[j], ix + j, tubeTop, 1, collarY - tubeTop);
+        /* the collar where the two tubes meet */
+        var cw = ow + 2;
+        cardRect(ctx, P.outline, pax - Math.floor(cw / 2), collarY - 1, cw, 3);
+        cardRect(ctx, P.collar, pax - Math.floor(cw / 2) + 1, collarY, cw - 2, 1);
+        if (big) cardRect(ctx, P.collarLit, pax - Math.floor(cw / 2) + 1, collarY, 2, 1);
+        /* THE J, opening left */
+        if (big) {
+          cardRect(ctx, P.outline, pax - 5, top - 1, 8, 4); cardRect(ctx, P.outline, pax - 5, top + 2, 3, 3); cardRect(ctx, P.outline, pax - 1, top + 2, 4, 4);
+          cardRect(ctx, P.hook, pax - 3, top, 4, 1); cardRect(ctx, P.hook, pax - 4, top + 1, 2, 3); cardRect(ctx, P.hook, pax, top + 1, 2, 4);
+          cardRect(ctx, P.hookLit, pax - 3, top, 3, 1);
+        } else {
+          cardRect(ctx, P.outline, pax - 3, top - 1, 5, 3); cardRect(ctx, P.outline, pax - 3, top + 2, 2, 1);
+          cardRect(ctx, P.hook, pax - 2, top, 3, 1); cardRect(ctx, P.hook, pax - 2, top + 1, 1, 1);
+        }
+        /* plaster dust where the hook meets the lid */
+        if (E > 0.97) {
+          ctx.fillStyle = FX.puffHi;
+          ctx.fillRect(pax - 3, S.top, 1, 1); ctx.fillRect(pax + 2, S.top + 1, 1, 1); ctx.fillRect(pax - 1, S.top + 2, 1, 1);
+        }
+      }
+    },
+
+    /* a tuft of lint drifting down, lumpy and softly ringed, with its
+       spot on the moulding - or, every third drop, the hot feather
+       zigzagging, the one warm thing in the field apart from the lamps */
+    drop: function (ctx, d, S) {
+      var tiny = S.k < 0.2;
+      if (wrap((d.i - 1) >> 1, 3) === 1) {
+        var fx = d.x - 1 + Math.round(Math.sin(d.f * 12) * 2), fy = d.y - 2;
+        if (!tiny) Tint.rect(ctx, fx - 3, fy - 2, 9, 10, P.hotHi, 4);
+        Tint.rect(ctx, fx - 1, fy, 5, 6, P.hotHi, 3);
+        if (tiny) {
+          cardRect(ctx, P.outline, fx, fy, 3, 4); cardRect(ctx, P.hot, fx + 1, fy + 1, 1, 2);
+          return;
+        }
+        cardRect(ctx, P.outline, fx, fy - 1, 3, 6); cardRect(ctx, P.outline, fx - 1, fy, 5, 4);
+        cardRect(ctx, P.hot, fx, fy, 3, 4); cardRect(ctx, P.hot, fx + 1, fy - 1, 2, 1);
+        cardRect(ctx, P.hotHi, fx + 1, fy - 1, 1, 2);
+        cardRect(ctx, P.quillHot, fx + 1, fy + 1, 1, 3); cardRect(ctx, P.quillHot, fx + 1, fy + 4, 1, 2);
+        return;
+      }
+      var lx = d.x - 2, ly = d.y - 1, flip = Math.floor(d.f * 6) % 2;
+      Tint.rect(ctx, lx - 1, S.floor + 1, 6, 1, P.void, 6);
+      if (tiny) {
+        cardRect(ctx, P.lintRing, lx, ly, 4, 3); cardRect(ctx, P.lintRing, lx + 1, ly - 1, 2, 5);
+        cardRect(ctx, P.lint, lx + 1, ly, 2, 1); cardRect(ctx, P.lintHi, lx + 1, ly, 1, 1);
+        return;
+      }
+      var kx = flip ? lx : lx + 2;
+      cardRect(ctx, P.lintRing, lx - 1, ly, 6, 3); cardRect(ctx, P.lintRing, lx, ly - 1, 4, 5); cardRect(ctx, P.lintRing, kx, ly - 2, 2, 1);
+      cardRect(ctx, P.lint, lx, ly, 4, 3); cardRect(ctx, P.lint, kx, ly - 1, 2, 1);
+      cardRect(ctx, P.lintHi, lx, ly, 2, 1); cardRect(ctx, P.lintHi, kx, ly - 1, 1, 1);
+      cardRect(ctx, P.lintShade, lx + 1, ly + 2, 3, 1);
+    },
+
+    /* the room's light, in miniature: warmth off both bands, the two side
+       columns of dark - and no wash over the whole card, which made the
+       first cut of it a beige the level never is */
+    front: function (ctx, S) {
+      var g = Math.round(S.lane * 0.18), vig = Math.max(4, Math.round(S.w * 0.09));
+      Tint.rect(ctx, S.x, S.top, S.w, g, P.lampGlow, 1);
+      Tint.rect(ctx, S.x, S.floor - g, S.w, g, P.lampGlow, 1);
+      Tint.rect(ctx, S.x, S.y, vig, S.h, P.void, 4);
+      Tint.rect(ctx, S.x + S.w - vig, S.y, vig, S.h, P.void, 4);
+    }
+  };
 
   /* ------------------------------------------------------- generation */
 
@@ -2318,14 +2441,13 @@ var Ceiling = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAMES: [BOON_NAME],
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld, drawOverlay: drawOverlay,

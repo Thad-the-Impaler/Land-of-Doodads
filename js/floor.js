@@ -283,9 +283,10 @@ var Floor = (function () {
     foe:  ['◀ THE MOP ◀', 'IT WANTS EVERYTHING BACK']
   };
 
-  /* the thirteen colours a generic cover would be painted from. This bay
-     paints its own, but the table stays honest: a generic card painted
-     out of it comes out shaded cream doors and daylit oak */
+  /* the thirteen colours a generic cover would be painted from. The
+     bay's cover is COVER (below), but the table stays honest - the TV and
+     the stands read its back, and a generic card painted out of it comes
+     out shaded cream doors and daylit oak */
   var PREVIEW = {
     back: P.doorShade, backAlt: H.cabinet, seam: H.cabinetDeep,
     beam: H.paint, beamDark: H.paintShade, beamLight: P.paintHi,
@@ -1420,10 +1421,11 @@ var Floor = (function () {
     }
     return bakeOakRows(rows, VW);
   }
-  /* the card's floor (drawPreview): the same floor seen by a card w wide,
-     its rows standing for the level's - the toe-kick to the seam for rows
-     150..241, the seam to the bottom for the band - each at w / 480 of the
-     level's scale. Baked the first time a card of that size is drawn. */
+  /* the card's floor (COVER.back and COVER.floor): the same floor seen by
+     a card w wide, its rows standing for the level's - the toe-kick to the
+     seam for rows 150..241, the seam to the bottom for the band - each at
+     w / 480 of the level's scale. Baked the first time a card of that size
+     is drawn. */
   var OAK_CARD = {};
   function oakCard(w, h, fy, sy) {
     var key = w + 'x' + h + 'x' + fy + 'x' + sy;
@@ -2442,225 +2444,367 @@ var Floor = (function () {
 
   /* ---------------------------------------------------- the cover art
 
-     118x114 on the big card, 82x94 on the side ones; the caller has
-     already clipped. A live miniature of the bay in its own proportions,
-     which are Floor ref 6's: the table's underside and its white apron
-     across the top tenth, a sliver of bright kitchen under it, the island's
-     honey overhang high up at 0.14, its shaded white doors, the dark
-     toe-kick at 0.56 with a stool standing on the floor in front of it
-     and the fridge showing in the gap where the island ends, the oak
-     floor with its grain running across, out of the window's sheen into
-     the table's shade, and the band under its seam - then,
-     sliding past, white chair legs from the lid and black stool legs from the near seam, crumbs hopping on it, a
-     hot sauce droplet bending back toward THE MOP at the left edge. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k, xx, yy;
-    function Y(f) { return y + Math.round(h * f); }
-    function R(col, rx, ry, rw, rh) { if (rw > 0 && rh > 0) { ctx.fillStyle = col; ctx.fillRect(rx, ry, rw, rh); } }
-    var lidB = Y(0.09), noseY = Y(0.14), ovB = Y(0.22), kickY = Y(0.52), floorY = Y(0.56);
-    var seamY = Y(0.896);
-    var gapX = x + Math.round(w * 0.72), gapW = Math.round(w * 0.2);
+     The bay's painters for its cover (js/cover.js lays it out and times
+     it), in Floor ref 6's proportions at the game's own rows: the table's
+     underside and its white apron for the lid, a sliver of bright kitchen
+     under it, the island's honey overhang, its shaded white doors and the
+     dark toe-kick, a stool standing in front of it and the fridge in the
+     gap where the island ends - all of it at the island's parallax - and
+     the oak floor with its grain running across, out of the window's
+     sheen into the table's shade, with the band under its seam. White
+     chair legs hang from the lid and black stool legs stand on the seam,
+     crumbs hop in the open spans, a crumb or the hot sauce comes down,
+     and THE MOP stands parked at the left edge at the game's own size. */
 
-    /* the sliver of kitchen over the overhang: bright ceiling, a can, the
-       crown, the tops of the uppers, the hood's glass */
-    R(P.ceilDay, x, lidB, w, noseY - lidB);
-    R(H.lampCore, x + Math.round(w * 0.3), lidB + 1, 2, 1);
-    R(H.cabinetLit, x, noseY - 3, w, 1);
-    for (xx = x; xx < x + w; xx += 6) R(H.cabinetShade, xx + 1, noseY - 2, 4, 2);
-    var hx = x + Math.round(w * 0.55);
-    R(H.steel, hx - 2, lidB, 4, noseY - lidB - 2);
-    R(P.hoodGlass, hx - 7, noseY - 3, 14, 3);
-
-    /* the gap where the island ends: the fridge and the far base run */
-    R(H.cabinet, gapX, noseY, gapW, floorY - noseY);
-    R(H.tile, gapX, noseY + Math.round((floorY - noseY) * 0.35), gapW, Math.round((floorY - noseY) * 0.2));
-    for (xx = gapX; xx < gapX + gapW; xx += 5) R(H.cabinetShade, xx + 1, noseY + Math.round((floorY - noseY) * 0.6), 3, Math.round((floorY - noseY) * 0.3));
-    var fx = gapX + Math.round(gapW * 0.45), fw = Math.max(8, Math.round(gapW * 0.5));
-    R(H.outline, fx - 1, lidB, fw + 2, floorY - lidB);
-    R(H.steel, fx, lidB, fw, floorY - lidB - 1);
-    R(H.steelLit, fx, lidB, 1, floorY - lidB - 1);
-    R(H.steelDeep, fx + Math.round(fw / 2), lidB, 1, Math.round((floorY - lidB) * 0.6));
-    R(P.magnetPink, fx + 1, lidB + 3, 2, 2);
-    R(P.photoWhite, fx + 3, lidB + 6, 2, 3);
-    R(P.magnetYellow, fx + 1, lidB + 9, 2, 2);
-
-    /* THE ISLAND: quartz nose, honey ply, its underside, the shaded doors */
-    var runW2 = gapX - x;
-    R(H.outline, x, noseY, runW2, 1);
-    R(H.cabinetLit, x, noseY + 1, runW2, 1);
-    R(P.ply, x, noseY + 2, runW2, 2);
-    R(P.plyUnder, x, noseY + 4, runW2, ovB - noseY - 4);
-    R(P.plyShade, x, ovB - 1, runW2, 1);
-    R(P.isleFrame, x, ovB, runW2, kickY - ovB);
-    /* four doors and the drawer stack, at the level's width */
-    var dw = Math.max(10, Math.round((runW2 - 2) / 5));
-    for (k = 0; k < 5; k++) {
-      xx = x + k * dw;
-      R(P.isleDeep, xx, ovB, 1, kickY - ovB);
-      if (k === 4) {
-        for (i = 0; i < 3; i++) {
-          R(P.isleField, xx + 2, ovB + 2 + i * Math.round((kickY - ovB) / 3), dw - 4, Math.round((kickY - ovB) / 3) - 3);
-          R(H.steelLit, xx + Math.round(dw / 2) - 2, ovB + 4 + i * Math.round((kickY - ovB) / 3), 4, 1);
-        }
-      } else {
-        R(P.isleField, xx + 2, ovB + 2, dw - 4, kickY - ovB - 4);
-        R(P.isleLit, xx + dw - 3, ovB + 3, 1, kickY - ovB - 6);
-      }
-    }
-    Tint.rect(ctx, x, ovB, runW2, 3, H.walnutDeep, 4);
-    R(P.toeKick, x, kickY, runW2, floorY - kickY - 1);
-    R(H.outline, x, floorY - 1, runW2, 1);
-    R(P.isleFrame, gapX - 2, noseY, 2, floorY - noseY);
-    /* one stool at the island, on the boards */
-    var sx = x + Math.round(w * 0.3);
-    R(H.walnut, sx - 5, Y(0.27), 11, 2);
-    R(H.walnutLit, sx - 5, Y(0.27), 11, 1);
-    for (yy = Y(0.29); yy < floorY; yy++) {
-      var sp = Math.round((yy - Y(0.29)) / (floorY - Y(0.29)) * 5);
-      R(H.iron, sx - 1 - sp, yy, 1, 1); R(H.iron, sx + 1 + sp, yy, 1, 1);
-    }
-    R(H.iron, sx, Y(0.29), 1, Y(0.38) - Y(0.29));
-    R(H.ironLit, sx - 5, Y(0.465), 11, 1);
-
-    /* the floor: the level's ONE oak floor, its grain running across the
-       card - the same boards, rings and knot, baked for this card's size
-       - each row sliding at its depth's speed, the seam row at the legs'
-       (fast near, slow far); the window's sheen by the toe-kick, the
-       table's shade toward you; and the band, the ground, a shade lighter
-       under its dark seam and lit arris */
-    var bot = y + h, CV = oakCard(w, h, floorY - y, seamY - y);
-    var tcmP = s / ((w / VW) * (FLOOR + 0.5 - Y_H) / EYE);
-    for (yy = floorY; yy < bot; yy++) {
-      var P0c = CV.per[yy - floorY];
-      ctx.drawImage(CV.t.canvas, wrap(Math.round(tcmP * P0c / PERIOD_CM) - Math.round(w / 2), P0c), yy - floorY, w, 1, x, yy, w, 1);
-    }
-    var SHN = hexRGB(P.floorSheen);
-    for (yy = floorY; yy < seamY; yy++) {
-      var sa = 1 - ease((yy - floorY) / Math.max(1, (seamY - floorY) * 0.35));
-      if (sa > 0) R('rgba(' + Math.round(SHN[0]) + ',' + Math.round(SHN[1]) + ',' + Math.round(SHN[2]) + ',' + sa.toFixed(3) + ')', x, yy, w, 1);
-      R(rgba(H.walnutDeep, 0.34 * ease((yy - floorY) / Math.max(1, seamY - floorY))), x, yy, w, 1);
-    }
-    R(rgba(H.walnutDeep, 0.20), x, seamY + 2, w, bot - seamY - 2);
-    R(P.oakSeam, x, seamY, w, 1);
-    R(P.oakSun, x, seamY + 1, w, 1);
-
-    /* the lid: the table's underside, its white apron, the bounce pair */
-    R(H.walnutDeep, x, y, w, lidB - y);
-    R(H.walnut, x + Math.round(w * 0.2), y + 2, Math.round(w * 0.3), 1);
-    R(P.paintHi, x, lidB - 6, w, 1);
-    R(H.paint, x, lidB - 5, w, 2);
-    R(H.paintShade, x, lidB - 3, w, 1);
-    R(H.outline, x, lidB - 2, w, 1);
-    R(H.walnutDeep, x, lidB - 1, w, 1);
-
-    /* THE LEGS, sliding past: a white chair leg from the lid, a black
-       stool leg from the near seam, with the gap between them */
-    var period = big ? 46 : 38;
-    var span = seamY - lidB;
-    var gapH = Math.round(span * 0.34);
-    for (i = 0; i < 3; i++) {
-      var ox = Math.round(x + w + 10 - wrap(s + i * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapY = Math.round(lidB + 6 + ((i * 19) % Math.max(1, span - gapH - 14)));
-      Tint.rect(ctx, ox + 10, lidB, 2, gapY - lidB, H.void, 6);
-      R(H.outline, ox, lidB, 10, gapY - lidB);
-      R(P.paintHi, ox + 1, lidB, 2, gapY - lidB - 2);
-      R(H.paint, ox + 3, lidB, 3, gapY - lidB - 2);
-      R(P.paintHi, ox + 6, lidB, 1, gapY - lidB - 2);
-      R('#ddd5c3', ox + 7, lidB, 2, gapY - lidB - 2);
-      R(H.outline, ox - 2, lidB, 14, 4);
-      R(H.paint, ox - 1, lidB, 12, 3);
-      R(P.glide, ox + 1, gapY - 2, 8, 2);
-      var by = gapY + gapH;
-      Tint.rect(ctx, ox + 10, by, 2, seamY - by, H.void, 6);
-      R(H.outline, ox, by, 10, seamY - by);
-      R(H.ironLit, ox + 1, by, 1, seamY - by);
-      R('#37322f', ox + 2, by, 3, seamY - by);
-      R('#6e6863', ox + 5, by, 1, seamY - by);
-      R(H.iron, ox + 6, by, 3, seamY - by);
-      R(H.outline, ox - 2, by - 1, 14, 4);
-      R(H.walnutHi, ox - 1, by, 12, 1);
-      R(H.walnut, ox - 1, by + 1, 12, 1);
-      var ry = seamY - Math.round(h * 0.11);
-      if (ry > by + 5) {
-        R(H.outline, ox - 3, ry - 1, 16, 3);
-        R(H.ironLit, ox - 2, ry, 14, 1);
-      }
-    }
-
-    /* THE CRUMBS hopping on the near seam, drawn toward the mop */
-    var band = Math.round(h * 0.2);
-    for (i = 0; i < 3; i++) {
-      var kx = x + Math.round(wrap(w - s * 1.3 + i * 37, w + 8)) - 4;
-      if (kx < x + Math.round(w * 0.2) || kx > x + w - 4) continue;
-      var apex = Math.round(band * (0.5 + i * 0.2));
-      var rise = Math.abs(Math.sin(t * (2.6 - i * 0.4) + i * 1.3));
-      var ky = Math.round(seamY - 4 - rise * apex);
-      Tint.rect(ctx, kx - 1, seamY + 1, 5, 1, H.void, 15 - Math.round(rise * 9));
-      R(H.outline, kx - 1, ky, 5, 3); R(H.outline, kx, ky - 1, 3, 5);
-      if (i === 0) { R(P.bread, kx, ky, 3, 3); R(P.breadHi, kx, ky, 1, 1); R(P.crust, kx + 2, ky + 1, 1, 2); }
-      else if (i === 1) { R(P.cereal, kx, ky, 3, 3); R(P.cerealShade, kx + 1, ky + 1, 1, 1); }
-      else { R(P.cookie, kx, ky, 3, 3); R(P.chip, kx + 1, ky + 1, 1, 1); }
-    }
-    /* the hot sauce on its way down, bending back toward the mop */
-    var fall = wrap(s * 1.5, seamY - lidB - 6);
-    var hotX = x + Math.round(w * 0.78 - fall * 0.35), hotY = lidB + Math.round(fall);
-    Tint.rect(ctx, hotX - 3, hotY - 3, 9, 9, P.hotSauceHi, 4);
-    R(P.hotSauce, hotX, hotY, 3, 4);
-    R(P.hotSauce, hotX + 1, hotY - 1, 1, 1);
-    R(P.hotSheen, hotX, hotY + 1, 1, 1);
-    R(P.hotSauceDeep, hotX + 2, hotY + 3, 1, 1);
-
-    /* THE MOP at the left edge: its body leaning back off the card, the
-       handle going up, the head on the near seam with the roller turning */
-    var mw = Math.max(16, Math.round(w * 0.24)), hy1 = seamY + 2, hy0 = hy1 - Math.round(h * 0.12);
-    var bw = Math.max(8, Math.round(w * 0.12)), bTop = Y(0.36);
-    for (yy = bTop; yy < hy0; yy++) {
-      var lean = Math.floor((hy0 - yy) / 8);
-      var bx0 = x - 2 - lean;
-      var inTank = yy > bTop + (hy0 - bTop) * 0.45;
-      R(H.outline, bx0 - 1, yy, bw + 2, 1);
-      R(inTank ? P.mopTank : P.mopWhite, bx0, yy, bw, 1);
-      if (inTank && yy > hy0 - (hy0 - bTop) * 0.25) R(P.mopWater, bx0 + 1, yy, bw - 2, 1);
-      if (!inTank && (yy - bTop) % 9 < 2) R(P.mopGreen, bx0, yy, bw, 1);
-    }
-    for (yy = lidB; yy < bTop; yy++) {
-      var hx2 = x + Math.round(bw / 2) - 4 - Math.floor((hy0 - yy) / 8);
-      R(H.outline, hx2 - 1, yy, 4, 1);
-      R(P.mopWhite, hx2, yy, 2, 1);
-    }
-    R(H.outline, x, hy0, mw + 1, hy1 - hy0 + 1);
-    R(P.mopWhite, x, hy0 + 1, mw, 2);
-    R(P.mopGreen, x, hy0 + 3, mw, 2);
-    R(P.mopGreyDeep, x, hy0 + 5, mw, hy1 - hy0 - 7);
-    R(P.mopTank, x, hy0 + 6, mw - 1, hy1 - hy0 - 9);
-    var sh2 = Math.floor(t * 10) % 3;
-    for (k = 0; k < mw; k += 5) {
-      for (i = 0; i < hy1 - hy0 - 9; i++) R(P.rollerStripe, x + k + i + sh2, hy0 + 6 + i, 2, 1);
-    }
-    R(P.mopWhite, x + mw - 4, hy0 + 1, 4, hy1 - hy0 - 3);
-    R(P.mopGreen, x, hy1 - 2, mw, 1);
-    for (i = 0; i < 3; i++) {
-      var dx2 = wrap(w * 0.4 - s * 1.1 + i * w * 0.13, w * 0.4);
-      R(P.oakSun, x + mw + 1 + Math.round(dx2), hy0 + 4 + i * 3, 2, 1);
-    }
-
-    /* the doodad flying it, with a halo so it never goes missing */
-    var dx = Math.round(x + w * 0.42);
-    var dy = Math.round(y + h * 0.45 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, dx - sz, dy - sz, sz * 2, sz * 2, H.void, 5);
-    R(H.outline, dx - sz / 2 - 1, dy - sz / 2 - 1, sz + 2, sz + 2);
-    R('#c9873c', dx - sz / 2, dy - sz / 2, sz, sz);
-    R('#eab873', dx - sz / 2, dy - sz / 2, sz - 2, 1);
-    R(H.outline, dx + sz / 2 - 2, dy - 1, 1, 1);
-    R('#f3cc84', dx + sz / 2, dy, 2, 1);
-
-    /* the daylight: the table's shade over the top, the window's warmth
-       on the right */
-    Tint.rect(ctx, x, lidB, w, ovB - lidB, H.walnutDeep, 3);
-    Tint.rect(ctx, x + Math.round(w * 0.66), lidB, w - Math.round(w * 0.66), seamY - lidB, '#ffe9b8', 1);
+  /* the island's rows, off the field's: its quartz nose, the foot of the
+     overhang, the top of the toe-kick and its foot on the boards */
+  function cardRows(S) {
+    return { nose: S.y + Math.round(37 * S.k), ov: S.y + Math.round(60 * S.k),
+             kick: S.y + Math.round(140 * S.k), boards: S.y + Math.round(OAK_R0 * S.k) };
   }
+  function cardRect(ctx, col, x, y, w, h) {
+    if (w > 0 && h > 0) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
+  }
+
+  /* the oak's rows r0..r1-1 on a card: the level's ONE floor, baked for
+     the card's size (oakCard), each row sliding at its own depth's speed -
+     the seam row at the lane's, the far rows slower, the band faster */
+  function cardOak(ctx, S, r0, r1) {
+    var R = cardRows(S), CV = oakCard(S.w, S.h, R.boards - S.y, S.floor - S.y), yy;
+    var tcmP = S.s / ((S.w / VW) * (FLOOR + 0.5 - Y_H) / EYE);
+    for (yy = Math.max(r0, R.boards); yy < r1; yy++) {
+      var P0 = CV.per[yy - R.boards];
+      if (P0 === undefined) break;
+      ctx.drawImage(CV.t.canvas, wrap(Math.round(tcmP * P0 / PERIOD_CM) - Math.round(S.w / 2), P0),
+                    yy - R.boards, S.w, 1, S.x, yy, S.w, 1);
+    }
+  }
+
+  /* squareLeg at a column's width: the outline, the lit arris, the lit
+     face, the near corner, the shaded face, its dark far strip */
+  function cardLeg(ctx, x, y, w, h, ink) {
+    if (w <= 0 || h <= 0) return;
+    var lit = Math.round((w - 2) * 0.55), hiW = w >= 10 ? 2 : 1, deepW = w >= 10 ? 2 : 1;
+    cardRect(ctx, ink.edge, x, y, 1, h);
+    cardRect(ctx, ink.edge, x + w - 1, y, 1, h);
+    cardRect(ctx, ink.hi, x + 1, y, hiW, h);
+    cardRect(ctx, ink.face, x + 1 + hiW, y, lit - hiW, h);
+    cardRect(ctx, ink.corner, x + 1 + lit, y, 1, h);
+    cardRect(ctx, ink.shade, x + 2 + lit, y, w - 3 - lit - deepW, h);
+    cardRect(ctx, ink.deep, x + w - 1 - deepW, y, deepW, h);
+  }
+
+  /* a crumb at card size, kx/ky its body's top-left: bread with its crust
+     down one side, cereal, a cookie with its chip. `turn` carries the
+     crust or the chip round the corners as it tumbles. */
+  var CARD_CRUMB = [
+    { body: 'bread',  accent: [['breadHi', 0, 0], ['crust', 2, 1], ['crust', 2, 2]] },
+    { body: 'cereal', accent: [['cerealShade', 2, 2], ['cerealHi', 0, 0]] },
+    { body: 'cookie', accent: [['chip', 2, 2], ['chip', 0, 1]] }
+  ];
+  function cardCrumb(ctx, kind, kx, ky, n, turn) {
+    var C = CARD_CRUMB[kind], i;
+    cardRect(ctx, H.outline, kx - 1, ky, n + 2, n);
+    cardRect(ctx, H.outline, kx, ky - 1, n, n + 2);
+    cardRect(ctx, P[C.body], kx, ky, n, n);
+    for (i = 0; i < C.accent.length; i++) {
+      var ax = Math.min(n - 1, C.accent[i][1]), ay = Math.min(n - 1, C.accent[i][2]), r, tmp;
+      for (r = 0; r < turn; r++) { tmp = ax; ax = n - 1 - ay; ay = tmp; }
+      cardRect(ctx, P[C.accent[i][0]], kx + ax, ky + ay, 1, 1);
+    }
+  }
+
+  /* THE MOP, parked, at the game's size: the head's face at MOP_FACE of
+     the field's width, its wheels on the seam; the body leaning back off
+     the card behind it, a tenth of a pixel a row, the handle going up
+     out of its top; the draft running into the mouth. */
+  function cardMop(ctx, S) {
+    var k = S.k, x = S.x, yy, i;
+    var faceX = x + Math.round(S.w * MOP_FACE / VW);
+    var hy0 = S.floor - Math.max(6, Math.round(30 * k)), hy1 = S.floor + Math.max(1, Math.round(4 * k));
+    var hh = hy1 - hy0;
+    var bw = Math.max(8, Math.round(34 * k)), bTop = S.floor - Math.max(20, Math.round(146 * k));
+    var bh = hy0 - bTop;
+    function leanOf(y) { return Math.floor((hy0 - 1 - y) / LEAN_K); }
+    /* THE BODY: the white housing with its green band, the clear tank of
+       dirty water, the grey neck, in the game's proportions */
+    for (yy = bTop; yy < hy0; yy++) {
+      var g = (yy - bTop) / bh * BODY_H, r1 = faceX - 2 - leanOf(yy), r0 = r1 - bw;
+      var col = g < 40 ? P.mopWhite : (g < 46 ? P.mopGreen : (g < TANK_T ? P.mopWhite
+              : (g < TANK_B ? (g > TANK_B - 22 ? P.mopWater : P.mopTank) : P.mopGrey)));
+      cardRect(ctx, H.outline, r0 - 1, yy, bw + 2, 1);
+      cardRect(ctx, col, r0, yy, bw, 1);
+      if (g < TANK_T) cardRect(ctx, g >= 40 && g < 46 ? P.mopGreenDeep : P.mopWhiteShade, r1 - 2, yy, 2, 1);
+      else if (g < TANK_B) cardRect(ctx, P.mopTankLit, r0 + 1, yy, 1, 1);
+    }
+    /* the handle, out of the housing's top and on up into the table's
+       shade at the same lean, the cord along its back */
+    for (yy = bTop - 1; yy >= S.top; yy--) {
+      var hx = faceX - 2 - leanOf(yy) - 5;
+      if (hx + 4 < x) break;
+      cardRect(ctx, P.cable, hx, yy, 1, 1);
+      cardRect(ctx, P.mopWhite, hx + 1, yy, 2, 1);
+      cardRect(ctx, H.outline, hx + 3, yy, 1, 1);
+    }
+    /* THE HEAD: the game's rows squeezed to the card - white top, green
+       trim, the window with the roller turning in it, the green lip, the
+       grey base - and its white end cap rounded at the face */
+    Tint.rect(ctx, x, S.floor + 2, faceX - x + 2, 2, H.void, 6);
+    var cap = faceX - Math.max(3, Math.round(12 * k)), spin = Math.floor(S.t * 10) % 3;
+    for (i = 0; i < hh; i++) {
+      var gr = Math.floor(i * HEAD_H / hh), end = (i === 0 || i === hh - 1) ? faceX - 1 : faceX;
+      cardRect(ctx, H.outline, x, hy0 + i, end - x, 1);
+      if (i === 0 || i === hh - 1) continue;
+      var rc = gr <= 1 ? P.mopWhite : (gr <= 3 ? P.mopWhiteShade : (gr <= 8 ? P.mopGreen
+             : (gr === 9 || gr === 27 ? P.mopGreyDeep : (gr <= 26 ? P.mopTank : (gr === 28 ? P.mopGreen : P.mopGreyDeep)))));
+      cardRect(ctx, rc, x, hy0 + i, cap - x, 1);
+      if (gr >= 12 && gr <= 24) {
+        for (var sx = x - 6 + ((i + spin) % 3) * 2; sx < cap - 1; sx += 6) cardRect(ctx, P.rollerStripe, sx, hy0 + i, 2, 1);
+      }
+      var cc = gr <= 3 ? P.mopWhite : (gr <= 8 ? P.mopGreen : (gr <= 25 ? P.mopWhite : (gr === 28 ? P.mopGreen : P.mopGreyDeep)));
+      cardRect(ctx, cc, cap, hy0 + i, end - 1 - cap, 1);
+    }
+    /* the draft, three pale ticks running into the mouth */
+    var reach = Math.round(S.w * 0.4);
+    for (i = 0; i < 3; i++) {
+      var dx = wrap(reach - S.s * 1.1 + i * S.w * 0.13, reach);
+      cardRect(ctx, P.oakSun, faceX + 1 + Math.round(dx), hy0 + Math.round(hh * (0.3 + i * 0.2)), 2, 1);
+    }
+  }
+
+  var COVER = {
+    halo: H.void,
+    ink: H.outline,
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, R = cardRows(S), q = S.k * 2.4, i, n, yy;
+      var lidB = S.top, noseY = R.nose, ovB = R.ov, kickY = R.kick, floorY = R.boards;
+      /* the sliver of kitchen over the overhang - bright ceiling, a can,
+         the crown, the tops of the uppers, the hood's glass - at the far
+         kitchen's parallax */
+      cardRect(ctx, P.ceilDay, x, S.y, w, noseY - S.y);
+      var o1 = wrap(Math.round(S.s * FAR_P), w);
+      cardRect(ctx, H.cabinetLit, x, noseY - 3, w, 1);
+      for (i = -wrap(o1, 6); i < w; i += 6) cardRect(ctx, H.cabinetShade, x + i + 1, noseY - 2, 4, 2);
+      for (n = 0; n <= 1; n++) {
+        var kx = x - o1 + n * w, hx = kx + Math.round(w * 0.55), gw = Math.round(14 * q);
+        cardRect(ctx, H.lampCore, kx + Math.round(w * 0.3), lidB + 1, 2, 1);
+        cardRect(ctx, H.steel, hx - Math.round(2 * q), lidB, Math.max(2, Math.round(4 * q)), noseY - lidB - 2);
+        cardRect(ctx, P.hoodGlass, hx - Math.round(gw / 2), noseY - 3, gw, 3);
+      }
+
+      /* THE ISLAND and the gap where it ends, on a strip as wide as the
+         card at the island's parallax: the island four-fifths of it, the
+         gap with the fridge and the far base run the rest */
+      var o2 = wrap(Math.round(S.s * ISL_P), w), gapW = Math.round(w * 0.2), isleW = w - gapW;
+      var run = floorY - noseY, isle = kickY - ovB;
+      for (n = 0; n <= 2; n++) {
+        var gapX = x - o2 + n * w + Math.round(w * 0.72), ix = gapX + gapW - w;
+        if (ix > x + w || gapX + gapW < x) continue;
+        /* the gap: the far base run, its tile, and the fridge with its
+           magnets and a photograph */
+        cardRect(ctx, H.cabinet, gapX, noseY, gapW, run);
+        cardRect(ctx, H.tile, gapX, noseY + Math.round(run * 0.35), gapW, Math.round(run * 0.2));
+        for (i = 0; i < gapW; i += 5) cardRect(ctx, H.cabinetShade, gapX + i + 1, noseY + Math.round(run * 0.6), 3, Math.round(run * 0.3));
+        var fx = gapX + Math.round(gapW * 0.45), fw = Math.max(4, Math.round(gapW * 0.5));
+        cardRect(ctx, H.outline, fx - 1, lidB, fw + 2, floorY - lidB);
+        cardRect(ctx, H.steel, fx, lidB, fw, floorY - lidB - 1);
+        cardRect(ctx, H.steelLit, fx, lidB, 1, floorY - lidB - 1);
+        cardRect(ctx, H.steelDeep, fx + Math.round(fw / 2), lidB, 1, Math.round((floorY - lidB) * 0.6));
+        cardRect(ctx, P.magnetPink, fx + 1, lidB + Math.round(3 * q), 2, 2);
+        cardRect(ctx, P.photoWhite, fx + Math.round(3 * q), lidB + Math.round(6 * q), 2, 3);
+        cardRect(ctx, P.magnetYellow, fx + 1, lidB + Math.round(9 * q), 2, 2);
+        /* the island: quartz nose, honey ply, its underside, the shaded
+           doors and the drawer stack, the toe-kick */
+        cardRect(ctx, H.outline, ix, noseY, isleW, 1);
+        cardRect(ctx, H.cabinetLit, ix, noseY + 1, isleW, 1);
+        cardRect(ctx, P.ply, ix, noseY + 2, isleW, 2);
+        cardRect(ctx, P.plyUnder, ix, noseY + 4, isleW, ovB - noseY - 4);
+        cardRect(ctx, P.plyShade, ix, ovB - 1, isleW, 1);
+        cardRect(ctx, P.isleFrame, ix, ovB, isleW, isle);
+        var dw = Math.floor(isleW / 5), pad = Math.max(1, Math.round(2 * q));
+        for (var d = 0; d < 5; d++) {
+          var ddx = ix + d * dw, ddw = d === 4 ? isleW - 4 * dw : dw;
+          cardRect(ctx, P.isleDeep, ddx, ovB, 1, isle);
+          if (d === 4) {
+            var dh = Math.round(isle / 3);
+            for (i = 0; i < 3; i++) {
+              cardRect(ctx, P.isleField, ddx + pad, ovB + pad + i * dh, ddw - pad * 2, dh - pad - 1);
+              cardRect(ctx, H.steelLit, ddx + Math.round(ddw / 2) - 2, ovB + pad + 2 + i * dh, 4, 1);
+            }
+          } else {
+            cardRect(ctx, P.isleField, ddx + pad, ovB + pad, ddw - pad * 2, isle - pad * 2);
+            cardRect(ctx, P.isleLit, ddx + ddw - pad - 1, ovB + pad + 1, 1, isle - pad * 2 - 2);
+          }
+        }
+        Tint.rect(ctx, ix, ovB, isleW, 3, H.walnutDeep, 4);
+        cardRect(ctx, P.toeKick, ix, kickY, isleW, floorY - kickY - 1);
+        cardRect(ctx, H.outline, ix, floorY - 1, isleW, 1);
+        cardRect(ctx, P.isleFrame, ix, noseY, 2, run);
+        cardRect(ctx, P.isleFrame, gapX - 2, noseY, 2, run);
+        /* one stool at the island, on the boards */
+        var sx = ix + Math.round(isleW * 0.38), sh = Math.round(5 * q);
+        var seatY = S.y + Math.round(73 * S.k), legY = S.y + Math.round(78 * S.k);
+        cardRect(ctx, H.walnut, sx - sh, seatY, sh * 2 + 1, 2);
+        cardRect(ctx, H.walnutLit, sx - sh, seatY, sh * 2 + 1, 1);
+        for (yy = legY; yy < floorY; yy++) {
+          var sp = Math.round((yy - legY) / (floorY - legY) * sh);
+          cardRect(ctx, H.iron, sx - 1 - sp, yy, 1, 1);
+          cardRect(ctx, H.iron, sx + 1 + sp, yy, 1, 1);
+        }
+        cardRect(ctx, H.iron, sx, legY, 1, Math.round(25 * S.k));
+        cardRect(ctx, H.ironLit, sx - sh, S.y + Math.round(126 * S.k), sh * 2 + 1, 1);
+      }
+
+      /* the floor up to the seam, the window's sheen by the toe-kick and
+         the table's shade gathering toward you */
+      cardOak(ctx, S, floorY, S.floor);
+      var SHN = hexRGB(P.floorSheen);
+      for (yy = floorY; yy < S.floor; yy++) {
+        var sa = 1 - ease((yy - floorY) / Math.max(1, (S.floor - floorY) * 0.35));
+        if (sa > 0) cardRect(ctx, 'rgba(' + SHN[0] + ',' + SHN[1] + ',' + SHN[2] + ',' + sa.toFixed(3) + ')', x, yy, w, 1);
+        cardRect(ctx, rgba(H.walnutDeep, 0.34 * ease((yy - floorY) / Math.max(1, S.floor - floorY))), x, yy, w, 1);
+      }
+    },
+
+    /* 'top' is a white chair leg hanging from its seat, its glide at the
+       gap; 'bottom' a black stool leg standing on the seam, its walnut
+       seat at the gap - the game's two columns at the card's width */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var k = S.k, pr = Math.max(1, Math.round(4 * k)), sw = Math.max(1, Math.round(4 * k)), i;
+      if (end === 'top') {
+        var sbh = Math.max(2, Math.round(8 * k)), gl = k >= 0.3 ? 3 : 2, tp = k >= 0.3 ? 2 : 1;
+        var footY = y + h - gl - tp;
+        Tint.rect(ctx, x + w, y + sbh, sw, h - sbh - gl, H.void, 6);
+        cardLeg(ctx, x, y, w, footY - y, INK_WHITE);
+        /* the foot narrowing to its glide */
+        for (i = 0; i < tp; i++) cardLeg(ctx, x + 1 + i, footY + i, w - 2 - i * 2, 1, INK_WHITE);
+        var gy = y + h - gl;
+        cardRect(ctx, H.outline, x + 1, gy, w - 2, gl);
+        if (gl > 2) cardRect(ctx, P.glideLit, x + 2, gy, w - 4, 1);
+        cardRect(ctx, P.glide, x + 2, gy + gl - 2, w - 4, 1);
+        /* the seat block it hangs from, against the lid */
+        cardRect(ctx, H.outline, x - pr, y, w + pr * 2, sbh);
+        cardRect(ctx, sbh > 2 ? P.paintHi : H.paint, x - pr + 1, y, w + pr * 2 - 2, 1);
+        cardRect(ctx, H.paint, x - pr + 1, y + 1, w + pr * 2 - 2, sbh - 2);
+        /* one leg in three has the X-back's stretcher stub */
+        if (hash(p.i * 31 + 7) % 3 === 0 && h > 20) {
+          var stw = Math.max(3, Math.round(12 * k)), sth = Math.max(2, Math.round(6 * k)), sty = y + h - Math.round(31 * k);
+          cardRect(ctx, H.outline, x + w - 1, sty, stw, sth);
+          cardRect(ctx, H.paint, x + w - 1, sty + 1, stw - 1, sth - 2 > 0 ? sth - 2 : 1);
+        }
+        return;
+      }
+      /* the stool: its contact shadow and its cast shadow first */
+      var hc = Math.max(3, Math.round(9 * k)), sh = Math.max(1, Math.round(6 * k));
+      Tint.rect(ctx, x - sh, S.floor - 2, w + sh * 2, 2, H.void, 7);
+      Tint.rect(ctx, x + w, y + hc, sw, h - hc, H.void, 6);
+      var legTop = y + hc + 1, fr = k >= 0.4 ? 3 : 2, footY2 = y + h - fr;
+      var ringY = S.floor - Math.max(5, Math.round(31 * k)), rp = Math.max(3, Math.round(11 * k));
+      var ring = legTop + 2 < ringY;
+      if (ring) cardRect(ctx, P.ironDeep, x - rp + 2, ringY - 1, w + rp * 2 - 4, 1);
+      cardLeg(ctx, x, legTop, w, footY2 - legTop, INK_BLACK);
+      /* one in four on a chrome foot, if it shows enough black above it */
+      if (wrap(p.i, 4) === 1 && legTop <= S.floor - Math.round(48 * k)) {
+        var sl = Math.max(4, Math.round(13 * k));
+        cardLeg(ctx, x, footY2 - sl, w, sl, INK_CHROME);
+        cardRect(ctx, H.outline, x, footY2 - sl - 1, w, 1);
+      }
+      /* the seat: a walnut disc seen edge-on, its corners taken in, and
+         the black plate the legs bolt to under it */
+      var ROWS = hc >= 4 ? [H.outline, H.walnutHi, H.walnut, H.walnutDeep] : [H.outline, H.walnutHi, H.walnutDeep];
+      for (i = 0; i < hc; i++) {
+        var cut = (i === 0 || i === hc - 1) ? 1 : 0;
+        cardRect(ctx, H.outline, x - pr + cut, y + i, w + pr * 2 - cut * 2, 1);
+        if (i > 0) cardRect(ctx, ROWS[Math.min(i, ROWS.length - 1)], x - pr + 1, y + i, w + pr * 2 - 2, 1);
+      }
+      cardRect(ctx, H.outline, x - pr + 1, y + hc - 1, w + pr * 2 - 2, 1);
+      cardRect(ctx, H.iron, x - pr + 1, y + hc, w + pr * 2 - 2, 1);
+      /* the foot ring, the stool's signature, in front of the leg */
+      if (ring) {
+        var RING = k >= 0.3 ? [H.outline, H.ironLit, H.iron, H.outline] : [H.outline, H.ironLit, H.outline];
+        for (i = 0; i < RING.length; i++) {
+          var e = (i === 0 || i === RING.length - 1) ? 1 : 0;
+          cardRect(ctx, H.outline, x - rp + e, ringY + i, w + rp * 2 - e * 2, 1);
+          if (!e) cardRect(ctx, RING[i], x - rp + 1, ringY + i, w + rp * 2 - 2, 1);
+        }
+      }
+      /* the foot on the boards */
+      cardRect(ctx, H.outline, x - 1, footY2, w + 2, fr);
+      cardRect(ctx, H.ironLit, x, footY2, w, 1);
+      if (fr > 2) cardRect(ctx, P.ironDeep, x, footY2 + 1, w, 1);
+    },
+
+    /* the lid: the table's underside, a streak of its grain at the lid's
+       parallax, its white apron and the bounce pair */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, lidB = S.top, o = wrap(Math.round(S.s * LID_P), w), n;
+      cardRect(ctx, H.walnutDeep, x, S.y, w, lidB - S.y);
+      for (n = 0; n <= 1; n++) {
+        if (lidB - 6 > S.y + 2) cardRect(ctx, H.walnut, x - o + n * w + Math.round(w * 0.2), S.y + 2, Math.round(w * 0.3), 1);
+      }
+      cardRect(ctx, P.paintHi, x, lidB - 6, w, 1);
+      cardRect(ctx, H.paint, x, lidB - 5, w, 2);
+      cardRect(ctx, H.paintShade, x, lidB - 3, w, 1);
+      cardRect(ctx, H.outline, x, lidB - 2, w, 1);
+      cardRect(ctx, H.walnutDeep, x, lidB - 1, w, 1);
+    },
+
+    /* the band: the near boards, under the dark seam and its lit arris */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, bot = S.y + S.h;
+      cardOak(ctx, S, S.floor, bot);
+      cardRect(ctx, rgba(H.walnutDeep, 0.20), x, S.floor + 2, w, bot - S.floor - 2);
+      cardRect(ctx, P.oakSeam, x, S.floor, w, 1);
+      cardRect(ctx, P.oakSun, x, S.floor + 1, w, 1);
+    },
+
+    /* THE CRUMBS, two to an open span, hopping on the seam - each to a
+       fixed apex of its own, as the game's do, and never high enough to
+       meet the doodad's line across the span */
+    props: function (ctx, S) {
+      var n = S.k < 0.2 ? 2 : 3;
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (wrap(sp.i, 2)) continue;
+        var mid = Math.round((sp.x0 + sp.x1) / 2);
+        var reach = S.floor - 3 - n - sp.line.bottom;
+        for (var q = 0; q < 2; q++) {
+          var kx = mid + (q ? 4 : -6) * (n - 1) / 2;
+          var rise = Math.abs(Math.sin(S.t * (2.6 - q * 0.4) + sp.i * 1.3));
+          var apex = Math.max(0, Math.min(Math.round(S.lane * (0.22 + q * 0.08)), reach));
+          var ky = Math.round(S.floor - 1 - n - rise * apex);
+          Tint.rect(ctx, kx - 1, S.floor + 1, n + 2, 1, H.void, 15 - Math.round(rise * 9));
+          cardCrumb(ctx, wrap((sp.i >> 1) + q, 3), Math.round(kx), ky, n, 0);
+        }
+      }
+    },
+
+    /* a crumb tumbling down, or - every third drop - the hot sauce */
+    drop: function (ctx, d, S) {
+      var hk = hash(d.i * 7919 + 101);
+      if (wrap((d.i - 1) >> 1, 3) === 0) {
+        var hx = d.x - 1, hy = d.y - 2, gl = S.k < 0.2 ? 2 : 3;
+        Tint.rect(ctx, hx - gl, hy - gl, 3 + gl * 2, 3 + gl * 2, P.hotSauceHi, 4);
+        cardRect(ctx, P.hotSauce, hx, hy, 3, 4);
+        cardRect(ctx, P.hotSauce, hx + 1, hy - 1, 1, 1);
+        cardRect(ctx, P.hotSheen, hx, hy + 1, 1, 1);
+        cardRect(ctx, P.hotSauceDeep, hx + 2, hy + 3, 1, 1);
+        return;
+      }
+      var n = S.k < 0.2 ? 2 : 3;
+      cardCrumb(ctx, (hk >>> 4) % 3, d.x - 1, d.y - 1, n, Math.floor(d.f * 8) % 4);
+    },
+
+    /* the daylight - the table's shade over the top, the window's warmth
+       on the right - and the mop in front of everything */
+    front: function (ctx, S) {
+      var R = cardRows(S), third = Math.round(S.w * 0.66);
+      Tint.rect(ctx, S.x, S.top, S.w, R.ov - S.top, H.walnutDeep, 3);
+      Tint.rect(ctx, S.x + third, S.top, S.w - third, S.floor - S.top, '#ffe9b8', 1);
+      cardMop(ctx, S);
+    }
+  };
 
   /* ======================================================== generation */
 
@@ -3020,7 +3164,7 @@ var Floor = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: DiningRoom.END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: false,
     BOON_NAMES: [GREEN_NAME, DRY_NAME],
@@ -3029,7 +3173,7 @@ var Floor = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview, drawOverlay: drawOverlay,
+    drawOverlay: drawOverlay,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop,
     makeLitter: makeLitter, makeBoon: makeBoon, makeFoe: makeFoe,
     stepDrop: stepDrop, stepBoon: stepBoon, stepFoe: stepFoe,

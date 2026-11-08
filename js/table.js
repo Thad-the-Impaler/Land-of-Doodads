@@ -200,8 +200,9 @@ var Table = (function () {
     ceil:  LivingRoom.WARN_CEIL
   };
 
-  /* the thirteen colours a generic cover would use; this bay paints its
-     own (drawPreview), but the table stays honest */
+  /* the thirteen colours a generic cover would use; this bay's cover has
+     painters of its own (see COVER), but the table stays honest - tv.js
+     and the stands read PREVIEW.back */
   var PREVIEW = {
     back: H.cabinet, backAlt: H.cabinetLit, seam: P.cabinetLine,
     beam: P.porcelain, beamDark: P.rimShade, beamLight: P.porcelainHi,
@@ -2067,246 +2068,361 @@ var Table = (function () {
 
   /* ======================================================= THE COVER
 
-     118x114 on the big card, 82x94 on the side ones; the caller has
-     clipped. A live miniature of THIS view, at the bay's own row
-     fractions: the ceiling plane over the top quarter with its cans and
-     the kill line through it, the wall with its glass uppers, shutters
-     and doorway, the fridge and the hood drifting in front of it, the
-     island's quartz line with the plant on it, two chair backs over the
-     walnut's far edge, and the walnut taking the bottom 40% - the dish
-     stacks standing on it and hanging over it, a fork coming down and the
-     bottle going off between two stacks, the one red thing on the card.
-     Each layer slides at its own parallax, as in the level. */
-  function dishlet(ctx, x, y, h, up) {
-    if (h <= 0) return;
-    rect(ctx, x, y, 10, h, P.outline);
-    for (var cy = 0; cy < h; cy += 3) {
-      var side = Math.floor(cy / 3) % 4 === 3 ? 1 : 0;
-      rect(ctx, x + 1 + side, y + cy, 8 - side * 2, 1, P.porcelainHi);
-      rect(ctx, x + 1 + side, y + cy + 1, 8 - side * 2, 1, P.porcelain);
-      rect(ctx, x + 1 + side, y + cy + 2, 8 - side * 2, 1, P.rimShade);
+     The Table's painters for its cover (js/cover.js lays it out and times
+     it). A live miniature of THIS view, at the bay's own rows: the
+     ceiling plane over the top quarter with its cans, the wall with its
+     glass uppers, shutters and doorway, the fridge and the hood drifting
+     in front of it, the island's quartz line with the plant on it, two
+     chair backs over the walnut's far edge, and the walnut taking the
+     bottom 40% - the dish stacks standing on it and hanging over it, a
+     piece of silverware coming down and the bottle going off between two
+     stacks, the one red thing on the card. Each layer slides at its own
+     parallax, as in the level. */
+
+  /* One element of a stack at card size, as rows of [inset, colour,
+     right-end colour], top row first as it stands on the table; `eh` is
+     how many rows it gets. Plates and side plates keep two rows however
+     small the card, or a stack stops reading as plates. */
+  function coverElementRows(kind, eh) {
+    if (kind === 'P' || kind === 'S') {
+      var ins = kind === 'S' ? 1 : 0;
+      if (eh <= 2) return [[ins, P.porcelainHi, P.porcelain], [ins, P.porcelainShade, P.rimShade]];
+      var rows = [[ins, P.porcelainHi, P.porcelain]];
+      while (rows.length < eh - 1) rows.push([ins, P.porcelain, P.porcelainShade]);
+      rows.push([ins + 1, P.rimShade, P.rimShade]);
+      return rows;
     }
-    var by = up ? y : y + h - 3;
-    rect(ctx, x - 2, by, 14, 3, P.outline);
-    rect(ctx, x - 1, by + (up ? 0 : 1), 12, 1, P.porcelainHi);
-    rect(ctx, x - 1, by + (up ? 1 : 0), 12, 1, P.porcelainShade);
-    Tint.rect(ctx, x + 10, y, 2, h, H.void, 4);
+    if (kind === 'C') return eh <= 1 ? [[1, P.porcelainHi, P.porcelainShade]]
+                                     : [[1, P.porcelainHi, P.porcelain], [2, P.rimShade, P.rimShade]];
+    if (kind === 'B') {
+      if (eh <= 2) return [[0, P.porcelainHi, P.porcelain], [1, P.rimShade, P.rimDeep]];
+      if (eh === 3) return [[0, P.porcelainHi, P.porcelain], [0, P.glaze, P.porcelainShade], [2, P.rimShade, P.rimDeep]];
+      var b = [[0, P.porcelainHi, P.porcelain], [0, P.glaze, P.porcelainShade]];
+      while (b.length < eh - 1) b.push([1, P.porcelain, P.porcelainShade]);
+      b.push([2, P.rimShade, P.rimDeep]);
+      return b;
+    }
+    return null;   /* the mug is drawn on its own: it has a handle */
   }
 
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k, a;
-    /* the bay's own rows as fractions of the card: the kill line 23/270,
-       the crown over the wall 62, the island's nose 137, the walnut's far
-       edge 164, the kill row 242 */
-    var killY = y + Math.round(h * 0.085);
-    var crownY = y + Math.round(h * 0.23);
-    var noseY = y + Math.round(h * 0.507);
-    var edgeY = y + Math.round(h * 0.607);
-    var tableY = y + Math.round(h * 0.896);
-    var lidY = killY + 2;             /* the top of the lane on the card */
+  var COVER = {
+    halo: H.void,
+    ink: P.outline,
 
-    /* 1. THE CEILING PLANE, darker at the top of the card, and its cans
-       drifting at the far wall's pace */
-    for (i = y; i < crownY; i++) rect(ctx, x, i, w, 1, mix(P.ceilingTop, P.ceilingFar, (i - y) / Math.max(1, crownY - y)));
-    for (k = 0; k < 3; k++) {
-      var cx0 = x + Math.round(wrap(k * 47 + 20 - s * 0.15, w + 20)) - 10;
-      var cy0 = y + [3, 9, 15][k] * h / 114;
-      Tint.rect(ctx, cx0 - 5, Math.round(cy0) - 2, 11, 5, H.daylight, 6);
-      rect(ctx, cx0 - (2 - k % 2), Math.round(cy0), 4 - (k % 2) * 2, 1, H.lampCore);
-    }
+    /* the kitchen beyond the table, back to front, each layer at the
+       level's own parallax off S.s: the wall and its cans at 0.15, the
+       fridge and the hood at 0.22, the island at 0.32, the chair backs at
+       0.46 and the walnut at 1.0 */
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, s = S.s, i, k;
+      var crownY = y + Math.round(CROWN_Y * S.k), noseY = y + Math.round(NOSE_Y * S.k);
+      var edgeY = y + Math.round(EDGE_Y * S.k), tableY = S.floor;
 
-    /* 2. THE WALL: the crown, the glass uppers, the big shutters, the
-       splash, the doorway - all at 0.15 */
-    rect(ctx, x, crownY, w, noseY - crownY, P.wallDay);
-    rect(ctx, x, crownY, w, 1, H.cabinetLit);
-    var upB = y + Math.round(h * 0.43);
-    for (k = -1; k < 2; k++) {
-      var gx0 = x + Math.round(wrap(w * 0.18 - s * 0.15 + k * w * 0.9, w * 1.8)) - Math.round(w * 0.45);
-      for (i = 0; i < 3; i++) {
-        rect(ctx, gx0 + i * 7, crownY + 1, 7, upB - crownY - 1, H.cabinetLit);
-        rect(ctx, gx0 + i * 7 + 1, crownY + 2, 5, upB - crownY - 3, P.glassDark);
-        dot(ctx, gx0 + i * 7 + 2, crownY + 5, P.porcelain);
-        rect(ctx, gx0 + i * 7 + 2, crownY + 9, 3, 1, P.porcelain);
+      /* 1. THE CEILING PLANE, darker at the top of the card, and its cans
+         drifting at the far wall's pace */
+      for (i = y; i < crownY; i++) rect(ctx, x, i, w, 1, mix(P.ceilingTop, P.ceilingFar, (i - y) / Math.max(1, crownY - y)));
+      for (k = 0; k < 3; k++) {
+        var cx0 = x + Math.round(wrap(k * 47 + 20 - s * 0.15, w + 20)) - 10;
+        var cy0 = y + Math.round([3, 9, 15][k] * h / 114);
+        Tint.rect(ctx, cx0 - 5, cy0 - 2, 11, 5, H.daylight, 6);
+        rect(ctx, cx0 - (2 - k % 2), cy0, 4 - (k % 2) * 2, 1, H.lampCore);
       }
-      var sx0 = gx0 + 27, sw = Math.round(w * 0.24);
-      var shT = y + Math.round(h * 0.31);
-      rect(ctx, sx0 - 1, shT - 1, sw + 2, noseY - shT + 1, H.cabinetLit);
-      for (i = shT; i < noseY; i += 2) {
-        rect(ctx, sx0, i, sw, 1, H.cabinet);
-        rect(ctx, sx0, i + 1, sw, 1, P.slit);
+
+      /* 2. THE WALL: the crown, the glass uppers, the big shutters, the
+         splash, the doorway - all at 0.15 */
+      rect(ctx, x, crownY, w, noseY - crownY, P.wallDay);
+      rect(ctx, x, crownY, w, 1, H.cabinetLit);
+      var upB = y + Math.round(h * 0.43);
+      for (k = -1; k < 2; k++) {
+        var gx0 = x + Math.round(wrap(w * 0.18 - s * 0.15 + k * w * 0.9, w * 1.8)) - Math.round(w * 0.45);
+        for (i = 0; i < 3; i++) {
+          rect(ctx, gx0 + i * 7, crownY + 1, 7, upB - crownY - 1, H.cabinetLit);
+          rect(ctx, gx0 + i * 7 + 1, crownY + 2, 5, upB - crownY - 3, P.glassDark);
+          dot(ctx, gx0 + i * 7 + 2, crownY + 5, P.porcelain);
+          rect(ctx, gx0 + i * 7 + 2, crownY + 9, 3, 1, P.porcelain);
+        }
+        var sx0 = gx0 + 27, sw = Math.round(w * 0.24);
+        var shT = y + Math.round(h * 0.31);
+        rect(ctx, sx0 - 1, shT - 1, sw + 2, noseY - shT + 1, H.cabinetLit);
+        for (i = shT; i < noseY; i += 2) {
+          rect(ctx, sx0, i, sw, 1, H.cabinet);
+          rect(ctx, sx0, i + 1, sw, 1, P.slit);
+        }
+        rect(ctx, sx0 + Math.round(sw / 2), shT, 1, noseY - shT, H.cabinetShade);
+        var dx0 = sx0 + sw + 12;
+        rect(ctx, dx0 - 1, y + Math.round(h * 0.34), 12, noseY - y - Math.round(h * 0.34), H.cabinetLit);
+        rect(ctx, dx0, y + Math.round(h * 0.35), 10, noseY - y - Math.round(h * 0.35), P.hallDark);
+        rect(ctx, dx0 + 3, y + Math.round(h * 0.37), 5, noseY - y - Math.round(h * 0.37), P.hallDoor);
       }
-      rect(ctx, sx0 + Math.round(sw / 2), shT, 1, noseY - shT, H.cabinetShade);
-      var dx0 = sx0 + sw + 12;
-      rect(ctx, dx0 - 1, y + Math.round(h * 0.34), 12, noseY - y - Math.round(h * 0.34), H.cabinetLit);
-      rect(ctx, dx0, y + Math.round(h * 0.35), 10, noseY - y - Math.round(h * 0.35), P.hallDark);
-      rect(ctx, dx0 + 3, y + Math.round(h * 0.37), 5, noseY - y - Math.round(h * 0.37), P.hallDoor);
-    }
-    for (i = upB; i < noseY; i += 2) {
-      for (k = (i / 2) % 2 ? 0 : 2; k < w; k += 4) if (((k + i) % 7) !== 3) dot(ctx, x + k, i, P.tileB);
-    }
-    Tint.rect(ctx, x, y, w, noseY - y, P.distanceCool, 6);
-
-    /* 3. THE FRIDGE and THE HOOD, at 0.22 */
-    var fx = x + Math.round(wrap(w * 0.04 - s * 0.22, w * 1.6)) - Math.round(w * 0.3);
-    var frW = Math.round(w * 0.2), frT = y + Math.round(h * 0.22);
-    rect(ctx, fx, frT, frW, noseY - frT, P.fridgeSteel);
-    rect(ctx, fx, frT, 1, noseY - frT, H.steelLit);
-    rect(ctx, fx + Math.round(frW / 2), frT, 1, noseY - frT, H.steelDeep);
-    rect(ctx, fx + Math.round(frW / 2) - 2, frT + 9, 1, 8, H.steelLit);
-    rect(ctx, fx + Math.round(frW / 2) + 2, frT + 9, 1, 8, H.steelLit);
-    var mags = [P.photoA, P.photoB, P.photoC, P.photoD, P.note, P.photoA, P.photoC, P.pinkPaper];
-    for (i = 0; i < mags.length; i++) rect(ctx, fx + 2 + (i % 3) * 2, frT + 3 + Math.floor(i / 3) * 4 + (i % 2), 2, 2, mags[i]);
-    var hx = x + Math.round(wrap(w * 0.55 - s * 0.22, w * 1.6)) - Math.round(w * 0.3);
-    var canT = y + Math.round(h * 0.285);
-    rect(ctx, hx - 2, y, 5, canT - y, H.steel);
-    rect(ctx, hx - 2, y, 1, canT - y, H.steelLit);
-    rect(ctx, hx - 1, y + 3, 3, 2, H.steelDeep);
-    rect(ctx, hx - 9, canT, 19, 1, P.hoodGlass);
-    rect(ctx, hx - 10, canT + 1, 21, 1, P.hoodGlassEdge);
-    rect(ctx, hx - 3, canT + 1, 7, 2, H.steel);
-    Tint.rect(ctx, fx, frT, frW, noseY - frT, P.distanceCool, 5);
-    Tint.rect(ctx, hx - 10, y, 21, canT - y + 3, P.distanceCool, 5);
-
-    /* 4. THE ISLAND at 0.32: the ZZ plant and the red pot on it, the
-       quartz nose, the base in its own shade */
-    var zx = x + Math.round(wrap(w * 0.55 - s * 0.32, w * 1.4)) - Math.round(w * 0.2);
-    rect(ctx, zx - 3, noseY - 9, 6, 6, H.iron);
-    rect(ctx, zx - 4, noseY - 3, 1, 3, H.walnutHi); rect(ctx, zx + 3, noseY - 3, 1, 3, H.walnutHi);
-    for (i = 0; i < 9; i++) {
-      var la = (i - 4) * 0.3;
-      dot(ctx, zx + Math.round(Math.sin(la) * (4 + (i % 3) * 2)), noseY - 11 - Math.round(Math.cos(la) * (3 + (i % 3) * 2)), i % 2 ? H.leaf : H.leafDeep);
-    }
-    rect(ctx, zx + 10, noseY - 4, 9, 4, P.enamelRed); rect(ctx, zx + 10, noseY - 4, 9, 1, P.enamelHi);
-    rect(ctx, x, noseY, w, 1, P.quartz);
-    rect(ctx, x, noseY + 1, w, 1, H.cabinetShade);
-    rect(ctx, x, noseY + 2, w, edgeY - noseY - 2, P.islandFace);
-    var pw2 = Math.max(10, Math.round(w * 0.14));
-    for (i = x - Math.round(wrap(s * 0.32, pw2)); i < x + w; i += pw2) rect(ctx, i, noseY + 2, 1, edgeY - noseY - 2, P.islandDeep);
-
-    /* 5. THE CHAIR BACKS at 0.46, peeking over the walnut's far edge */
-    var chW = Math.round(w * 0.2), railT = y + Math.round(h * 0.478), railB = y + Math.round(h * 0.545);
-    for (k = 0; k < 2; k++) {
-      var chx = x + Math.round(wrap(w * 0.15 + k * w * 0.55 - s * 0.46, w * 1.1)) - Math.round(w * 0.05);
-      rect(ctx, chx, railT - 1, chW, railB - railT + 2, P.outline);
-      rect(ctx, chx + 1, railT, chW - 2, railB - railT, P.chairShade);
-      rect(ctx, chx + 2, railT, chW - 4, 1, P.chairHi);
-      rect(ctx, chx, railB + 1, 3, edgeY - railB - 1, P.outline);
-      rect(ctx, chx + chW - 3, railB + 1, 3, edgeY - railB - 1, P.outline);
-      rect(ctx, chx + 1, railB + 1, 1, edgeY - railB - 1, P.chairShade);
-      rect(ctx, chx + chW - 2, railB + 1, 1, edgeY - railB - 1, P.chairShade);
-      for (i = 0; i < edgeY - railB - 1; i++) {
-        dot(ctx, chx + 3 + i, railB + 1 + i, P.chairShade);
-        dot(ctx, chx + chW - 4 - i, railB + 1 + i, P.chairShade);
+      for (i = upB; i < noseY; i += 2) {
+        for (k = (i / 2) % 2 ? 0 : 2; k < w; k += 4) if (((k + i) % 7) !== 3) dot(ctx, x + k, i, P.tileB);
       }
-    }
+      Tint.rect(ctx, x, y, w, noseY - y, P.distanceCool, 6);
 
-    /* 6. THE WALNUT, its own profile scaled into the card: the dark edge,
-       the window's reflection a few rows down, the long darker run toward
-       you, one streak of reflection, the kill row and its lit arris */
-    for (i = edgeY; i < y + h; i++) {
-      var row = 164 + Math.round((i - edgeY) / Math.max(1, (y + h) - edgeY) * 105);
-      rect(ctx, x, i, w, 1, walnutColour(row));
-    }
-    var stx = x + Math.round(wrap(w * 0.4 - s, w + 20)) - 10;
-    Tint.rect(ctx, stx, edgeY + 3, 6, tableY - edgeY - 3, P.walnutSheen, 5);
-    for (i = 0; i < 5; i++) {
-      var gx = x + Math.round(wrap(i * 29 - s, w + 12)) - 6;
-      rect(ctx, gx, edgeY + 8 + (i * 5) % (tableY - edgeY - 10), 6, 1, P.walnutGrainLit);
-    }
-    rect(ctx, x, tableY, w, 1, H.walnutDeep);
-    rect(ctx, x, tableY + 1, w, 1, P.walnutSheen);
+      /* 3. THE FRIDGE and THE HOOD, at 0.22 */
+      var fx = x + Math.round(wrap(w * 0.04 - s * 0.22, w * 1.6)) - Math.round(w * 0.3);
+      var frW = Math.round(w * 0.2), frT = y + Math.round(h * 0.22);
+      rect(ctx, fx, frT, frW, noseY - frT, P.fridgeSteel);
+      rect(ctx, fx, frT, 1, noseY - frT, H.steelLit);
+      rect(ctx, fx + Math.round(frW / 2), frT, 1, noseY - frT, H.steelDeep);
+      rect(ctx, fx + Math.round(frW / 2) - 2, frT + 9, 1, 8, H.steelLit);
+      rect(ctx, fx + Math.round(frW / 2) + 2, frT + 9, 1, 8, H.steelLit);
+      var mags = [P.photoA, P.photoB, P.photoC, P.photoD, P.note, P.photoA, P.photoC, P.pinkPaper];
+      for (i = 0; i < mags.length; i++) rect(ctx, fx + 2 + (i % 3) * 2, frT + 3 + Math.floor(i / 3) * 4 + (i % 2), 2, 2, mags[i]);
+      var hx = x + Math.round(wrap(w * 0.55 - s * 0.22, w * 1.6)) - Math.round(w * 0.3);
+      var canT = y + Math.round(h * 0.285);
+      rect(ctx, hx - 2, y, 5, canT - y, H.steel);
+      rect(ctx, hx - 2, y, 1, canT - y, H.steelLit);
+      rect(ctx, hx - 1, y + 3, 3, 2, H.steelDeep);
+      rect(ctx, hx - 9, canT, 19, 1, P.hoodGlass);
+      rect(ctx, hx - 10, canT + 1, 21, 1, P.hoodGlassEdge);
+      rect(ctx, hx - 3, canT + 1, 7, 2, H.steel);
+      Tint.rect(ctx, fx, frT, frW, noseY - frT, P.distanceCool, 5);
+      Tint.rect(ctx, hx - 10, y, 21, canT - y + 3, P.distanceCool, 5);
 
-    /* 5. two dish stacks with a gap, sliding past, and THE BOTTLE in the
-       bay behind the middle one - it slides with them, the way it stands
-       between two stacks in the level, and like the level's it goes off
-       at the same place on the card every time it comes round */
-    var period = big ? 46 : 38, span = tableY - lidY;
-    for (i = 0; i < 3; i++) {
-      var trip = wrap(s + i * period, period * 3);
-      var ox = Math.round(x + w + 10 - trip);
-      if (ox < x - 40 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.34);
-      var gapY = Math.round(lidY + 4 + ((i * 19) % Math.max(1, span - gapH - 10)));
-      dishlet(ctx, ox, lidY, gapY - lidY, false);
-      dishlet(ctx, ox, gapY + gapH, tableY - gapY - gapH, true);
-      if (i !== 1) continue;
-      var bx = ox + 16, by = tableY - 12;
-      var q = trip / (period * 3);
-      var fire = clamp((q - 0.42) / 0.12, 0, 1), done = clamp((q - 0.62) / 0.10, 0, 1);
-      var lean = q > 0.36 && q < 0.70 ? 1 : 0;
-      /* the arc, a continuous ribbon of 2x2 sauce, then the puddle */
-      var reach = period - 22, ah = h * 0.2;
-      if (fire > 0 && done < 1) {
-        for (k = 0; k <= 24; k++) {
-          var u = k / 24;
-          if (u > fire || u < done) continue;
-          var ax = Math.round(bx + 4 + u * reach), ay = Math.round(by - 2 - 4 * ah * u * (1 - u) + 12 * u * u);
-          rect(ctx, ax, ay, 2, 2, P.ketchup);
-          if (k % 3 === 0) dot(ctx, ax, ay, P.ketchupHi);
+      /* 4. THE ISLAND at 0.32: the ZZ plant and the red pot on it, the
+         quartz nose, the base in its own shade */
+      var zx = x + Math.round(wrap(w * 0.55 - s * 0.32, w * 1.4)) - Math.round(w * 0.2);
+      rect(ctx, zx - 3, noseY - 9, 6, 6, H.iron);
+      rect(ctx, zx - 4, noseY - 3, 1, 3, H.walnutHi); rect(ctx, zx + 3, noseY - 3, 1, 3, H.walnutHi);
+      for (i = 0; i < 9; i++) {
+        var la = (i - 4) * 0.3;
+        dot(ctx, zx + Math.round(Math.sin(la) * (4 + (i % 3) * 2)), noseY - 11 - Math.round(Math.cos(la) * (3 + (i % 3) * 2)), i % 2 ? H.leaf : H.leafDeep);
+      }
+      rect(ctx, zx + 10, noseY - 4, 9, 4, P.enamelRed); rect(ctx, zx + 10, noseY - 4, 9, 1, P.enamelHi);
+      rect(ctx, x, noseY, w, 1, P.quartz);
+      rect(ctx, x, noseY + 1, w, 1, H.cabinetShade);
+      rect(ctx, x, noseY + 2, w, edgeY - noseY - 2, P.islandFace);
+      var pw2 = Math.max(10, Math.round(w * 0.14));
+      for (i = x - Math.round(wrap(s * 0.32, pw2)); i < x + w; i += pw2) rect(ctx, i, noseY + 2, 1, edgeY - noseY - 2, P.islandDeep);
+
+      /* 5. THE CHAIR BACKS at 0.46, peeking over the walnut's far edge */
+      var chW = Math.round(w * 0.2), railT = y + Math.round(h * 0.478), railB = y + Math.round(h * 0.545);
+      for (k = 0; k < 2; k++) {
+        var chx = x + Math.round(wrap(w * 0.15 + k * w * 0.55 - s * 0.46, w * 1.1)) - Math.round(w * 0.05);
+        rect(ctx, chx, railT - 1, chW, railB - railT + 2, P.outline);
+        rect(ctx, chx + 1, railT, chW - 2, railB - railT, P.chairShade);
+        rect(ctx, chx + 2, railT, chW - 4, 1, P.chairHi);
+        rect(ctx, chx, railB + 1, 3, edgeY - railB - 1, P.outline);
+        rect(ctx, chx + chW - 3, railB + 1, 3, edgeY - railB - 1, P.outline);
+        rect(ctx, chx + 1, railB + 1, 1, edgeY - railB - 1, P.chairShade);
+        rect(ctx, chx + chW - 2, railB + 1, 1, edgeY - railB - 1, P.chairShade);
+        for (i = 0; i < edgeY - railB - 1; i++) {
+          dot(ctx, chx + 3 + i, railB + 1 + i, P.chairShade);
+          dot(ctx, chx + chW - 4 - i, railB + 1 + i, P.chairShade);
         }
       }
-      if (fire >= 1) rect(ctx, Math.round(bx + 2 + reach), tableY - 1, 5, 1, P.ketchup);
-      /* the bottle: a clear top, the red, a pale keystone, the white cap */
-      rect(ctx, bx - 1, by - 2, 7, 15, P.outline);
-      rect(ctx, bx, by + 3, 5, 9, P.ketchup);
-      rect(ctx, bx, by + 3, 1, 9, P.plasticHi);
-      rect(ctx, bx + 4, by + 3, 1, 9, P.ketchupDeep);
-      rect(ctx, bx + 1, by + 6, 3, 3, P.label);
-      rect(ctx, bx + lean, by, 5 - lean, 3, P.plastic);
-      rect(ctx, bx + 1 + lean, by - 1, 3, 1, P.cap);
-      rect(ctx, bx + 1 + lean, by - 2, 3, 1, fire > 0 && done < 1 ? P.ketchup : P.cap);
+
+      /* 6. THE WALNUT, its own profile row for row: the dark edge, the
+         window's reflection a few rows down, the long darker run toward
+         you, one streak of reflection sliding past, the kill row and its
+         lit arris */
+      for (i = edgeY; i < y + h; i++) {
+        var row = Math.round((i - y) / S.k);
+        row = i < tableY ? clamp(row, EDGE_Y, FLOOR - 1) : Math.max(FLOOR + 2, row);
+        rect(ctx, x, i, w, 1, walnutColour(row));
+      }
+      var stx = x + Math.round(wrap(w * 0.4 - s, w + 20)) - 10;
+      Tint.rect(ctx, stx, edgeY + 3, 6, tableY - edgeY - 3, P.walnutSheen, 5);
+      for (i = 0; i < 5; i++) {
+        var gx = x + Math.round(wrap(i * 29 - s, w + 12)) - 6;
+        rect(ctx, gx, edgeY + 8 + (i * 5) % Math.max(1, tableY - edgeY - 10), 6, 1, P.walnutGrainLit);
+      }
+      rect(ctx, x, tableY, w, 1, H.walnutDeep);
+      rect(ctx, x, tableY + 1, w, 1, P.walnutSheen);
+    },
+
+    /* One half of a dish stack: the level's own three towers (STACKS),
+       plates 4 in 10, bowls-and-a-mug 3, the mixed one 3, each element
+       jogged a pixel off a hash as the bake jogs them, painted from the
+       FIXED end - up from the walnut, or down from the lid upside down,
+       as flipV hangs them - each row with the house's 1px ring round it.
+       The cap is the platter across the mouth, its rim catching the
+       window on the face that looks into the gap. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var hang = end === 'top', i, j, r;
+      Tint.rect(ctx, x + w, y, Math.max(1, Math.round(4 * S.k)), h, H.void, 6);
+      var hv = hash(p.i * 31 + 7) % 10, v = hv < 4 ? 0 : (hv < 7 ? 1 : 2), list = STACKS[v];
+      var iw = w - 2;
+      function row(sy, ins, col, endCol, jx) {
+        if (sy < y || sy >= y + h) return;
+        var a = x + 1 + ins + jx, b = x + w - 1 - ins + jx;
+        a = Math.max(x + 1, a); b = Math.min(x + w - 1, b);
+        if (b <= a) return;
+        rect(ctx, a - 1, sy, b - a + 2, 1, P.outline);
+        rect(ctx, a, sy, b - a, 1, col);
+        if (endCol && b - a > 3) rect(ctx, b - 2, sy, 2, 1, endCol);
+      }
+      for (r = 0, i = 0; r < h; i++) {
+        var n = i % list.length, kind = list.charAt(n);
+        var eh = Math.max(kind === 'P' || kind === 'S' ? 2 : 1, Math.round(EL_H[kind] * S.k));
+        var jx = n === 0 ? 0 : (hash(v * 97 + n * 13 + 5) % 3) - 1;
+        var rows = coverElementRows(kind, eh);
+        for (j = 0; j < eh; j++) {
+          /* row j of the element as it stands; hung, the element is upside down */
+          var sy = hang ? y + r + (eh - 1 - j) : y + h - r - eh + j;
+          if (rows) { row(sy, rows[j][0], rows[j][1], rows[j][2], jx); continue; }
+          /* THE MUG on its saucer: body left of centre, the handle to its
+             right with its hole left dark, the saucer under it */
+          var bw = Math.max(3, Math.round(iw * 0.55)), mx = x + 1 + Math.max(0, Math.round(iw * 0.1)) + jx;
+          if (j === eh - 1 && eh > 1) { row(sy, 0, P.porcelainHi, P.porcelainShade, jx); continue; }
+          var col = j === 0 ? P.porcelainHi : (j === eh - 2 && eh > 3 ? P.rimShade : P.porcelain);
+          var hxL = mx + bw + 1, handle = j > 0 && j < eh - 2 && hxL < x + w - 1;
+          rect(ctx, mx - 1, sy, bw + 2 + (handle ? 2 : 0), 1, P.outline);
+          rect(ctx, mx, sy, bw, 1, col);
+          if (col === P.porcelain) { dot(ctx, mx, sy, P.porcelainHi); dot(ctx, mx + bw - 1, sy, P.porcelainShade); }
+          if (handle) dot(ctx, hxL, sy, P.porcelain);
+          if (handle && (j === 1 || j === eh - 3)) dot(ctx, hxL - 1, sy, P.porcelain);
+        }
+        r += eh;
+      }
+      /* the platter */
+      var hc = Math.min(h, Math.max(3, Math.round(9 * S.k))), pr = Math.max(1, Math.round(4 * S.k));
+      var cap = hc >= 4 ? [[1, 'outline'], [0, 'porcelainHi'], [0, 'porcelain'], [1, 'rimShade']]
+                        : [[1, 'outline'], [0, 'porcelainHi'], [1, 'rimShade']];
+      if (hc < cap.length) cap = cap.slice(0, hc);
+      var cy = hang ? y + h - hc : y, cw = w + pr * 2;
+      for (j = 0; j < cap.length; j++) {
+        var c = cap[j], ry = hang ? cy + hc - 1 - j : cy + j;
+        if (c[1] === 'outline') { rect(ctx, x - pr + c[0], ry, cw - c[0] * 2, 1, P.outline); continue; }
+        rect(ctx, x - pr + c[0], ry, cw - c[0] * 2, 1, P.outline);
+        rect(ctx, x - pr + c[0] + 1, ry, cw - c[0] * 2 - 2, 1, P[c[1]]);
+        /* the glazed well, seen from a hair above */
+        if (j === cap.length - 2 && cw > 8) rect(ctx, x - pr + 3, ry, cw - 6, 1, P.glaze);
+      }
+    },
+
+    /* the lid, the house's ceiling band in miniature: plaster down to the
+       crown, crackle-glass pendants sliding with the lid at the stacks'
+       own pace with their pools of light spilling under the crown, then
+       crown, crown shade and the outline on the kill line */
+    ceiling: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, top = S.top, pl = top - 3 - y, k;
+      rect(ctx, x, y, w, pl, H.plasterMid);
+      var pp = Math.round(w * 0.55);
+      for (k = -1; k < 3; k++) {
+        var px0 = x + Math.round(wrap(w * 0.3 - S.s, pp)) + k * pp;
+        if (px0 < x - 12 || px0 > x + w + 12) continue;
+        Tint.rect(ctx, px0 - 9, y, 19, pl, H.plasterLit, 7);
+        Tint.rect(ctx, px0 - 9, top, 19, 4, H.lampGlow, 3);
+        Tint.rect(ctx, px0 - 5, top, 11, 3, H.lampGlow, 4);
+        if (pl < 3) continue;
+        var gy = y + Math.min(3, pl - 3);
+        rect(ctx, px0, y, 1, gy - y, H.lampRod);
+        rect(ctx, px0 - 1, gy, 3, 3, H.outline);
+        rect(ctx, px0 - 1, gy, 3, 2, H.lampGlass);
+        dot(ctx, px0, gy + 1, H.lampCore);
+      }
+      rect(ctx, x, top - 3, w, 1, H.crown);
+      rect(ctx, x, top - 2, w, 1, H.crownShade);
+      rect(ctx, x, top - 1, w, 1, H.outline);
+    },
+
+    /* THE SQUEEZE BOTTLE, in the even spans, standing at the left of its
+       span the way the level stands it after a stack, and keyed to where
+       it is on the card with the level's own phases (P_LEAN..P_SHUT, the
+       fractions bottlePhase runs through): it leans, the cap opens, the
+       aim dots run out along the arc, and the jet goes RIGHT, away from
+       the doodad coming at it, landing short of the next stack's platter
+       - the game's rule - with the puddle left behind on the walnut. By
+       the time the doodad is inside the span the jet has been cut and its
+       tail is running out ahead of it. Matte: no glow on the sauce,
+       hazards never glow. */
+    props: function (ctx, S) {
+      var b = S.k < 0.2 ? 1 : 2, i, n;
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var bw = Math.max(5, Math.round(17 * S.k)), bh = Math.max(9, Math.round(34 * S.k));
+        var bx = sp.x0 + Math.max(3, Math.round(8 * S.k)), oy = S.floor - bh, iw = bw - 2;
+        var p = clamp((S.x + S.w - bx) / S.w, 0, 1);
+        var lean = p >= P_LEAN && p < P_SHUT ? 1 : 0, open = p >= P_OPEN && p < P_SHUT;
+        var cw = Math.max(1, iw - 2), nx = bx + 1 + ((iw - cw) >> 1) + lean + (cw >> 1), ny = oy - 1;
+        var pr = Math.max(1, Math.round(4 * S.k));
+        var R0 = sp.x1 - pr - 2 - b - nx;
+        if (R0 > 6 && p >= P_AIM && p < P_DRY) {
+          /* the arc, the level's own: the apex A over the spout and the
+             landing on the walnut, sampled a pixel at a time */
+          var A = Math.min(Math.round(S.lane * 0.4), Math.round(R0 / 1.5));
+          var D = (S.floor - b) - ny, kc = 2 * A + 2 * Math.sqrt(A * A + A * D);
+          var uH = p < P_FIRE ? clamp((p - P_AIM) / (P_FIRE - P_AIM), 0, 1) : clamp((p - P_FIRE) / (P_FULL - P_FIRE), 0, 1);
+          var uT = clamp((p - P_CUT) / (P_DRY - P_CUT), 0, 1);
+          var pts = [], u = p < P_FIRE ? 0.04 : uT, lx = 1e9, ly = 1e9;
+          for (n = 0; n < 400; n++) {
+            var ax = Math.round(nx + R0 * u), ay = Math.round(ny - kc * u + (kc + D) * u * u);
+            if (ax !== lx || ay !== ly) { pts.push(ax, ay); lx = ax; ly = ay; }
+            if (u >= uH) break;
+            var dy = -kc + 2 * (kc + D) * u;
+            u = Math.min(uH, u + 0.6 / Math.sqrt(R0 * R0 + dy * dy));
+          }
+          if (p < P_FIRE) {
+            /* the aim: specks of sauce along the arc it is about to take,
+               blinking until the sauce follows them */
+            var a0 = ctx.globalAlpha;
+            ctx.globalAlpha = a0 * (Math.floor(S.t * 6) & 1 ? 0.75 : 0.45);
+            for (n = 0; n < pts.length; n += 10) rect(ctx, pts[n], pts[n + 1], b, b, P.ketchup);
+            ctx.globalAlpha = a0;
+          } else {
+            for (n = 0; n < pts.length; n += 2) rect(ctx, pts[n], pts[n + 1] + 1, b, b, P.ketchupDeep);
+            for (n = 0; n < pts.length; n += 2) rect(ctx, pts[n], pts[n + 1], b, b, P.ketchup);
+            for (n = 0; n < pts.length; n += 6) dot(ctx, pts[n], pts[n + 1], P.ketchupHi);
+            /* the head while it is still running out: a fat blob */
+            if (uH < 1 && pts.length) rect(ctx, pts[pts.length - 2] - 1, pts[pts.length - 1] - 1, b + 1, b + 1, P.ketchup);
+          }
+        }
+        /* the puddle, once the head has reached the walnut */
+        if (R0 > 6 && p >= P_FULL) rect(ctx, nx + R0 - 2, S.floor - 1, 5, 1, P.ketchup);
+        /* the bottle and its contact shadow: a clear top, the red, a pale
+           keystone, the white cap - red on the top row while it is open */
+        Tint.rect(ctx, bx - 1, S.floor - 1, bw + 3, 1, P.shadeCool, 8);
+        var capH = bh >= 12 ? 2 : 1, shH = bh >= 14 ? 3 : 2, bodyH = bh - capH - shH - 1;
+        rect(ctx, bx, oy, bw, bh, P.outline);
+        var cx0 = bx + 1 + ((iw - cw) >> 1) + lean;
+        rect(ctx, cx0, oy, cw, 1, open ? P.ketchup : P.cap);
+        if (capH > 1) rect(ctx, cx0, oy + 1, cw, 1, P.cap);
+        rect(ctx, bx + 1 + lean, oy + capH, iw - lean, shH, P.plastic);
+        var by0 = oy + capH + shH;
+        rect(ctx, bx + 1, by0, iw, bodyH, P.ketchup);
+        rect(ctx, bx + 1, by0, 1, bodyH, P.plasticHi);
+        rect(ctx, bx + iw, by0, 1, bodyH, P.ketchupDeep);
+        if (iw > 2) rect(ctx, bx + 2, by0 + Math.round(bodyH * 0.3), iw - 2, Math.max(1, Math.round(bodyH * 0.35)), P.label);
+      }
+    },
+
+    /* silverware, turning as it falls - a bar, a diagonal, upright, the
+       other diagonal - the piece off the drop's own index: a fork with
+       its tines, a knife, a spoon with its bowl. The handle end is lit;
+       its shadow waits for it on the walnut. */
+    drop: function (ctx, d, S) {
+      var L = Math.max(5, Math.round(20 * S.k)), o = Math.floor(d.f * 8) % 4, piece = wrap(d.i >> 1, 3), i;
+      var dirs = [[1, 0], [1, 1], [0, 1], [1, -1]], dx = dirs[o][0], dy = dirs[o][1];
+      var n = o % 2 ? Math.round(L * 0.75) : L;
+      var x0 = d.x - Math.round(dx * n / 2), y0 = d.y - Math.round(dy * n / 2);
+      Tint.rect(ctx, d.x - 3, S.floor + 1, 7, 1, P.shadeCool, 4);
+      for (i = 0; i < n; i++) dot(ctx, x0 + dx * i, y0 + dy * i, i < 2 ? P.steelHi : P.steel);
+      var ex = x0 + dx * (n - 1), ey = y0 + dy * (n - 1), qx = -dy, qy = dx;
+      if (o === 3) { qx = 1; qy = 1; }
+      if (piece === 0) {
+        /* two tines either side of the head */
+        dot(ctx, ex + qx, ey + qy, P.steel); dot(ctx, ex - qx, ey - qy, P.steel);
+        dot(ctx, ex - dx + qx, ey - dy + qy, P.steelDark); dot(ctx, ex - dx - qx, ey - dy - qy, P.steelDark);
+      } else if (piece === 2) {
+        rect(ctx, Math.min(ex, ex + qx), Math.min(ey, ey + qy), 2, 2, P.steel);
+        dot(ctx, ex, ey, P.steelHi);
+      } else {
+        /* the blade, a pixel wider along its last third */
+        for (i = Math.round(n * 0.6); i < n; i++) dot(ctx, x0 + dx * i + qx, y0 + dy * i + qy, P.steelDark);
+      }
+    },
+
+    /* THE LIGHT, the bay's own: only the lens's two side columns */
+    front: function (ctx, S) {
+      var vig = Math.max(4, Math.round(S.w * 0.09));
+      Tint.rect(ctx, S.x, S.y, vig, S.h, P.shadeCool, 2);
+      Tint.rect(ctx, S.x + S.w - vig, S.y, vig, S.h, P.shadeCool, 2);
     }
-
-    /* 6. a fork tumbling down */
-    var fkx = x + Math.round(w * 0.72);
-    var fky = lidY + 6 + Math.round(wrap(s * 1.6, tableY - lidY - 12));
-    if (Math.floor(t * 6) % 2) {
-      rect(ctx, fkx - 3, fky, 7, 1, P.steel); dot(ctx, fkx + 3, fky, P.steelHi);
-      dot(ctx, fkx + 3, fky - 1, P.steelHi);
-    } else {
-      for (i = 0; i < 5; i++) dot(ctx, fkx - 2 + i, fky - 2 + i, i < 2 ? P.steelHi : P.steel);
-    }
-    Tint.rect(ctx, fkx - 3, tableY + 1, 7, 1, P.shadeCool, 4);
-
-    /* 7. THE LID, the house's ceiling band in miniature - the level's
-       LivingRoom band since the owner called the bare kill line lazy, so
-       the card says the same thing the bay does: plaster down to the
-       crown, two crackle-glass pendants sliding with the lid at the
-       planks' own pace with their pools of light spilling under the
-       crown, then crown, crown shade and the outline on the kill line */
-    rect(ctx, x, y, w, killY - 2 - y, H.plasterMid);
-    var pp = Math.round(w * 0.55);
-    for (k = -1; k < 3; k++) {
-      var px0 = x + Math.round(wrap(w * 0.3 - s, pp)) + k * pp;
-      if (px0 < x - 12 || px0 > x + w + 12) continue;
-      Tint.rect(ctx, px0 - 9, y, 19, killY - 2 - y, H.plasterLit, 7);
-      Tint.rect(ctx, px0 - 9, lidY, 19, 4, H.lampGlow, 3);
-      Tint.rect(ctx, px0 - 5, lidY, 11, 3, H.lampGlow, 4);
-      rect(ctx, px0, y, 1, 3, H.lampRod);
-      rect(ctx, px0 - 1, y + 3, 3, 3, H.outline);
-      rect(ctx, px0 - 1, y + 3, 3, 2, H.lampGlass);
-      dot(ctx, px0, y + 4, H.lampCore);
-    }
-    rect(ctx, x, killY - 2, w, 1, H.crown);
-    rect(ctx, x, killY - 1, w, 1, H.crownShade);
-    rect(ctx, x, killY, w, 2, H.outline);
-
-    /* 8. the doodad flying it, the Couch's block */
-    var ddx = Math.round(x + w * 0.3);
-    var ddy = Math.round(y + h * 0.45 + Math.sin(t * 3.1) * (h * 0.14));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, ddx - sz, ddy - sz, sz * 2, sz * 2, H.void, 5);
-    rect(ctx, ddx - sz / 2 - 1, ddy - sz / 2 - 1, sz + 2, sz + 2, P.outline);
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz, sz, '#c9873c');
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz - 2, 1, '#eab873');
-    dot(ctx, ddx + sz / 2 - 2, ddy - 1, P.outline);
-    rect(ctx, ddx + sz / 2, ddy, 2, 1, '#f3cc84');
-
-    /* 9. THE LIGHT, the bay's own: only the lens's two side columns */
-    var vig = Math.max(4, Math.round(w * 0.09));
-    Tint.rect(ctx, x, y, vig, h, P.shadeCool, 2);
-    Tint.rect(ctx, x + w - vig, y, vig, h, P.shadeCool, 2);
-  }
+  };
 
   /* ===================================================== GENERATION */
 
@@ -2545,14 +2661,13 @@ var Table = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon,
     stepDrop: stepDrop, stepWorld: stepWorld,

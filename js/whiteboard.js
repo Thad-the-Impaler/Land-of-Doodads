@@ -365,8 +365,9 @@ var Whiteboard = (function () {
     ceil:  ['▲ THE FRAME ENDS HERE ▲', 'THE TOP RAIL IS SOLID']
   };
 
-  /* the thirteen colours the generic level-select window would use. This
-     bay paints its own cover below, but the table stays honest. */
+  /* the thirteen colours the generic cover would use. This bay's cover
+     has painters of its own (see COVER), but the table stays honest:
+     tv.js and the stands read PREVIEW.back. */
   var PREVIEW = {
     back: P.board, backAlt: P.boardGlare, seam: P.seam,
     /* the `beam` three are the generic cover's pillar, and this bay's
@@ -2587,222 +2588,289 @@ var Whiteboard = (function () {
 
   /* ================================================== the cover art
 
-     118x114 on the big card, 82x94 on the side ones. Among five dark
-     Backyard covers and three dim Living Room ones this card is WHITE,
-     which makes it unmistakable at a glance - and everything on it is
-     something the level actually does: the board with its doodles, the
-     rail, the tray, two aluminium posts with black caps, a magnet
-     tumbling, and a black zigzag being drawn by a marker that leaves
-     once it is finished. The caller has already clipped to the box, so
-     nothing here saves or restores. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22;
-    var railY = y + Math.round(h * 0.09);
-    var trayY = y + h - Math.round(h * 0.15);
-    var i, k;
+     The Whiteboard's painters for its cover (js/cover.js lays it out and
+     times it). Among five dark Backyard covers and three dim Living Room
+     ones this card is WHITE, which makes it unmistakable at a glance -
+     and everything on it is something the level actually does: the board
+     and its doodles sliding past as one plane, the rail, the tray, bars
+     of black marker with their end flicks, a magnet tumbling down with
+     its hard little shadow, and a black zigzag being drawn by a marker
+     that leaves the moment it is finished. The level's one rule holds on
+     the card: black ink kills, so nothing but the bars and the strokes is
+     drawn in it. */
 
-    /* 1. the board, and the glare up in its top right */
-    ctx.fillStyle = P.board; ctx.fillRect(x, y, w, h);
-    Tint.rect(ctx, x + Math.round(w * 0.42), railY, Math.round(w * 0.58), Math.round(h * 0.52), P.boardGlare, 5);
-    Tint.rect(ctx, x + Math.round(w * 0.54), railY, Math.round(w * 0.46), Math.round(h * 0.38), P.boardGlare, 6);
-    Tint.rect(ctx, x + Math.round(w * 0.64), railY + 2, Math.round(w * 0.30), Math.round(h * 0.24), P.boardGlare, 7);
-    Tint.rect(ctx, x, trayY - Math.round(h * 0.4), Math.round(w * 0.32), Math.round(h * 0.4), P.boardShade, 4);
+  /* SEVEN of the board's own doodles, placed by hand so the card is the
+     same card every time it is drawn. They are drawn here rather than
+     scaled down off the real tiles because at card size a 46px parabola
+     is most of the card: these are the same marks, smaller - and that has
+     to include the two things the tiles changed. The card carries the
+     same two BRUSHES, the same saturated inks, and the two marks the bay
+     is most recognisable for, the pointy S and the purple web. A cover
+     must look like the level actually looks, and a pale five-doodle card
+     over a bay carrying fourteen is a card that lies about what you are
+     buying.
 
-    /* 2. SEVEN of the board's own doodles, placed by hand so the card is
-       the same card every time it is drawn. They are drawn here rather
-       than scaled down off the real tiles because at 118px a 46px
-       parabola is most of the card: these are the same marks, smaller -
-       and that has to include the two things the tiles changed. The card
-       carries the same two BRUSHES, the same saturated inks, and the two
-       marks the bay is most recognisable for that it was missing, the
-       pointy S and the purple web. drawPreview must look like the level
-       actually looks, and a pale five-doodle card over a bay carrying
-       fourteen is a card that lies about what you are buying. */
-    var dx0 = x + Math.round(w * 0.08), dy0 = y + Math.round(h * 0.22);
+     `ox` is the left edge of the strip they are laid out on. The board is
+     ONE plane sliding at the lane's own pace (see the header), so the
+     strip slides with the columns and is drawn twice, a strip apart; it
+     is a doodle wider than the card, so no mark is ever on it twice. */
+  var COVER_PAD = 24;
+  function coverDoodles(ctx, S, ox) {
+    var w = S.w, h = S.h, y = S.y, i;
+    /* on the stands' little set the marks come at half size and with the
+       fine nib, or seven doodles would fill a 72x44 card */
+    var z = S.k < 0.2 ? 0.5 : 1, nib = z < 1 ? 1 : 2;
+    var line2 = z < 1 ? pline : pline2, ring2 = z < 1 ? pcircle : pcircle2;
+    function n(v) { return Math.round(v * z); }
     /* the parabola, fat, the way it is on the board */
+    var dx0 = ox + Math.round(w * 0.08), dy0 = y + Math.round(h * 0.22);
     ctx.fillStyle = P.inkBlue;
-    ctx.fillRect(dx0 + 9, dy0, 2, 20); ctx.fillRect(dx0, dy0 + 14, 20, 2);
+    ctx.fillRect(dx0 + n(9), dy0, nib, n(20)); ctx.fillRect(dx0, dy0 + n(14), n(20), nib);
     for (i = 0; i < 18; i++) {
       var u = (i - 9) / 9;
-      ctx.fillRect(dx0 + 1 + i, dy0 + 16 - Math.round(u * u * 13), 2, 2);
+      ctx.fillRect(dx0 + n(1 + i), dy0 + n(16 - u * u * 13), nib, nib);
     }
     /* the face */
-    var fx = x + Math.round(w * 0.58), fy = y + Math.round(h * 0.26);
-    pcircle2(ctx, fx, fy, 7, P.inkSky);
+    var fx = ox + Math.round(w * 0.58), fy = y + Math.round(h * 0.26);
+    ring2(ctx, fx, fy, n(7), P.inkSky);
     ctx.fillStyle = P.inkSky;
-    ctx.fillRect(fx - 3, fy - 3, 2, 3); ctx.fillRect(fx + 2, fy - 3, 2, 3);
-    ctx.fillRect(fx - 4, fy + 3, 8, 2);
+    ctx.fillRect(fx - n(3), fy - n(3), nib, n(3)); ctx.fillRect(fx + n(2), fy - n(3), nib, n(3));
+    ctx.fillRect(fx - n(4), fy + n(3), n(8), nib);
     /* the pointy S, up between the parabola and the face, where the one
        in ref 1 sits relative to everything else */
-    var ex0 = x + Math.round(w * 0.40), ey0 = y + Math.round(h * 0.13);
+    var ex0 = ox + Math.round(w * 0.40), ey0 = y + Math.round(h * 0.13);
     var ess = [[0, 4], [4, 0], [8, 3], [4, 7], [0, 9], [4, 13], [8, 11]];
     for (i = 1; i < ess.length; i++) {
-      pline2(ctx, ex0 + ess[i - 1][0], ey0 + ess[i - 1][1],
-             ex0 + ess[i][0], ey0 + ess[i][1], P.inkSky);
+      line2(ctx, ex0 + n(ess[i - 1][0]), ey0 + n(ess[i - 1][1]),
+            ex0 + n(ess[i][0]), ey0 + n(ess[i][1]), P.inkSky);
     }
     /* the star */
-    var sx0 = x + Math.round(w * 0.30), sy0 = y + Math.round(h * 0.62);
+    var sx0 = ox + Math.round(w * 0.30), sy0 = y + Math.round(h * 0.62), sr = 6 * z;
     for (i = 0; i < 5; i++) {
       var a0 = -Math.PI / 2 + i * TAU / 5, a1 = -Math.PI / 2 + ((i + 2) % 5) * TAU / 5;
-      pline(ctx, sx0 + Math.cos(a0) * 6, sy0 + Math.sin(a0) * 6,
-            sx0 + Math.cos(a1) * 6, sy0 + Math.sin(a1) * 6, P.inkTan);
+      pline(ctx, sx0 + Math.cos(a0) * sr, sy0 + Math.sin(a0) * sr,
+            sx0 + Math.cos(a1) * sr, sy0 + Math.sin(a1) * sr, P.inkTan);
     }
     /* the tally marks */
-    var tx0 = x + Math.round(w * 0.74), ty0 = y + Math.round(h * 0.60);
+    var tx0 = ox + Math.round(w * 0.74), ty0 = y + Math.round(h * 0.60);
     ctx.fillStyle = P.inkYellow;
-    for (i = 0; i < 4; i++) ctx.fillRect(tx0 + i * 3, ty0, 1, 8);
-    pline(ctx, tx0 - 1, ty0 + 8, tx0 + 10, ty0, P.inkYellow);
+    for (i = 0; i < 4; i++) ctx.fillRect(tx0 + i * (z < 1 ? 2 : 3), ty0, 1, n(8));
+    pline(ctx, tx0 - 1, ty0 + n(8), tx0 + n(10), ty0, P.inkYellow);
     /* and the purple web, down in the bottom left corner the glare never
        reaches. Seven points and three chords, which is as much web as
        survives being drawn at a seven pixel radius. */
-    var wx0 = x + Math.round(w * 0.14), wy0 = y + Math.round(h * 0.74);
+    var wx0 = ox + Math.round(w * 0.14), wy0 = y + Math.round(h * 0.74);
     var wpt = [];
     for (i = 0; i < 7; i++) {
       var wa = i * TAU / 7 + 0.4;
-      wpt.push([wx0 + Math.round(Math.cos(wa) * 7), wy0 + Math.round(Math.sin(wa) * 7)]);
+      wpt.push([wx0 + Math.round(Math.cos(wa) * 7 * z), wy0 + Math.round(Math.sin(wa) * 7 * z)]);
     }
     for (i = 0; i < 7; i++) {
-      pline2(ctx, wpt[i][0], wpt[i][1], wpt[(i + 1) % 7][0], wpt[(i + 1) % 7][1], P.inkPurple);
+      line2(ctx, wpt[i][0], wpt[i][1], wpt[(i + 1) % 7][0], wpt[(i + 1) % 7][1], P.inkPurple);
     }
     for (i = 0; i < 3; i++) {
-      pline2(ctx, wpt[i][0], wpt[i][1], wpt[i + 3][0], wpt[i + 3][1], P.inkPurple);
+      line2(ctx, wpt[i][0], wpt[i][1], wpt[i + 3][0], wpt[i + 3][1], P.inkPurple);
     }
     /* and one bar magnet, placed by hash so it moves between cards and
        never between frames */
-    var mgx = x + 6 + (hash(big ? 3 : 7) % Math.max(1, w - 26));
-    var mgy = y + 10 + (hash(big ? 11 : 19) % Math.max(1, h - 40));
-    ctx.fillStyle = P.barRed;  ctx.fillRect(mgx, mgy, 10, 3);
-    ctx.fillStyle = P.barHi;   ctx.fillRect(mgx, mgy, 9, 1);
-    ctx.fillStyle = P.shade;   ctx.fillRect(mgx + 1, mgy + 3, 10, 1);
+    var mgx = ox + 6 + (hash(S.big ? 3 : 7) % Math.max(1, w - 26));
+    var mgy = y + 10 + (hash(S.big ? 11 : 19) % Math.max(1, h - 40));
+    ctx.fillStyle = P.barRed;  ctx.fillRect(mgx, mgy, n(10), n(3));
+    ctx.fillStyle = P.barHi;   ctx.fillRect(mgx, mgy, n(9), 1);
+    ctx.fillStyle = P.shade;   ctx.fillRect(mgx + 1, mgy + n(3), n(10), 1);
+  }
 
-    /* 3. the dim room behind the board, and the frame's top rail under
-       it - the level's own band, see bakeTop, with the hanger bracket
-       in the middle */
-    ctx.fillStyle = P.beyond;     ctx.fillRect(x, y, w, railY - y - 3);
-    ctx.fillStyle = P.alumLit;    ctx.fillRect(x, railY - 3, w, 1);
-    ctx.fillStyle = P.alumMid;    ctx.fillRect(x, railY - 2, w, 2);
-    ctx.fillStyle = P.alumDark;   ctx.fillRect(x + Math.round(w / 2) - 3, railY - 2, 6, 2);
-    ctx.fillStyle = P.outline;    ctx.fillRect(x, railY, w, 1);
-    Tint.rect(ctx, x, railY + 1, w, 4, P.shade, 5);
-
-    /* 4. two posts with their black caps, sliding past with a gap */
-    var period = big ? 46 : 38;
-    var span = trayY - railY;
-    for (k = 0; k < 3; k++) {
-      var ox = Math.round(x + w + 10 - wrap(s + k * period, period * 3));
-      if (ox < x - 14 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.36);
-      /* the three gaps spread over the WHOLE of the room left for them,
-         not two thirds of it: the Deck learned on its own card that
-         k/3 puts all three mouths in the same band on the small one */
-      var room = Math.max(1, span - gapH - 20);
-      var gapY = Math.round(railY + 10 + (k * room) / 2);
-      pvPost(ctx, ox, railY + 1, gapY - railY - 1);
-      pvPost(ctx, ox, gapY + gapH, trayY - gapY - gapH);
-      /* the end flicks: ink overshooting the bar by two pixels each side,
-         with the wet row on the face that looks into the gap */
-      ctx.fillStyle = P.ink;    ctx.fillRect(ox - 2, gapY - 3, 13, 3);
-      ctx.fillStyle = P.inkWet; ctx.fillRect(ox - 1, gapY - 1, 11, 1);
-      ctx.fillStyle = P.ink;    ctx.fillRect(ox - 2, gapY + gapH, 13, 3);
-      ctx.fillStyle = P.inkWet; ctx.fillRect(ox - 1, gapY + gapH, 11, 1);
-    }
-
-    /* 5. a black zigzag being drawn off the tray, with the marker on the
-       end of it while it draws and gone the moment it is finished -
-       which is the one thing about this level a still picture cannot say
-       and a three-second loop can */
-    var q = clamp((t % 3) / 2, 0, 1);
-    var zx = x + Math.round(w * 0.46), zh = Math.round(span * 0.30);
-    var pts = [[0, 0], [7, -zh * 0.34], [-5, -zh * 0.62], [6, -zh]];
-    var px = zx, py = trayY, total = 0, segLen = [];
-    for (i = 0; i < pts.length; i++) {
-      var nx = zx + pts[i][0], ny = trayY + Math.round(pts[i][1]);
-      var L = Math.sqrt((nx - px) * (nx - px) + (ny - py) * (ny - py));
-      segLen.push(L); total += L; px = nx; py = ny;
-    }
-    var want = total * q, got = 0, tipx = zx, tipy = trayY;
-    px = zx; py = trayY;
-    ctx.fillStyle = P.ink;
-    for (i = 0; i < pts.length; i++) {
-      var ex = zx + pts[i][0], ey = trayY + Math.round(pts[i][1]);
-      var f = clamp((want - got) / Math.max(0.001, segLen[i]), 0, 1);
-      var hx = px + (ex - px) * f, hy = py + (ey - py) * f;
-      if (f > 0) {
-        for (k = 0; k <= Math.round(Math.max(Math.abs(hx - px), Math.abs(hy - py))); k++) {
-          var kk = k / Math.max(1, Math.round(Math.max(Math.abs(hx - px), Math.abs(hy - py))));
-          ctx.fillRect(Math.round(px + (hx - px) * kk) - 1, Math.round(py + (hy - py) * kk) - 1, 3, 3);
-        }
-      }
-      tipx = hx; tipy = hy;
-      got += segLen[i]; px = ex; py = ey;
-      if (got >= want) break;
-    }
-    if (q < 1) {
-      /* the marker, as four stepped pixels: a 24px sprite on a 118px card
-         is a plank, and what has to read is "something is holding the end
-         of that line" */
-      for (i = 0; i < 7; i++) {
-        ctx.fillStyle = i < 2 ? P.felt : (i < 4 ? P.markerLabel : P.markerBody);
-        ctx.fillRect(Math.round(tipx) + i, Math.round(tipy) - i, 2, 2);
-      }
-    }
-
-    /* 6. a magnet tumbling down the right third, its height cycling the
-       way the real twelve frames do */
-    var mx = x + Math.round(w * 0.82);
-    var my = railY + 2 + wrap(s * 1.4, trayY - railY - 6);
-    var mh = [7, 5, 2, 5][Math.floor(t * 9) % 4];
-    ctx.fillStyle = P.shade;      ctx.fillRect(mx + 2, Math.round(my) + 2, 7, mh);
-    ctx.fillStyle = P.magSilver;  ctx.fillRect(mx, Math.round(my), 7, mh);
-    ctx.fillStyle = P.outline;    ctx.fillRect(mx, Math.round(my), 1, mh); ctx.fillRect(mx + 6, Math.round(my), 1, mh);
-    ctx.fillStyle = P.magSilverHi; ctx.fillRect(mx + 1, Math.round(my), 3, 1);
-
-    /* 7. the tray, and three rows of the room's oak under it with the
-       grain crawling past */
-    ctx.fillStyle = P.alumLit;     ctx.fillRect(x, trayY, w, 1);
-    ctx.fillStyle = P.trayDeep;    ctx.fillRect(x, trayY + 1, w, 1);
-    ctx.fillStyle = P.trayChannel; ctx.fillRect(x, trayY + 2, w, 2);
-    ctx.fillStyle = P.groove;      ctx.fillRect(x, trayY + 4, w, 1);
-    ctx.fillStyle = R.oakMid;      ctx.fillRect(x, trayY + 5, w, y + h - trayY - 5);
-    ctx.fillStyle = R.oakLip;      ctx.fillRect(x, trayY + 5, w, 1);
-    for (i = 0; i < w / 5; i++) {
-      ctx.fillStyle = i % 3 ? R.oakGrain : R.oakLight;
-      ctx.fillRect(x + wrap(i * 13 - s, w), trayY + 7 + (i % 3), 3, 1);
-    }
-    Tint.rect(ctx, x, trayY + 5, w, y + h - trayY - 5, R.oakShade, 5);
-
-    /* 8. the doodad flying it, with a DARK halo. The Canopy's trick for a
-       bright field, laid tight to the sprite rather than as a loose
-       square: over a flat white board a big soft square reads as a
+  var COVER = {
+    /* the old card's DARK halo, laid tight to the sprite rather than as a
+       loose square: over a flat white board a big soft square reads as a
        rectangle somebody left on the card. One pixel proud of the
        outline all round is all it takes. */
-    var bx = Math.round(x + w * 0.3);
-    var by = Math.round(y + h / 2 + Math.sin(t * 3.1) * (h * 0.16));
-    var sz = big ? 8 : 6;
-    Tint.rect(ctx, bx - sz / 2 - 2, by - sz / 2 - 2, sz + 4, sz + 4, P.void, 6);
-    ctx.fillStyle = P.outline;  ctx.fillRect(bx - sz / 2 - 1, by - sz / 2 - 1, sz + 2, sz + 2);
-    ctx.fillStyle = '#c9873c';  ctx.fillRect(bx - sz / 2, by - sz / 2, sz, sz);
-    ctx.fillStyle = '#eab873';  ctx.fillRect(bx - sz / 2, by - sz / 2, sz - 2, 1);
-    ctx.fillStyle = P.outline;  ctx.fillRect(bx + sz / 2 - 2, by - 1, 1, 1);
-    ctx.fillStyle = '#f3cc84';  ctx.fillRect(bx + sz / 2, by, 2, 1);
+    halo: { colour: P.void, pad: 1, strength: 6 },
+    ink: P.outline,
 
-    /* 9. and the pendant's warmth over the lot of it */
-    Tint.rect(ctx, x, y, w, h, R.lampGlow, 1);
-  }
+    /* the board, its glare and its doodles */
+    back: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, h = S.h, top = S.top;
+      ctx.fillStyle = P.board; ctx.fillRect(x, y, w, h);
+      /* The glare up in the top right HOLDS STILL while the board slides
+         under it: it is the pendant's reflection, which does not travel
+         with the board, and it is the level's one depth cue. */
+      Tint.rect(ctx, x + Math.round(w * 0.42), top, Math.round(w * 0.58), Math.round(h * 0.52), P.boardGlare, 5);
+      Tint.rect(ctx, x + Math.round(w * 0.54), top, Math.round(w * 0.46), Math.round(h * 0.38), P.boardGlare, 6);
+      Tint.rect(ctx, x + Math.round(w * 0.64), top + 2, Math.round(w * 0.30), Math.round(h * 0.24), P.boardGlare, 7);
+      Tint.rect(ctx, x, S.floor - Math.round(h * 0.4), Math.round(w * 0.32), Math.round(h * 0.4), P.boardShade, 4);
+      var W = w + COVER_PAD, o = wrap(Math.round(S.s), W);
+      coverDoodles(ctx, S, x - o);
+      coverDoodles(ctx, S, x - o + W);
+    },
 
-  /* One bar of black marker inside a cover. Nine pixels of solid ink with
-     one wet streak down it and no shadow beside it - the level's own
-     rule at card scale. It was an aluminium extrusion whose dark pixels
-     had to be COUNTED to stop it reading as a black pipe at three times
-     across a 118px card; a bar that is meant to be black has no such
-     problem, and the card now says what the level says in one glance:
-     the black things are the ones that end the run. */
-  function pvPost(ctx, x, y, h) {
-    if (h <= 0) return;
-    ctx.fillStyle = P.ink;    ctx.fillRect(x, y, 9, h);
-    ctx.fillStyle = P.inkWet;
-    for (var i = 0; i < h; i += 7) ctx.fillRect(x + 2 + ((i >> 2) % 4), y + i, 1, 4);
-  }
+    /* One half of a bar of black marker, at card size. The core is solid
+       ink; the outer column each side is filled or not in runs of four to
+       seven rows, which is the hand edge (the game's bar is 30 to 34 wide
+       inside its 34); 1px dry streaks of inkWet lie diagonally down and
+       right where the marker ran thin; and the END FLICK across the free
+       end is the cap - solid ink overshooting the bar each side with its
+       corners notched off, the wet row on the face that looks into the
+       gap. And NO SHADOW: a drawing casts none on the surface it is drawn
+       on, and in this bay the hard offset shadow belongs to the falling
+       magnets and to nothing else. The two variants differ only in where
+       their streaks fall and how they lean, as the game's two do. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var q = S.k * 2.4, salt = end === 'top' ? 0 : 977;
+      var r, n, run, side, hv, j;
+      ctx.fillStyle = P.ink; ctx.fillRect(x + 1, y, w - 2, h);
+      for (side = 0; side < 2; side++) {
+        for (r = 0, n = 0; r < h; r += run, n++) {
+          hv = hash(p.i * 31 + side * 7 + n * 131 + salt);
+          run = 4 + hv % 4;
+          if ((hv >>> 8) % 4) ctx.fillRect(side ? x + w - 1 : x, y + r, 1, Math.min(run, h - r));
+        }
+      }
+      var lean = hash(p.i * 7 + 3) % 100 < 35 ? 1 : 0;   /* a row a pixel, or every other */
+      ctx.fillStyle = P.inkWet;
+      for (r = 2 + hash(p.i + salt) % 6, n = 0; r < h; n++) {
+        hv = hash(p.i * 53 + n * 17 + salt);
+        var len = Math.max(2, Math.min(w - 4, Math.round((3 + hv % 3) * q)));
+        var sx = x + 2 + (hv >>> 8) % Math.max(1, w - 3 - len);
+        for (j = 0; j < len; j++) {
+          if (r + (j >> lean) < h) ctx.fillRect(sx + j, y + r + (j >> lean), 1, 1);
+        }
+        r += Math.max(5, Math.round((10 + (hv >>> 16) % 7) * q));
+      }
+      /* the end flick */
+      var hc = Math.min(h, Math.max(2, Math.round(9 * S.k))), pr = Math.max(1, Math.round(4 * S.k));
+      var cy = end === 'top' ? y + h - hc : y, wet = end === 'top' ? cy + hc - 1 : cy;
+      ctx.fillStyle = P.ink;
+      ctx.fillRect(x - pr + 1, cy, w + pr * 2 - 2, hc);
+      if (hc > 2) ctx.fillRect(x - pr, cy + 1, w + pr * 2, hc - 2);
+      else ctx.fillRect(x - pr, end === 'top' ? cy : cy + 1, w + pr * 2, 1);
+      ctx.fillStyle = P.inkWet;
+      ctx.fillRect(x - pr + 1, wet, w + pr * 2 - 2, 1);
+      if (hc > 3) ctx.fillRect(x + (w >> 1), end === 'top' ? cy + 1 : cy + 2, 3, 1);
+    },
+
+    /* the dim room behind the board and the frame's top rail - the
+       level's own band, see bakeTop - with its hanger bracket and a
+       scrap of blue tape riding the board, then the kill line and the
+       rail's overhang shade on the board under it */
+    ceiling: function (ctx, S) {
+      var x = S.x, w = S.w, top = S.top;
+      ctx.fillStyle = P.beyond;  ctx.fillRect(x, S.y, w, top - 4 - S.y);
+      ctx.fillStyle = P.alumLit; ctx.fillRect(x, top - 4, w, 1);
+      ctx.fillStyle = P.alumMid; ctx.fillRect(x, top - 3, w, 2);
+      var TW = Math.max(40, Math.round(240 * S.k)), o = wrap(Math.round(S.s), TW), t0;
+      for (t0 = x - o; t0 < x + w; t0 += TW) {
+        ctx.fillStyle = P.alumDark; ctx.fillRect(t0 + Math.round(TW * 0.5) - 3, top - 3, 6, 2);
+        ctx.fillStyle = P.tape;     ctx.fillRect(t0 + Math.round(TW * 0.08), top - 3, 3, 1);
+      }
+      ctx.fillStyle = P.outline; ctx.fillRect(x, top - 1, w, 1);
+      Tint.rect(ctx, x, top, w, 4, P.shade, 5);
+    },
+
+    /* the tray, and the room's oak under it with the grain crawling past
+       at the board's pace. On the TV's sets the band is only five to
+       seven rows, and the tray keeps three of them. */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, f = S.floor, d = S.y + S.h - f, i;
+      var rows = d >= 8 ? [P.alumLit, P.trayDeep, P.trayChannel, P.trayChannel, P.groove]
+                        : [P.alumLit, P.trayChannel, P.groove];
+      for (i = 0; i < rows.length; i++) { ctx.fillStyle = rows[i]; ctx.fillRect(x, f + i, w, 1); }
+      var oy = f + rows.length, oh = S.y + S.h - oy, off = Math.round(S.s);
+      if (oh <= 0) return;
+      ctx.fillStyle = R.oakMid; ctx.fillRect(x, oy, w, oh);
+      ctx.fillStyle = R.oakLip; ctx.fillRect(x, oy, w, 1);
+      for (i = 0; i < w / 5; i++) {
+        ctx.fillStyle = i % 3 ? R.oakGrain : R.oakLight;
+        ctx.fillRect(x + wrap(i * 13 - off, w), oy + 2 + (i % 3), 3, 1);
+      }
+      Tint.rect(ctx, x, oy, w, oh, R.oakShade, 5);
+    },
+
+    /* THE MARKER LINE, in the even spans: a black zigzag being drawn off
+       the tray (or, every other one, off the rail), with the marker on
+       the end of it while it draws and gone the moment it is finished -
+       the one thing about this level a still picture cannot say. Keyed
+       to POSITION, the way strokeP is: the nib lands as the span comes
+       in on the right and the stroke is finished by the middle of the
+       card, long before the doodad gets there, and its reach is held
+       short of the doodad's line through the span. */
+    props: function (ctx, S) {
+      var b = S.k < 0.2 ? 1 : 2, i, k;
+      for (i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (sp.i % 2) continue;
+        var ceil = wrap(sp.i, 4) === 2, dir = ceil ? 1 : -1;
+        var ax = Math.round((sp.x0 + sp.x1) / 2), ay = ceil ? S.top : S.floor - b;
+        var room = ceil ? sp.line.top - 1 - S.top - b : ay - sp.line.bottom - 2;
+        var R0 = Math.min(Math.max(8, Math.round(S.lane * 0.22)), room);
+        if (R0 < 4) continue;
+        var hs = Math.max(2, Math.round(R0 * 0.3));
+        var pts = [[0, 0], [hs, R0 / 3], [-hs, R0 * 2 / 3], [hs, R0]];
+        var q = clamp((S.x + S.w - ax) / (S.w * 0.5), 0, 1);
+        if (q <= 0) continue;
+        var total = 0, seg = [];
+        for (k = 1; k < pts.length; k++) {
+          var ddx = pts[k][0] - pts[k - 1][0], ddy = pts[k][1] - pts[k - 1][1];
+          seg.push(Math.sqrt(ddx * ddx + ddy * ddy)); total += seg[k - 1];
+        }
+        var want = total * q, got = 0, tip = [ax, ay], wetFrom = want * 0.66;
+        /* the ink, then the shine on its newest third as a second pass:
+           every stamp covers the one before it, so a wet pixel laid
+           inline would be buried by the next */
+        for (var pass = 0; pass < 2; pass++) {
+          ctx.fillStyle = pass ? P.inkWet : P.ink;
+          got = 0;
+          for (k = 1; k < pts.length && got < want; k++) {
+            var L = seg[k - 1], steps = Math.max(1, Math.round(L));
+            for (var st = 0; st <= steps; st++) {
+              var dd = got + L * st / steps;
+              if (dd > want) break;
+              var px = Math.round(ax + pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * st / steps);
+              var py = Math.round(ay + dir * (pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * st / steps));
+              if (!pass) { ctx.fillRect(px, py, b, b); tip = [px, py]; }
+              else if (dd >= wetFrom && b > 1) ctx.fillRect(px, py, 1, 1);
+            }
+            got += L;
+          }
+        }
+        /* the marker, as seven stepped pixels: a 24px sprite on a card is
+           a plank, and what has to read is "something is holding the end
+           of that line". Its barrel comes from the right, from above a
+           stroke off the tray and from below one off the rail. */
+        if (q < 1) {
+          var nm = Math.min(b > 1 ? 7 : 4, sp.x1 - b - tip[0]);   /* never across the next bar */
+          for (k = 0; k < nm; k++) {
+            ctx.fillStyle = k < nm * 0.3 ? P.felt : (k < nm * 0.6 ? P.markerCone : P.markerBody);
+            ctx.fillRect(tip[0] + k, tip[1] + dir * k, b, b);
+          }
+        }
+      }
+    },
+
+    /* a disc magnet tumbling flat: a full disc, an ellipse, an edge-on
+       sliver and back, silver on the way down and the black ferrite back
+       on the way round - with the hard offset shadow first, which in
+       this bay only a falling thing has */
+    drop: function (ctx, d, S) {
+      var mw = Math.max(4, Math.round(7 * S.k * 2.4));
+      var f = Math.floor(d.f * 12) % 8;
+      var mh = Math.max(1, Math.round([7, 5, 2, 5, 7, 5, 2, 5][f] * mw / 7));
+      var x0 = d.x - (mw >> 1), y0 = d.y - (mh >> 1), r;
+      var face = f < 4 ? [P.magSilver, P.magSilverHi, P.outline] : [P.magBlack, P.magBlackHi, P.ferrite];
+      ctx.fillStyle = P.shade; ctx.fillRect(x0 + 2, y0 + 2, mw, mh);
+      for (r = 0; r < mh; r++) {
+        var ins = mh >= 4 && (r === 0 || r === mh - 1) ? 1 : 0;
+        ctx.fillStyle = r === 0 ? face[1] : face[0];
+        ctx.fillRect(x0 + ins + 1, y0 + r, mw - ins * 2 - 2, 1);
+        ctx.fillStyle = face[2];
+        ctx.fillRect(x0 + ins, y0 + r, 1, 1); ctx.fillRect(x0 + mw - 1 - ins, y0 + r, 1, 1);
+      }
+    },
+
+    /* and the pendant's warmth over the lot of it */
+    front: function (ctx, S) { Tint.rect(ctx, S.x, S.y, S.w, S.h, R.lampGlow, 1); }
+  };
 
   /* ====================================================== generation */
 
@@ -3036,7 +3104,7 @@ var Whiteboard = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME,
     CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
@@ -3045,7 +3113,6 @@ var Whiteboard = (function () {
     drawCeiling: drawCeiling, drawFloor: drawFloor,
     drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon, makeWarp: makeWarp,
     rectsFor: rectsFor,

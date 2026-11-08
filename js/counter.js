@@ -201,8 +201,9 @@ var Counter = (function () {
     maker:    ['▲ ICE CREAM MAKER ▲',   'SCOOPS ARE ROCK HARD. UP']
   };
 
-  /* the thirteen colours a generic cover would use; this bay paints its
-     own (drawPreview), but the table stays honest */
+  /* the thirteen colours a generic cover would use; this bay's COVER
+     paints its own, but the table stays honest (the TV and the stands
+     read PREVIEW.back) */
   var PREVIEW = {
     back: K.splashMarble, backAlt: K.splashPearl, seam: K.splashGrout,
     beam: P.maple, beamDark: P.walnut, beamLight: P.mapleLit,
@@ -2651,131 +2652,258 @@ var Counter = (function () {
 
   /* ======================================================= THE COVER
 
-     118x114 on the big card, 82x94 on the side ones; the caller has
-     clipped. A live miniature of this view at the bay's own row
-     fractions: the lid with its strip of light across the top, the
-     mosaic under its warm wash sliding at the wall's pace, a stack of
-     boards standing and a glass upper hanging, the Instant Pot between
-     them with its geyser going up to the lid - the one white column on
-     the card - and a knife coming down point-first; the quartz across
-     the bottom with two specks of grounds. The big card adds the air
-     fryer with its drawers out and the heat streaming off it. Nothing
-     glows. */
-  function drawPreview(ctx, x, y, w, h, t, big) {
-    var s = t * 22, i, k, yy;
-    var lidB = y + Math.round(h * 0.09), floorY = y + Math.round(h * 0.9);
-    /* the splash: warm under the lid, grey toward the stone, in strips -
-       the lifted wall's values, as the bay has them */
-    for (yy = lidB; yy < floorY; yy++) {
-      var f = (yy - lidB) / Math.max(1, floorY - lidB);
-      rect(ctx, x, yy, w, 1, mix('#bdb7aa', '#a29c90', f));
-      if (((yy - lidB) & 1) === 1) {
-        rect(ctx, x, yy, w, 1, mix('#a7a195', '#8f897e', f));
-        var off = Math.round(wrap(-s * 0.88 + (yy * 37) % 23, 23));
-        for (k = x - 23 + off; k < x + w; k += 23) dot(ctx, k, yy, '#7b766d');
-      }
-    }
-    Tint.rect(ctx, x, lidB, w, Math.round(h * 0.12), K.underLight, 5);
-    Tint.rect(ctx, x, lidB, w, Math.round(h * 0.05), K.underLight, 4);
-    /* the counter, and two specks of grounds sliding on it */
-    rect(ctx, x, floorY, w, y + h - floorY, K.quartz);
-    rect(ctx, x, floorY, w, 1, K.quartzShade);
-    rect(ctx, x, floorY + 2, w, 1, K.quartzHi);
-    for (i = 0; i < 2; i++) dot(ctx, x + Math.round(wrap(w * 0.3 + i * 47 - s, w + 10)) - 5, floorY + 4 + i, P.grounds);
+     The Counter's painters for its cover (js/cover.js lays it out and
+     times it). A live miniature of this view: the lid with its strip of
+     light across the top, the mosaic under its warm wash sliding at the
+     wall's pace, the quartz across the bottom with two specks of grounds.
+     The columns are the bay's own - stacks of end-grain boards standing,
+     glass-front uppers hanging - and in the open spans the Instant Pot
+     stands on the counter and sends its geyser up (the one white column
+     on the card), or the air fryer streams its heat along it, while a
+     knife comes down point-first. Nothing glows. */
 
-    /* the boards and the upper, sliding past with the pot between */
-    var period = big ? 64 : 52, span = floorY - lidB;
-    for (i = 0; i < 3; i++) {
-      var trip = wrap(s + i * period, period * 3);
-      var ox = Math.round(x + w + 12 - trip);
-      if (ox < x - 50 || ox > x + w + 2) continue;
-      var gapH = Math.round(span * 0.36);
-      var gapY = Math.round(lidB + 6 + ((i * 23) % Math.max(1, span - gapH - 12)));
-      /* the glass upper */
-      rect(ctx, ox - 1, lidB, 12, gapY - lidB, P.outline);
-      rect(ctx, ox, lidB, 10, gapY - lidB - 2, K.cabinet);
-      rect(ctx, ox + 2, lidB, 6, gapY - lidB - 5, K.glassDark);
-      rect(ctx, ox + 8, gapY - 9, 1, 5, K.pullLit);
-      rect(ctx, ox, gapY - 2, 10, 1, K.underLight);
-      /* the boards */
-      var by = gapY + gapH;
-      rect(ctx, ox - 1, by, 12, floorY - by, P.outline);
-      for (yy = by + 1; yy < floorY; yy += 2) {
-        for (k = 0; k < 10; k += 3) {
-          var tn = ((k / 3 + (yy - by) / 2) | 0) % 3;
-          rect(ctx, ox + k, yy, Math.min(3, 10 - k), 2, [P.walnut, P.maple, P.cherry][tn]);
-        }
-      }
-      rect(ctx, ox - 2, by, 14, 2, P.maple);
-      if (i !== 1) continue;
-      /* THE INSTANT POT in the bay behind, and its geyser */
-      var px = ox + 20, pw = 14, ph = 14;
-      rect(ctx, px - 1, floorY - ph - 1, pw + 2, ph + 1, P.outline);
-      rect(ctx, px, floorY - ph + 3, pw, ph - 3, K.steel);
-      rect(ctx, px, floorY - ph + 3, 2, ph - 3, K.steelLit);
-      rect(ctx, px, floorY - ph, pw, 3, K.blackGlass);
-      rect(ctx, px + 5, floorY - ph + 6, 4, 4, P.panelFace);
-      var q = trip / (period * 3);
-      if (q > 0.33 && q < 0.6) {
-        /* the geyser, billowing as it climbs, a cloud where it tops out */
-        var gy = floorY - ph - 1, gt = lidB + 4 + Math.round(span * 0.12), cx = px + 10;
-        for (yy = gt; yy < gy; yy++) {
-          var bw = 2 + Math.round(1.5 + 1.5 * Math.sin(yy * 0.55 + t * 9));
-          rect(ctx, cx - bw, yy, bw * 2 + 1, 1, P.steamDeep);
-          rect(ctx, cx - bw + 1, yy, bw * 2 - 1, 1, P.steam);
-          if (((yy + Math.floor(t * 20)) % 5) < 2) dot(ctx, cx - bw + 1, yy, P.steamHi);
-        }
-        rect(ctx, cx - 6, gt - 3, 13, 4, P.steamDeep);
-        rect(ctx, cx - 5, gt - 4, 11, 4, P.steam);
-        rect(ctx, cx - 3, gt - 5, 6, 2, P.steamHi);
-      } else if (q > 0.22 && q <= 0.33) {
-        dot(ctx, px + 10, floorY - ph - 3 - (Math.floor(t * 10) & 1), P.steamHi);
-      }
-      /* THE AIR FRYER on the big card, its drawers out, the heat off it */
-      if (big) {
-        var fx = ox + 46, fw = 15, fh = 12;
-        rect(ctx, fx - 1, floorY - fh - 1, fw + 2, fh + 1, P.outline);
-        rect(ctx, fx, floorY - fh, fw, 3, K.blackGlass);
-        rect(ctx, fx, floorY - fh + 3, fw, 1, K.steel);
-        rect(ctx, fx, floorY - fh + 4, fw, fh - 4, K.blackGlassLit);
-        rect(ctx, fx + 3, floorY - fh + 5, 1, 5, K.pullLit);
-        rect(ctx, fx + 11, floorY - fh + 5, 1, 5, K.pullLit);
-        for (k = 0; k < 3; k++) {
-          var sx = fx - 4 - Math.round(wrap(t * 70 + k * 13, 34));
-          rect(ctx, sx, floorY - 4 - k * 4, 5, 1, k & 1 ? FX.hotHi : FX.hotMid);
-        }
-      }
-    }
-
-    /* a knife coming down point-first */
-    var kx = x + Math.round(w * 0.36);
-    var ky = lidB + Math.round(wrap(s * 1.4, floorY - lidB - 4)) - 12;
-    for (i = 0; i < 13; i++) {
-      var yk = ky + i;
-      if (yk < lidB || yk >= floorY) continue;
-      if (i < 5) { rect(ctx, kx - 1, yk, 2, 1, P.handle); continue; }
-      rect(ctx, kx - 1, yk, 1, 1, '#ffffff');
-      if (i < 11) dot(ctx, kx, yk, K.steelLit);
-    }
-
-    /* the lid, the strip of light, the edge */
-    rect(ctx, x, y, w, lidB - y, K.cabinet);
-    rect(ctx, x, y, w, 2, K.cabinetDeep);
-    rect(ctx, x, lidB - 4, w, 1, K.cabinetLit);
-    rect(ctx, x, lidB - 3, w, 1, K.underLight);
-    rect(ctx, x, lidB - 2, w, 1, '#f3dba6');
-    rect(ctx, x, lidB - 1, w, 1, P.outline);
-
-    /* the doodad flying it, the Couch's block */
-    var ddx = Math.round(x + w * 0.22);
-    var ddy = Math.round(y + h * 0.42 + Math.sin(t * 3.1) * (h * 0.12));
-    var sz = big ? 8 : 6;
-    rect(ctx, ddx - sz / 2 - 1, ddy - sz / 2 - 1, sz + 2, sz + 2, P.outline);
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz, sz, '#c9873c');
-    rect(ctx, ddx - sz / 2, ddy - sz / 2, sz - 2, 1, '#eab873');
-    dot(ctx, ddx + sz / 2 - 2, ddy - 1, P.outline);
-    rect(ctx, ddx + sz / 2, ddy, 2, 1, '#f3cc84');
+  /* a cap's rows at card size, the far side first and the gap's edge
+     last: the outline on the gap's edge and the lit row just inside it
+     are kept at every size, the face fills what is left */
+  function capRows(n, far, face, lit, edge) {
+    if (n <= 2) return [lit, edge];
+    var rows = n >= 4 ? [far] : [];
+    while (rows.length < n - 2) rows.push(face);
+    rows.push(lit, edge);
+    return rows;
   }
+  var COVER_WOODS = [[P.walnut, P.maple, P.cherry], [P.walnut, P.maple, P.maple], [P.walnut, P.maple, P.cherry]];
+
+  var COVER = {
+    ink: P.outline,
+    /* the splash: warm under the lid, grey toward the stone, in strips -
+       the lifted wall's values, as the bay has them - with the grout's
+       dots sliding at the wall's pace, and the strip light's wash under
+       the lid */
+    back: function (ctx, S) {
+      var x = S.x, w = S.w, yy, k;
+      for (yy = S.top; yy < S.floor; yy++) {
+        var r = yy - S.top, f = r / Math.max(1, S.lane);
+        rect(ctx, x, yy, w, 1, mix('#bdb7aa', '#a29c90', f));
+        if ((r & 1) === 1) {
+          rect(ctx, x, yy, w, 1, mix('#a7a195', '#8f897e', f));
+          var off = Math.round(wrap(-S.s * 0.88 + (r * 37) % 23, 23));
+          for (k = x - 23 + off; k < x + w; k += 23) dot(ctx, k, yy, '#7b766d');
+        }
+      }
+      Tint.rect(ctx, x, S.top, w, Math.round(S.lane * 0.12), K.underLight, 5);
+      Tint.rect(ctx, x, S.top, w, Math.round(S.lane * 0.05), K.underLight, 4);
+    },
+    /* A standing column is a stack of end-grain boards, three woods in
+       a checker, the biggest board lying across the top; a hanging one
+       is a glass-front upper anchored at its foot - its bottom rail and
+       its pull right over the cap, the door running up behind the lid -
+       or, one in three, the open shelf with a teal cup and a white bowl. */
+    pillar: function (ctx, x, y, w, h, end, p, S) {
+      if (h <= 0) return;
+      var ch = Math.min(h, Math.max(2, Math.round(9 * S.k))), ov = Math.max(1, Math.round(4 * S.k));
+      var v = wrap(p.i, 3), i, k, yy, rows, n;
+      if (end === 'top') {
+        var st = Math.max(1, Math.round(5 * S.k)), rail = Math.max(1, Math.round(8 * S.k));
+        var foot = y + h - ch;                    /* the door's bottom edge, on the cap */
+        var paneB = foot - rail;
+        rect(ctx, x, y, w, h, P.outline);
+        rect(ctx, x + 1, y, w - 2, h, K.cabinet);
+        if (v === 2) {
+          /* the open shelf: the recess, two shelves counted up from the foot */
+          rect(ctx, x + st + 1, y, w - st * 2 - 2, paneB - y, mix(K.cabinetShade, K.cabinetDeep, 0.4));
+          for (k = 0; k < 2; k++) {
+            var sy = paneB - Math.round((k ? 62 : 26) * S.k);
+            if (sy - 2 <= y) continue;
+            rect(ctx, x + st + 1, sy, w - st * 2 - 2, 1, K.cabinetLit);
+            /* the teal cup up top, the white bowl below */
+            var cw2 = w >= 12 ? 2 : 1;
+            if (k) rect(ctx, x + st + 2, sy - cw2, cw2, cw2, P.teal);
+            else { rect(ctx, x + st + 2, sy - 2, cw2 + 1, 1, K.cabinetLit); rect(ctx, x + st + 2, sy - 1, cw2 + 1, 1, K.cabinetShade); }
+          }
+        } else {
+          rect(ctx, x + st + 1, y, w - st * 2 - 2, paneB - y, K.glassDark);
+          rect(ctx, x + st + 1, paneB, w - st * 2 - 2, 1, K.cabinetLit);
+          for (k = 0; k < 2; k++) {
+            var gs = paneB - Math.round((k ? 58 : 28) * S.k);
+            if (gs > y) rect(ctx, x + st + 1, gs, w - st * 2 - 2, 1, K.glassShelf);
+          }
+          /* the bar pull, low on the meeting stile: the right one, then the left */
+          var pl = Math.max(3, Math.round(12 * S.k)), pxl = wrap(p.i, 2) ? x + 1 + Math.floor(st / 2) : x + w - 2 - Math.floor(st / 2);
+          rect(ctx, pxl, paneB - pl, 1, pl, K.pullLit);
+        }
+        /* the cap: the cabinet's bottom seen from under, its own strip
+           of light the last thing before the gap */
+        rows = capRows(ch, P.outline, K.cabinet, K.underLight, P.outline);
+        if (ch >= 4) rows[1] = K.cabinetLit;
+        n = rows.length;
+        for (i = 0; i < n; i++) rect(ctx, x - ov, foot + i, w + ov * 2, 1, rows[i]);
+        Tint.rect(ctx, x + w, y, ov, h - n, K.void, 6);
+        return;
+      }
+      /* the boards, two rows to a board, three woods in a checker */
+      var tones = COVER_WOODS[v], bw = w >= 9 ? 3 : 2;
+      rect(ctx, x - 1, y, w + 2, h, P.outline);
+      var row = 0;
+      for (yy = y + ch; yy < y + h; row++) {
+        var bh = (v === 2 && row % 4 === 3) ? 3 : 2;
+        for (k = 0; k < w; k += bw) {
+          var tn = ((k / bw + row) | 0) % 3;
+          rect(ctx, x + k, yy, Math.min(bw, w - k), Math.min(bh, y + h - yy), tones[tn]);
+        }
+        yy += bh;
+      }
+      /* the cap: the big board lying across the stack - the outline on
+         the gap's edge, its far edge catching the strip light, its end
+         grain foreshortened to a row of squares, the outline under it */
+      rows = ch >= 4 ? [P.outline, P.mapleLit] : [P.mapleLit];
+      while (rows.length < ch - (ch >= 3 ? 2 : 1)) rows.push(P.maple);
+      rows.push('grain');
+      if (ch >= 3) rows.push(P.outline);
+      n = rows.length;
+      for (i = 0; i < n; i++) {
+        if (rows[i] !== 'grain') { rect(ctx, x - ov, y + i, w + ov * 2, 1, rows[i]); continue; }
+        for (k = 0; k < w + ov * 2; k += 2) {
+          var tn2 = COVER_WOODS[0][wrap(Math.floor(k / 2) + p.i, 3)];
+          rect(ctx, x - ov + k, y + i, Math.min(2, w + ov * 2 - k), 1, tn2);
+        }
+      }
+      Tint.rect(ctx, x + w + 1, y + n, ov, h - n, K.void, 6);
+    },
+    /* the lid, its strip of light and the edge; on the smallest cards the
+       last three rows and the cabinet above them */
+    ceiling: function (ctx, S) {
+      var x = S.x, y = S.y, w = S.w, d = S.top - S.y;
+      rect(ctx, x, y, w, d, K.cabinet);
+      if (d >= 8) rect(ctx, x, y, w, 2, K.cabinetDeep);
+      if (d >= 6) rect(ctx, x, S.top - 4, w, 1, K.cabinetLit);
+      rect(ctx, x, S.top - 3, w, 1, K.underLight);
+      rect(ctx, x, S.top - 2, w, 1, '#f3dba6');
+      rect(ctx, x, S.top - 1, w, 1, P.outline);
+    },
+    /* the counter, and two specks of grounds sliding on it */
+    floor: function (ctx, S) {
+      var x = S.x, w = S.w, fy = S.floor;
+      rect(ctx, x, fy, w, S.y + S.h - fy, K.quartz);
+      rect(ctx, x, fy, w, 1, K.quartzShade);
+      rect(ctx, x, fy + 2, w, 1, K.quartzHi);
+      for (var i = 0; i < 2; i++) dot(ctx, x + Math.round(wrap(w * 0.3 + i * 47 - S.s, w + 10)) - 5, fy + 4 + i, P.grounds);
+    },
+    /* THE MACHINES, in the even spans. The Instant Pot fires by WHERE
+       it is, as the bay's machines do: its valve wisps as it comes on,
+       then the geyser shoots up the whole lane to just under the lid -
+       the one white column on the card - and stands there while it is
+       still well ahead of the doodad. As it closes on him it falls back
+       to a column that tops out under his line, and it is down there
+       before any of it is within reach of him (the Cabinets' let-go,
+       keyed off position the same way), so he flies over it and never
+       through it. A span whose gaps sit so low that even that column
+       would be a stub gets the air fryer instead, its drawers out and
+       its heat streaming off it along the counter. The choice comes off
+       the span's own line, so it never changes as the span slides. */
+    props: function (ctx, S) {
+      var fy = S.floor, sc = Math.min(1, S.k * 2.4);
+      var pw2 = Math.max(6, Math.round(34 * S.k)), ph = Math.max(6, Math.round(34 * S.k));
+      /* the billow on top is a baked disc, radius 3 at least */
+      var cloudR = Math.max(3, Math.round(5 * sc)), cloudH = cloudR + 1;
+      for (var i = 0; i < S.spans.length; i++) {
+        var sp = S.spans[i];
+        if (wrap(sp.i, 2)) continue;
+        var mid = Math.round((sp.x0 + sp.x1) / 2), pt = fy - ph;
+        var u = (S.x + S.w - mid) / S.w;
+        var gt = Math.max(S.top + Math.round(S.lane * 0.257), sp.line.bottom + 2 + cloudH);
+        var yy, k;
+        if (pt - 1 - gt < Math.round(S.lane * 0.12)) {
+          /* THE AIR FRYER */
+          var fw = Math.max(6, Math.round(36 * S.k)), fh = Math.max(5, Math.round(28 * S.k)), fx = mid - (fw >> 1);
+          var top3 = Math.max(1, Math.round(3 * sc));
+          rect(ctx, fx - 1, fy - fh - 1, fw + 2, fh + 1, P.outline);
+          rect(ctx, fx, fy - fh, fw, top3, K.blackGlass);
+          rect(ctx, fx, fy - fh + top3, fw, 1, K.steel);
+          rect(ctx, fx, fy - fh + top3 + 1, fw, fh - top3 - 1, K.blackGlassLit);
+          if (fh >= 8) {
+            rect(ctx, fx + Math.round(3 * sc), fy - fh + top3 + 2, 1, fh - top3 - 4, K.pullLit);
+            rect(ctx, fx + fw - 1 - Math.round(3 * sc), fy - fh + top3 + 2, 1, fh - top3 - 4, K.pullLit);
+          }
+          Tint.rect(ctx, fx + fw + 1, fy - fh, 2, fh, K.void, 6);
+          Tint.rect(ctx, fx - 1, fy - 2, fw + 2, 2, K.void, 7);
+          /* the streaks stay in this span and under the doodad's line */
+          var sl = Math.max(2, Math.round(5 * sc)), ov = Math.max(1, Math.round(4 * S.k));
+          var run = Math.max(1, fx - 1 - sl - (sp.x0 + ov + 2));
+          for (k = 0; k < 3; k++) {
+            var hy = fy - Math.round((4 + k * 4) * sc);
+            if (hy <= sp.line.bottom) continue;
+            var hx = fx - 2 - sl - Math.round(wrap(S.t * 70 * sc + k * 13, run));
+            rect(ctx, hx, hy, sl, 1, k & 1 ? FX.hotHi : FX.hotMid);
+          }
+          continue;
+        }
+        /* THE INSTANT POT: steel, its black lid, its pale panel */
+        var px = mid - (pw2 >> 1), lid = Math.max(1, Math.round(3 * sc));
+        rect(ctx, px - 1, pt - 1, pw2 + 2, ph + 1, P.outline);
+        rect(ctx, px, pt + lid, pw2, ph - lid, K.steel);
+        rect(ctx, px, pt + lid, Math.max(1, Math.round(2 * sc)), ph - lid, K.steelLit);
+        rect(ctx, px, pt, pw2, lid, K.blackGlass);
+        var pf = Math.max(2, Math.round(4 * sc));
+        rect(ctx, mid - (pf >> 1), pt + lid + Math.round((ph - lid - pf) * 0.4), pf, pf, P.panelFace);
+        Tint.rect(ctx, px + pw2 + 1, pt, 2, ph, K.void, 6);
+        Tint.rect(ctx, px - 1, fy - 2, pw2 + 2, 2, K.void, 7);
+        if (u > 0.12 && u <= 0.20) {
+          dot(ctx, mid, pt - 2 - (Math.floor(S.t * 10) & 1), P.steamHi);
+        } else if (u > 0.20 && u < 0.70) {
+          /* THE GEYSER, drawColumnSteam's way: shooting up out of the
+             valve, its two edges billowing out of step, lit down its left
+             third with the flow running up it, puffs rolling up it and a
+             soft billow where it tops out. `ext` is how far it reaches
+             either side of its middle, puffs and billow included; `ahead`
+             is the clear air between that and the doodad's box. Full
+             height while `ahead` is a third of a column-spacing or more,
+             down to `gt` (under his line) by the time it reaches nothing. */
+          var flow = Math.floor(S.t * 24), hw = Math.max(1, Math.round(5 * S.k));
+          var ext = Math.max(hw + 1 + Math.ceil(2 * sc), S.k >= 0.3 ? hw + 4 : 0, cloudR);
+          var dz = S.doodad, ahead = (mid - ext) - (dz.x + Math.ceil(dz.size / 2) + 2);
+          var full = S.top + cloudR + Math.max(1, Math.round(3 * sc));
+          var stand = clamp(ahead / Math.max(4, Math.round(S.period * 0.3)), 0, 1);
+          var gtop = Math.round(gt + (full - gt) * stand);
+          var top = Math.round(pt - 1 - (pt - 1 - gtop) * Math.min(1, (u - 0.20) / 0.06));
+          for (yy = top; yy < pt - 1; yy++) {
+            var ph2 = (yy - S.top + flow) / 5;
+            var l = mid - hw - Math.round((1 + Math.sin(ph2 * 1.9)) * sc);
+            var r = mid + hw + 1 + Math.round((1 + Math.sin(ph2 * 1.5 + 1.3)) * sc);
+            rect(ctx, l, yy, r - l, 1, P.steamDeep);
+            rect(ctx, l + 1, yy, r - l - 2, 1, P.steam);
+            rect(ctx, l + 1, yy, Math.max(1, Math.round((r - l) * 0.35)), 1, wrap(yy - S.top + flow, 8) < 4 ? P.steamHi : P.steam);
+          }
+          if (S.k >= 0.3 && pt - 1 - top > 8) {
+            for (k = 0; k < 3; k++) {
+              var py = pt - 2 - wrap(flow + k * 17, Math.max(1, pt - 1 - top));
+              puff(ctx, mid + (k & 1 ? hw + 1 : -hw - 1), py, 3, 0.7);
+            }
+          }
+          puff(ctx, mid, top, cloudR, 0.85);
+          puff(ctx, mid, pt - 1, Math.max(3, cloudR - 1), 0.6);
+        }
+      }
+    },
+    /* a knife coming down point-first: the black handle, then the blade
+       with its edge catching the strip light, narrowing to the point; it
+       lands point into the counter. Its shadow tightens under it. */
+    drop: function (ctx, d, S) {
+      var L = Math.max(8, Math.round(30 * S.k)), tip = d.y + Math.round(7 * S.k), top = tip - L + 1, i;
+      var hl = Math.round(L * 0.38), sw = d.f > 0.5 ? 3 : 5;
+      Tint.rect(ctx, d.x - (sw >> 1), S.floor + 1, sw, 1, K.void, 4 + 8 * d.f);
+      for (i = 0; i < L; i++) {
+        var yk = top + i;
+        if (i < hl) { rect(ctx, d.x - 1, yk, 2, 1, P.handle); continue; }
+        dot(ctx, d.x - 1, yk, '#ffffff');
+        if (i < L - 2) dot(ctx, d.x, yk, K.steelLit);
+      }
+    },
+    /* the strip's light falling on everything under the lid, columns and all */
+    front: function (ctx, S) {
+      Tint.rect(ctx, S.x, S.top, S.w, Math.round(S.lane * 0.10), K.underLight, 2);
+    }
+  };
 
   /* ===================================================== GENERATION */
 
@@ -3288,14 +3416,14 @@ var Counter = (function () {
   }
 
   return {
-    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
+    P: P, FX: FX, WARN: WARN, PREVIEW: PREVIEW, COVER: COVER, CEIL: CEIL, FLOOR: FLOOR, tiles: T,
     END_MIN: END_MIN, DROP_GRAV: DROP_GRAV, SPLAT_TIME: SPLAT_TIME, CEIL_KILLS: CEIL_KILLS,
     BOON_NAME: BOON_NAME,
     build: build,
     drawBackdrop: drawBackdrop, drawMenuBackdrop: drawMenuBackdrop,
     drawCeiling: drawCeiling, drawFloor: drawFloor, drawObstacle: drawObstacle,
     drawDrop: drawDrop, drawDropSpot: drawDropSpot, drawDropSplat: drawDropSplat,
-    drawPreview: drawPreview, drawOverlay: drawOverlay, drawFront: drawFront,
+    drawOverlay: drawOverlay, drawFront: drawFront,
     makePillar: makePillar, makeSpikes: makeSpikes, makeDrop: makeDrop, GOLD_GIFT: true,
     makeLitter: makeLitter, makeBoon: makeBoon, makeMeet: makeMeet,
     stepDrop: stepDrop, stepWorld: stepWorld, stepBoon: stepBoon,
