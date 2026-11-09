@@ -228,7 +228,6 @@ var PorchScene = (function () {
   var visitPokes = 0, denyCool = 0;
   var plate = null;                /* { a, t }: whose name the sign shows   */
   var hoverA = null, hoverT = 0;   /* the doodad under a still cursor       */
-  var dood = [];                   /* last frame's doodad rects, for hover  */
   var boost = 0, whooshCool = 0;   /* px/s the Land is rushing by on top    */
   var swing = null;                /* { amp, age, last, tocks }: the sign   */
   var stompCool = 0, lastWave = -99;
@@ -412,7 +411,7 @@ var PorchScene = (function () {
        sulk's squash, a shiver and a flyer's loop */
     this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
     this.hy = 0; this.hv = 0; this.maxLift = 0;
-    this.squashT = 0; this.shiverT = 0;
+    this.squashT = 0; this.shiverT = 0; this.boing = 9;
     this.loop = null;
   }
 
@@ -979,19 +978,39 @@ var PorchScene = (function () {
     }
   }
 
-  function actorByIx(ix) {
-    for (var i = 0; i < stage.length; i++) if (stage[i].ix === ix) return stage[i];
-    return null;
-  }
-
   /* the rectangle a poke has to land in: the sprite's own extent, and
      never smaller than 30 square - a fingertip on a phone */
-  function rectOf(a) {
-    var L = a.left * a.r, R = a.right * a.r, U = a.head * a.r, D = a.down * a.r;
-    var x = a.x - L, y = a.y - U, w = L + R, h = U + D;
-    if (w < 30) { x -= (30 - w) / 2; w = 30; }
-    if (h < 30) { y -= (30 - h) / 2; h = 30; }
-    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  /* WHAT A TAP LANDED ON, tested against the picture rather than a
+     rectangle: a sprite's rectangle carries its transparent corners, so a
+     tap beside a doodad poked it and a tap on one could poke its
+     neighbour. Each doodad is asked, front-most first, whether the point
+     is on one of its own opaque pixels as drawn this frame
+     (Doodads.hitTest, with pose()). Only if nobody is under the finger
+     itself does it look a little way round - 4 and 8 px for a finger, 3
+     for a cursor - so a tap just off a small doodad still finds it. */
+  var RING = [[1, 0], [0.7, -0.7], [0, -1], [-0.7, -0.7], [-1, 0], [-0.7, 0.7], [0, 1], [0.7, 0.7]];
+
+  function hits(a, x, y) {
+    var p = pose(a);
+    return Doodads.hitTest(a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts, x, y);
+  }
+
+  function pickDood(x, y, radii) {
+    var near = [], i, j, k, a;
+    for (i = stage.length - 1; i >= 0; i--) {
+      a = stage[i];
+      var reach = a.r * 2.2 + radii[radii.length - 1];
+      if (Math.abs(x - a.x) <= reach && Math.abs(y - a.y) <= reach) near.push(a);
+    }
+    for (k = 0; k < radii.length; k++) {
+      for (i = 0; i < near.length; i++) {
+        for (j = 0; j < (radii[k] ? RING.length : 1); j++) {
+          var ox = radii[k] ? RING[j][0] * radii[k] : 0, oy = radii[k] ? RING[j][1] * radii[k] : 0;
+          if (hits(near[i], x + ox, y + oy)) return near[i];
+        }
+      }
+    }
+    return null;
   }
 
   function inside(r, x, y) { return r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
@@ -1018,6 +1037,7 @@ var PorchScene = (function () {
     a.pokeT = 2.5;
     visitPokes++;
     a.flap(0);
+    a.boing = 0;
     Audio3.play('bop');
     showPlate(a, 2.2);
     if (a.pokes === 1) { lift(a, 1); say(a, '!'); }
@@ -1209,30 +1229,22 @@ var PorchScene = (function () {
   /* ---- what the toys listen to, and where */
 
   function pushToyTargets() {
-    var i, r, a;
-    /* the porch and the Land behind it, under everything: a tap on the
-       rooms whooshes them, a tap on the boards stamps. The footer strip is
+    /* the porch and the Land behind it, under everything: pickDood says
+       whether a tap on it found a doodad; if not, a tap on the rooms
+       whooshes them and a tap on the boards stamps. The footer strip is
        left out. */
     hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
-    dood.length = 0;
-    for (i = 0; i < stage.length; i++) {
-      a = stage[i];
-      r = rectOf(a);
-      hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
-      dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
-    }
     /* the sign and its chains, on the foreground over anybody near it */
     hot.push({ x: 96, y: 0, w: 288, h: HEADER, id: 'sign' });
   }
 
   /* a cursor resting on a doodad: one flap as it arrives, and after a
-     moment the sign says who it is - against last frame's rectangles, so a
-     doodad that hops out from under a still cursor stops being hovered */
+     moment the sign says who it is - tested against the picture every
+     frame, so a doodad that hops out from under a still cursor stops being
+     hovered; never through the sign or the menu row */
   function hover(dt) {
     var p = Input.pointer(), a = null;
-    if (p && p.kind === 'mouse') {
-      for (var i = dood.length - 1; i >= 0; i--) if (inside(dood[i], p.x, p.y)) { a = dood[i].a; break; }
-    }
+    if (p && p.kind === 'mouse' && p.y < MENU_Y && !(p.y < HEADER && p.x >= 96 && p.x <= 384)) a = pickDood(p.x, p.y, [0, 2]);
     if (a !== hoverA) { hoverA = a; hoverT = 0; if (a) a.flap(0); }
     else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2); }
   }
@@ -1267,6 +1279,7 @@ var PorchScene = (function () {
       if (a.voiceCool > 0) a.voiceCool -= dt;
       if (a.squashT > 0) a.squashT -= dt;
       if (a.shiverT > 0) a.shiverT -= dt;
+      if (a.boing < 1) a.boing += dt;
     }
     for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
     hover(dt);
@@ -1285,10 +1298,11 @@ var PorchScene = (function () {
     if (Input.hit('down')) whoosh();
     if (!tg) return;
     var at = Input.tapPos();
-    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i)); }
-    else if (tg.id === 'sign') { touchedToy(); swingSign(5, true); }
+    if (tg.id === 'sign') { touchedToy(); swingSign(5, true); }
     else if (tg.id === 'bg' && at && !inside(hiRect, at.x, at.y)) {
-      if (at.y < PORCH) { touchedToy(); whoosh(); }
+      var p = Input.pointer(), a = pickDood(at.x, at.y, p && p.kind === 'mouse' ? [0, 3] : [0, 4, 8]);
+      if (a) { touchedToy(); poke(a); }
+      else if (at.y < PORCH) { touchedToy(); whoosh(); }
       else if (at.y < MENU_Y) { touchedToy(); stomp(at.x); }
     }
   }
@@ -1337,7 +1351,7 @@ var PorchScene = (function () {
     bubbles.length = 0; puffs.length = 0; timers.length = 0;
     chirpCooldown = 0;
     visitPokes = 0; denyCool = 0; plate = null;
-    hoverA = null; hoverT = 0; dood.length = 0;
+    hoverA = null; hoverT = 0;
     boost = 0; whooshCool = 0; swing = null; stompCool = 0; lastWave = -99;
     hintT = 0; hints = 0; rings.length = 0; toyTapped = false;
     directorTimer = 4;
@@ -1530,12 +1544,23 @@ var PorchScene = (function () {
     for (var i = 0; i < stage.length; i++) drawActor(ctx, stage[i]);
   }
 
-  /* a sulk squashes a doodad down onto its feet, and a shiver rattles it */
   function drawActor(ctx, a) {
-    var sq = a.squashT > 0;
-    var sh = a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0;
-    Doodads.draw(ctx, a.id, a.x, a.y + (sq ? a.r * a.foot * 0.15 : 0), a.r, a.angle + sh, a.flying(),
-                 sq ? { squashX: 1.1, squashY: 0.85 } : null);
+    var p = pose(a);
+    Doodads.draw(ctx, a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts);
+  }
+
+  /* HOW A DOODAD IS DRAWN THIS FRAME - a sulk squashes it down onto its
+     feet, a shiver rattles it, a poke's boing squashes and wobbles it -
+     in one place, because the tap test asks about exactly this picture */
+  function pose(a) {
+    var sx = 1, sy = 1;
+    if (a.squashT > 0) { sx = 1.1; sy = 0.85; }
+    if (a.boing < 0.36) {
+      var k = a.boing / 0.36, b = Math.sin(k * Math.PI * 2.5) * (1 - k) * 0.16;
+      sx *= 1 + b; sy *= 1 - b;
+    }
+    return { y: a.y + a.r * a.foot * (1 - sy), angle: a.angle + (a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0),
+             opts: { squashX: sx, squashY: sy } };
   }
 
   function drawFg(ctx) {
@@ -1713,5 +1738,6 @@ var PorchScene = (function () {
            drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
            targets: function () { return hot; },
            /* for a headless check: live references, read them only */
-           inspect: function () { return { stage: stage, plate: plate, boost: boost, swing: swing, rings: rings, failed: TOY_FAIL, t: t }; } };
+           inspect: function () { return { stage: stage, plate: plate, boost: boost, swing: swing, rings: rings, failed: TOY_FAIL, t: t }; },
+           pick: function (x, y, finger) { return pickDood(x, y, finger ? [0, 4, 8] : [0, 3]); } };
 })();

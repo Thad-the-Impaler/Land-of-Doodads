@@ -3475,6 +3475,65 @@ var Doodads = (function () {
     ctx.restore();
   }
 
+  /* DID A POINT LAND ON THE DOODAD AS draw() WOULD PAINT IT - the same
+     arguments, plus the point - on an opaque pixel of the art rather than
+     inside its rectangle. The title screens use it so a tap lands on what
+     the player can see: a sprite's rectangle carries its transparent
+     corners, and in a crowd the corners of the one in front cover the one
+     behind.
+
+     The point is taken back through draw()'s transform (translate, rotate,
+     then the scale that carries flip and squash) into the art's own box,
+     and looked up in a mask of that frame at a quarter of the art's size,
+     made the first time it is asked for. At a title screen's sizes a mask
+     cell is under half a virtual pixel. Art that has not loaded, or a
+     canvas the browser will not read back, falls back to the body circle. */
+  var MASKS = {};
+
+  function maskOf(key, d) {
+    if (MASKS.hasOwnProperty(key)) return MASKS[key];
+    var img = Assets.img(key), m = null;
+    if (img && img.complete && img.naturalWidth) {
+      try {
+        var cw = Math.ceil(d.sprite.w / 4), ch = Math.ceil(d.sprite.h / 4);
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        var cx = c.getContext('2d');
+        cx.drawImage(img, 0, 0, cw, ch);
+        var px = cx.getImageData(0, 0, cw, ch).data, bits = new Uint8Array(cw * ch);
+        for (var i = 0; i < bits.length; i++) bits[i] = px[i * 4 + 3] > 60 ? 1 : 0;
+        m = { w: cw, h: ch, bits: bits };
+      } catch (e) { m = null; }
+    }
+    if (m || (img && img.complete)) MASKS[key] = m;
+    return m;
+  }
+
+  function hitTest(id, x, y, r, angle, frame, opts, px, py) {
+    var d = BY_ID[id];
+    if (!d) return false;
+    var o = opts || {};
+    var key = id + (frame === true ? '_fly' : (frame ? '_' + frame : '_fall'));
+    var img = Assets.img(key);
+    if (!img || !img.complete || !img.naturalWidth) key = id + '_fall';
+    var dx = px - x, dy = py - y;
+    if (angle) {
+      var cs = Math.cos(-angle), sn = Math.sin(-angle), rx = dx * cs - dy * sn;
+      dy = dx * sn + dy * cs; dx = rx;
+    }
+    var m = maskOf(key, d);
+    if (!m) {
+      var rr = r * Math.max(o.squashX || 1, o.squashY || 1);
+      return dx * dx + dy * dy <= rr * rr;
+    }
+    var s = r / d.sprite.bodyR;
+    var ix = dx / (s * (o.squashX || 1)), iy = dy / (s * (o.squashY || 1));
+    if (o.flip) ix = -ix;
+    ix += d.sprite.pivotX; iy += d.sprite.pivotY;
+    if (ix < 0 || iy < 0 || ix >= d.sprite.w || iy >= d.sprite.h) return false;
+    return m.bits[Math.floor(iy / d.sprite.h * m.h) * m.w + Math.floor(ix / d.sprite.w * m.w)] === 1;
+  }
+
   /* if the art ever fails to load the game still runs */
   function drawFallback(ctx, d, x, y, r) {
     ctx.save();
@@ -4311,6 +4370,8 @@ var Doodads = (function () {
     indexOf: function (id) { for (var i = 0; i < LIST.length; i++) if (LIST[i].id === id) return i; return 0; },
     has: function (id) { return BY_ID.hasOwnProperty(id); },
     draw: draw,
+    /* draw()'s arguments plus a point: is it on an opaque pixel of the art */
+    hitTest: hitTest,
     bestReached: bestReached, noteScore: noteScore,
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
     limesTaken: limesTaken, noteLime: noteLime,
@@ -67040,7 +67101,6 @@ var CoopTitle = (function () {
   var visitPokes = 0, denyCool = 0;
   var plate = null;                /* { a, t }: whose name the subtitle shows */
   var hoverA = null, hoverT = 0;   /* the doodad under a still cursor        */
-  var dood = [];                   /* last frame's doodad rects, for hover   */
   var grains = [], piles = [], feedCool = 0, tossN = 0, toss = 0;
   var hiRect = null;               /* the HI panel, which feed must not fall from */
   var LOGO = ['LAND OF', 'DOODADS'];
@@ -67207,7 +67267,7 @@ var CoopTitle = (function () {
        sulk's squash, a shiver, a flyer's loop and a walker's meal */
     this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
     this.hy = 0; this.hv = 0;
-    this.squashT = 0; this.shiverT = 0;
+    this.squashT = 0; this.shiverT = 0; this.boing = 9;
     this.loop = null;
     this.goal = null; this.homing = false; this.peckT = 0; this.peckN = 0;
   }
@@ -67532,20 +67592,40 @@ var CoopTitle = (function () {
      lands there is out of sight, and nobody is sent behind a board to eat */
   function inMenu(x) { return x > 150 && x < 330; }
 
-  function actorByIx(ix) {
-    for (var i = 0; i < cast.length; i++) if (cast[i].ix === ix) return cast[i];
-    return null;
-  }
-
   /* THE RECTANGLE A POKE HAS TO LAND IN: the sprite's own extent at its
      size right now, and never smaller than 30 square, because a fingertip
      is about 32 virtual pixels on a phone in landscape */
-  function rectOf(a) {
-    var L = a.left * a.r, R = a.right * a.r, U = a.head * a.r, D = a.foot * a.r;
-    var x = a.x - L, y = a.y - U, w = L + R, h = U + D;
-    if (w < 30) { x -= (30 - w) / 2; w = 30; }
-    if (h < 30) { y -= (30 - h) / 2; h = 30; }
-    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  /* WHAT A TAP LANDED ON, tested against the picture rather than a
+     rectangle: a sprite's rectangle carries its transparent corners, so a
+     tap beside a doodad poked it and a tap on one could poke its
+     neighbour. Each doodad is asked, front-most first, whether the point
+     is on one of its own opaque pixels as drawn this frame
+     (Doodads.hitTest, with pose()). Only if nobody is under the finger
+     itself does it look a little way round - 4 and 8 px for a finger, 3
+     for a cursor - so a tap just off a small doodad still finds it. */
+  var RING = [[1, 0], [0.7, -0.7], [0, -1], [-0.7, -0.7], [-1, 0], [-0.7, 0.7], [0, 1], [0.7, 0.7]];
+
+  function hits(a, x, y) {
+    var p = pose(a);
+    return Doodads.hitTest(a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts, x, y);
+  }
+
+  function pickDood(x, y, radii) {
+    var near = [], i, j, k, a;
+    for (i = cast.length - 1; i >= 0; i--) {
+      a = cast[i];
+      var reach = a.r * 2.2 + radii[radii.length - 1];
+      if (Math.abs(x - a.x) <= reach && Math.abs(y - a.y) <= reach) near.push(a);
+    }
+    for (k = 0; k < radii.length; k++) {
+      for (i = 0; i < near.length; i++) {
+        for (j = 0; j < (radii[k] ? RING.length : 1); j++) {
+          var ox = radii[k] ? RING[j][0] * radii[k] : 0, oy = radii[k] ? RING[j][1] * radii[k] : 0;
+          if (hits(near[i], x + ox, y + oy)) return near[i];
+        }
+      }
+    }
+    return null;
   }
 
   function showPlate(a, secs) {
@@ -67576,6 +67656,7 @@ var CoopTitle = (function () {
     a.pokeT = 2.5;
     visitPokes++;
     a.flap(0);
+    a.boing = 0;
     Audio3.play('bop');
     showPlate(a, 2.2);
     if (a.pokes === 1) { lift(a, 1); say(a, '!'); }
@@ -67900,17 +67981,10 @@ var CoopTitle = (function () {
   /* ---- what the toys listen to, and where */
 
   function pushToyTargets() {
-    var i, r, a;
-    /* the coop itself, under everything: a tap that lands on nothing else
-       tosses feed. The footer strip is left out. */
+    /* the coop itself, under everything: pickDood says whether a tap on it
+       found a doodad, and if not it tosses feed. The footer strip is left
+       out. */
     hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
-    dood.length = 0;
-    for (i = 0; i < cast.length; i++) {
-      a = cast[i];
-      r = rectOf(a);
-      hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
-      dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
-    }
     /* the letters are on the foreground, over anybody standing behind them */
     var g = logoGeom();
     for (var l = 0; l < 2; l++) {
@@ -67923,18 +67997,13 @@ var CoopTitle = (function () {
 
   /* A CURSOR RESTING ON A DOODAD: it notices (one flap, no sound, so a
      sweep across the coop ripples), and after a moment the subtitle says
-     who it is. Worked out against last frame's rectangles every frame,
-     not from Input.hovering, which only refreshes when the mouse moves -
-     a doodad that hops out from under a still cursor has stopped being
-     hovered. Nothing at all on a phone. */
+     who it is. Tested against the picture every frame, not from
+     Input.hovering, which only refreshes when the mouse moves - a doodad
+     that hops out from under a still cursor has stopped being hovered.
+     Never through the menu boards, and nothing at all on a phone. */
   function hover(dt) {
     var p = Input.pointer(), a = null;
-    if (p && p.kind === 'mouse') {
-      for (var i = dood.length - 1; i >= 0; i--) {
-        var r = dood[i];
-        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) { a = r.a; break; }
-      }
-    }
+    if (p && p.kind === 'mouse' && p.y < VH - 18 && !inBoards(p.x, p.y)) a = pickDood(p.x, p.y, [0, 2]);
     if (a !== hoverA) { hoverA = a; hoverT = 0; if (a) a.flap(0); }
     else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2); }
   }
@@ -67973,11 +68042,17 @@ var CoopTitle = (function () {
       if (a.voiceCool > 0) a.voiceCool -= dt;
       if (a.squashT > 0) a.squashT -= dt;
       if (a.shiverT > 0) a.shiverT -= dt;
+      if (a.boing < 1) a.boing += dt;
     }
     for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
     updateLetters(dt);
     hover(dt);
     hint(dt);
+  }
+
+  /* the menu column's boards, which a cursor over them is pointing at */
+  function inBoards(x, y) {
+    return x >= menuX() && x <= menuX() + MENU_BW && y >= menuY(0) && y <= menuY(MENU.length - 1) + MENU_BH;
   }
 
   /* the taps and keys, read after the lock like the menu's own */
@@ -67986,12 +68061,13 @@ var CoopTitle = (function () {
     if (Input.hit('right')) tossFeed(360 + rand(-25, 25), 110);
     if (!tg) return;
     var at = Input.tapPos();
-    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i)); }
-    else if (tg.id === 'logo') { touchedToy(); tapLetter(tg.i); }
+    if (tg.id === 'logo') { touchedToy(); tapLetter(tg.i); }
     else if (tg.id === 'bg' && at) {
       if (hiRect && at.x >= hiRect.x && at.x <= hiRect.x + hiRect.w && at.y >= hiRect.y && at.y <= hiRect.y + hiRect.h) return;
       touchedToy();
-      tossFeed(at.x, at.y);
+      var p = Input.pointer(), a = pickDood(at.x, at.y, p && p.kind === 'mouse' ? [0, 3] : [0, 4, 8]);
+      if (a) poke(a);
+      else tossFeed(at.x, at.y);
     }
   }
 
@@ -68030,7 +68106,7 @@ var CoopTitle = (function () {
     bubbles.length = 0; puffs.length = 0; timers.length = 0;
     chirpCooldown = 0;
     visitPokes = 0; denyCool = 0; plate = null;
-    hoverA = null; hoverT = 0; dood.length = 0;
+    hoverA = null; hoverT = 0;
     grains.length = 0; piles.length = 0; feedCool = 0; toss = 0;
     spell = 0; spellT = 0; spelled = false;
     hintT = 0; hints = 0; rings.length = 0; toyTapped = false;
@@ -68256,12 +68332,23 @@ var CoopTitle = (function () {
     for (var i = 0; i < cast.length; i++) drawActor(ctx, cast[i]);
   }
 
-  /* a sulk squashes a doodad down onto its feet, and a shiver rattles it */
   function drawActor(ctx, a) {
-    var sq = a.squashT > 0;
-    var sh = a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0;
-    Doodads.draw(ctx, a.id, a.x, a.y + (sq ? a.r * a.foot * 0.15 : 0), a.r, a.angle + sh, a.flying(),
-                 sq ? { squashX: 1.1, squashY: 0.85 } : null);
+    var p = pose(a);
+    Doodads.draw(ctx, a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts);
+  }
+
+  /* HOW A DOODAD IS DRAWN THIS FRAME - a sulk squashes it down onto its
+     feet, a shiver rattles it, a poke's boing squashes and wobbles it -
+     in one place, because the tap test asks about exactly this picture */
+  function pose(a) {
+    var sx = 1, sy = 1;
+    if (a.squashT > 0) { sx = 1.1; sy = 0.85; }
+    if (a.boing < 0.36) {
+      var k = a.boing / 0.36, b = Math.sin(k * Math.PI * 2.5) * (1 - k) * 0.16;
+      sx *= 1 + b; sy *= 1 - b;
+    }
+    return { y: a.y + a.r * a.foot * (1 - sy), angle: a.angle + (a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0),
+             opts: { squashX: sx, squashY: sy } };
   }
 
   function drawFg(ctx) {
@@ -68469,7 +68556,8 @@ var CoopTitle = (function () {
            drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
            targets: function () { return hot; },
            /* for a headless check: live references, read them only */
-           inspect: function () { return { cast: cast, piles: piles, grains: grains, plate: plate, rings: rings, failed: TOY_FAIL, t: t }; } };
+           inspect: function () { return { cast: cast, piles: piles, grains: grains, plate: plate, rings: rings, failed: TOY_FAIL, t: t }; },
+           pick: function (x, y, finger) { return pickDood(x, y, finger ? [0, 4, 8] : [0, 3]); } };
 })();
 
 /* WHICH TITLE SCREEN. The Coop until ten priced doodads are open, the porch
@@ -68730,7 +68818,6 @@ var PorchScene = (function () {
   var visitPokes = 0, denyCool = 0;
   var plate = null;                /* { a, t }: whose name the sign shows   */
   var hoverA = null, hoverT = 0;   /* the doodad under a still cursor       */
-  var dood = [];                   /* last frame's doodad rects, for hover  */
   var boost = 0, whooshCool = 0;   /* px/s the Land is rushing by on top    */
   var swing = null;                /* { amp, age, last, tocks }: the sign   */
   var stompCool = 0, lastWave = -99;
@@ -68914,7 +69001,7 @@ var PorchScene = (function () {
        sulk's squash, a shiver and a flyer's loop */
     this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
     this.hy = 0; this.hv = 0; this.maxLift = 0;
-    this.squashT = 0; this.shiverT = 0;
+    this.squashT = 0; this.shiverT = 0; this.boing = 9;
     this.loop = null;
   }
 
@@ -69481,19 +69568,39 @@ var PorchScene = (function () {
     }
   }
 
-  function actorByIx(ix) {
-    for (var i = 0; i < stage.length; i++) if (stage[i].ix === ix) return stage[i];
-    return null;
-  }
-
   /* the rectangle a poke has to land in: the sprite's own extent, and
      never smaller than 30 square - a fingertip on a phone */
-  function rectOf(a) {
-    var L = a.left * a.r, R = a.right * a.r, U = a.head * a.r, D = a.down * a.r;
-    var x = a.x - L, y = a.y - U, w = L + R, h = U + D;
-    if (w < 30) { x -= (30 - w) / 2; w = 30; }
-    if (h < 30) { y -= (30 - h) / 2; h = 30; }
-    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  /* WHAT A TAP LANDED ON, tested against the picture rather than a
+     rectangle: a sprite's rectangle carries its transparent corners, so a
+     tap beside a doodad poked it and a tap on one could poke its
+     neighbour. Each doodad is asked, front-most first, whether the point
+     is on one of its own opaque pixels as drawn this frame
+     (Doodads.hitTest, with pose()). Only if nobody is under the finger
+     itself does it look a little way round - 4 and 8 px for a finger, 3
+     for a cursor - so a tap just off a small doodad still finds it. */
+  var RING = [[1, 0], [0.7, -0.7], [0, -1], [-0.7, -0.7], [-1, 0], [-0.7, 0.7], [0, 1], [0.7, 0.7]];
+
+  function hits(a, x, y) {
+    var p = pose(a);
+    return Doodads.hitTest(a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts, x, y);
+  }
+
+  function pickDood(x, y, radii) {
+    var near = [], i, j, k, a;
+    for (i = stage.length - 1; i >= 0; i--) {
+      a = stage[i];
+      var reach = a.r * 2.2 + radii[radii.length - 1];
+      if (Math.abs(x - a.x) <= reach && Math.abs(y - a.y) <= reach) near.push(a);
+    }
+    for (k = 0; k < radii.length; k++) {
+      for (i = 0; i < near.length; i++) {
+        for (j = 0; j < (radii[k] ? RING.length : 1); j++) {
+          var ox = radii[k] ? RING[j][0] * radii[k] : 0, oy = radii[k] ? RING[j][1] * radii[k] : 0;
+          if (hits(near[i], x + ox, y + oy)) return near[i];
+        }
+      }
+    }
+    return null;
   }
 
   function inside(r, x, y) { return r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
@@ -69520,6 +69627,7 @@ var PorchScene = (function () {
     a.pokeT = 2.5;
     visitPokes++;
     a.flap(0);
+    a.boing = 0;
     Audio3.play('bop');
     showPlate(a, 2.2);
     if (a.pokes === 1) { lift(a, 1); say(a, '!'); }
@@ -69711,30 +69819,22 @@ var PorchScene = (function () {
   /* ---- what the toys listen to, and where */
 
   function pushToyTargets() {
-    var i, r, a;
-    /* the porch and the Land behind it, under everything: a tap on the
-       rooms whooshes them, a tap on the boards stamps. The footer strip is
+    /* the porch and the Land behind it, under everything: pickDood says
+       whether a tap on it found a doodad; if not, a tap on the rooms
+       whooshes them and a tap on the boards stamps. The footer strip is
        left out. */
     hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
-    dood.length = 0;
-    for (i = 0; i < stage.length; i++) {
-      a = stage[i];
-      r = rectOf(a);
-      hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
-      dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
-    }
     /* the sign and its chains, on the foreground over anybody near it */
     hot.push({ x: 96, y: 0, w: 288, h: HEADER, id: 'sign' });
   }
 
   /* a cursor resting on a doodad: one flap as it arrives, and after a
-     moment the sign says who it is - against last frame's rectangles, so a
-     doodad that hops out from under a still cursor stops being hovered */
+     moment the sign says who it is - tested against the picture every
+     frame, so a doodad that hops out from under a still cursor stops being
+     hovered; never through the sign or the menu row */
   function hover(dt) {
     var p = Input.pointer(), a = null;
-    if (p && p.kind === 'mouse') {
-      for (var i = dood.length - 1; i >= 0; i--) if (inside(dood[i], p.x, p.y)) { a = dood[i].a; break; }
-    }
+    if (p && p.kind === 'mouse' && p.y < MENU_Y && !(p.y < HEADER && p.x >= 96 && p.x <= 384)) a = pickDood(p.x, p.y, [0, 2]);
     if (a !== hoverA) { hoverA = a; hoverT = 0; if (a) a.flap(0); }
     else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2); }
   }
@@ -69769,6 +69869,7 @@ var PorchScene = (function () {
       if (a.voiceCool > 0) a.voiceCool -= dt;
       if (a.squashT > 0) a.squashT -= dt;
       if (a.shiverT > 0) a.shiverT -= dt;
+      if (a.boing < 1) a.boing += dt;
     }
     for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
     hover(dt);
@@ -69787,10 +69888,11 @@ var PorchScene = (function () {
     if (Input.hit('down')) whoosh();
     if (!tg) return;
     var at = Input.tapPos();
-    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i)); }
-    else if (tg.id === 'sign') { touchedToy(); swingSign(5, true); }
+    if (tg.id === 'sign') { touchedToy(); swingSign(5, true); }
     else if (tg.id === 'bg' && at && !inside(hiRect, at.x, at.y)) {
-      if (at.y < PORCH) { touchedToy(); whoosh(); }
+      var p = Input.pointer(), a = pickDood(at.x, at.y, p && p.kind === 'mouse' ? [0, 3] : [0, 4, 8]);
+      if (a) { touchedToy(); poke(a); }
+      else if (at.y < PORCH) { touchedToy(); whoosh(); }
       else if (at.y < MENU_Y) { touchedToy(); stomp(at.x); }
     }
   }
@@ -69839,7 +69941,7 @@ var PorchScene = (function () {
     bubbles.length = 0; puffs.length = 0; timers.length = 0;
     chirpCooldown = 0;
     visitPokes = 0; denyCool = 0; plate = null;
-    hoverA = null; hoverT = 0; dood.length = 0;
+    hoverA = null; hoverT = 0;
     boost = 0; whooshCool = 0; swing = null; stompCool = 0; lastWave = -99;
     hintT = 0; hints = 0; rings.length = 0; toyTapped = false;
     directorTimer = 4;
@@ -70032,12 +70134,23 @@ var PorchScene = (function () {
     for (var i = 0; i < stage.length; i++) drawActor(ctx, stage[i]);
   }
 
-  /* a sulk squashes a doodad down onto its feet, and a shiver rattles it */
   function drawActor(ctx, a) {
-    var sq = a.squashT > 0;
-    var sh = a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0;
-    Doodads.draw(ctx, a.id, a.x, a.y + (sq ? a.r * a.foot * 0.15 : 0), a.r, a.angle + sh, a.flying(),
-                 sq ? { squashX: 1.1, squashY: 0.85 } : null);
+    var p = pose(a);
+    Doodads.draw(ctx, a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts);
+  }
+
+  /* HOW A DOODAD IS DRAWN THIS FRAME - a sulk squashes it down onto its
+     feet, a shiver rattles it, a poke's boing squashes and wobbles it -
+     in one place, because the tap test asks about exactly this picture */
+  function pose(a) {
+    var sx = 1, sy = 1;
+    if (a.squashT > 0) { sx = 1.1; sy = 0.85; }
+    if (a.boing < 0.36) {
+      var k = a.boing / 0.36, b = Math.sin(k * Math.PI * 2.5) * (1 - k) * 0.16;
+      sx *= 1 + b; sy *= 1 - b;
+    }
+    return { y: a.y + a.r * a.foot * (1 - sy), angle: a.angle + (a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0),
+             opts: { squashX: sx, squashY: sy } };
   }
 
   function drawFg(ctx) {
@@ -70215,7 +70328,8 @@ var PorchScene = (function () {
            drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
            targets: function () { return hot; },
            /* for a headless check: live references, read them only */
-           inspect: function () { return { stage: stage, plate: plate, boost: boost, swing: swing, rings: rings, failed: TOY_FAIL, t: t }; } };
+           inspect: function () { return { stage: stage, plate: plate, boost: boost, swing: swing, rings: rings, failed: TOY_FAIL, t: t }; },
+           pick: function (x, y, finger) { return pickDood(x, y, finger ? [0, 4, 8] : [0, 3]); } };
 })();
 </script>
 <script>
@@ -70335,10 +70449,11 @@ var StandsScene = (function () {
   /* THE TOYS' STATE - pokes, the beach ball, the hype and its show, the
      shooting stars, the moon - reset on every enter(). See "the toys". */
   var visitPokes = 0, pokedIds = {}, denyCool = 0, lastPoked = null;
-  var plate = null;                /* { a, t }: the doodad cam            */
+  var plate = null;                /* { a, t, hover }: the doodad cam      */
   var camFlash = 0;                /* the bulbs going gold as the cam cuts */
+  var camKey = '', camCut = 1;     /* what the board shows, and since when */
+  var sbJolt = 0;                  /* the scoreboard knocked by a tap      */
   var hoverA = null, hoverT = 0;
-  var dood = [];                   /* last frame's doodad rects, for hover */
   var ball = null, rally = 0, rallyT = 0;
   var hype = 0, hypeIdle = 0, hypeDrip = 0, refractory = 0, lastShow = -99, showT = 0;
   var pyro = [], rockets = [], stars = [], starCool = 0, moonCool = 0;
@@ -71120,7 +71235,7 @@ var StandsScene = (function () {
     /* the one line of the ticker that says the stands can be played with,
        and what it says once they have been played with rather a lot */
     if (tickerPlea) parts.push('PLEASE STOP POKING THE DOODADS');
-    else parts.push(UI.touch() ? 'POKE SOMEBODY' : 'POKE SOMEBODY · ▲ FOR THE WAVE · ▼ FOR THE BALL');
+    else parts.push('POKE SOMEBODY · LIGHT UP THE BOARD FOR A SHOW' + (UI.touch() ? '' : ' · ▲ FOR THE WAVE · ▼ FOR THE BALL'));
     if (names.length) parts.push('TONIGHT: ' + names.join(' · '));
     parts.push('PLEASE DO NOT CLIMB ON THE FURNITURE');
     var str = parts.join('   ★   ') + '   ★   ';
@@ -71947,6 +72062,7 @@ var StandsScene = (function () {
     this.ix = Doodads.indexOf(d.id);
     this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
     this.loop = null; this.ballCool = 0;
+    this.boing = 9;                  /* seconds since a poke squashed it */
   }
 
   Actor.prototype.flap = function () { this.flapTimer = 0.28; };
@@ -72597,19 +72713,20 @@ var StandsScene = (function () {
        - the scoreboard drops a BEACH BALL into the crowd, which bounces off
          heads (they bop it back up) until it rolls out on the lawn - tap
          it to keep it up, or press ▼;
-       - everything the crowd enjoys fills the HYPE meter, and a full meter
-         is THE SHOW: the wave, the bulbs racing, the crowd roaring and
-         fireworks over the trees in the last-poked doodad's colours;
+       - everything the crowd enjoys lights another of the scoreboard's
+         bulbs - the frame is the HYPE meter - and a full frame is THE
+         SHOW: the wave, the bulbs racing, the crowd roaring, rockets off
+         the lawn in the last-poked doodad's colours and confetti;
        - tap the sky for a shooting star, the moon for a power cut, ▲ for
          the wave.
 
-     None of it can reach the menu. Every rectangle here is pushed BEFORE
-     the boards (Input tests last-pushed-first, so the boards stay on top),
-     none of them carries an action, and while the floodlights are dark
-     there are no toy rectangles at all. Every toy runs through toy(), which
-     puts it away for the visit the first time it throws, the way liveCall
-     turns a station into a bench. Copied from the coop title rather than
-     shared, like logoLine. */
+     None of it can reach the menu. The toys listen through ONE rectangle,
+     pushed BEFORE the boards (Input tests last-pushed-first, so the boards
+     stay on top) and carrying no action, and pick() works out what in it
+     was touched; while the floodlights are dark it is not there at all.
+     Every toy runs through toy(), which puts it away for the visit the
+     first time it throws, the way liveCall turns a station into a bench.
+     Copied from the coop title rather than shared, like logoLine. */
 
   var HYPE_FULL = 20;
   var BALL_R = 5, LAWN = 213;
@@ -72626,33 +72743,121 @@ var StandsScene = (function () {
 
   function dark() { return banks[0] + banks[1] + banks[2] > 0; }
 
-  function actorByIx(ix) {
-    for (var i = 0; i < stage.length; i++) if (stage[i].ix === ix) return stage[i];
+  function inside(r, x, y) { return r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
+
+  /* ---- WHAT A TAP LANDED ON, TESTED AGAINST THE PICTURE.
+
+     The stands are a class photo: four tiers 36 rows apart, every doodad
+     overlapping the row behind, and every sprite's rectangle carrying its
+     transparent corners - so rectangles had the doodad in front answering
+     taps on the belly of the one behind, and the furniture answering taps
+     on the empty air over its seat. So nothing here is a rectangle. A tap
+     is tested front to back, the order the screen is painted in reverse:
+     the ball and the scoreboard (foreground), then every doodad against
+     its own opaque pixels as drawn this frame (Doodads.hitTest, with
+     pose()), then every piece of furniture against its own painted pixels,
+     baked and live, rendered for the purpose into a small window round the
+     finger. Only if nothing is under the finger itself does it look a
+     little way round it - 4 and 8 px for a finger, 3 for a cursor - for
+     the nearest thing, doodads before furniture, so a tap just off a small
+     doodad still finds it but never steals a tap from what was hit. */
+  var PICK_R = 8, PICK = null;
+  var RING = [[1, 0], [0.7, -0.7], [0, -1], [-0.7, -0.7], [-1, 0], [-0.7, 0.7], [0, 1], [0.7, 0.7]];
+
+  function hits(a, x, y) {
+    var p = pose(a);
+    return Doodads.hitTest(a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts, x, y);
+  }
+
+  /* the doodads whose reach comes within `pad` of the point, front-most
+     first: anybody in the air, then the stage from the front row back */
+  function doodsNear(x, y, pad) {
+    var out = [], i, a, pass;
+    for (pass = 0; pass < 2; pass++) {
+      for (i = stage.length - 1; i >= 0; i--) {
+        a = stage[i];
+        if (!!(a.flight || a.loop) !== (pass === 0)) continue;
+        var reach = Math.max(a.L, a.R, a.up, a.foot) * 1.25 + pad;
+        if (Math.abs(x - a.x) <= reach && Math.abs(y - a.y) <= reach) out.push(a);
+      }
+    }
+    return out;
+  }
+
+  /* the furniture within PICK_R of the point, front tier first, each with
+     the alpha of its own picture - tile and live layer - in the window */
+  function stationsNear(x, y) {
+    var out = [], i, j, n = 2 * PICK_R + 1;
+    if (!PICK) PICK = makeCanvas(n, n);
+    var c = PICK.ctx, rx = Math.round(x), ry = Math.round(y);
+    for (i = 0; i < tiers.length; i++) {
+      for (j = 0; j < tiers[i].stations.length; j++) {
+        var st = tiers[i].stations[j];
+        if (rx < st.x - PICK_R || rx > st.x + st.w + PICK_R ||
+            ry < st.tread - PROP_UP - PICK_R || ry > st.tread + st.h + PICK_R) continue;
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.clearRect(0, 0, n, n);
+        c.save();
+        c.translate(PICK_R - rx, PICK_R - ry);
+        c.drawImage(st.tile.canvas, st.x, st.tread - PROP_UP);
+        liveCall(st, 'draw', c, st.x, st.tread);
+        c.restore();
+        out.push({ st: st, alpha: c.getImageData(0, 0, n, n).data });
+      }
+    }
+    return out;
+  }
+
+  function painted(w, dx, dy) {
+    dx = Math.round(dx); dy = Math.round(dy);
+    if (dx < -PICK_R || dx > PICK_R || dy < -PICK_R || dy > PICK_R) return false;
+    return w.alpha[((dy + PICK_R) * (2 * PICK_R + 1) + dx + PICK_R) * 4 + 3] > 40;
+  }
+
+  function pick(x, y, finger) {
+    if (inside(hiRect, x, y)) return null;
+    var tb = BALL_R + (finger ? 9 : 4);
+    if (ball && !ball.fade && (x - ball.x) * (x - ball.x) + (y - ball.y) * (y - ball.y) <= tb * tb) return { kind: 'ball' };
+    if (x >= SB_X && x <= SB_X + SB_W && y >= SB_Y && y <= SB_Y + SB_H + 3) return { kind: 'sb' };
+    var radii = finger ? [0, 4, 8] : [0, 3];
+    var ds = doodsNear(x, y, radii[radii.length - 1]), ws = stationsNear(x, y), k, i, j, rad, ox, oy;
+    for (k = 0; k < radii.length; k++) {
+      rad = radii[k];
+      for (i = 0; i < ds.length; i++) {
+        for (j = 0; j < (rad ? RING.length : 1); j++) {
+          ox = rad ? RING[j][0] * rad : 0; oy = rad ? RING[j][1] * rad : 0;
+          if (hits(ds[i], x + ox, y + oy)) return { kind: 'dood', a: ds[i] };
+        }
+      }
+      for (i = 0; i < ws.length; i++) {
+        for (j = 0; j < (rad ? RING.length : 1); j++) {
+          ox = rad ? RING[j][0] * rad : 0; oy = rad ? RING[j][1] * rad : 0;
+          if (painted(ws[i], ox, oy)) return { kind: 'station', st: ws[i].st };
+        }
+      }
+      if ((x - 446) * (x - 446) + (y - 32) * (y - 32) <= (6 + rad) * (6 + rad)) return { kind: 'moon' };
+    }
+    if (y < 56) return { kind: 'sky' };
     return null;
   }
 
-  function stationByI(i) {
-    var tr = tiers[(i / 8) | 0];
-    return tr ? tr.stations[i % 8] || null : null;
+  /* the doodad under a cursor, by the same rule, doodads only */
+  function doodUnder(x, y) {
+    var ds = doodsNear(x, y, 2), i, j;
+    for (i = 0; i < ds.length; i++) if (hits(ds[i], x, y)) return ds[i];
+    for (i = 0; i < ds.length; i++) {
+      for (j = 0; j < RING.length; j++) if (hits(ds[i], x + RING[j][0] * 2, y + RING[j][1] * 2)) return ds[i];
+    }
+    return null;
   }
-
-  /* the rectangle a poke has to land in: the sprite's own reaches, which
-     swap when it faces the other way, never smaller than 30 square */
-  function rectOf(a) {
-    var L = a.flip ? a.R : a.L, R = a.flip ? a.L : a.R;
-    var x = a.x - L, y = a.y - a.up, w = L + R, h = a.up + a.foot;
-    if (w < 30) { x -= (30 - w) / 2; w = 30; }
-    if (h < 30) { y -= (30 - h) / 2; h = 30; }
-    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
-  }
-
-  function inside(r, x, y) { return r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
   /* THE DOODAD CAM cuts to somebody: the bulbs blink gold and, when a
-     poke rather than a passing cursor did it, the board ticks */
-  function showPlate(a, secs, quiet) {
-    if (!plate || plate.a !== a) { camFlash = 0.1; if (!quiet) Audio3.play('tick'); }
-    if (!plate || plate.a !== a || plate.t < secs) plate = { a: a, t: secs };
+     poke rather than a passing cursor did it, the board ticks. A cursor
+     never takes the board from somebody who was poked. */
+  function showPlate(a, secs, hovered) {
+    if (hovered && plate && !plate.hover && plate.a !== a) return;
+    if (!plate || plate.a !== a) { camFlash = 0.1; if (!hovered) Audio3.play('tick'); }
+    if (!plate || plate.a !== a || plate.t < secs || (plate.hover && !hovered)) plate = { a: a, t: secs, hover: !!hovered };
   }
 
   function touchedToy() {
@@ -72685,13 +72890,17 @@ var StandsScene = (function () {
     pokedIds[a.id] = true;
     lastPoked = d;
     a.flap();
+    a.boing = 0;
     Audio3.play('bop');
     showPlate(a, 2.2);
     hypeUp(first ? 2 : 1);
-    if (a.pokes === 1) { hop(a, a.mode === 'hover' ? 7 : 9); say(a, '!'); }
+    /* already in the air from the last poke: a poke still lifts it */
+    var aloft = a.hy < 0 && !a.flight && !a.loop;
+    if (aloft && a.pokes < 4) a.hv = Math.min(a.hv, -130);
+    if (a.pokes === 1) { if (!aloft) hop(a, a.mode === 'hover' ? 7 : 9); say(a, '!'); }
     else if (a.pokes === 2) {
-      if (a.mode === 'hover') startLoop(a);
-      else { turnToward(a, tx, 1.5); hop(a, 14); }
+      if (a.mode === 'hover' && !aloft && !a.loop) startLoop(a);
+      else if (!aloft) { turnToward(a, tx, 1.5); hop(a, 14); }
       say(a, '?');
     } else if (a.pokes === 3) {
       if (d.voice && a.voiceCool <= 0) {
@@ -72752,6 +72961,7 @@ var StandsScene = (function () {
      running ticks and its sitters look at the finger; a bench or a dust
      sheet has no trick, so whoever is sitting on it jumps instead. */
   function tapStation(st, at) {
+    st.jolt = 0.14;
     if ((stationCool[st.id] || 0) > 0) return;
     stationCool[st.id] = 0.25;
     var i, L = LIVE[st.paint];
@@ -73052,50 +73262,28 @@ var StandsScene = (function () {
 
   /* ---- what the toys listen to, and where. Nothing at all while the
      floodlights are dark - the opening, or the moon's power cut. */
+  /* ---- what the toys listen to: ONE rectangle, the whole stands under
+     the boards and the toggle, and pick() says what in it was touched.
+     Nothing at all while the floodlights are dark - the opening, or the
+     moon's power cut. */
   function pushToyTargets() {
-    var i, j, r, a;
-    dood.length = 0;
     if (dark()) return;
-    /* the sky and the lawn, under everything; the footer strip left out */
-    hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
-    /* the furniture, back tier first, so the tier in front wins where a
-       lawn-standing piece runs down behind it */
-    for (i = tiers.length - 1; i >= 0; i--) {
-      for (j = 0; j < tiers[i].stations.length; j++) {
-        var st = tiers[i].stations[j];
-        hot.push({ x: st.x, y: st.tread - PROP_UP, w: st.w, h: PROP_UP + st.h, id: 'station', i: i * 8 + j });
-      }
-    }
-    /* the crowd in draw order, so the row in front wins in the class photo,
-       and anybody in the air over everybody */
-    for (var pass = 0; pass < 2; pass++) {
-      for (i = 0; i < stage.length; i++) {
-        a = stage[i];
-        if (!!(a.flight || a.loop) !== (pass === 1)) continue;
-        r = rectOf(a);
-        hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
-        dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
-      }
-    }
-    hot.push({ x: SB_X, y: SB_Y, w: SB_W, h: SB_H + 3, id: 'sb' });
-    hot.push({ x: 432, y: 20, w: 28, h: 26, id: 'moon' });
-    /* the ball flies in front of the scoreboard, so it is tested first */
-    if (ball && !ball.fade) hot.push({ x: Math.round(ball.x) - 13, y: Math.round(ball.y) - 13, w: 26, h: 26, id: 'ball' });
+    hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'toys' });
   }
 
-  /* a cursor along a row: each doodad flaps and turns to it as it
-     arrives, and after a moment the doodad cam cuts to it, without the
-     tick - against last frame's rectangles, so a doodad that hops out from
-     under a still cursor stops being hovered */
+  /* A CURSOR RESTING ON A DOODAD: one flap as it arrives - no sound, no
+     turn, so sweeping a cursor along a crowded row ripples rather than
+     churns - and after half a second the doodad cam cuts to it, unless
+     somebody poked is on the board. Tested against the picture every
+     frame, so a doodad that hops out from under a still cursor stops
+     being hovered. */
   function hover(dt) {
     var p = Input.pointer(), a = null;
-    if (p && p.kind === 'mouse' && !dark()) {
-      for (var i = dood.length - 1; i >= 0; i--) if (inside(dood[i], p.x, p.y)) { a = dood[i].a; break; }
-    }
+    if (p && p.kind === 'mouse' && !dark() && p.y < VH - 18 && !(p.y >= MENU_Y && p.y <= MENU_Y + MENU_BH)) a = doodUnder(p.x, p.y);
     if (a !== hoverA) {
       hoverA = a; hoverT = 0;
-      if (a) { a.flap(); turnToward(a, p.x, 1.2); }
-    } else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2, true); }
+      if (a) a.flap();
+    } else if (a) { hoverT += dt; if (hoverT >= 0.5) showPlate(a, 1.5, true); }
   }
 
   /* THE TOUCH HINT, the coop's: until somebody on this device has touched
@@ -73127,11 +73315,17 @@ var StandsScene = (function () {
     if (rallyT > 0) rallyT -= dt;
     if (plate && (plate.t -= dt) <= 0) plate = null;
     for (k in stationCool) if (stationCool[k] > 0) stationCool[k] -= dt;
+    if (sbJolt > 0) sbJolt -= dt;
+    if (camCut < 1) camCut += dt;
+    for (i = 0; i < tiers.length; i++) {
+      for (k = 0; k < tiers[i].stations.length; k++) if (tiers[i].stations[k].jolt > 0) tiers[i].stations[k].jolt -= dt;
+    }
     for (i = 0; i < stage.length; i++) {
       var a = stage[i];
       if (a.pokeT > 0 && (a.pokeT -= dt) <= 0) a.pokes = 0;
       if (a.voiceCool > 0) a.voiceCool -= dt;
       if (a.ballCool > 0) a.ballCool -= dt;
+      if (a.boing < 1) a.boing += dt;
     }
     for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
     if (refractory > 0) refractory -= dt;
@@ -73164,17 +73358,20 @@ var StandsScene = (function () {
         else batBall(ball.vx + rand(-40, 40), -200);
       }
     }
-    if (!tg) return;
     var at = Input.tapPos();
-    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i), at); }
-    else if (tg.id === 'station') { var st = stationByI(tg.i); if (st) { touchedToy(); tapStation(st, at); } }
-    else if (tg.id === 'ball' && ball && at) { touchedToy(); batBall(clamp((ball.x - at.x) * 8, -140, 140), -210); }
-    else if (tg.id === 'sb' && at) {
-      touchedToy();
+    if (!tg || tg.id !== 'toys' || !at) return;
+    var p = Input.pointer(), hit = pick(at.x, at.y, !p || p.kind !== 'mouse');
+    if (!hit) return;
+    touchedToy();
+    if (hit.kind === 'dood') poke(hit.a, at);
+    else if (hit.kind === 'station') tapStation(hit.st, at);
+    else if (hit.kind === 'ball') batBall(clamp((ball.x - at.x) * 8, -140, 140), -210);
+    else if (hit.kind === 'sb') {
+      sbJolt = 0.14;
       if (!inPlay()) launchBall(at.x);
       else { chaseFast = Math.max(chaseFast, 1); Audio3.play('ding'); }
-    } else if (tg.id === 'moon') { touchedToy(); moonOut(); }
-    else if (tg.id === 'bg' && at && at.y < 56 && !inside(hiRect, at.x, at.y)) { touchedToy(); shootStar(at.x, at.y); }
+    } else if (hit.kind === 'moon') moonOut();
+    else if (hit.kind === 'sky') shootStar(at.x, at.y);
   }
 
   function drawRings(ctx) {
@@ -73213,7 +73410,7 @@ var StandsScene = (function () {
     directorTimer = 4;
     menuIndex = (params && params.menu) || 0;
     visitPokes = 0; pokedIds = {}; denyCool = 0; lastPoked = null;
-    plate = null; camFlash = 0; hoverA = null; hoverT = 0; dood.length = 0;
+    plate = null; camFlash = 0; camKey = 'logo'; camCut = 1; sbJolt = 0; hoverA = null; hoverT = 0;
     ball = null; rally = 0; rallyT = 0;
     hype = 0; hypeIdle = 0; hypeDrip = 0; refractory = 0; lastShow = -99; showT = 0;
     pyro.length = 0; rockets.length = 0; stars.length = 0; starCool = 0; moonCool = 0;
@@ -73335,8 +73532,10 @@ var StandsScene = (function () {
       var tr = tiers[i];
       for (j = 0; j < tr.stations.length; j++) {
         var st = tr.stations[j];
-        ctx.drawImage(st.tile.canvas, st.x, st.tread - PROP_UP);
-        liveCall(st, 'draw', ctx, st.x, st.tread);
+        /* a tapped piece of furniture is knocked a pixel each way */
+        var jx = st.jolt > 0 ? (Math.floor(st.jolt * 50) % 2 ? 1 : -1) : 0;
+        ctx.drawImage(st.tile.canvas, st.x + jx, st.tread - PROP_UP);
+        liveCall(st, 'draw', ctx, st.x + jx, st.tread);
       }
       for (k = 0; k < stage.length; k++) {
         var a = stage[k];
@@ -73366,10 +73565,22 @@ var StandsScene = (function () {
   }
 
   function drawActor(ctx, a) {
-    var sy = a.duckT > 0 ? 0.8 : 1;
-    var shake = a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0;
-    Doodads.draw(ctx, a.id, a.x, a.y + a.foot * (1 - sy), a.r, a.angle + shake, a.flying(),
-                 { flip: a.flip, squashX: a.sqx, squashY: sy });
+    var p = pose(a);
+    Doodads.draw(ctx, a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts);
+  }
+
+  /* HOW A DOODAD IS DRAWN THIS FRAME - a duck, a shiver, a turn's squeeze
+     and a poke's boing on top of where it is - worked out in one place,
+     because the tap test has to ask about exactly the picture on screen.
+     The boing is a squash and two wobbles in 0.36s, feet kept planted. */
+  function pose(a) {
+    var sx = a.sqx, sy = a.duckT > 0 ? 0.8 : 1;
+    if (a.boing < 0.36) {
+      var k = a.boing / 0.36, b = Math.sin(k * Math.PI * 2.5) * (1 - k) * 0.16;
+      sx *= 1 + b; sy *= 1 - b;
+    }
+    return { y: a.y + a.foot * (1 - sy), angle: a.angle + (a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0),
+             opts: { flip: a.flip, squashX: sx, squashY: sy } };
   }
 
   function drawFg(ctx) {
@@ -73458,83 +73669,99 @@ var StandsScene = (function () {
      the ticker running along the foot. The bulbs race while the crowd is
      doing the wave. */
   function drawScoreboard(ctx) {
-    var x = SB_X, y = SB_Y, w = SB_W, h = SB_H, i, n = 0;
+    var jx = sbJolt > 0 ? (Math.floor(sbJolt * 50) % 2 ? 1 : -1) : 0;
+    var x = SB_X + jx, y = SB_Y, w = SB_W, h = SB_H, i;
     ctx.fillStyle = UI.C.shadow; ctx.fillRect(x + 2, y + 3, w, h);
     ctx.fillStyle = '#2a2622'; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = '#3d3832'; ctx.fillRect(x, y, w, 1);
     ctx.fillStyle = '#1a1714'; ctx.fillRect(x, y + h - 1, w, 1);
     ctx.fillStyle = UI.C.darker; ctx.fillRect(x + 4, y + 4, w - 8, h - 7);
 
-    /* the hotter the crowd, the more of the frame is lit: one bulb in
-       three, then one in two, then all of them; and all of them, for a
-       blink, whenever the doodad cam cuts */
-    var step = Math.floor(t / (chaseFast > 0 ? 0.08 : 0.25));
-    var every = camFlash > 0 ? 1 : 3 - Math.floor(hype / 10);
-    for (i = 0; x + 6 + i * 8 < x + w - 4; i++, n++) bulb(ctx, x + 6 + i * 8, y + 1, n, step, every);
-    for (i = 0; y + 9 + i * 8 < y + h - 4; i++, n++) {
-      bulb(ctx, x + 1, y + 9 + i * 8, n, step, every);
-      bulb(ctx, x + w - 3, y + 9 + i * 8, n + 1, step, every);
+    /* THE BULBS ARE THE HYPE METER. Left alone they chase round the frame
+       as they always have. While the crowd is warming up they stop
+       chasing and fill instead - up the left side, along the top, down
+       the right - one bulb per bit of hype, the newest twinkling, the rest
+       dark; a full frame is THE SHOW, through which they race. All of
+       them blink gold whenever the doodad cam cuts. */
+    var B = bulbs(), step = Math.floor(t / (chaseFast > 0 ? 0.08 : 0.25));
+    var filling = hype > 0 && showT <= 0 && refractory <= 0 && camFlash <= 0 && !TOY_FAIL.toys;
+    var lit = Math.round(hype / HYPE_FULL * B.length);
+    for (i = 0; i < B.length; i++) {
+      var bb = B[i], col;
+      if (camFlash > 0) col = UI.C.gold;
+      else if (filling) col = bb.f < lit ? (bb.f === lit - 1 && Math.floor(t * 6) % 2 ? UI.C.ink : UI.C.gold) : '#4a3a22';
+      else col = (bb.n + step) % 3 === 0 ? UI.C.gold : UI.C.goldDark;
+      px(ctx, col, x + bb.x, y + bb.y, 2, 2);
     }
 
-    if (!TOY_FAIL.cam && drawCam(ctx, x, y)) { /* the cam has the board */ }
-    else logoLine(ctx, 'LAND OF DOODADS', VW / 2, y + 7, 3, t * 1.6);
+    /* the face: the doodad cam, or the name. A change rolls in from the
+       top behind a gold scan line, a tenth of a second, so the board cuts
+       rather than flickers. */
+    var cam = camState(), key = cam ? cam.key : 'logo';
+    if (key !== camKey) { camKey = key; camCut = 0; }
+    var roll = camCut < 0.12 ? Math.max(1, Math.round(27 * camCut / 0.12)) : 0;
+    if (roll) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, y + 4, w - 8, roll); ctx.clip(); }
+    if (cam) toy('cam', function () { drawCam(ctx, x, y, cam); });
+    else logoLine(ctx, 'LAND OF DOODADS', VW / 2 + jx, y + 7, 3, t * 1.6);
+    if (roll) { ctx.restore(); px(ctx, UI.C.gold, x + 6, y + 4 + roll, w - 12, 1); }
 
     ctx.fillStyle = UI.C.inkFaint; ctx.fillRect(x + 6, y + 31, w - 12, 1);
-
-    /* THE HYPE METER, at the ticker's left end while there is any hype to
-       show: ten cells, one per two points, dim through the quiet after a
-       show. The ticker gives up its first 66 px to it and scrolls on
-       behind as if nothing had happened. */
-    var meter = !TOY_FAIL.toys && (hype > 0 || refractory > 0), x0 = meter ? x + 71 : x + 5;
-    if (meter) {
-      UI.text(ctx, 'HYPE', x + 5, y + 33, { colour: UI.C.inkDim, shadow: null });
-      var lit = refractory > 0 ? 0 : Math.ceil(hype / 2);
-      for (i = 0; i < 10; i++) px(ctx, i < lit ? UI.C.gold : UI.C.inkFaint, x + 30 + i * 4, y + 34, 3, 5);
-    }
     if (T.ticker) {
       var tk = T.ticker.canvas, tw = tk.width;
       var off = Math.floor((t * 24) % tw);
       ctx.save();
-      ctx.beginPath(); ctx.rect(x0, y + 33, x + w - 5 - x0, 7); ctx.clip();
+      ctx.beginPath(); ctx.rect(x + 5, y + 33, w - 10, 7); ctx.clip();
       for (var tx = x + 5 - off; tx < x + w - 5; tx += tw) ctx.drawImage(tk, tx, y + 33);
       ctx.restore();
     }
   }
 
-  function bulb(ctx, x, y, i, step, every) {
-    ctx.fillStyle = (i + step) % (every || 3) === 0 ? UI.C.gold : UI.C.goldDark;
-    ctx.fillRect(x, y, 2, 2);
+  /* the frame's bulbs, once: where each sits on the board, its place in
+     the old chase (n) and its place in the fill (f) - up the left side
+     from the bottom, along the top, down the right side */
+  var BULBS = null;
+  function bulbs() {
+    if (BULBS) return BULBS;
+    var out = [], w = SB_W, h = SB_H, i, n = 0, top = [], left = [], right = [];
+    for (i = 0; 6 + i * 8 < w - 4; i++, n++) top.push({ x: 6 + i * 8, y: 1, n: n });
+    for (i = 0; 9 + i * 8 < h - 4; i++, n++) {
+      left.push({ x: 1, y: 9 + i * 8, n: n });
+      right.push({ x: w - 3, y: 9 + i * 8, n: n + 1 });
+    }
+    var f = 0;
+    for (i = left.length - 1; i >= 0; i--) { left[i].f = f++; out.push(left[i]); }
+    for (i = 0; i < top.length; i++) { top[i].f = f++; out.push(top[i]); }
+    for (i = 0; i < right.length; i++) { right[i].f = f++; out.push(right[i]); }
+    BULBS = out;
+    return out;
   }
 
-  /* THE DOODAD CAM, in the logo's place on the scoreboard: THE CROWD GOES
-     WILD through the show; otherwise whoever was just poked or is under
-     the cursor - their name in their own light colour, the colour the
-     select screen prints it in, the tagline under it and the camera's red
-     light in the corner; otherwise the count of a rally of three or more.
-     Returns false when the logo should have the board. */
-  function drawCam(ctx, x, y) {
-    var ok = false;
-    toy('cam', function () {
-      if (showT > 0.3) {
-        UI.text(ctx, 'THE CROWD GOES WILD', VW / 2, y + 12,
-                { align: 'center', scale: 2, colour: Math.floor(t * 8) % 2 ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow });
-        ok = true;
-        return;
-      }
-      var d = plate ? Doodads.list[plate.a.ix] : null;
-      if (d) {
-        UI.text(ctx, d.name, VW / 2, y + 8, { align: 'center', scale: 2, colour: d.accentLight || UI.C.gold, shadow: UI.C.shadow });
-        UI.text(ctx, d.tagline, VW / 2, y + 23, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
-        if (Math.floor(t * 4) % 2) px(ctx, UI.C.red, x + 8, y + 10, 2, 2);
-        ok = true;
-        return;
-      }
-      if (ball && rally >= 3 && rallyT > 0) {
-        UI.text(ctx, 'RALLY ' + rally, VW / 2, y + 12, { align: 'center', scale: 2, colour: UI.C.gold, shadow: UI.C.shadow });
-        ok = true;
-      }
-    });
-    return ok;
+  /* WHAT THE FACE SHOWS: THE CROWD GOES WILD through the show; otherwise
+     whoever was just poked or is under the cursor; otherwise the count of
+     a rally of three or more; otherwise (null) the name */
+  function camState() {
+    if (TOY_FAIL.cam) return null;
+    if (showT > 0.3) return { key: 'show' };
+    if (plate) return { key: 'p' + plate.a.ix, d: Doodads.list[plate.a.ix] };
+    if (ball && rally >= 3 && rallyT > 0) return { key: 'rally' };
+    return null;
+  }
+
+  /* THE DOODAD CAM, in the name's place: the doodad's name in its own
+     light colour, the colour the select screen prints it in, the tagline
+     under it and the camera's red light in the corner */
+  function drawCam(ctx, x, y, cam) {
+    var cx = x + SB_W / 2;
+    if (cam.key === 'show') {
+      UI.text(ctx, 'THE CROWD GOES WILD', cx, y + 12,
+              { align: 'center', scale: 2, colour: Math.floor(t * 8) % 2 ? UI.C.gold : UI.C.ink, shadow: UI.C.shadow });
+    } else if (cam.d) {
+      UI.text(ctx, cam.d.name, cx, y + 8, { align: 'center', scale: 2, colour: cam.d.accentLight || UI.C.gold, shadow: UI.C.shadow });
+      UI.text(ctx, cam.d.tagline, cx, y + 23, { align: 'center', colour: UI.C.ink, shadow: UI.C.shadow });
+      if (Math.floor(t * 4) % 2) px(ctx, UI.C.red, x + 8, y + 10, 2, 2);
+    } else {
+      UI.text(ctx, 'RALLY ' + rally, cx, y + 12, { align: 'center', scale: 2, colour: UI.C.gold, shadow: UI.C.shadow });
+    }
   }
 
   /* The coop title's three-pass logo, copied as the porch copied it.
@@ -73571,7 +73798,8 @@ var StandsScene = (function () {
              return null;
            },
            wave: wave,
-           show: function () { theShow(); } };
+           show: function () { theShow(); },
+           pick: function (x, y, finger) { return pick(x, y, finger); } };
 })();
 </script>
 <script>

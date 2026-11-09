@@ -88,7 +88,6 @@ var CoopTitle = (function () {
   var visitPokes = 0, denyCool = 0;
   var plate = null;                /* { a, t }: whose name the subtitle shows */
   var hoverA = null, hoverT = 0;   /* the doodad under a still cursor        */
-  var dood = [];                   /* last frame's doodad rects, for hover   */
   var grains = [], piles = [], feedCool = 0, tossN = 0, toss = 0;
   var hiRect = null;               /* the HI panel, which feed must not fall from */
   var LOGO = ['LAND OF', 'DOODADS'];
@@ -255,7 +254,7 @@ var CoopTitle = (function () {
        sulk's squash, a shiver, a flyer's loop and a walker's meal */
     this.pokes = 0; this.pokeT = 0; this.voiceCool = 0;
     this.hy = 0; this.hv = 0;
-    this.squashT = 0; this.shiverT = 0;
+    this.squashT = 0; this.shiverT = 0; this.boing = 9;
     this.loop = null;
     this.goal = null; this.homing = false; this.peckT = 0; this.peckN = 0;
   }
@@ -580,20 +579,40 @@ var CoopTitle = (function () {
      lands there is out of sight, and nobody is sent behind a board to eat */
   function inMenu(x) { return x > 150 && x < 330; }
 
-  function actorByIx(ix) {
-    for (var i = 0; i < cast.length; i++) if (cast[i].ix === ix) return cast[i];
-    return null;
-  }
-
   /* THE RECTANGLE A POKE HAS TO LAND IN: the sprite's own extent at its
      size right now, and never smaller than 30 square, because a fingertip
      is about 32 virtual pixels on a phone in landscape */
-  function rectOf(a) {
-    var L = a.left * a.r, R = a.right * a.r, U = a.head * a.r, D = a.foot * a.r;
-    var x = a.x - L, y = a.y - U, w = L + R, h = U + D;
-    if (w < 30) { x -= (30 - w) / 2; w = 30; }
-    if (h < 30) { y -= (30 - h) / 2; h = 30; }
-    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  /* WHAT A TAP LANDED ON, tested against the picture rather than a
+     rectangle: a sprite's rectangle carries its transparent corners, so a
+     tap beside a doodad poked it and a tap on one could poke its
+     neighbour. Each doodad is asked, front-most first, whether the point
+     is on one of its own opaque pixels as drawn this frame
+     (Doodads.hitTest, with pose()). Only if nobody is under the finger
+     itself does it look a little way round - 4 and 8 px for a finger, 3
+     for a cursor - so a tap just off a small doodad still finds it. */
+  var RING = [[1, 0], [0.7, -0.7], [0, -1], [-0.7, -0.7], [-1, 0], [-0.7, 0.7], [0, 1], [0.7, 0.7]];
+
+  function hits(a, x, y) {
+    var p = pose(a);
+    return Doodads.hitTest(a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts, x, y);
+  }
+
+  function pickDood(x, y, radii) {
+    var near = [], i, j, k, a;
+    for (i = cast.length - 1; i >= 0; i--) {
+      a = cast[i];
+      var reach = a.r * 2.2 + radii[radii.length - 1];
+      if (Math.abs(x - a.x) <= reach && Math.abs(y - a.y) <= reach) near.push(a);
+    }
+    for (k = 0; k < radii.length; k++) {
+      for (i = 0; i < near.length; i++) {
+        for (j = 0; j < (radii[k] ? RING.length : 1); j++) {
+          var ox = radii[k] ? RING[j][0] * radii[k] : 0, oy = radii[k] ? RING[j][1] * radii[k] : 0;
+          if (hits(near[i], x + ox, y + oy)) return near[i];
+        }
+      }
+    }
+    return null;
   }
 
   function showPlate(a, secs) {
@@ -624,6 +643,7 @@ var CoopTitle = (function () {
     a.pokeT = 2.5;
     visitPokes++;
     a.flap(0);
+    a.boing = 0;
     Audio3.play('bop');
     showPlate(a, 2.2);
     if (a.pokes === 1) { lift(a, 1); say(a, '!'); }
@@ -948,17 +968,10 @@ var CoopTitle = (function () {
   /* ---- what the toys listen to, and where */
 
   function pushToyTargets() {
-    var i, r, a;
-    /* the coop itself, under everything: a tap that lands on nothing else
-       tosses feed. The footer strip is left out. */
+    /* the coop itself, under everything: pickDood says whether a tap on it
+       found a doodad, and if not it tosses feed. The footer strip is left
+       out. */
     hot.push({ x: 0, y: 0, w: VW, h: VH - 18, id: 'bg' });
-    dood.length = 0;
-    for (i = 0; i < cast.length; i++) {
-      a = cast[i];
-      r = rectOf(a);
-      hot.push({ x: r.x, y: r.y, w: r.w, h: r.h, id: 'dood', i: a.ix });
-      dood.push({ a: a, x: r.x, y: r.y, w: r.w, h: r.h });
-    }
     /* the letters are on the foreground, over anybody standing behind them */
     var g = logoGeom();
     for (var l = 0; l < 2; l++) {
@@ -971,18 +984,13 @@ var CoopTitle = (function () {
 
   /* A CURSOR RESTING ON A DOODAD: it notices (one flap, no sound, so a
      sweep across the coop ripples), and after a moment the subtitle says
-     who it is. Worked out against last frame's rectangles every frame,
-     not from Input.hovering, which only refreshes when the mouse moves -
-     a doodad that hops out from under a still cursor has stopped being
-     hovered. Nothing at all on a phone. */
+     who it is. Tested against the picture every frame, not from
+     Input.hovering, which only refreshes when the mouse moves - a doodad
+     that hops out from under a still cursor has stopped being hovered.
+     Never through the menu boards, and nothing at all on a phone. */
   function hover(dt) {
     var p = Input.pointer(), a = null;
-    if (p && p.kind === 'mouse') {
-      for (var i = dood.length - 1; i >= 0; i--) {
-        var r = dood[i];
-        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) { a = r.a; break; }
-      }
-    }
+    if (p && p.kind === 'mouse' && p.y < VH - 18 && !inBoards(p.x, p.y)) a = pickDood(p.x, p.y, [0, 2]);
     if (a !== hoverA) { hoverA = a; hoverT = 0; if (a) a.flap(0); }
     else if (a) { hoverT += dt; if (hoverT >= 0.3) showPlate(a, 2.2); }
   }
@@ -1021,11 +1029,17 @@ var CoopTitle = (function () {
       if (a.voiceCool > 0) a.voiceCool -= dt;
       if (a.squashT > 0) a.squashT -= dt;
       if (a.shiverT > 0) a.shiverT -= dt;
+      if (a.boing < 1) a.boing += dt;
     }
     for (i = rings.length - 1; i >= 0; i--) if ((rings[i].t += dt) >= 0.6) rings.splice(i, 1);
     updateLetters(dt);
     hover(dt);
     hint(dt);
+  }
+
+  /* the menu column's boards, which a cursor over them is pointing at */
+  function inBoards(x, y) {
+    return x >= menuX() && x <= menuX() + MENU_BW && y >= menuY(0) && y <= menuY(MENU.length - 1) + MENU_BH;
   }
 
   /* the taps and keys, read after the lock like the menu's own */
@@ -1034,12 +1048,13 @@ var CoopTitle = (function () {
     if (Input.hit('right')) tossFeed(360 + rand(-25, 25), 110);
     if (!tg) return;
     var at = Input.tapPos();
-    if (tg.id === 'dood') { touchedToy(); poke(actorByIx(tg.i)); }
-    else if (tg.id === 'logo') { touchedToy(); tapLetter(tg.i); }
+    if (tg.id === 'logo') { touchedToy(); tapLetter(tg.i); }
     else if (tg.id === 'bg' && at) {
       if (hiRect && at.x >= hiRect.x && at.x <= hiRect.x + hiRect.w && at.y >= hiRect.y && at.y <= hiRect.y + hiRect.h) return;
       touchedToy();
-      tossFeed(at.x, at.y);
+      var p = Input.pointer(), a = pickDood(at.x, at.y, p && p.kind === 'mouse' ? [0, 3] : [0, 4, 8]);
+      if (a) poke(a);
+      else tossFeed(at.x, at.y);
     }
   }
 
@@ -1078,7 +1093,7 @@ var CoopTitle = (function () {
     bubbles.length = 0; puffs.length = 0; timers.length = 0;
     chirpCooldown = 0;
     visitPokes = 0; denyCool = 0; plate = null;
-    hoverA = null; hoverT = 0; dood.length = 0;
+    hoverA = null; hoverT = 0;
     grains.length = 0; piles.length = 0; feedCool = 0; toss = 0;
     spell = 0; spellT = 0; spelled = false;
     hintT = 0; hints = 0; rings.length = 0; toyTapped = false;
@@ -1304,12 +1319,23 @@ var CoopTitle = (function () {
     for (var i = 0; i < cast.length; i++) drawActor(ctx, cast[i]);
   }
 
-  /* a sulk squashes a doodad down onto its feet, and a shiver rattles it */
   function drawActor(ctx, a) {
-    var sq = a.squashT > 0;
-    var sh = a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0;
-    Doodads.draw(ctx, a.id, a.x, a.y + (sq ? a.r * a.foot * 0.15 : 0), a.r, a.angle + sh, a.flying(),
-                 sq ? { squashX: 1.1, squashY: 0.85 } : null);
+    var p = pose(a);
+    Doodads.draw(ctx, a.id, a.x, p.y, a.r, p.angle, a.flying(), p.opts);
+  }
+
+  /* HOW A DOODAD IS DRAWN THIS FRAME - a sulk squashes it down onto its
+     feet, a shiver rattles it, a poke's boing squashes and wobbles it -
+     in one place, because the tap test asks about exactly this picture */
+  function pose(a) {
+    var sx = 1, sy = 1;
+    if (a.squashT > 0) { sx = 1.1; sy = 0.85; }
+    if (a.boing < 0.36) {
+      var k = a.boing / 0.36, b = Math.sin(k * Math.PI * 2.5) * (1 - k) * 0.16;
+      sx *= 1 + b; sy *= 1 - b;
+    }
+    return { y: a.y + a.r * a.foot * (1 - sy), angle: a.angle + (a.shiverT > 0 ? Math.sin(t * 70) * 0.12 : 0),
+             opts: { squashX: sx, squashY: sy } };
   }
 
   function drawFg(ctx) {
@@ -1517,7 +1543,8 @@ var CoopTitle = (function () {
            drawBg: drawBg, drawChars: drawChars, drawFg: drawFg,
            targets: function () { return hot; },
            /* for a headless check: live references, read them only */
-           inspect: function () { return { cast: cast, piles: piles, grains: grains, plate: plate, rings: rings, failed: TOY_FAIL, t: t }; } };
+           inspect: function () { return { cast: cast, piles: piles, grains: grains, plate: plate, rings: rings, failed: TOY_FAIL, t: t }; },
+           pick: function (x, y, finger) { return pickDood(x, y, finger ? [0, 4, 8] : [0, 3]); } };
 })();
 
 /* WHICH TITLE SCREEN. The Coop until ten priced doodads are open, the porch

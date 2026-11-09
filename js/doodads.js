@@ -1184,6 +1184,65 @@ var Doodads = (function () {
     ctx.restore();
   }
 
+  /* DID A POINT LAND ON THE DOODAD AS draw() WOULD PAINT IT - the same
+     arguments, plus the point - on an opaque pixel of the art rather than
+     inside its rectangle. The title screens use it so a tap lands on what
+     the player can see: a sprite's rectangle carries its transparent
+     corners, and in a crowd the corners of the one in front cover the one
+     behind.
+
+     The point is taken back through draw()'s transform (translate, rotate,
+     then the scale that carries flip and squash) into the art's own box,
+     and looked up in a mask of that frame at a quarter of the art's size,
+     made the first time it is asked for. At a title screen's sizes a mask
+     cell is under half a virtual pixel. Art that has not loaded, or a
+     canvas the browser will not read back, falls back to the body circle. */
+  var MASKS = {};
+
+  function maskOf(key, d) {
+    if (MASKS.hasOwnProperty(key)) return MASKS[key];
+    var img = Assets.img(key), m = null;
+    if (img && img.complete && img.naturalWidth) {
+      try {
+        var cw = Math.ceil(d.sprite.w / 4), ch = Math.ceil(d.sprite.h / 4);
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        var cx = c.getContext('2d');
+        cx.drawImage(img, 0, 0, cw, ch);
+        var px = cx.getImageData(0, 0, cw, ch).data, bits = new Uint8Array(cw * ch);
+        for (var i = 0; i < bits.length; i++) bits[i] = px[i * 4 + 3] > 60 ? 1 : 0;
+        m = { w: cw, h: ch, bits: bits };
+      } catch (e) { m = null; }
+    }
+    if (m || (img && img.complete)) MASKS[key] = m;
+    return m;
+  }
+
+  function hitTest(id, x, y, r, angle, frame, opts, px, py) {
+    var d = BY_ID[id];
+    if (!d) return false;
+    var o = opts || {};
+    var key = id + (frame === true ? '_fly' : (frame ? '_' + frame : '_fall'));
+    var img = Assets.img(key);
+    if (!img || !img.complete || !img.naturalWidth) key = id + '_fall';
+    var dx = px - x, dy = py - y;
+    if (angle) {
+      var cs = Math.cos(-angle), sn = Math.sin(-angle), rx = dx * cs - dy * sn;
+      dy = dx * sn + dy * cs; dx = rx;
+    }
+    var m = maskOf(key, d);
+    if (!m) {
+      var rr = r * Math.max(o.squashX || 1, o.squashY || 1);
+      return dx * dx + dy * dy <= rr * rr;
+    }
+    var s = r / d.sprite.bodyR;
+    var ix = dx / (s * (o.squashX || 1)), iy = dy / (s * (o.squashY || 1));
+    if (o.flip) ix = -ix;
+    ix += d.sprite.pivotX; iy += d.sprite.pivotY;
+    if (ix < 0 || iy < 0 || ix >= d.sprite.w || iy >= d.sprite.h) return false;
+    return m.bits[Math.floor(iy / d.sprite.h * m.h) * m.w + Math.floor(ix / d.sprite.w * m.w)] === 1;
+  }
+
   /* if the art ever fails to load the game still runs */
   function drawFallback(ctx, d, x, y, r) {
     ctx.save();
@@ -2020,6 +2079,8 @@ var Doodads = (function () {
     indexOf: function (id) { for (var i = 0; i < LIST.length; i++) if (LIST[i].id === id) return i; return 0; },
     has: function (id) { return BY_ID.hasOwnProperty(id); },
     draw: draw,
+    /* draw()'s arguments plus a point: is it on an opaque pixel of the art */
+    hitTest: hitTest,
     bestReached: bestReached, noteScore: noteScore,
     boonsTaken: boonsTaken, noteBoon: noteBoon, requirement: requirement,
     limesTaken: limesTaken, noteLime: noteLime,
