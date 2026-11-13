@@ -1554,7 +1554,12 @@ var StandsScene = (function () {
             for (i = 0; i < 8; i++) spark(st.x + 84 + rand(-5, 5), st.tread + st.h - 1, rand(-30, 30), rand(-40, -10), 0.6,
                                           i % 2 ? P.mugLit : P.glassHi, 1, 160, 1);
           }
-        } else if (L.ms === 'gone' && L.mt >= 3) { L.ms = 'sit'; L.mt = 0; }
+        } else if (L.ms === 'gone' && L.mt >= 3) {
+          /* the clean one goes back up on the shelf, not where the last
+             one broke - left at fy, it sat on the step below, a black
+             square on the cabinets' glass */
+          L.ms = 'sit'; L.mt = 0; L.fy = 0; L.fv = 0;
+        }
       },
       draw: function (st, ctx, ox, oy) {
         var L = st.live, P = Cabinets.P;
